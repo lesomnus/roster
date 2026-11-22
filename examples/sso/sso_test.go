@@ -719,7 +719,7 @@ func TestAPasswordSignInReadsItsOwnRecord(t *testing.T) {
 	// something the front door may do, and `VouchService/Set` is not on its
 	// role. See `roster init` and roadmap.md's item 10.
 	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -952,7 +952,7 @@ func TestTheTenantComesFromRoster(t *testing.T) {
 	x.NoError(err)
 
 	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -1014,14 +1014,14 @@ func TestTwoFormsAndTheAppRemembersNothing(t *testing.T) {
 	v := vouch.New(d.ungated, d.ungated, vouch.WithKeys(d.keyring))
 
 	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
 
 	enrolled, err := d.ungated.Credential().Enrol(ctx, rstr.CredentialEnrolRequest_builder{
-		Ref:  rstr.HolderRef_builder{Id: h.GetId()}.Build(),
-		Kind: vouch.KindTotp,
+		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Kind:   vouch.KindTotp,
 	}.Build())
 	x.NoError(err)
 
@@ -1118,14 +1118,14 @@ func TestAWrongSecondFactorCostsTheFirstFormAgain(t *testing.T) {
 	v := vouch.New(d.ungated, d.ungated, vouch.WithKeys(d.keyring))
 
 	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
 
 	enrolled, err := d.ungated.Credential().Enrol(ctx, rstr.CredentialEnrolRequest_builder{
-		Ref:  rstr.HolderRef_builder{Id: h.GetId()}.Build(),
-		Kind: vouch.KindTotp,
+		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Kind:   vouch.KindTotp,
 	}.Build())
 	x.NoError(err)
 
@@ -1236,7 +1236,7 @@ func TestSomebodyRemovesAWayInFromTheirOwnPage(t *testing.T) {
 	x.NoError(err)
 
 	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -1321,7 +1321,7 @@ func TestSigningOutEverywhereEndsBothHalves(t *testing.T) {
 	x.NoError(err)
 
 	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -1645,7 +1645,7 @@ func TestSomebodyMintsAKeyFromTheirOwnPage(t *testing.T) {
 	x.NoError(err)
 
 	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -1759,7 +1759,7 @@ func TestSomebodyChangesTheirPasswordAndAddsAFactor(t *testing.T) {
 
 	const first = "correct horse battery staple"
 	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref:    rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 		Secret: []byte(first),
 	}.Build())
 	x.NoError(err)

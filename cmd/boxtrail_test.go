@@ -109,15 +109,15 @@ func TestWhatTheBoxDoesIsCalledWhatTheWireCallsIt(t *testing.T) {
 		x.NotEmpty(wire[act], "%s over the wire writes no line, so this would prove nothing", act)
 	}
 	overTheWire("reset", func() error {
-		_, err := creds.Issue(as, app.CredentialIssueRequest_builder{Ref: alice}.Build())
+		_, err := creds.Issue(as, app.CredentialIssueRequest_builder{Holder: alice}.Build())
 		return err
 	})
 	overTheWire("reset again", func() error {
-		_, err := creds.Issue(as, app.CredentialIssueRequest_builder{Ref: alice}.Build())
+		_, err := creds.Issue(as, app.CredentialIssueRequest_builder{Holder: alice}.Build())
 		return err
 	})
 	overTheWire("unlock", func() error {
-		_, err := creds.Unlock(as, app.CredentialUnlockRequest_builder{Ref: alice}.Build())
+		_, err := creds.Unlock(as, app.CredentialUnlockRequest_builder{Holder: alice}.Build())
 		return err
 	})
 	overTheWire("key", func() error {

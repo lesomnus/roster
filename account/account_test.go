@@ -226,7 +226,7 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 	}.Build())
 	x.NoError(err)
 	_, err = s.Ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref: rstr.HolderRef_builder{Id: bob.GetId()}.Build(), Secret: []byte("correct horse battery staple"),
+		Holder: rstr.HolderRef_builder{Id: bob.GetId()}.Build(), Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
 	// And an address, which is where a recovery link goes -- **proved**, because
@@ -795,11 +795,11 @@ func TestSomebodyEnrolsAnAuthenticatorAppAndSignsInWithIt(t *testing.T) {
 	// A password first, on her own row: there is none to prove, and a first
 	// one is set for somebody -- so it goes in the operator way here.
 	_, err := d.ungated.Credential().Set(context.Background(), rstr.CredentialSetRequest_builder{
-		Ref: rstr.HolderRef_builder{Id: d.erin}.Build(), Secret: []byte("correct horse battery staple"),
+		Holder: rstr.HolderRef_builder{Id: d.erin}.Build(), Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
 
-	code, body := b.rpc(t, "/roster.CredentialService/Enrol", `{"ref":{"id":"`+std(d.erin)+`"},"kind":"totp","name":"phone"}`)
+	code, body := b.rpc(t, "/roster.CredentialService/Enrol", `{"holder":{"id":"`+std(d.erin)+`"},"kind":"totp","name":"phone"}`)
 	x.Equal(http.StatusOK, code, body)
 	var enrolled struct{ Seed string }
 	x.NoError(json.Unmarshal([]byte(body), &enrolled))

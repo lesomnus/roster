@@ -286,11 +286,11 @@ func TestWhatIsSomebodysOwnReachesNobodyElse(t *testing.T) {
 			refused(x, err)
 		},
 		app.CredentialService_Set_FullMethodName: func(x *require.Assertions) {
-			_, err := creds.Set(as, app.CredentialSetRequest_builder{Ref: theirs, Kind: "password", Secret: []byte("one mallory chose, long enough")}.Build())
+			_, err := creds.Set(as, app.CredentialSetRequest_builder{Holder: theirs, Kind: "password", Secret: []byte("one mallory chose, long enough")}.Build())
 			refused(x, err)
 		},
 		app.CredentialService_Enrol_FullMethodName: func(x *require.Assertions) {
-			_, err := creds.Enrol(as, app.CredentialEnrolRequest_builder{Ref: theirs, Kind: "totp", Name: "mallorys-phone"}.Build())
+			_, err := creds.Enrol(as, app.CredentialEnrolRequest_builder{Holder: theirs, Kind: "totp", Name: "mallorys-phone"}.Build())
 			refused(x, err)
 		},
 		app.CredentialService_Erase_FullMethodName: func(x *require.Assertions) {

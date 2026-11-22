@@ -57,7 +57,7 @@ func (s coreCredential) Unlock(ctx context.Context, req *app.CredentialUnlockReq
 	v, err := s.Next().Credential().Get(ctx, app.CredentialGetRequest_builder{
 		Ref: app.CredentialRef_builder{
 			Kind: app.CredentialRefByKind_builder{
-				Holder: req.GetRef(),
+				Holder: req.GetHolder(),
 				Kind:   z.Ptr(kind),
 			}.Build(),
 		}.Build(),
@@ -75,7 +75,7 @@ func (s coreCredential) Unlock(ctx context.Context, req *app.CredentialUnlockReq
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayReach(ctx, "ref", holder); err != nil {
+	if err := s.mayReach(ctx, "holder", holder); err != nil {
 		return nil, err
 	}
 
@@ -202,7 +202,7 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	// Read the person before writing, so the escalation rule has an id to
 	// compare and an Add cannot point its edge at somebody who is gone.
 	who, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
-		Ref:    req.GetRef(),
+		Ref:    req.GetHolder(),
 		Select: app.HolderSelect_builder{All: z.Ptr(true)}.Build(),
 	}.Build())
 	if err != nil {
@@ -213,7 +213,7 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayReach(ctx, "ref", holder); err != nil {
+	if err := s.mayReach(ctx, "holder", holder); err != nil {
 		return nil, err
 	}
 
@@ -505,7 +505,7 @@ func (s coreCredential) Issue(ctx context.Context, req *app.CredentialIssueReque
 		// server, where a credential write has no rules at all.
 		in := s.over(next, tx)
 		if _, err := (coreCredential{in, next.Credential()}).Set(ctx, app.CredentialSetRequest_builder{
-			Ref:    ref,
+			Holder: ref,
 			Kind:   kind,
 			Secret: []byte(secret),
 		}.Build()); err != nil {
@@ -530,10 +530,10 @@ func (s coreCredential) Issue(ctx context.Context, req *app.CredentialIssueReque
 //
 // `ApiKey.Issue`'s `whoseKey` is the same function one file over and the same
 // reasoning: which plane a caller is on is `WithPrefix`, a fact about the stack
-// that answered, so `holder_alias` off the control plane and `ref`/`email` on
+// that answered, so `holder_alias` off the control plane and `holder`/`email` on
 // it are refused by the wiring rather than by a flag.
 func (s coreCredential) whosePassword(ctx context.Context, req *app.CredentialIssueRequest) (*app.HolderRef, error) {
-	alias, ref, email := req.GetHolderAlias(), req.GetRef(), req.GetEmail()
+	alias, ref, email := req.GetHolderAlias(), req.GetHolder(), req.GetEmail()
 	byName, byRef, byMail := alias != "", ref != nil, email != nil
 
 	switch {
@@ -553,7 +553,7 @@ func (s coreCredential) whosePassword(ctx context.Context, req *app.CredentialIs
 		case byName:
 			return nil, status.Error(codes.InvalidArgument,
 				"holder_alias: a bare alias names one row only where there is one tenant, which is the "+
-					"control plane; here somebody is a `ref` or an `email` of theirs")
+					"control plane; here somebody is a `holder` or an `email` of theirs")
 
 		case byMail:
 			// Through the wall like every other read here, so an address in a
@@ -570,7 +570,7 @@ func (s coreCredential) whosePassword(ctx context.Context, req *app.CredentialIs
 			return app.HolderRef_builder{Id: v.GetHolder().GetId()}.Build(), nil
 
 		case !byRef:
-			return nil, status.Error(codes.InvalidArgument, "ref: whose password this is")
+			return nil, status.Error(codes.InvalidArgument, "holder: whose password this is")
 		}
 
 		// Read back through the wall, so a reference this caller cannot see is
@@ -696,7 +696,7 @@ func (s coreCredential) enrol(ctx context.Context, ref *app.HolderRef, kind, nam
 	if err != nil {
 		return "", "", err
 	}
-	if err := s.mayReach(ctx, "ref", holder); err != nil {
+	if err := s.mayReach(ctx, "holder", holder); err != nil {
 		return "", "", err
 	}
 
@@ -759,7 +759,7 @@ func (s coreCredential) enrol(ctx context.Context, ref *app.HolderRef, kind, nam
 // Enrol makes a second factor and answers with it once -- the write `Vouch.Enrol`
 // was, on the entity it writes a row to, named by a reference. See [coreCredential.enrol].
 func (s coreCredential) Enrol(ctx context.Context, req *app.CredentialEnrolRequest) (*app.CredentialEnrolResponse, error) {
-	seed, uri, err := s.enrol(ctx, req.GetRef(), req.GetKind(), req.GetName(), req.GetIssuer(), req.GetAttestation())
+	seed, uri, err := s.enrol(ctx, req.GetHolder(), req.GetKind(), req.GetName(), req.GetIssuer(), req.GetAttestation())
 	if err != nil {
 		return nil, err
 	}

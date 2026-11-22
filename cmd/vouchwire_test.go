@@ -95,7 +95,7 @@ func sets(t *testing.T, b *cliServed, who []byte, secret string) {
 	t.Helper()
 
 	_, err := b.Server.Ungated.Credential().Set(t.Context(), app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: who}.Build(),
+		Holder: app.HolderRef_builder{Id: who}.Build(),
 		Secret: []byte(secret),
 	}.Build())
 	require.NoError(t, err)

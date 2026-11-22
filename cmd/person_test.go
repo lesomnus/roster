@@ -82,7 +82,7 @@ func TestAnOperatorFinishesAPerson(t *testing.T) {
 
 		// With a password beside it, the identity is one of two and may go.
 		_, err = app.NewCredentialServiceClient(conn).Set(as, app.CredentialSetRequest_builder{
-			Ref: her, Secret: []byte("correct horse battery staple"),
+			Holder: her, Secret: []byte("correct horse battery staple"),
 		}.Build())
 		x.NoError(err)
 

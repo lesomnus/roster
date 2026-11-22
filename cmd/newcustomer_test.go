@@ -163,7 +163,7 @@ func TestAnOperatorStandsUpACustomerThatCanBeUsed(t *testing.T) {
 		x := require.New(t)
 
 		v, err := app.NewCredentialServiceClient(admin).Issue(as, app.CredentialIssueRequest_builder{
-			Ref: app.HolderRef_builder{Id: h.GetId()}.Build(),
+			Holder: app.HolderRef_builder{Id: h.GetId()}.Build(),
 		}.Build())
 		x.NoError(err)
 		x.NotEmpty(v.GetSecret())

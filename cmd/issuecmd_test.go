@@ -69,7 +69,7 @@ func TestIssueMintsOverTheWire(t *testing.T) {
 		// check. `Credential.Issue` refuses the bare alias off the control
 		// plane -- `service` is the form that creates whoever it names, and a
 		// name is one person only where there is one tenant. A customer's
-		// person is `ref` or `email`, in full, and `roster vouch reset` is that
+		// person is `holder` or `email`, in full, and `roster vouch reset` is that
 		// call.
 		err := cli.Cmd(&b.Hers).Run(ctx, []string{"issue", "password", "bob"})
 		x.Equal(codes.InvalidArgument, status.Code(err),

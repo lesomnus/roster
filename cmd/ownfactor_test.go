@@ -39,8 +39,8 @@ func TestAPersonEnrolsTheirOwnSecondFactor(t *testing.T) {
 	cl := app.NewCredentialServiceClient(b.Conn)
 
 	res, err := cl.Enrol(bearing(ctx, hers), app.CredentialEnrolRequest_builder{
-		Ref:  app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
-		Kind: vouch.KindTotp,
+		Holder: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
+		Kind:   vouch.KindTotp,
 	}.Build())
 	x.NoError(err)
 	x.NotEmpty(res.GetSeed())
@@ -92,7 +92,7 @@ func TestTakingOnesOwnSecondFactorOffTakesAFreshSignIn(t *testing.T) {
 	permits(t, ctx, b, b.Contoso, b.Who, "self", erase)
 	cl := app.NewCredentialServiceClient(b.Conn)
 
-	_, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Ref: own, Kind: vouch.KindTotp, Name: "phone"}.Build())
+	_, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Holder: own, Kind: vouch.KindTotp, Name: "phone"}.Build())
 	require.NoError(t, err)
 
 	methods := []string{erase}
@@ -140,7 +140,7 @@ func TestTakingOnesOwnSecondFactorOffTakesAFreshSignIn(t *testing.T) {
 		// Somebody who holds no more than she does, and has lost their phone.
 		other := addHolder(t, ctx, b.Server, b.Contoso, "lost-their-phone")
 		theirs := app.HolderRef_builder{Id: other.Bytes()}.Build()
-		_, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Ref: theirs, Kind: vouch.KindTotp, Name: "phone"}.Build())
+		_, err := b.Ungated.Credential().Enrol(ctx, app.CredentialEnrolRequest_builder{Holder: theirs, Kind: vouch.KindTotp, Name: "phone"}.Build())
 		x.NoError(err)
 
 		v, err := cl.Erase(key, app.CredentialRef_builder{

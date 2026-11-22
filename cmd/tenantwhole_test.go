@@ -76,7 +76,7 @@ func TestATenantMadeAtTheOperatorsPortIsWholeOrNotThere(t *testing.T) {
 	second := addHolder(t, ctx, s.Control, controlTenant(t, ctx, s), "second")
 	boundOnControl(t, ctx, s, second.Bytes(), "customers", "/roster.TenantService/*", "/roster.HolderService/*")
 	_, err := s.Control.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref: app.HolderRef_builder{Id: second.Bytes()}.Build(), Secret: []byte("a second operator's password"),
+		Holder: app.HolderRef_builder{Id: second.Bytes()}.Build(), Secret: []byte("a second operator's password"),
 	}.Build())
 	x.NoError(err)
 

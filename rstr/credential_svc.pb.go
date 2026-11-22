@@ -2284,11 +2284,11 @@ func (b0 CredentialWatchItem_builder) Build() *CredentialWatchItem {
 }
 
 type CredentialUnlockRequest struct {
-	state           protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref  *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Kind string                 `protobuf:"bytes,2,opt,name=kind"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state             protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Holder *HolderRef             `protobuf:"bytes,1,opt,name=holder"`
+	xxx_hidden_Kind   string                 `protobuf:"bytes,2,opt,name=kind"`
+	unknownFields     protoimpl.UnknownFields
+	sizeCache         protoimpl.SizeCache
 }
 
 func (x *CredentialUnlockRequest) Reset() {
@@ -2316,9 +2316,9 @@ func (x *CredentialUnlockRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *CredentialUnlockRequest) GetRef() *HolderRef {
+func (x *CredentialUnlockRequest) GetHolder() *HolderRef {
 	if x != nil {
-		return x.xxx_hidden_Ref
+		return x.xxx_hidden_Holder
 	}
 	return nil
 }
@@ -2330,23 +2330,23 @@ func (x *CredentialUnlockRequest) GetKind() string {
 	return ""
 }
 
-func (x *CredentialUnlockRequest) SetRef(v *HolderRef) {
-	x.xxx_hidden_Ref = v
+func (x *CredentialUnlockRequest) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
 }
 
 func (x *CredentialUnlockRequest) SetKind(v string) {
 	x.xxx_hidden_Kind = v
 }
 
-func (x *CredentialUnlockRequest) HasRef() bool {
+func (x *CredentialUnlockRequest) HasHolder() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Ref != nil
+	return x.xxx_hidden_Holder != nil
 }
 
-func (x *CredentialUnlockRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
+func (x *CredentialUnlockRequest) ClearHolder() {
+	x.xxx_hidden_Holder = nil
 }
 
 type CredentialUnlockRequest_builder struct {
@@ -2354,7 +2354,7 @@ type CredentialUnlockRequest_builder struct {
 
 	// Whose credential, by reference -- an id or `@tenant/alias`. Not a sign-in
 	// form: this is an operator naming somebody they know.
-	Ref *HolderRef
+	Holder *HolderRef
 	// Which credential; empty is the password.
 	Kind string
 }
@@ -2363,7 +2363,7 @@ func (b0 CredentialUnlockRequest_builder) Build() *CredentialUnlockRequest {
 	m0 := &CredentialUnlockRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Kind = b.Kind
 	return m0
 }
@@ -2440,7 +2440,7 @@ func (b0 CredentialUnlockResponse_builder) Build() *CredentialUnlockResponse {
 
 type CredentialSetRequest struct {
 	state              protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref     *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Holder  *HolderRef             `protobuf:"bytes,1,opt,name=holder"`
 	xxx_hidden_Kind    string                 `protobuf:"bytes,2,opt,name=kind"`
 	xxx_hidden_Secret  []byte                 `protobuf:"bytes,3,opt,name=secret"`
 	xxx_hidden_Current []byte                 `protobuf:"bytes,4,opt,name=current"`
@@ -2473,9 +2473,9 @@ func (x *CredentialSetRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *CredentialSetRequest) GetRef() *HolderRef {
+func (x *CredentialSetRequest) GetHolder() *HolderRef {
 	if x != nil {
-		return x.xxx_hidden_Ref
+		return x.xxx_hidden_Holder
 	}
 	return nil
 }
@@ -2501,8 +2501,8 @@ func (x *CredentialSetRequest) GetCurrent() []byte {
 	return nil
 }
 
-func (x *CredentialSetRequest) SetRef(v *HolderRef) {
-	x.xxx_hidden_Ref = v
+func (x *CredentialSetRequest) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
 }
 
 func (x *CredentialSetRequest) SetKind(v string) {
@@ -2523,15 +2523,15 @@ func (x *CredentialSetRequest) SetCurrent(v []byte) {
 	x.xxx_hidden_Current = v
 }
 
-func (x *CredentialSetRequest) HasRef() bool {
+func (x *CredentialSetRequest) HasHolder() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Ref != nil
+	return x.xxx_hidden_Holder != nil
 }
 
-func (x *CredentialSetRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
+func (x *CredentialSetRequest) ClearHolder() {
+	x.xxx_hidden_Holder = nil
 }
 
 type CredentialSetRequest_builder struct {
@@ -2540,7 +2540,7 @@ type CredentialSetRequest_builder struct {
 	// Whose credential, by reference -- an id or `@tenant/alias`. Not a sign-in
 	// form. The caller's own: a caller with a frame writes nobody else's, and
 	// only the deployment itself, unframed, names somebody else here.
-	Ref *HolderRef
+	Holder *HolderRef
 	// Which credential; empty is the password. A second factor is Enrol.
 	Kind string
 	// The secret as typed. Hashed here, never stored as given.
@@ -2555,7 +2555,7 @@ func (b0 CredentialSetRequest_builder) Build() *CredentialSetRequest {
 	m0 := &CredentialSetRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Kind = b.Kind
 	x.xxx_hidden_Secret = b.Secret
 	x.xxx_hidden_Current = b.Current
@@ -2607,7 +2607,7 @@ func (b0 CredentialSetResponse_builder) Build() *CredentialSetResponse {
 
 type CredentialEnrolRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref         *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,1,opt,name=holder"`
 	xxx_hidden_Kind        string                 `protobuf:"bytes,2,opt,name=kind"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,3,opt,name=name"`
 	xxx_hidden_Issuer      string                 `protobuf:"bytes,4,opt,name=issuer"`
@@ -2641,9 +2641,9 @@ func (x *CredentialEnrolRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *CredentialEnrolRequest) GetRef() *HolderRef {
+func (x *CredentialEnrolRequest) GetHolder() *HolderRef {
 	if x != nil {
-		return x.xxx_hidden_Ref
+		return x.xxx_hidden_Holder
 	}
 	return nil
 }
@@ -2676,8 +2676,8 @@ func (x *CredentialEnrolRequest) GetAttestation() []byte {
 	return nil
 }
 
-func (x *CredentialEnrolRequest) SetRef(v *HolderRef) {
-	x.xxx_hidden_Ref = v
+func (x *CredentialEnrolRequest) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
 }
 
 func (x *CredentialEnrolRequest) SetKind(v string) {
@@ -2699,22 +2699,22 @@ func (x *CredentialEnrolRequest) SetAttestation(v []byte) {
 	x.xxx_hidden_Attestation = v
 }
 
-func (x *CredentialEnrolRequest) HasRef() bool {
+func (x *CredentialEnrolRequest) HasHolder() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Ref != nil
+	return x.xxx_hidden_Holder != nil
 }
 
-func (x *CredentialEnrolRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
+func (x *CredentialEnrolRequest) ClearHolder() {
+	x.xxx_hidden_Holder = nil
 }
 
 type CredentialEnrolRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Whose account the factor is for, by reference -- an id or `@tenant/alias`.
-	Ref *HolderRef
+	Holder *HolderRef
 	// "totp" or "webauthn". A password is `Set` or `Issue`; refused here.
 	Kind string
 	// What they call it, when there is more than one to tell apart. Empty is the
@@ -2735,7 +2735,7 @@ func (b0 CredentialEnrolRequest_builder) Build() *CredentialEnrolRequest {
 	m0 := &CredentialEnrolRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Kind = b.Kind
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Issuer = b.Issuer
@@ -2820,7 +2820,7 @@ func (b0 CredentialEnrolResponse_builder) Build() *CredentialEnrolResponse {
 
 type CredentialIssueRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref         *HolderRef             `protobuf:"bytes,1,opt,name=ref"`
+	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,1,opt,name=holder"`
 	xxx_hidden_Kind        string                 `protobuf:"bytes,2,opt,name=kind"`
 	xxx_hidden_Email       *EmailRef              `protobuf:"bytes,3,opt,name=email"`
 	xxx_hidden_HolderAlias string                 `protobuf:"bytes,4,opt,name=holder_alias,json=holderAlias"`
@@ -2853,9 +2853,9 @@ func (x *CredentialIssueRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *CredentialIssueRequest) GetRef() *HolderRef {
+func (x *CredentialIssueRequest) GetHolder() *HolderRef {
 	if x != nil {
-		return x.xxx_hidden_Ref
+		return x.xxx_hidden_Holder
 	}
 	return nil
 }
@@ -2881,8 +2881,8 @@ func (x *CredentialIssueRequest) GetHolderAlias() string {
 	return ""
 }
 
-func (x *CredentialIssueRequest) SetRef(v *HolderRef) {
-	x.xxx_hidden_Ref = v
+func (x *CredentialIssueRequest) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
 }
 
 func (x *CredentialIssueRequest) SetKind(v string) {
@@ -2897,11 +2897,11 @@ func (x *CredentialIssueRequest) SetHolderAlias(v string) {
 	x.xxx_hidden_HolderAlias = v
 }
 
-func (x *CredentialIssueRequest) HasRef() bool {
+func (x *CredentialIssueRequest) HasHolder() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Ref != nil
+	return x.xxx_hidden_Holder != nil
 }
 
 func (x *CredentialIssueRequest) HasEmail() bool {
@@ -2911,8 +2911,8 @@ func (x *CredentialIssueRequest) HasEmail() bool {
 	return x.xxx_hidden_Email != nil
 }
 
-func (x *CredentialIssueRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
+func (x *CredentialIssueRequest) ClearHolder() {
+	x.xxx_hidden_Holder = nil
 }
 
 func (x *CredentialIssueRequest) ClearEmail() {
@@ -2926,7 +2926,7 @@ type CredentialIssueRequest_builder struct {
 	// because the wall has many tenants and a name alone is a question with more
 	// than one answer. Naming somebody who is not there is a refusal, not a
 	// creation: a customer's people are the customer's.
-	Ref *HolderRef
+	Holder *HolderRef
 	// Which credential; empty is the password. There is nothing sensible to
 	// generate for a second factor that somebody could then read out -- that is
 	// `Enrol`, which answers with a seed to scan -- so anything else is refused.
@@ -2945,7 +2945,7 @@ func (b0 CredentialIssueRequest_builder) Build() *CredentialIssueRequest {
 	m0 := &CredentialIssueRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
+	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Kind = b.Kind
 	x.xxx_hidden_Email = b.Email
 	x.xxx_hidden_HolderAlias = b.HolderAlias
@@ -3099,30 +3099,30 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\x13CredentialWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x05value\x18\x02 \x01(\v2\x12.roster.CredentialR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"Y\n" +
-	"\x17CredentialUnlockRequest\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\x19\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"_\n" +
+	"\x17CredentialUnlockRequest\x12)\n" +
+	"\x06holder\x18\x01 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x19\n" +
 	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\"W\n" +
 	"\x18CredentialUnlockResponse\x12;\n" +
 	"\vdate_locked\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"dateLocked\"\x96\x01\n" +
-	"\x14CredentialSetRequest\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\x19\n" +
+	"dateLocked\"\x9c\x01\n" +
+	"\x14CredentialSetRequest\x12)\n" +
+	"\x06holder\x18\x01 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x19\n" +
 	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12\x1d\n" +
 	"\x06secret\x18\x03 \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12\x1f\n" +
 	"\acurrent\x18\x04 \x01(\fB\x05\xaa\x01\x02\b\x02R\acurrent\"\x17\n" +
-	"\x15CredentialSetResponse\"\xbb\x01\n" +
-	"\x16CredentialEnrolRequest\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\x19\n" +
+	"\x15CredentialSetResponse\"\xc1\x01\n" +
+	"\x16CredentialEnrolRequest\x12)\n" +
+	"\x06holder\x18\x01 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x19\n" +
 	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12\x19\n" +
 	"\x04name\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x1d\n" +
 	"\x06issuer\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06issuer\x12'\n" +
 	"\vattestation\x18\x05 \x01(\fB\x05\xaa\x01\x02\b\x02R\vattestation\"M\n" +
 	"\x17CredentialEnrolResponse\x12\x19\n" +
 	"\x04seed\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04seed\x12\x17\n" +
-	"\x03uri\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x03uri\"\xaa\x01\n" +
-	"\x16CredentialIssueRequest\x12#\n" +
-	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\x19\n" +
+	"\x03uri\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x03uri\"\xb0\x01\n" +
+	"\x16CredentialIssueRequest\x12)\n" +
+	"\x06holder\x18\x01 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x19\n" +
 	"\x04kind\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12&\n" +
 	"\x05email\x18\x03 \x01(\v2\x10.roster.EmailRefR\x05email\x12(\n" +
 	"\fholder_alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\vholderAlias\"8\n" +
@@ -3195,11 +3195,11 @@ var file_app_credential_svc_g_proto_depIdxs = []int32{
 	10, // 19: roster.CredentialWatchRequest.filters:type_name -> roster.CredentialFilter
 	13, // 20: roster.CredentialWatchResponse.items:type_name -> roster.CredentialWatchItem
 	26, // 21: roster.CredentialWatchItem.value:type_name -> roster.Credential
-	22, // 22: roster.CredentialUnlockRequest.ref:type_name -> roster.HolderRef
+	22, // 22: roster.CredentialUnlockRequest.holder:type_name -> roster.HolderRef
 	23, // 23: roster.CredentialUnlockResponse.date_locked:type_name -> google.protobuf.Timestamp
-	22, // 24: roster.CredentialSetRequest.ref:type_name -> roster.HolderRef
-	22, // 25: roster.CredentialEnrolRequest.ref:type_name -> roster.HolderRef
-	22, // 26: roster.CredentialIssueRequest.ref:type_name -> roster.HolderRef
+	22, // 24: roster.CredentialSetRequest.holder:type_name -> roster.HolderRef
+	22, // 25: roster.CredentialEnrolRequest.holder:type_name -> roster.HolderRef
+	22, // 26: roster.CredentialIssueRequest.holder:type_name -> roster.HolderRef
 	27, // 27: roster.CredentialIssueRequest.email:type_name -> roster.EmailRef
 	0,  // 28: roster.CredentialService.Add:input_type -> roster.CredentialAddRequest
 	1,  // 29: roster.CredentialService.Get:input_type -> roster.CredentialGetRequest

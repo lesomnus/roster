@@ -166,8 +166,8 @@ type CredentialServiceClient interface {
 	//
 	// # Whose, three ways, and never two at once
 	//
-	// `ref` is one of a customer's, in full, on a plane with many tenants where a
-	// name alone answers to more than one. `email` is one of their addresses,
+	// `holder` is one of a customer's, in full, on a plane with many tenants
+	// where a name alone answers to more than one. `email` is one of their addresses,
 	// which is the form an operator's console has when somebody writes in.
 	// `holder_alias` is a bare alias on the control plane's one tenant, **created
 	// if it is not there**, because a row a console has just named is not one set
@@ -176,8 +176,8 @@ type CredentialServiceClient interface {
 	//
 	// Which plane a caller is on is not a field: it is `WithPrefix`, one per
 	// stack, the same fact `ApiKey.Issue` reads. So `holder_alias` off the
-	// control plane and `ref`/`email` on it are each refused by the wiring rather
-	// than by a flag somebody could send.
+	// control plane and `holder`/`email` on it are each refused by the wiring
+	// rather than by a flag somebody could send.
 	Issue(ctx context.Context, in *CredentialIssueRequest, opts ...grpc.CallOption) (*CredentialIssueResponse, error)
 }
 
@@ -442,8 +442,8 @@ type CredentialServiceServer interface {
 	//
 	// # Whose, three ways, and never two at once
 	//
-	// `ref` is one of a customer's, in full, on a plane with many tenants where a
-	// name alone answers to more than one. `email` is one of their addresses,
+	// `holder` is one of a customer's, in full, on a plane with many tenants
+	// where a name alone answers to more than one. `email` is one of their addresses,
 	// which is the form an operator's console has when somebody writes in.
 	// `holder_alias` is a bare alias on the control plane's one tenant, **created
 	// if it is not there**, because a row a console has just named is not one set
@@ -452,8 +452,8 @@ type CredentialServiceServer interface {
 	//
 	// Which plane a caller is on is not a field: it is `WithPrefix`, one per
 	// stack, the same fact `ApiKey.Issue` reads. So `holder_alias` off the
-	// control plane and `ref`/`email` on it are each refused by the wiring rather
-	// than by a flag somebody could send.
+	// control plane and `holder`/`email` on it are each refused by the wiring
+	// rather than by a flag somebody could send.
 	Issue(context.Context, *CredentialIssueRequest) (*CredentialIssueResponse, error)
 	mustEmbedUnimplementedCredentialServiceServer()
 }

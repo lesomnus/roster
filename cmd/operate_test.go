@@ -97,7 +97,7 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 	// move.
 	set := func(c context.Context, who pdid.Id) error {
 		_, err := b.operated().Issue(c, app.CredentialIssueRequest_builder{
-			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 
 		return err
@@ -150,14 +150,14 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 		// call has no credential to say, and `cmd/ownpassword_test.go` is
 		// where that rule is pinned.
 		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: boss.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 			Secret: []byte("a new one"),
 		}.Build())
 		x.NoError(err)
 
 		asBossOwn := frame.Into(ctx, frame.New(boss, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
 		_, err = b.Walled.Credential().Set(asBossOwn, app.CredentialSetRequest_builder{
-			Ref:     app.HolderRef_builder{Id: boss.Bytes()}.Build(),
+			Holder:  app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 			Current: []byte("a new one"),
 			Secret:  []byte("a newer one"),
 		}.Build())
@@ -173,7 +173,7 @@ func TestNobodyWritesTheCredentialOfSomebodyWiderThanThey(t *testing.T) {
 		x := require.New(t)
 
 		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: boss.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: boss.Bytes()}.Build(),
 			Secret: []byte("a new one"),
 		}.Build())
 		x.NoError(err, "init could not set the first administrator's password")
@@ -198,7 +198,7 @@ func TestALocalOperatorHandsSomebodyAPassword(t *testing.T) {
 	v := b.operated()
 
 	res, err := v.Issue(asOps, app.CredentialIssueRequest_builder{
-		Ref: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 	x.NotEmpty(res.GetSecret())
@@ -228,7 +228,7 @@ func TestALocalOperatorHandsSomebodyAPassword(t *testing.T) {
 		x := require.New(t)
 
 		again, err := v.Issue(asOps, app.CredentialIssueRequest_builder{
-			Ref: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
 		}.Build())
 		x.NoError(err)
 		x.NotEqual(res.GetSecret(), again.GetSecret())
@@ -238,8 +238,8 @@ func TestALocalOperatorHandsSomebodyAPassword(t *testing.T) {
 		x := require.New(t)
 
 		_, err := v.Issue(asOps, app.CredentialIssueRequest_builder{
-			Ref:  app.HolderRef_builder{Id: joe.Bytes()}.Build(),
-			Kind: "totp",
+			Holder: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
+			Kind:   "totp",
 		}.Build())
 		x.Equal(codes.InvalidArgument, status.Code(err))
 	})
@@ -280,7 +280,7 @@ func TestALocalOperatorOpensAnAccountSomebodyElseClosed(t *testing.T) {
 	x.NotNil(shut.GetDateLocked())
 
 	out, err := b.Walled.Credential().Unlock(asOps, app.CredentialUnlockRequest_builder{
-		Ref: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 	x.NotNil(out.GetDateLocked(), "an operator cannot tell 'I opened it' from 'it was not closed'")
@@ -299,7 +299,7 @@ func TestALocalOperatorOpensAnAccountSomebodyElseClosed(t *testing.T) {
 		x := require.New(t)
 
 		again, err := b.Walled.Credential().Unlock(asOps, app.CredentialUnlockRequest_builder{
-			Ref: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: joe.Bytes()}.Build(),
 		}.Build())
 		x.NoError(err)
 		x.Nil(again.GetDateLocked())
@@ -328,7 +328,7 @@ func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
 
 	set := func(secret string) error {
 		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 
@@ -349,7 +349,7 @@ func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
 		x := require.New(t)
 
 		_, err := b.Ungated.Credential().Issue(ctx, app.CredentialIssueRequest_builder{
-			Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 		}.Build())
 		x.NoError(err, "thirty-two random bytes were in a corpus of leaks")
 	})
@@ -362,7 +362,7 @@ func TestASecretSomebodyHasLostIsRefused(t *testing.T) {
 
 		nb, nctx := build(t)
 		_, err := nb.Ungated.Credential().Set(nctx, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: nb.ContosoUser.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: nb.ContosoUser.Bytes()}.Build(),
 			Secret: []byte("hunter2hunter2"),
 		}.Build())
 		x.NoError(err)

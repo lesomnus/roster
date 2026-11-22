@@ -344,7 +344,7 @@ func TestAPermissionHeldThroughAGroupIsStillHeld(t *testing.T) {
 		// nothing else now (`server/core/self.go`), and the rule about writing
 		// somebody else's is in the layer below both, unmoved.
 		_, err := b.operated().Issue(asOps, app.CredentialIssueRequest_builder{
-			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 
 		return err
@@ -442,7 +442,7 @@ func TestUnlockIsHeldToTheRuleResetIs(t *testing.T) {
 	// the difference below is reach and nothing else.
 	for _, who := range []pdid.Id{boss, joe} {
 		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 		x.NoError(err)
@@ -456,7 +456,7 @@ func TestUnlockIsHeldToTheRuleResetIs(t *testing.T) {
 	cred := b.Walled.Credential()
 	unlock := func(who pdid.Id) error {
 		_, err := cred.Unlock(asOps, app.CredentialUnlockRequest_builder{
-			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 
 		return err

@@ -106,13 +106,13 @@ func TestARefusalQuotesWhatItWasSentToABound(t *testing.T) {
 		},
 		"CredentialService/Enrol kind": func(ctx context.Context, conn *grpc.ClientConn) error {
 			_, err := app.NewCredentialServiceClient(conn).Enrol(ctx, app.CredentialEnrolRequest_builder{
-				Ref: me, Kind: long,
+				Holder: me, Kind: long,
 			}.Build())
 			return err
 		},
 		"CredentialService/Issue kind": func(ctx context.Context, conn *grpc.ClientConn) error {
 			_, err := app.NewCredentialServiceClient(conn).Issue(ctx, app.CredentialIssueRequest_builder{
-				Ref: me, Kind: long,
+				Holder: me, Kind: long,
 			}.Build())
 			return err
 		},

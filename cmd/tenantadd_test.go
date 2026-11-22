@@ -70,7 +70,7 @@ func TestATenantIsMadeWithSomebodyWhoCanAdministerIt(t *testing.T) {
 		x := require.New(t)
 
 		res, err := b.Ungated.Credential().Issue(ctx, app.CredentialIssueRequest_builder{
-			Ref: app.HolderRef_builder{
+			Holder: app.HolderRef_builder{
 				Slug: app.HolderRefBySlug_builder{
 					Alias:  z.Ptr(core.Administers),
 					Tenant: app.TenantRef_builder{Alias: z.Ptr("newco")}.Build(),

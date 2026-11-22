@@ -412,7 +412,7 @@ func seed(ctx context.Context, s *cmd.Server) error {
 	// `stand`). Here there is nobody to do that and nowhere to print what they
 	// would be handed, so it is the same written-down password as above.
 	if _, err := s.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: v.Holder.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: v.Holder.Bytes()}.Build(),
 		Secret: []byte(password),
 	}.Build()); err != nil {
 		return err

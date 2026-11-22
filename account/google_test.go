@@ -111,7 +111,7 @@ func TestSomebodyWhoArrivesThroughGoogleDeletesTheirAccount(t *testing.T) {
 		// a way in that outlives it.
 		was := signedIn(t, "/login?connection=google", time.Time{})
 		code, body := was.rpc(t, "/roster.CredentialService/Set",
-			`{"ref":{"id":"`+std(d.erin)+`"},"secret":"`+std([]byte("a password of erin's own"))+`"}`)
+			`{"holder":{"id":"`+std(d.erin)+`"},"secret":"`+std([]byte("a password of erin's own"))+`"}`)
 		x.Equal(http.StatusBadRequest, code, "a session that could not say when gave its holder a password: %s", body)
 		x.Contains(body, "failed_precondition")
 	})

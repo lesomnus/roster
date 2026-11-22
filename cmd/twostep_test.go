@@ -28,14 +28,14 @@ func enrolled(t *testing.T, ctx context.Context, cred app.CredentialServiceServe
 	x := require.New(t)
 
 	_, err := cred.Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
 
 	res, err := cred.Enrol(ctx, app.CredentialEnrolRequest_builder{
-		Ref:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
-		Kind: vouch.KindTotp,
+		Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Kind:   vouch.KindTotp,
 	}.Build())
 	x.NoError(err)
 
@@ -160,7 +160,7 @@ func TestOneFactorPaysNothingForTwo(t *testing.T) {
 	ctx := t.Context()
 
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)

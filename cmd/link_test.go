@@ -236,7 +236,7 @@ func TestAResetVoidsWhatCameBeforeIt(t *testing.T) {
 
 	mayList(t, ctx, b, b.Who, listHolders)
 	b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 
@@ -253,7 +253,7 @@ func TestAResetVoidsWhatCameBeforeIt(t *testing.T) {
 	time.Sleep(2 * time.Millisecond)
 
 	_, err := b.Ungated.Credential().Issue(ctx, app.CredentialIssueRequest_builder{
-		Ref: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 

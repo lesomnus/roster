@@ -304,7 +304,7 @@ over their own rows alone (`server/core/own.go`); a role naming such a verb
 bound across the tenant is for managing other people, and is not what
 self-service is given by -- it reaches whoever holds no more, which is each
 other. What such a twin was reaching for belongs on the verb as a rule about
-your own row (`Credential.Set` asks for `current` when `ref` is you), not as
+your own row (`Credential.Set` asks for `current` when `holder` is you), not as
 a second name for the same rows.
 
 ## Writing a layer

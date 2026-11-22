@@ -237,7 +237,7 @@ func TestNobodyCanHoldAnAddressFromItsOwner(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref: rstr.HolderRef_builder{Id: dana.GetId()}.Build(), Secret: []byte("correct horse battery staple"),
+		Holder: rstr.HolderRef_builder{Id: dana.GetId()}.Build(), Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
 

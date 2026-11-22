@@ -508,9 +508,9 @@ func TestNobodyEnrolsASecondFactorOnSomebodyWiderThanThey(t *testing.T) {
 
 	enrol := func(c context.Context, who pdid.Id, name string) error {
 		_, err := b.Walled.Credential().Enrol(c, app.CredentialEnrolRequest_builder{
-			Ref:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
-			Kind: vouch.KindTotp,
-			Name: name,
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Kind:   vouch.KindTotp,
+			Name:   name,
 		}.Build())
 
 		return err
@@ -631,7 +631,7 @@ func TestAResetIsMadeByWhoeverIsAskingAndNotByTheDeployment(t *testing.T) {
 	v := b.operated()
 	reset := func(c context.Context, who pdid.Id) (string, error) {
 		res, err := v.Issue(c, app.CredentialIssueRequest_builder{
-			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 
 		return res.GetSecret(), err

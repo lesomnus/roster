@@ -582,7 +582,7 @@ function Password(props: { own: Uint8Array; has: boolean; offered: boolean; may:
 						setNote(null)
 						void set
 							.call({
-								ref: ref(props.own),
+								holder: ref(props.own),
 								current: enc.encode(String(f.get('current') ?? '')),
 								secret: enc.encode(String(f.get('next') ?? '')),
 							})
@@ -672,7 +672,7 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 		setNote(null)
 		setSeed(null)
 		void enrol
-			.call({ ref: ref(props.own), kind: 'totp', name, issuer: props.brand })
+			.call({ holder: ref(props.own), kind: 'totp', name, issuer: props.brand })
 			.then((r) => setSeed({ uri: r.uri, seed: r.seed, name }))
 			.catch((e: unknown) => setNote({ ok: false, text: said(e) }))
 	}
@@ -708,7 +708,7 @@ function Factors(props: { own: Uint8Array; alias: string; brand: string; may: (m
 			}
 			const envelope = { rp_id: location.hostname, origins: [location.origin], challenge: b64url(challenge), response }
 			await enrol.call({
-				ref: ref(props.own),
+				holder: ref(props.own),
 				kind: 'webauthn',
 				name,
 				attestation: new TextEncoder().encode(JSON.stringify(envelope)),

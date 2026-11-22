@@ -181,7 +181,7 @@ func TestNobodyMintsAWayIntoAnotherTenant(t *testing.T) {
 			bearing(ctx, mintFor(t, ctx, b, b.Who, "setter-key",
 				[]string{"/roster.CredentialService/Set"}, time.Time{})),
 			app.CredentialSetRequest_builder{
-				Ref: app.HolderRef_builder{
+				Holder: app.HolderRef_builder{
 					Slug: app.HolderRefBySlug_builder{
 						Tenant: app.TenantRef_builder{Alias: z.Ptr("fabrikam")}.Build(),
 						Alias:  z.Ptr("erlich"),
@@ -287,7 +287,7 @@ func TestADelegationThatDoesNotCheckOutIsNotTheAppInstead(t *testing.T) {
 	theirs := keyed(t, ctx, b, "another-app", []string{delegate, listHolders})
 
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -356,7 +356,7 @@ func TestADelegationIsBoundToTheKeyAndNotToTheAppBehindIt(t *testing.T) {
 	mayList(t, ctx, b, b.Who, listHolders)
 
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -467,7 +467,7 @@ func TestATenantKeysDelegationIsBoundToThePersonAndNotToTheKey(t *testing.T) {
 	// Bob is who gets signed in; Alice and Carol are two colleagues who both
 	// run something that signs people in.
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: bob.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: bob.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)

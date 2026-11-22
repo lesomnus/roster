@@ -1564,7 +1564,7 @@ func (a *App) redeem(w http.ResponseWriter, r *http.Request) {
 		}
 
 		reset, err := a.roster.Credential().Issue(as, rstr.CredentialIssueRequest_builder{
-			Ref: rstr.HolderRef_builder{Id: res.GetVerified().GetHolder()}.Build(),
+			Holder: rstr.HolderRef_builder{Id: res.GetVerified().GetHolder()}.Build(),
 		}.Build())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "account: reset after redeem at %s: %v\n", t.alias, err)

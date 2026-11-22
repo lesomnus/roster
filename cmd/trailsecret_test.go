@@ -37,7 +37,7 @@ func TestNoVerifierReachesTheTrailInEitherColumn(t *testing.T) {
 	// document is what each compiles to.
 	for _, secret := range []string{"correct horse battery staple", "another one entirely"} {
 		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 		x.NoError(err)

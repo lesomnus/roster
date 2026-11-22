@@ -32,7 +32,7 @@ func (b *built) sets(t *testing.T, ctx context.Context, who pdid.Id, secret stri
 	t.Helper()
 
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Secret: []byte(secret),
 	}.Build())
 	require.NoError(t, err)
@@ -359,7 +359,7 @@ func TestAnEmptySecretIsNotASecret(t *testing.T) {
 	b, ctx := build(t)
 
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
 	}.Build())
 	require.Equal(t, codes.InvalidArgument, status.Code(err))
 }
@@ -556,7 +556,7 @@ func TestAnErasedHolderCannotAuthenticate(t *testing.T) {
 		erase(t, b, ctx, who)
 
 		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte("a fresh one"),
 		}.Build())
 		x.Equal(codes.NotFound, status.Code(err), "somebody who is gone was given a password")

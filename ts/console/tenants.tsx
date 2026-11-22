@@ -437,7 +437,7 @@ async function stand(
 	let secret: string
 	try {
 		const res = await writes.credential.issue({
-			ref: {
+			holder: {
 				key: {
 					case: 'slug',
 					value: { alias: who, tenant: { key: { case: 'id', value: tenant.id } } },

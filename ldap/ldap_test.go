@@ -193,7 +193,7 @@ func stand(t *testing.T) *deployment {
 	}
 	d.setPassword(t, d.kim)
 	res, err := s.Ungated.Credential().Enrol(ctx, rstr.CredentialEnrolRequest_builder{
-		Ref: rstr.HolderRef_builder{Id: d.kim}.Build(), Kind: vouch.KindTotp,
+		Holder: rstr.HolderRef_builder{Id: d.kim}.Build(), Kind: vouch.KindTotp,
 	}.Build())
 	x.NoError(err)
 	seed, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(res.GetSeed())
@@ -360,7 +360,7 @@ func (d *deployment) email(t *testing.T, holder []byte, address string, verified
 func (d *deployment) setPassword(t *testing.T, holder []byte) {
 	t.Helper()
 	_, err := d.s.Ungated.Credential().Set(t.Context(), rstr.CredentialSetRequest_builder{
-		Ref: rstr.HolderRef_builder{Id: holder}.Build(), Secret: []byte(password),
+		Holder: rstr.HolderRef_builder{Id: holder}.Build(), Secret: []byte(password),
 	}.Build())
 	require.NoError(t, err)
 }

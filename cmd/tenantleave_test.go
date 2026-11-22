@@ -86,7 +86,7 @@ func TestAClosedTenantLetsNobodyIn(t *testing.T) {
 	mayList(t, ctx, b, lister, listHolders)
 
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -279,7 +279,7 @@ func TestADestroyedTenantLeavesNothingOfItsOwn(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 		_, err = b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Secret: []byte("correct horse battery staple"),
 		}.Build())
 		x.NoError(err)

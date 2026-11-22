@@ -143,7 +143,7 @@ func TestALinkEndsWithWhatEndsASignIn(t *testing.T) {
 			_, err := app.NewCredentialServiceClient(b.Conn).Set(
 				acting(ctx, b.Token, signedInAt(t, ctx, b, who, []string{set}, time.Now())),
 				app.CredentialSetRequest_builder{
-					Ref:     app.HolderRef_builder{Id: who.Bytes()}.Build(),
+					Holder:  app.HolderRef_builder{Id: who.Bytes()}.Build(),
 					Current: []byte(held),
 					Secret:  []byte("a whole new set of words entirely"),
 				}.Build())
@@ -157,7 +157,7 @@ func TestALinkEndsWithWhatEndsASignIn(t *testing.T) {
 			// As the front door's key and by reference, which is what the
 			// account app does with a recovery link somebody followed.
 			_, err := app.NewCredentialServiceClient(b.Conn).Issue(as, app.CredentialIssueRequest_builder{
-				Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+				Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			}.Build())
 			require.NoError(t, err)
 		})
@@ -455,7 +455,7 @@ func TestASignInBegunBeforeEverythingWasEndedDoesNotFinish(t *testing.T) {
 		secret := ""
 		ended(t, func() {
 			res, err := app.NewCredentialServiceClient(b.Conn).Issue(as, app.CredentialIssueRequest_builder{
-				Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
+				Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			}.Build())
 			require.NoError(t, err)
 			secret = res.GetSecret()

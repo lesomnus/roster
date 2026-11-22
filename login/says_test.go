@@ -82,7 +82,7 @@ func TestATokenNamesSomebodyAsTheyAreCalledNow(t *testing.T) {
 	// And somebody added by their alias alone, who is called something since.
 	dana := addPerson(t, ctx, d, "dana")
 	_, err := d.s.Ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
-		Ref: rstr.HolderRef_builder{Id: dana.Bytes()}.Build(), Secret: []byte(password),
+		Holder: rstr.HolderRef_builder{Id: dana.Bytes()}.Build(), Secret: []byte(password),
 	}.Build())
 	x.NoError(err)
 	x.NotContains(d.saidOf(t, "c3", "contoso", "dana", scope...), "name", "nobody has said what they are called")

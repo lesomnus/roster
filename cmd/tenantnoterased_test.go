@@ -40,7 +40,7 @@ func TestATenantIsNotErased(t *testing.T) {
 	op := addHolder(t, ctx, b.Control, controlTenant(t, ctx, b.Server), "operator")
 	boundOnControl(t, ctx, b.Server, op.Bytes(), "operators", "/roster.*/*")
 	_, err := b.Control.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref: app.HolderRef_builder{Id: op.Bytes()}.Build(), Secret: []byte("an operator's own password"),
+		Holder: app.HolderRef_builder{Id: op.Bytes()}.Build(), Secret: []byte("an operator's own password"),
 	}.Build())
 	require.NoError(t, err)
 	k := signIn(t, b.Server, "operator", "an operator's own password")

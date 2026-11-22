@@ -297,7 +297,7 @@ func mustPassword(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id,
 	t.Helper()
 
 	_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Secret: []byte(password),
 	}.Build())
 	require.NoError(t, err)

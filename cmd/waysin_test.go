@@ -59,7 +59,7 @@ func TestATenantSaysWhetherAPasswordIsAWayIn(t *testing.T) {
 		who := b.holder(t, ctx, b.Contoso, "erin")
 
 		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(), Secret: []byte(secret),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(), Secret: []byte(secret),
 		}.Build())
 		x.NoError(err)
 
@@ -79,7 +79,7 @@ func TestATenantSaysWhetherAPasswordIsAWayIn(t *testing.T) {
 		who := b.holder(t, ctx, b.Contoso, "erin")
 
 		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(), Secret: []byte(secret),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(), Secret: []byte(secret),
 		}.Build())
 		x.NoError(err)
 		off(t, b, b.Contoso)
@@ -104,7 +104,7 @@ func TestATenantSaysWhetherAPasswordIsAWayIn(t *testing.T) {
 		frank := b.holder(t, ctx, b.Fabrikam, "frank")
 		for _, who := range []pdid.Id{erin, frank} {
 			_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-				Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(), Secret: []byte(secret),
+				Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(), Secret: []byte(secret),
 			}.Build())
 			x.NoError(err)
 		}
@@ -128,7 +128,7 @@ func TestATenantSaysWhetherAPasswordIsAWayIn(t *testing.T) {
 		off(t, b, b.Contoso)
 
 		_, err := b.Ungated.Credential().Set(ctx, app.CredentialSetRequest_builder{
-			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(), Secret: []byte(secret),
+			Holder: app.HolderRef_builder{Id: who.Bytes()}.Build(), Secret: []byte(secret),
 		}.Build())
 		x.NoError(err)
 	})
