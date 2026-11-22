@@ -14,6 +14,7 @@ import (
 	"github.com/protobuf-orm/ent/dialect/sql"
 
 	"github.com/lesomnus/payday/audit"
+	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/spin"
 	"github.com/lesomnus/payday/trail"
@@ -408,6 +409,14 @@ func tenanted() []subject {
 // -- that no person would choose, and that is this tenant's alone.
 func Gone(t pdid.Id) string { return "gone-" + hex.EncodeToString(t.Bytes()) }
 
+// AliasFreed is what a tenant's alias freed is called on the trail, wherever
+// it is freed: by `roster forget`, or by [SweepTenants] once its hold is over.
+// It is a patch of the tenant, and was filed under the generated method that
+// wrote it, `/roster.TenantService/Patch`, which the sweep's line still was
+// after #487 named the command's. One act, one name: [FreeAlias] gives it,
+// so that whoever calls it next cannot file the act under another.
+const AliasFreed = "roster.alias.free"
+
 // FreeAlias gives a destroyed tenant's alias back, now. Through `at` -- the
 // server the wall was never installed on -- rather than ent, so that the trail
 // records it: the sweep doing it when the hold is over, and an operator doing
@@ -436,7 +445,7 @@ func FreeAlias(ctx context.Context, at app.Server, t pdid.Id) error {
 		return fmt.Errorf("%w since %s: %s", ErrHeld, held.AsTime().Format(time.RFC3339), v.GetHold())
 	}
 
-	_, err = at.Tenant().Patch(ctx, app.TenantPatchRequest_builder{
+	_, err = at.Tenant().Patch(grpcx.AsMethod(ctx, AliasFreed), app.TenantPatchRequest_builder{
 		Ref:              app.TenantRef_builder{Id: t.Bytes()}.Build(),
 		Alias:            z.Ptr(Gone(t)),
 		DateUpdatedForce: z.Ptr(true),
