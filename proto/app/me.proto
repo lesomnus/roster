@@ -239,11 +239,14 @@ message MeGetResponse {
   // looked.
   repeated string methods = 10;
 
-  // The sites they are narrowed to, and empty means every site of their
-  // tenant. It is `frame.Sets` as an answer; see `cmd.Sets`. Each is said
-  // once, in the order of their identifiers, which is the order they were
-  // made in.
+  // The sites what they hold reaches, each said once, in the order of their
+  // identifiers, which is the order they were made in. It is `frame.Sets` as
+  // an answer; see `cmd.Sets`.
   repeated bytes sites = 11;
+
+  // Whether something they hold reaches the whole tenant: a binding with no
+  // site. Empty `sites` is not every site; it is every site only beside this,
+  // and somebody who holds nothing is answered no sites and not this.
   bool every_site = 12;
 
   // What they may call about **their own account**, and nobody else's: the
@@ -264,10 +267,11 @@ message MeGetResponse {
   //
   // # Why they are here and not read from their own services
   //
-  // Because neither can be. `IdentityService` narrows by the **tenant**, so a
-  // person asking for their own identities through it is asking for their whole
-  // tenant's and filtering -- which is the leak D17 named and D23 exists to
-  // remove, and it is exactly the shape a self-service screen would reach for.
+  // Because neither can be. `IdentityService` is held to the **tenant**: the
+  // grant that lists a person's own identities lists their whole tenant's,
+  // and `IdentityFilter.holder` narrows what a list answers, not what its
+  // caller may read -- which is the leak D17 named and D23 exists to remove,
+  // and it is exactly the shape a self-service screen would reach for.
   // `CredentialService`'s generated reads are shut a method at a time, because
   // its `Get` answers with the verifier (D13) -- so there is no read there to
   // narrow either.
@@ -287,10 +291,11 @@ message MeGetResponse {
   // question a person asks about it is *is this still being used* rather than
   // *what is it*.
   //
-  // Here for the same reason as the two above and one more. `ApiKeyService`'s
-  // generated reads are shut a method at a time -- its `Get` answers with the
-  // verifier -- so there is no read to narrow, and the read an operator uses,
-  // `HolderService.SignsIn`, takes a subject and reaches their whole tenant.
+  // `ApiKeyService/List` answers the same rows, behind a role, and they are
+  // here as well for two reasons. `MeService.Get` needs no role, so somebody
+  // whose tenant took `ApiKeyService/List` out of `self-service` still sees
+  // what acts as them; and this answers every key with no cursor, as
+  // `HolderService.SignsIn` answers an administrator about them.
   //
   // The secret is not here and there is nowhere it could come from: what is
   // stored is a hash. A key is readable exactly once, at
@@ -315,11 +320,12 @@ message MeGetResponse {
 
 // SignInKey is one API key that acts as somebody.
 //
-// A key is a way in like the other two, and it is the one a screen most needs
-// help to show: `ApiKeyService`'s generated reads are shut a method at a time
-// -- its `Get` answers with the verifier -- so a page listing one person's keys
-// by reading and sifting would be reading every customer's to draw one. The
-// same sentence `HolderService.SignsIn` already carries about identities.
+// A key is a way in like the other two, and a screen of somebody's ways in
+// draws it beside them, from one answer. `ApiKeyService/List` answers the row
+// too, behind a role and a page at a time; this is answered by `MeService.Get`,
+// which needs no role, so a tenant that takes `ApiKeyService/List` out of
+// `self-service` still lets its people see what acts as them, and by
+// `HolderService.SignsIn`, every key with no cursor.
 //
 // What is **not** here is the secret, and there is nowhere it could come from:
 // what is stored is a hash. A key is readable exactly once, at the moment

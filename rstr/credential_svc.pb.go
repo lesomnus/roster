@@ -2538,7 +2538,8 @@ type CredentialSetRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Whose credential, by reference -- an id or `@tenant/alias`. Not a sign-in
-	// form: an operator names somebody they already know.
+	// form. The caller's own: a caller with a frame writes nobody else's, and
+	// only the deployment itself, unframed, names somebody else here.
 	Ref *HolderRef
 	// Which credential; empty is the password. A second factor is Enrol.
 	Kind string
@@ -2714,7 +2715,7 @@ type CredentialEnrolRequest_builder struct {
 
 	// Whose account the factor is for, by reference -- an id or `@tenant/alias`.
 	Ref *HolderRef
-	// "totp" or "webauthn". A password is `Set` or `Reset`; refused here.
+	// "totp" or "webauthn". A password is `Set` or `Issue`; refused here.
 	Kind string
 	// What they call it, when there is more than one to tell apart. Empty is the
 	// only one of its kind.

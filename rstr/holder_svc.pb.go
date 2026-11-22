@@ -3491,9 +3491,10 @@ type HolderUpdateRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref *HolderRef
-	// Optimistic locking, as `Patch` takes it: the version this caller read. A
-	// write against a row that has moved is refused rather than applied to
-	// whatever it became.
+	// The version this caller read, and required: this replaces what they
+	// read, so one left out is refused. A write against a row that has moved is
+	// refused rather than applied to whatever it became, and the caller reads
+	// again.
 	DateUpdated *timestamppb.Timestamp
 	// Replaced **whole**, both of them, which is the shape each was chosen for:
 	// one fact from one moment, whatever last told us. Sending neither changes
@@ -3606,7 +3607,9 @@ type HolderRealiasRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref *HolderRef
-	// Optimistic locking, as `Patch` takes it: the version this caller read.
+	// The version this caller read, and required: this replaces what they
+	// read, so one left out is refused. One that has moved since is refused,
+	// and the caller reads again.
 	DateUpdated *timestamppb.Timestamp
 	// The new one, on the field number it lands in. Refused if it is not an
 	// alias, and refused if somebody in this tenant already has it -- both by
@@ -3706,7 +3709,11 @@ type HolderDisableRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref *HolderRef
-	// Optimistic locking, as `Update` takes it.
+	// The version this caller read, or nothing: a suspension is a decision
+	// about somebody and not an edit of what was read, so left out, the row is
+	// taken as whatever it is now (`lock`, in `server/core`, says why). One
+	// that has moved since is refused, and the caller reads again. `Enable` and
+	// `Invalidate` take theirs the same way.
 	DateUpdated *timestamppb.Timestamp
 }
 
@@ -5111,7 +5118,9 @@ type HolderDeactivateRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref *HolderRef
-	// Optimistic locking, as `Disable` takes it.
+	// The version this caller read, or nothing, as `Disable` takes it: left
+	// out, the row is taken as whatever it is now. One that has moved since is
+	// refused, and the caller reads again.
 	DateUpdated *timestamppb.Timestamp
 	// The directory deleted them, rather than said they are inactive.
 	Deleted bool
@@ -5397,7 +5406,9 @@ type HolderTellRequest_builder struct {
 	// The name the directory looks them up by, lowercased and trimmed. Unset
 	// and empty as `subject`: empty is their first address being that name.
 	Name *string
-	// Optimistic locking, as `Disable` takes it.
+	// The version this caller read, or nothing, as `Disable` takes it: left
+	// out, the row is taken as whatever it is now. One that has moved since is
+	// refused, and the caller reads again.
 	DateUpdated *timestamppb.Timestamp
 }
 

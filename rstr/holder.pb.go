@@ -535,9 +535,10 @@ type Holder_builder struct {
 	// the suspension theirs.
 	//
 	// Written by those verbs and nothing else: a request's `Add` is refused it
-	// -- `stamped`, so the generated gate says so (payday#29) -- and `Patch` is
-	// closed at the transport. Not personal: it names a directory, not a
-	// person, and which one suspended somebody is the record.
+	// -- `stamped`, so the generated gate says so (payday#29) -- and no port
+	// serves `Patch`. Not personal: it holds which of two things a directory
+	// said, `inactive` or `deleted`, and names nobody; that a directory
+	// suspended somebody is the record.
 	Directory string
 	// A picture of this person, kept here: one square image at the sizes a
 	// screen draws one, inline.

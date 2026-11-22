@@ -1633,7 +1633,9 @@ type HostUpdateRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref *HostRef
-	// Optimistic locking, as `Patch` takes it: the version this caller read.
+	// The version this caller read, and required: this replaces what they
+	// read, so one left out is refused. One that has moved since is refused,
+	// and the caller reads again.
 	DateUpdated *timestamppb.Timestamp
 	// Replaced whole when present, and left as it is when absent.
 	Desc *string
@@ -3360,7 +3362,10 @@ func (x *MailDomainUpdateRequest) ClearDesc() {
 type MailDomainUpdateRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Ref         *MailDomainRef
+	Ref *MailDomainRef
+	// The version this caller read, and required: this replaces what they
+	// read, so one left out is refused. One that has moved since is refused,
+	// and the caller reads again.
 	DateUpdated *timestamppb.Timestamp
 	// Each replaced whole when present, and left as it is when absent. An empty
 	// provider, given, is a domain that is known and routed nowhere -- the same

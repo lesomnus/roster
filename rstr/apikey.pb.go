@@ -352,8 +352,9 @@ type ApiKey_builder struct {
 	// say, and names no one.
 	Methods []string
 	// The verifier, never the key: a hash of it, and the key itself is shown once
-	// when it is made and never again. The same rule `Credential` states, and the
-	// reason this service's generated reads are shut a method at a time.
+	// when it is made and never again. The same rule `Credential` states.
+	// Declared `secret`, so it is in no answer, which is what lets this
+	// service's reads be served.
 	//
 	// # Why it is unsalted, and indexed
 	//

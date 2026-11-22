@@ -506,10 +506,11 @@ export type IdentityResubjectRequest = Message<"roster.IdentityResubjectRequest"
   ref?: IdentityRef | undefined;
 
   /**
-   * Optimistic locking, as `Patch` takes it: the version this caller read.
-   * Left out, the move does not wait on one -- the rules above are what it is
-   * held to, and none of them depends on a value somebody else could have
-   * changed in between.
+   * The version this caller read, or nothing. Left out, the move does not
+   * wait on one and the row is taken as whatever it is now -- the rules above
+   * are what it is held to, and none of them depends on a value somebody else
+   * could have changed in between. One given that has moved since is refused,
+   * and the caller reads again.
    *
    * @generated from field: google.protobuf.Timestamp date_updated = 13;
    */

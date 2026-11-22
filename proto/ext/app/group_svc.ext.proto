@@ -33,7 +33,9 @@ service GroupService {
 message GroupUpdateRequest {
   GroupRef ref = 1;
 
-  // Optimistic locking, as `Patch` takes it: the version this caller read.
+  // The version this caller read, and required: this replaces what they
+  // read, so one left out is refused. One that has moved since is refused,
+  // and the caller reads again.
   google.protobuf.Timestamp date_updated = 13;
 
   // What it is called, and the note about it. Unset is left as it was.

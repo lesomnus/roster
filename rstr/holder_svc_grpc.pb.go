@@ -72,10 +72,9 @@ type HolderServiceClient interface {
 	Watch(ctx context.Context, in *HolderWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[HolderWatchResponse], error)
 	// Update is the narrow write, and the one a caller is given.
 	//
-	// `Patch` and `Apply` write anything the schema holds, which is why they are
-	// closed at the transport unless a deployment says otherwise -- *what a
-	// caller may change, and under what conditions, is not something a general
-	// write can be told*.
+	// `Patch` and `Apply` write anything the schema holds, which is why no port
+	// serves them and no setting opens one -- *what a caller may change, and
+	// under what conditions, is not something a general write can be told*.
 	//
 	// This can be told. Two fields, both of them things a holder carries about
 	// itself and neither of them anything the wall, the trail or a permission
@@ -161,10 +160,11 @@ type HolderServiceClient interface {
 	// # Why it cannot be read any other way
 	//
 	// `CredentialService`'s generated reads are shut a method at a time, because
-	// its `Get` answers with the verifier (D13). And `IdentityService` narrows by
-	// the **tenant**, so an operator's list of one person's identities is that
-	// whole tenant's, filtered in the app -- which is the leak D17 named and D23
-	// exists to remove.
+	// its `Get` answers with the verifier (D13). And `IdentityService` is held
+	// to the **tenant**: the grant that lists one person's identities lists the
+	// whole tenant's, and `IdentityFilter.holder` narrows what a list answers,
+	// not what its caller may read -- which is the leak D17 named and D23 exists
+	// to remove.
 	//
 	// # Why it is not MeService
 	//
@@ -600,10 +600,9 @@ type HolderServiceServer interface {
 	Watch(*HolderWatchRequest, grpc.ServerStreamingServer[HolderWatchResponse]) error
 	// Update is the narrow write, and the one a caller is given.
 	//
-	// `Patch` and `Apply` write anything the schema holds, which is why they are
-	// closed at the transport unless a deployment says otherwise -- *what a
-	// caller may change, and under what conditions, is not something a general
-	// write can be told*.
+	// `Patch` and `Apply` write anything the schema holds, which is why no port
+	// serves them and no setting opens one -- *what a caller may change, and
+	// under what conditions, is not something a general write can be told*.
 	//
 	// This can be told. Two fields, both of them things a holder carries about
 	// itself and neither of them anything the wall, the trail or a permission
@@ -689,10 +688,11 @@ type HolderServiceServer interface {
 	// # Why it cannot be read any other way
 	//
 	// `CredentialService`'s generated reads are shut a method at a time, because
-	// its `Get` answers with the verifier (D13). And `IdentityService` narrows by
-	// the **tenant**, so an operator's list of one person's identities is that
-	// whole tenant's, filtered in the app -- which is the leak D17 named and D23
-	// exists to remove.
+	// its `Get` answers with the verifier (D13). And `IdentityService` is held
+	// to the **tenant**: the grant that lists one person's identities lists the
+	// whole tenant's, and `IdentityFilter.holder` narrows what a list answers,
+	// not what its caller may read -- which is the leak D17 named and D23 exists
+	// to remove.
 	//
 	// # Why it is not MeService
 	//

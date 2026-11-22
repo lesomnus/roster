@@ -88,8 +88,9 @@ message ApiKey {
   repeated string methods = 8 [(payday.field) = {personal: false}];
 
   // The verifier, never the key: a hash of it, and the key itself is shown once
-  // when it is made and never again. The same rule `Credential` states, and the
-  // reason this service's generated reads are shut a method at a time.
+  // when it is made and never again. The same rule `Credential` states.
+  // Declared `secret`, so it is in no answer, which is what lets this
+  // service's reads be served.
   //
   // # Why it is unsalted, and indexed
   //
@@ -186,11 +187,10 @@ message ApiKey {
       // And by holder, which is what "how does this person sign in" needs one
       // service over: `HolderService.SignsIn` reads one person's rows, and a
       // page that listed them by reading everything and sifting would be
-      // reading every customer's to draw one. It grants nothing -- this
-      // service's generated reads are shut a method at a time and closed to
-      // the batch, because its `Get` answers with the verifier, so the only
-      // thing that can ask is this process. The same sentence `Credential`
-      // carries.
+      // reading every customer's to draw one. It grants nothing: a filter
+      // narrows what a list answers, and what its caller may read is the
+      // gate's and the wall's to say. No answer carries the verifier, which
+      // is declared `secret`.
       by: [
         {name: "ref"},
         {name: "holder"}

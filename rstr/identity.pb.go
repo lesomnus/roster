@@ -304,7 +304,7 @@ var File_app_identity_proto protoreflect.FileDescriptor
 
 const file_app_identity_proto_rawDesc = "" +
 	"\n" +
-	"\x12app/identity.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xf5\x04\n" +
+	"\x12app/identity.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xfb\x04\n" +
 	"\bIdentity\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\"\n" +
@@ -333,7 +333,7 @@ const file_app_identity_proto_rawDesc = "" +
 	"\x03ref\x1a\b\n" +
 	"\x06holder\x1a\v\n" +
 	"\ttenant_id \x14(d:\x00\"\x1a\n" +
-	"\rholder.tenant\x1a\ttenant_idB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\rholder.tenant\x1a\ttenant_idJ\x04\b\x04\x10\bB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_app_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_app_identity_proto_goTypes = []any{
