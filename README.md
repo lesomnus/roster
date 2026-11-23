@@ -129,13 +129,24 @@ every commit so the page cannot drift from the binary.
 **roster's images are builds of `main`, named by run.** A push to `main` whose
 gates all pass is pushed once, as `:edge`, `:r<run>`, `:YYMMDD` and
 `:YYMMDD-r<run>`, and nothing else is pushed: a commit whose run went red has no
-image until that run is run again and passes. A tag of this repository, `v0.1.0` among them, names a commit and no
-image -- nothing is built for it, and the registry has no tag by that name. The
-image of a commit is found from its `ci` run on `main`, as
+image until that run is run again and passes. The image of a commit is found from
+its `ci` run on `main`, as
 [deploy/README.md](deploy/README.md#using-it-as-a-base) says, and names its
 commit as the label `org.opencontainers.image.revision`, and inside it as
 `roster version --short`; one pushed before that was compiled in prints an empty
 line there.
+
+**A release is a name for one of those builds.** A `v*` tag pushed names the
+image `main` pushed for the tagged commit, under the tag's own name and no other
+-- `ghcr.io/lesomnus/roster:v0.2.0`, and no `latest` -- by the same digest, so
+its SBOM and its attestation below are the release's as well
+(`.github/workflows/release.yml`). Nothing is built for a tag. A tag of a commit
+with no image -- not of `main`, or whose run never passed -- fails, and names
+nothing. A release's name does not move: a tag whose name the registry already
+has at another digest fails, and writes nothing. Inside a release,
+`roster version` says the build's own name, `YYMMDD-r<run>`, since nothing was
+compiled for the tag, and `roster version --short` the commit. `v0.1.0` and
+`v0.1.1` were tagged before this, and name no image.
 
 Every image `main` pushes to
 [ghcr.io/lesomnus/roster](https://github.com/lesomnus/roster/pkgs/container/roster)
@@ -147,7 +158,7 @@ the npm packages the pages are bundled from -- which the image cannot show, so t
 come from `ts/package-lock.json`, without the dev dependencies. An image pushed
 before this was added has none.
 
-Read it without pulling the image -- by digest, since a tag moves:
+Read it without pulling the image -- by digest, since all but a release's tags move:
 
 ```sh
 oras discover --artifact-type application/vnd.cyclonedx+json ghcr.io/lesomnus/roster@sha256:…

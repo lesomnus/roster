@@ -1,0 +1,200 @@
+# A release is a name for an image `main` already pushed: a `v*` tag pushed
+# names the image `ci` pushed for the tagged commit, under the tag's own name,
+# and fails where there is none. Nothing is built, compiled or copied for a
+# tag, so what a release runs is, byte for byte, what that commit's gates
+# passed.
+#
+# A workflow of its own, which `ci.yml` calls the mistake its image job was:
+# two workflows run beside each other, so a red `ci` did not stop a push. Here
+# it cannot, because nothing is pushed. The one thing this writes is a name for
+# a digest that is already in the registry, and an image of `main` is there
+# only where `push` ran, which `needs` every gate of that run -- so the order
+# `needs` gives `ci` is given here by the registry. A tag runs no gate of its
+# own for the same reason: there is nothing of its own to test.
+#
+# It runs the file of the tagged commit, so a tag of a commit from before this
+# file starts nothing: `v0.1.0` and `v0.1.1` name no image.
+name: release
+
+# By hand on any ref, it finds the image for that ref's commit and says which
+# it is, or that there is none and fails -- and names nothing. It is how the
+# road is tried without a release, as `ci` started by hand off `main` builds
+# and pushes nothing.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+# To read the checkout, and nothing else, unless a job says otherwise -- as
+# `ci.yml` says it, and for its reason.
+permissions:
+  contents: read
+
+# The runner and every action named as `ci.yml` names them: the image by its
+# name, each action by the commit `ci.yml` pins with its version after it.
+jobs:
+  release:
+    runs-on: ubuntu-26.04
+    # Five minutes, a hundred times what it takes: a run still going then is
+    # waiting on a registry that will not answer.
+    timeout-minutes: 5
+
+    permissions:
+      contents: read
+      actions: read # to list the `ci` runs of the tagged commit
+      packages: write # to write the tag's name for roster's image
+
+    steps:
+      # For `docker-bake.hcl`, the commit's own: the name its image was pushed
+      # under is that file's `REPO`, and is read from there rather than spelt
+      # here a second time.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # The image of this commit is a `:r<run>` of one of its `ci` runs on
+      # `main` -- pushed, or started there by hand -- newest first, and the
+      # first that is there and whose label says this commit on every platform
+      # it has. A `:r<run>` that is there and says another commit is said and
+      # passed over. Asked without a login, as anybody may ask it, so a run by
+      # hand tries what a tag's run does.
+      - name: the image main pushed for this commit
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          tmp=$(mktemp -d)
+          image=$(sed -n '/^variable "REPO" {/,/^}/s/^[[:space:]]*default[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' docker-bake.hcl)
+          if [ -z "${image}" ]; then
+            echo "::error title=release::docker-bake.hcl at ${COMMIT} gives the variable REPO no default, and that is the image's name"
+            exit 1
+          fi
+          runs=$(gh api --paginate "repos/${REPOSITORY}/actions/workflows/ci.yml/runs?head_sha=${COMMIT}&branch=main&per_page=100" \
+            --jq '.workflow_runs[] | select(.event == "push" or .event == "workflow_dispatch") | "\(.created_at)\t\(.id)"' |
+            sort -r | cut -f2)
+          looked=""
+          for run in ${runs}; do
+            ref="${image}:r${run}"
+            if ! manifest=$(docker buildx imagetools inspect "${ref}" --format '{{json .Manifest}}' 2>"${tmp}/err"); then
+              if grep -q ': not found$' "${tmp}/err"; then
+                looked="${looked} ${ref} is not there;"
+                continue
+              fi
+              cat "${tmp}/err" >&2
+              echo "::error title=release::the registry did not say whether ${ref} is there"
+              exit 1
+            fi
+            digest=$(jq -r .digest <<<"${manifest}")
+            # One platform's image is the config itself, more than one a map
+            # of them by platform.
+            said=$(docker buildx imagetools inspect "${image}@${digest}" --format '{{json .Image}}' |
+              jq -r 'if has("config") then [.] else [.[]] end | map(.config.Labels["org.opencontainers.image.revision"] // "no commit") | unique | join(" and ")')
+            if [ "${said}" != "${COMMIT}" ]; then
+              echo "::warning title=release::${ref} is there and says ${said}, not ${COMMIT}: it is not this commit's image"
+              looked="${looked} ${ref} says ${said};"
+              continue
+            fi
+            echo "${COMMIT} is ${ref}, ${image}@${digest}"
+            {
+              echo "image=${image}"
+              echo "registry=${image%%/*}"
+              echo "run=r${run}"
+              echo "digest=${digest}"
+            } >>"${GITHUB_OUTPUT}"
+            exit 0
+          done
+          if [ -z "${runs}" ]; then
+            looked=" no run of ci.yml on main, pushed or by hand, is of this commit"
+          fi
+          echo "::error title=release::no image of main for commit ${COMMIT}: a tag names a commit of main whose ci run passed and pushed. Looked at:${looked}"
+          exit 1
+
+      - if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ${{ steps.find.outputs.registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The tag's own name, verbatim, and no other: no `latest`, no `0.2`, no
+      # name without the `v`. `imagetools create` from one index is a copy of
+      # it -- the same digest, nothing pulled -- and the SBOM's referrer and
+      # its attestation are of the digest, so they are the release's already.
+      #
+      # A release's name does not move. Already there at this digest, the run
+      # is one tried again and passes; at another, it fails and writes nothing.
+      # Taking a name back is done by hand in the registry.
+      #
+      # Tried three times, 10 s and then 30 s apart, each failure said, for the
+      # refusal GHCR answers right after a login (`ci.yml`, `Build` in `push`).
+      - name: the tag's name, for that image
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        env:
+          IMAGE: ${{ steps.find.outputs.image }}
+          DIGEST: ${{ steps.find.outputs.digest }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          tmp=$(mktemp -d)
+          name="${IMAGE}:${TAG}"
+          if at=$(docker buildx imagetools inspect "${name}" --format '{{json .Manifest}}' 2>"${tmp}/err"); then
+            was=$(jq -r .digest <<<"${at}")
+            if [ "${was}" = "${DIGEST}" ]; then
+              echo "::notice title=release::${name} is ${DIGEST} already: a run tried again, and nothing is written"
+              exit 0
+            fi
+            echo "::error title=release::${name} is ${was}, and this commit's image is ${DIGEST}: a release's name does not move, so nothing is written. Taking it back is done by hand in the registry"
+            exit 1
+          fi
+          if ! grep -q ': not found$' "${tmp}/err"; then
+            cat "${tmp}/err" >&2
+            echo "::error title=release::the registry did not say whether ${name} is there, so nothing is written"
+            exit 1
+          fi
+          try=1
+          for wait in 10 30 ''; do
+            if docker buildx imagetools create --tag "${name}" "${IMAGE}@${DIGEST}"; then
+              break
+            fi
+            if [ -z "${wait}" ]; then
+              echo "::error title=release::try ${try} of 3 failed, and it was the last"
+              exit 1
+            fi
+            echo "::warning title=release::try ${try} of 3 failed; trying again in ${wait}s"
+            sleep "${wait}"
+            try=$((try + 1))
+          done
+          now=$(docker buildx imagetools inspect "${name}" --format '{{json .Manifest}}' | jq -r .digest)
+          if [ "${now}" != "${DIGEST}" ]; then
+            echo "::error title=release::${name} was written and is ${now}, not ${DIGEST}"
+            exit 1
+          fi
+
+      # What was named, said once, as `push`'s `Summarise` says what it
+      # pushed. Started by hand, what a tag of this commit would name.
+      - name: Summarise
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          TAG: ${{ github.ref_name }}
+          COMMIT: ${{ github.sha }}
+          IMAGE: ${{ steps.find.outputs.image }}
+          RUN: ${{ steps.find.outputs.run }}
+          DIGEST: ${{ steps.find.outputs.digest }}
+        run: |
+          set -eu
+          {
+            if [ "${EVENT}" = push ]; then
+              echo "| tag | image | digest |"
+              echo "| --- | ----- | ------ |"
+              echo "| \`${IMAGE}:${TAG}\` | \`${IMAGE}:${RUN}\` | \`${DIGEST}\` |"
+            else
+              echo "Started by hand on \`${REF}\`, so nothing is named. A \`v*\` tag of ${COMMIT} would name:"
+              echo
+              echo "| image | digest |"
+              echo "| ----- | ------ |"
+              echo "| \`${IMAGE}:${RUN}\` | \`${DIGEST}\` |"
+            fi
+          } >>"${GITHUB_STEP_SUMMARY}"
