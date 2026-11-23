@@ -159,7 +159,7 @@ func TestAVersionThatMovedIsAbortedInOneSentence(t *testing.T) {
 		{app.HolderService_Portray_FullMethodName, app.HolderPortrayRequest_builder{Ref: someone, DateUpdated: stale}.Build()},
 		{app.HolderService_Deactivate_FullMethodName, app.HolderDeactivateRequest_builder{Ref: spoken, DateUpdated: stale}.Build()},
 		{app.HolderService_Activate_FullMethodName, app.HolderActivateRequest_builder{Ref: spoken, DateUpdated: stale}.Build()},
-		{app.HolderService_Tell_FullMethodName, app.HolderTellRequest_builder{Ref: spoken, DateUpdated: stale, Address: z.Ptr("told@contoso.example")}.Build()},
+		{app.HolderService_Tell_FullMethodName, app.HolderTellRequest_builder{Ref: spoken, DateUpdated: stale, Entry: app.DirectoryEntry_builder{Address: z.Ptr("told@contoso.example")}.Build()}.Build()},
 		{app.TenantService_Update_FullMethodName, app.TenantUpdateRequest_builder{Ref: at, DateUpdated: stale, Desc: z.Ptr("said")}.Build()},
 		{app.TenantService_Close_FullMethodName, app.TenantCloseRequest_builder{Ref: at, DateUpdated: stale}.Build()},
 		{app.GroupService_Update_FullMethodName, app.GroupUpdateRequest_builder{Ref: app.GroupRef_builder{Id: group.GetId()}.Build(), DateUpdated: stale, Name: z.Ptr("named")}.Build()},

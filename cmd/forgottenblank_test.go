@@ -88,10 +88,12 @@ func (b *built) known(t *testing.T, ctx context.Context, in pdid.Id, alias strin
 	ref := app.HolderRef_builder{Id: who.Bytes()}.Build()
 
 	_, err = b.Ungated.Holder().Tell(ctx, app.HolderTellRequest_builder{
-		Ref:     ref,
-		Subject: z.Ptr("subject-of-" + alias),
-		Address: z.Ptr(alias + ".kim@corp.example"),
-		Name:    z.Ptr(alias + ".kim@upn.example"),
+		Ref: ref,
+		Entry: app.DirectoryEntry_builder{
+			Subject: z.Ptr("subject-of-" + alias),
+			Address: z.Ptr(alias + ".kim@corp.example"),
+			Name:    z.Ptr(alias + ".kim@upn.example"),
+		}.Build(),
 	}.Build())
 	x.NoError(err)
 

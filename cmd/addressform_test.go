@@ -136,7 +136,7 @@ func TestAnAddressIsHeldToItsFormByEveryRoad(t *testing.T) {
 	erin := app.HolderRef_builder{Id: h.GetId()}.Build()
 
 	t.Run("what a directory says of somebody", func(t *testing.T) {
-		_, err := b.Walled.Holder().Tell(as, app.HolderTellRequest_builder{Ref: erin, Address: z.Ptr(bracketed)}.Build())
+		_, err := b.Walled.Holder().Tell(as, app.HolderTellRequest_builder{Ref: erin, Entry: app.DirectoryEntry_builder{Address: z.Ptr(bracketed)}.Build()}.Build())
 		refused(t, err)
 	})
 

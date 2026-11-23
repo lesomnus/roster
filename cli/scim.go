@@ -476,7 +476,7 @@ func adoptScim(ctx context.Context, s *cmd.Server, by cmd.Operator, tenant strin
 		}
 		if err := s.AtTheShell(ctx, by, rstr.HolderService_Tell_FullMethodName, func(ctx context.Context) error {
 			_, err := s.Ungated.Holder().Tell(ctx, rstr.HolderTellRequest_builder{
-				Ref: ref, Subject: z.Ptr(""),
+				Ref: ref, Entry: rstr.DirectoryEntry_builder{Subject: z.Ptr("")}.Build(),
 			}.Build())
 
 			return err

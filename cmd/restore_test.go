@@ -217,7 +217,7 @@ func TestARestoreSaysWhenTheirDirectoryCallsSomebodyElseThatNow(t *testing.T) {
 	told := func(who []byte) {
 		t.Helper()
 		_, err := b.Server.Ungated.Holder().Tell(ctx, app.HolderTellRequest_builder{
-			Ref: app.HolderRef_builder{Id: who}.Build(), Name: proto.String("a.liddell@newco.example"),
+			Ref: app.HolderRef_builder{Id: who}.Build(), Entry: app.DirectoryEntry_builder{Name: proto.String("a.liddell@newco.example")}.Build(),
 		}.Build())
 		x.NoError(err)
 	}

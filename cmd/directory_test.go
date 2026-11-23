@@ -423,7 +423,7 @@ func TestWhatADirectorySaysIsKeptAndBelievedByNothing(t *testing.T) {
 		}.Build())
 	}
 	tell := func(ref *app.HolderRef, subject, address *string) error {
-		_, err := b.Walled.Holder().Tell(as, app.HolderTellRequest_builder{Ref: ref, Subject: subject, Address: address}.Build())
+		_, err := b.Walled.Holder().Tell(as, app.HolderTellRequest_builder{Ref: ref, Entry: app.DirectoryEntry_builder{Subject: subject, Address: address}.Build()}.Build())
 
 		return err
 	}
@@ -472,7 +472,7 @@ func TestWhatADirectorySaysIsKeptAndBelievedByNothing(t *testing.T) {
 	t.Run("and the name it looks them up by, which is not their address", func(t *testing.T) {
 		x := require.New(t)
 		name := func(ref *app.HolderRef, v string) error {
-			_, err := b.Walled.Holder().Tell(as, app.HolderTellRequest_builder{Ref: ref, Name: z.Ptr(v)}.Build())
+			_, err := b.Walled.Holder().Tell(as, app.HolderTellRequest_builder{Ref: ref, Entry: app.DirectoryEntry_builder{Name: z.Ptr(v)}.Build()}.Build())
 
 			return err
 		}
@@ -571,7 +571,7 @@ func TestATenantWithNoDirectoryIsToldNothing(t *testing.T) {
 
 	fred := b.holder(t, ctx, b.Contoso, "fred")
 	_, err := b.Walled.Holder().Tell(admin, app.HolderTellRequest_builder{
-		Ref: app.HolderRef_builder{Id: fred.Bytes()}.Build(), Subject: z.Ptr(fredOid),
+		Ref: app.HolderRef_builder{Id: fred.Bytes()}.Build(), Entry: app.DirectoryEntry_builder{Subject: z.Ptr(fredOid)}.Build(),
 	}.Build())
 	require.Equal(t, codes.FailedPrecondition, status.Code(err), "%v", err)
 }

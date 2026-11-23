@@ -782,21 +782,41 @@ message HolderActivateRequest {
 message HolderTellRequest {
   HolderRef ref = 1;
 
-  // What the directory calls them. Unset is not said, and leaves what was
-  // kept; empty takes it away, which is what a link made since is answered
-  // with.
-  string subject = 2;
+  // What the directory says of them. Left out, nothing is said and nothing
+  // changes.
+  DirectoryEntry entry = 5;
 
-  // The address the directory says is theirs, lowercased and trimmed. Unset
-  // and empty as `subject`: empty is the address having been moved here.
-  string address = 3;
-
-  // The name the directory looks them up by, lowercased and trimmed. Unset
-  // and empty as `subject`: empty is their first address being that name.
-  string name = 4;
+  // `entry`'s three fields were here.
+  reserved 2 to 4;
 
   // The version this caller read, or nothing, as `Disable` takes it: left
   // out, the row is taken as whatever it is now. One that has moved since is
   // refused, and the caller reads again.
   google.protobuf.Timestamp date_updated = 13;
+}
+
+// DirectoryEntry is what a directory says of somebody: the words it has for
+// them, kept beside the person (`Holder.directory_subject`,
+// `Holder.directory_address`, `Holder.directory_name`) and believed by
+// nothing.
+//
+// A message of its own so that each word means one column: the same three
+// words in `HolderProvisionRequest` are other columns, the identity a sign-in
+// finds, an address written unverified, and roster's name for them. That
+// request could take this message one day; it does not now.
+//
+// Each field says whether it was said: unset leaves what was kept, and empty
+// takes it away.
+message DirectoryEntry {
+  // What the directory calls them. Empty is what a link made since is
+  // answered with.
+  string subject = 1;
+
+  // The address the directory says is theirs, lowercased and trimmed. Empty
+  // is the address having been moved here.
+  string address = 2;
+
+  // The name the directory looks them up by, lowercased and trimmed. Empty is
+  // their first address being that name.
+  string name = 3;
 }
