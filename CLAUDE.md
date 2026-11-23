@@ -282,7 +282,7 @@ reads or writes**:
 
 A new service is justified only when the operation belongs to **no single
 entity**: it reads the caller from the frame and holds only what a role cannot
-be asked for (`MeService`: `Get`, `Unlink`, `SignOutEverywhere`, `Leave` -- waived, so
+be asked for (`MeService`: `Get`, `SignOutEverywhere`, `Leave` -- waived, so
 subject-less by necessity), it answers before
 anybody is resolved to a tenant so it reads the unwalled server and hands back
 one identifier and no row (`FrontService`), or it mints/spends secrets across

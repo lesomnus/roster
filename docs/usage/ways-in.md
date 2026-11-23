@@ -391,9 +391,12 @@ somebody else does, and the keys that act as them. The method list is the union 
 server enforces, so what a page shows and what it is allowed to do cannot drift.
 
 It needs **no role**: requiring one to learn that you hold none is a deployment
-where a new account cannot be told what it is for. `MeService/Unlink` and
-`MeService/SignOutEverywhere` are waived for the same reason -- neither can be
-pointed at anybody else, and only a subject-less method can be waived at all.
+where a new account cannot be told what it is for. `MeService/SignOutEverywhere`
+is waived for the same reason -- it cannot be pointed at anybody else, and only
+a subject-less method can be waived at all. Taking one of your own accounts at
+a provider away is `IdentityService/Erase` with its identifier, as an address
+is `EmailService/Erase`: the tenant's `self-service` role, which everybody
+holds over what is their own, names it.
 
 ### Changing your own password
 

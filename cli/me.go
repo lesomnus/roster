@@ -324,8 +324,11 @@ func newCmdMeUnlink(c *cmd.Config) *xli.Command {
 				return invocation(fmt.Errorf("IDENTITY: %w", err))
 			}
 
-			_, err = app.NewMeServiceClient(conn).Unlink(ctx,
-				app.MeUnlinkRequest_builder{Id: k.Bytes()}.Build())
+			// `IdentityService/Erase` with one of your own, as an address is
+			// taken away by `EmailService/Erase`: everybody holds it over what
+			// is theirs (`self-service`).
+			_, err = app.NewIdentityServiceClient(conn).Erase(ctx,
+				app.IdentityRef_builder{Id: k.Bytes()}.Build())
 
 			return err
 		}),

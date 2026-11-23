@@ -55,11 +55,11 @@ const getMe = "/roster.MeService/Get"
 
 // namesNobody is a set of field names that are somebody rather than something.
 //
-// A request may carry an identifier without being about a person -- `Unlink`
-// takes the identifier of an `Identity` row, which is a *which* and never a
-// *whose*, because the query that finds it is narrowed by the caller first. So
-// the test below cannot simply refuse every field; what it refuses is a field
-// that names a **subject**, and these are the names this schema gives one.
+// A request may carry an identifier without being about a person -- one that
+// names a row of the caller's own, found by a query narrowed by the caller
+// first, is a *which* and never a *whose*. So the test below cannot simply
+// refuse every field; what it refuses is a field that names a **subject**, and
+// these are the names this schema gives one.
 var namesNobody = map[string]bool{
 	"actor":    true,
 	"email":    true,

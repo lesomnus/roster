@@ -10,8 +10,9 @@ import (
 	app "github.com/lesomnus/roster/rstr"
 )
 
-// TestSomebodyAddsAWayIntoTheirOwnAccount, which is the other half of `Unlink`
-// and the half §4 left undrawn -- as the line has it now: `Identity.Add` with
+// TestSomebodyAddsAWayIntoTheirOwnAccount, which is the other half of
+// `Identity.Erase` of one's own and the half §4 left undrawn -- as the line has
+// it now: `Identity.Add` with
 // the person's **own** reference, the same verb an operator calls about
 // somebody else, and no `Me.Link` beside it.
 //

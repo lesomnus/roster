@@ -720,8 +720,8 @@ function Ways(props: {
 	creds: SignInCredential[]
 	may: (method: string) => boolean
 }): React.ReactNode {
-	// Unlinking is `Identity.Erase`, the operator's side of what a person does
-	// to themselves through `MeService.Unlink`. Taking a way in away is not
+	// Unlinking is `Identity.Erase`, the verb a person calls about their own
+	// and an operator about somebody else's. Taking a way in away is not
 	// adding one, so no escalation rule stands in front of it -- only the wall,
 	// and the role naming it.
 	const unlink = useCall(IdentityService.method.erase)

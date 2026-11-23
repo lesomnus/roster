@@ -229,53 +229,60 @@ func TestAnOperatorSeesHowSomebodyElseSignsIn(t *testing.T) {
 	})
 }
 
-// TestSomebodyRemovesTheirOwnWayInAndNobodyElseS is D24 §4's write, and the
-// shape that keeps it safe is the one that keeps `Get` safe.
+// TestSomebodyRemovesTheirOwnWayInAndNobodyElseS: an account at a provider is
+// taken away as an address is, by `IdentityService/Erase` with one's own row,
+// which everybody holds over what is their own (`core.Owning`).
 //
-// `Identity` narrows by the **tenant**, so a person removing their own through
-// that service would be doing it with a permission that reaches everybody
-// else's — which is the leak D17 named and D23 exists to remove, arriving on
-// the one screen it is most tempting on. This takes an identifier and refuses
-// one that is not theirs, so the argument is a *which* and never a *whose*.
+// It was `MeService/Unlink`, which needed no role and was `Erase` of one's
+// own row under another name, while an address went by `EmailService/Erase`
+// and a second factor by `CredentialService/Erase`. Answered `PermissionDenied`
+// for `Erase` of one's own by somebody who holds nothing; right is the one
+// verb, and the wall is what keeps it to their own: somebody else's is not a
+// row they see, and is answered as a row that is not there.
 func TestSomebodyRemovesTheirOwnWayInAndNobodyElseS(t *testing.T) {
 	b, ctx := build(t)
+	conn := served(t, b.Server)
 
 	// Two directories the tenant offers, which is what makes an account at
 	// each a way in and one of the two theirs to remove.
 	b.connected(t, ctx, b.Contoso, "github", "entra")
 
-	mine := b.identity(t, ctx, b.ContosoUser, "github", "1078")
-	b.identity(t, ctx, b.ContosoUser, "entra", "8bf1e0a2")
+	erin := b.holder(t, ctx, b.Contoso, "erin")
+	mine := b.identity(t, ctx, erin, "github", "1078")
+	b.identity(t, ctx, erin, "entra", "8bf1e0a2")
 
 	them := b.holder(t, ctx, b.Contoso, "somebody-else")
 	theirs := b.identity(t, ctx, them, "github", "2049")
 
+	as := asOverTheWire(ctx, erin)
+	idents := app.NewIdentityServiceClient(conn)
 	s := me.New(b.Ent, cmd.Everything(b.Ent), me.WithWrites(b.Walled))
-	as := b.as(ctx, b.ContosoUser, b.Contoso)
 
 	t.Run("their own goes", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := s.Unlink(as, app.MeUnlinkRequest_builder{Id: mine.GetId()}.Build())
+		v, err := idents.Erase(as, app.IdentityRef_builder{Id: mine.GetId()}.Build())
 		x.NoError(err)
+		x.True(v.GetErased())
 
-		v, err := s.Get(as, app.MeGetRequest_builder{}.Build())
+		w, err := s.Get(b.asNobody(ctx, erin, b.Contoso), app.MeGetRequest_builder{}.Build())
 		x.NoError(err)
-		x.Len(v.GetIdentities(), 1)
-		x.Equal("entra", v.GetIdentities()[0].GetProvider())
+		x.Len(w.GetIdentities(), 1)
+		x.Equal("entra", w.GetIdentities()[0].GetProvider())
 	})
 
-	// Not refused — **not found**, which is the same answer a row that was never
-	// there gets. Told apart, this would say whether somebody else's identity
+	// Not refused, and nothing erased: the answer a row that was never there
+	// gets. Told apart, this would say whether somebody else's identity
 	// exists.
 	t.Run("and somebody else's is not there to remove", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := s.Unlink(as, app.MeUnlinkRequest_builder{Id: theirs.GetId()}.Build())
-		x.Equal(codes.NotFound, status.Code(err))
+		v, err := idents.Erase(as, app.IdentityRef_builder{Id: theirs.GetId()}.Build())
+		x.NoError(err)
+		x.False(v.GetErased())
 
-		// The live ones. An unlink is a soft erase, so a count over the whole
-		// table would still see the one that went.
+		// The live ones. An erase is soft, so a count over the whole table
+		// would still see the one that went.
 		n, err := b.Ent.Identity.Query().Where(entidentity.DateErasedIsNil()).Count(ctx)
 		x.NoError(err)
 		x.Equal(2, n, "one person removed another's way in")
@@ -286,12 +293,12 @@ func TestSomebodyRemovesTheirOwnWayInAndNobodyElseS(t *testing.T) {
 	t.Run("and the last one stays", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := s.Get(as, app.MeGetRequest_builder{}.Build())
+		w, err := s.Get(b.asNobody(ctx, erin, b.Contoso), app.MeGetRequest_builder{}.Build())
 		x.NoError(err)
-		x.Len(v.GetIdentities(), 1)
+		x.Len(w.GetIdentities(), 1)
 
-		_, err = s.Unlink(as, app.MeUnlinkRequest_builder{Id: v.GetIdentities()[0].GetId()}.Build())
-		x.Equal(codes.FailedPrecondition, status.Code(err))
+		_, err = idents.Erase(as, app.IdentityRef_builder{Id: w.GetIdentities()[0].GetId()}.Build())
+		x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)
 	})
 }
 

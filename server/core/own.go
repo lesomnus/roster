@@ -88,6 +88,7 @@ var Owning = []string{
 
 	// How they sign in.
 	app.IdentityService_Add_FullMethodName,
+	app.IdentityService_Erase_FullMethodName,
 	app.CredentialService_Set_FullMethodName,
 	app.CredentialService_Enrol_FullMethodName,
 	app.CredentialService_Erase_FullMethodName,

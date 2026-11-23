@@ -26,9 +26,9 @@
  * a delegation narrows to the intersection -- so a section whose call the role
  * does not cover says so rather than drawing a button that would be refused.
  *
- * Three take no reference at all and need no role, because they are about
- * nobody but the caller: `Me.SignOutEverywhere`, `Me.Unlink`, and -- where the
- * operator offers it -- `Me.Leave`, deleting the account.
+ * Two take no reference at all and need no role, because they are about
+ * nobody but the caller: `Me.SignOutEverywhere` and -- where the operator
+ * offers it -- `Me.Leave`, deleting the account.
  */
 
 import { Code, ConnectError } from '@connectrpc/connect'
@@ -42,6 +42,7 @@ import { ApiKeyService } from '#gen/app/apikey_svc_pb.js'
 import { CredentialService } from '#gen/app/credential_svc_pb.js'
 import { DelegationService } from '#gen/app/delegation_svc_pb.js'
 import { EmailService } from '#gen/app/email_svc_pb.js'
+import { IdentityService } from '#gen/app/identity_svc_pb.js'
 import { MeService } from '#gen/app/me_pb.js'
 import { events } from '#gen/events.js'
 import { HolderService } from '#gen/roster/payday/holder_svc_pb.js'
@@ -325,7 +326,7 @@ function Ways(props: {
 	credentials: { kind: string; name: string }[]
 	may: (m: string) => boolean
 }): React.ReactNode {
-	const unlink = useCall(MeService.method.unlink)
+	const unlink = useCall(IdentityService.method.erase)
 	const [gone, setGone] = useState<string[]>([])
 	const [bad, setBad] = useState<string | null>(null)
 	const [note, setNote] = useState(landed === null ? null : how(landed))
@@ -356,7 +357,7 @@ function Ways(props: {
 	const off = (i: { id: Uint8Array }): void => {
 		setBad(null)
 		void unlink
-			.call({ id: i.id })
+			.call({ key: { case: 'id', value: i.id } })
 			.then(() => setGone((was) => [...was, uuid(i.id)]))
 			.catch((e: unknown) => setBad(said(e)))
 	}
@@ -384,9 +385,14 @@ function Ways(props: {
 								</td>
 								<td>
 									{has !== undefined ? (
-										/* `Me.Unlink` is waived: taking back a way in needs no
-										   role. roster refuses the last one. */
-										<button onClick={() => off(has)}>unlink</button>
+										/* `Identity.Erase` of their own, which everybody holds
+										   over what is theirs. roster refuses the last one. */
+										<button
+											disabled={!props.may('/roster.IdentityService/Erase')}
+											onClick={() => off(has)}
+										>
+											unlink
+										</button>
 									) : (
 										r.offered && (
 											<button disabled={!may} onClick={() => link(r.provider)}>

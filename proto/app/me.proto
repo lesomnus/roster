@@ -31,19 +31,20 @@ option go_package = "github.com/lesomnus/roster/rstr";
 //
 // # Only what no role can be asked for
 //
-// Four methods, and each is one somebody **must** be able to do with no role
-// at all: read their own record, take back a way in, sign out of every session
-// they no longer trust, and -- where their tenant offers it -- leave. `cmd.Policy` waives a binding for exactly these, and a
-// method can be waived only if it takes no subject -- `cmd/asself_test.go`
-// refuses one that carries a field that could name somebody -- so these are
-// subject-less by necessity, not by preference.
+// Three methods, and each is one somebody **must** be able to do with no role
+// at all: read their own record, sign out of every session they no longer
+// trust, and -- where their tenant offers it -- leave. `cmd.Policy` waives a
+// binding for exactly these, and a method can be waived only if it takes no
+// subject -- `cmd/asself_test.go` refuses one that carries a field that could
+// name somebody -- so these are subject-less by necessity, not by preference.
 //
 // Everything else a person does to their own account is the entity's own verb
-// with their own reference: `Identity.Add` to attach a provider account,
-// `ApiKey.Issue` to mint a key that acts as them, `ApiKey.Erase` to end
-// one, `Credential.Set`/`Enrol` for a password and a factor. Those were once
-// `Link`, `IssueKey` and `RevokeKey` here -- a self-only twin of each verb, for
-// the grant it let a role name -- and were folded back by the rule in CLAUDE.md,
+// with their own reference: `Identity.Add` to attach a provider account and
+// `Identity.Erase` to take one away, `ApiKey.Issue` to mint a key that acts as
+// them, `ApiKey.Erase` to end one, `Credential.Set`/`Enrol` for a password and
+// a factor. Those were once `Link`, `IssueKey` and `RevokeKey` here -- a
+// self-only twin of each verb, for the grant it let a role name -- and were
+// folded back by the rule in CLAUDE.md,
 // *no self-only twin of a verb*: RBAC grants the method, *whose row* is the
 // layer's (`mayReach`), and the app that serves a person is what passes only
 // their reference.
@@ -54,27 +55,6 @@ option go_package = "github.com/lesomnus/roster/rstr";
 // answer is true when it was made.
 service MeService {
   rpc Get(MeGetRequest) returns (MeGetResponse);
-
-  // Unlink removes one of the caller's own ways in.
-  //
-  // # Why it is here and not on IdentityService
-  //
-  // The same reason `MeGetResponse` carries identities at all: `Identity` is
-  // narrowed by the **tenant**, so a person removing their own through that
-  // service would be doing it with a permission that reaches everybody else's
-  // -- which is the leak D17 named and D23 exists to remove, arriving on the
-  // one screen it is most tempting on.
-  //
-  // This takes an identifier and refuses one that is not the caller's, so the
-  // argument is a *which*, never a *whose*. That is what keeps it in the same
-  // category as `Get`: it cannot be pointed at anybody else.
-  //
-  // # What it does not let go of
-  //
-  // The last one. `server/core` refuses the removal of somebody's only way in,
-  // and this goes through it -- so a person cannot lock themselves out with a
-  // button, which is a rule no deployment would want configured differently.
-  rpc Unlink(MeUnlinkRequest) returns (MeUnlinkResponse);
 
   // SignOutEverywhere voids everything issued to the caller before now.
   //
@@ -157,17 +137,6 @@ service MeService {
 }
 
 message MeGetRequest {}
-
-message MeUnlinkRequest {
-  // Which one, by the identifier `MeGetResponse` answers with.
-  //
-  // A *which* and never a *whose*: one that is not the caller's is `NotFound`,
-  // told apart from nothing, so this cannot be used to ask whether somebody
-  // else's identity exists.
-  bytes id = 1;
-}
-
-message MeUnlinkResponse {}
 
 message MeSignOutEverywhereRequest {}
 

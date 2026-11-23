@@ -260,9 +260,9 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 			// a sign-out makes, moved onto the entity off the sign-in flow.
 			"/roster.DelegationService/Revoke",
 			"/roster.MeService/Get",
-			"/roster.MeService/Unlink",
 			"/roster.MeService/SignOutEverywhere",
 			"/roster.IdentityService/Add",
+			"/roster.IdentityService/Erase",
 			"/roster.ApiKeyService/Issue",
 			"/roster.ApiKeyService/Erase",
 

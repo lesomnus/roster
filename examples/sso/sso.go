@@ -285,16 +285,16 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 		// the package that mints it.
 		Methods: []string{
 			rstr.MeService_Get_FullMethodName,
-			rstr.MeService_Unlink_FullMethodName,
 			rstr.MeService_SignOutEverywhere_FullMethodName,
 
 			// The entity verbs the account screen calls about the person's
-			// **own** row -- attach a provider account, mint a key that acts as
-			// them, end one -- with a reference this app takes from the session
+			// **own** row -- attach a provider account and take one away, mint
+			// a key that acts as them, end one -- with a reference this app takes from the session
 			// and never from the request. Roster's part is `mayWriteAWayIn` and
 			// `mayGrant` (your own row passes; what you hand out is what you
 			// hold); the part that says *only your own* is this app's.
 			rstr.IdentityService_Add_FullMethodName,
+			rstr.IdentityService_Erase_FullMethodName,
 			rstr.ApiKeyService_Issue_FullMethodName,
 			rstr.ApiKeyService_Erase_FullMethodName,
 

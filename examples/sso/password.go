@@ -158,10 +158,10 @@ func key(v *rstr.SignInKey) keyOf {
 
 // unlink is `DELETE /me/ways/{id}`: one of the person's own ways in.
 //
-// Through `MeService`, which is the whole point of it existing: `Identity`
-// narrows by the **tenant**, so removing one through that service would need a
-// permission that reaches everybody else's -- the leak D23 exists to remove,
-// arriving on the one screen it is most tempting on.
+// `IdentityService/Erase` with the identifier, under the person's delegation:
+// what they hold it by is their tenant's `self-service` role, which reaches
+// their own rows and nobody else's, so one that is not theirs is not a row
+// they see and nothing is erased.
 func (a *App) unlink(w http.ResponseWriter, r *http.Request) {
 	ctx, err := a.acting(r.Context(), r)
 	if err != nil {
@@ -175,7 +175,7 @@ func (a *App) unlink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if _, err := a.me_.Unlink(ctx, rstr.MeUnlinkRequest_builder{Id: id}.Build()); err != nil {
+	if _, err := a.roster.Identity().Erase(ctx, rstr.IdentityRef_builder{Id: id}.Build()); err != nil {
 		// The refusals a person may act on and the ones they may not are one
 		// answer here, with one exception: the last way in. Somebody told
 		// "removed" and finding they cannot sign in tomorrow is the failure
