@@ -431,8 +431,8 @@ export type GroupUpdateRequest = Message<"roster.GroupUpdateRequest"> & {
   ref?: GroupRef | undefined;
 
   /**
-   * The version this caller read, and required: this replaces what they
-   * read, so one left out is refused. One that has moved since is refused,
+   * The version this caller read, and required: this replaces what they read,
+   * so one left out is refused. One that has moved since is answered `Aborted`,
    * and the caller reads again.
    *
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

@@ -25,8 +25,8 @@ service HostService {
 message HostUpdateRequest {
   HostRef ref = 1;
 
-  // The version this caller read, and required: this replaces what they
-  // read, so one left out is refused. One that has moved since is refused,
+  // The version this caller read, and required: this replaces what they read,
+  // so one left out is refused. One that has moved since is answered `Aborted`,
   // and the caller reads again.
   google.protobuf.Timestamp date_updated = 13;
 
@@ -43,8 +43,8 @@ service MailDomainService {
 message MailDomainUpdateRequest {
   MailDomainRef ref = 1;
 
-  // The version this caller read, and required: this replaces what they
-  // read, so one left out is refused. One that has moved since is refused,
+  // The version this caller read, and required: this replaces what they read,
+  // so one left out is refused. One that has moved since is answered `Aborted`,
   // and the caller reads again.
   google.protobuf.Timestamp date_updated = 13;
 

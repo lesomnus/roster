@@ -1633,8 +1633,8 @@ type HostUpdateRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref *HostRef
-	// The version this caller read, and required: this replaces what they
-	// read, so one left out is refused. One that has moved since is refused,
+	// The version this caller read, and required: this replaces what they read,
+	// so one left out is refused. One that has moved since is answered `Aborted`,
 	// and the caller reads again.
 	DateUpdated *timestamppb.Timestamp
 	// Replaced whole when present, and left as it is when absent.
@@ -3363,8 +3363,8 @@ type MailDomainUpdateRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref *MailDomainRef
-	// The version this caller read, and required: this replaces what they
-	// read, so one left out is refused. One that has moved since is refused,
+	// The version this caller read, and required: this replaces what they read,
+	// so one left out is refused. One that has moved since is answered `Aborted`,
 	// and the caller reads again.
 	DateUpdated *timestamppb.Timestamp
 	// Each replaced whole when present, and left as it is when absent. An empty
