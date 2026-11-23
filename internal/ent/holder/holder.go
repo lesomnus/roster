@@ -37,8 +37,8 @@ const (
 	FieldDateInvalidated = "date_invalidated"
 	// FieldDateDisabled holds the string denoting the date_disabled field in the database.
 	FieldDateDisabled = "date_disabled"
-	// FieldDirectory holds the string denoting the directory field in the database.
-	FieldDirectory = "directory"
+	// FieldDirectoryStanding holds the string denoting the directory_standing field in the database.
+	FieldDirectoryStanding = "directory_standing"
 	// FieldPortrait holds the string denoting the portrait field in the database.
 	FieldPortrait = "portrait"
 	// FieldDirectorySubject holds the string denoting the directory_subject field in the database.
@@ -76,7 +76,7 @@ var Columns = []string{
 	FieldData,
 	FieldDateInvalidated,
 	FieldDateDisabled,
-	FieldDirectory,
+	FieldDirectoryStanding,
 	FieldPortrait,
 	FieldDirectorySubject,
 	FieldDirectoryAddress,
@@ -151,9 +151,9 @@ func ByDateDisabled(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateDisabled, opts...).ToFunc()
 }
 
-// ByDirectory orders the results by the directory field.
-func ByDirectory(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDirectory, opts...).ToFunc()
+// ByDirectoryStanding orders the results by the directory_standing field.
+func ByDirectoryStanding(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDirectoryStanding, opts...).ToFunc()
 }
 
 // ByDirectorySubject orders the results by the directory_subject field.

@@ -203,8 +203,9 @@ func (s coreHolder) Disable(ctx context.Context, req *app.HolderDisableRequest) 
 			Ref: req.GetRef(),
 
 			// The suspension is the operator's now, whoever made it: a
-			// directory lifts only what it put there (`Holder.directory`).
-			Directory: z.Ptr(""),
+			// directory lifts only what it put there
+			// (`Holder.directory_standing`).
+			DirectoryStanding: z.Ptr(app.DirectoryStanding_DIRECTORY_STANDING_UNSPECIFIED),
 		}
 
 		// Since when is when they were first suspended, so somebody suspended
@@ -253,9 +254,9 @@ func (s coreHolder) Enable(ctx context.Context, req *app.HolderEnableRequest) (*
 		return nil, err
 	}
 	patch := app.HolderPatchRequest_builder{
-		Ref:              req.GetRef(),
-		DateDisabledNull: z.Ptr(true),
-		Directory:        z.Ptr(""),
+		Ref:               req.GetRef(),
+		DateDisabledNull:  z.Ptr(true),
+		DirectoryStanding: z.Ptr(app.DirectoryStanding_DIRECTORY_STANDING_UNSPECIFIED),
 	}
 	lock(&patch, req.GetDateUpdated())
 

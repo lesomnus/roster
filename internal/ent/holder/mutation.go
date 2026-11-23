@@ -17,29 +17,30 @@ import (
 
 // Mutation represents an operation that mutates the Holder nodes in the graph.
 type Mutation struct {
-	op                ent.Op
-	typ               string
-	alias             *string
-	name              *string
-	desc              *string
-	labels            *map[string]string
-	date_updated      *time.Time
-	date_erased       *time.Time
-	date_created      *time.Time
-	profile           **rstr.Profile
-	data              **anypb.Any
-	date_invalidated  *time.Time
-	date_disabled     *time.Time
-	directory         *string
-	portrait          **rstr.Portrait
-	directory_subject *string
-	directory_address *string
-	directory_name    *string
-	clearedFields     map[string]struct{}
-	exprs             map[string]sql.Querier
-	tenant            *uuid.UUID
-	clearedtenant     bool
-	predicates        []predicate.Holder
+	op                    ent.Op
+	typ                   string
+	alias                 *string
+	name                  *string
+	desc                  *string
+	labels                *map[string]string
+	date_updated          *time.Time
+	date_erased           *time.Time
+	date_created          *time.Time
+	profile               **rstr.Profile
+	data                  **anypb.Any
+	date_invalidated      *time.Time
+	date_disabled         *time.Time
+	directory_standing    *int32
+	adddirectory_standing *int32
+	portrait              **rstr.Portrait
+	directory_subject     *string
+	directory_address     *string
+	directory_name        *string
+	clearedFields         map[string]struct{}
+	exprs                 map[string]sql.Querier
+	tenant                *uuid.UUID
+	clearedtenant         bool
+	predicates            []predicate.Holder
 }
 
 // NewMutation creates a new Mutation for the Holder entity.
@@ -389,25 +390,45 @@ func (m *Mutation) ResetDateDisabled() {
 	delete(m.exprs, FieldDateDisabled)
 }
 
-// SetDirectory sets the "directory" field.
-func (m *Mutation) SetDirectory(s string) {
-	m.directory = &s
-	delete(m.exprs, FieldDirectory)
+// SetDirectoryStanding sets the "directory_standing" field.
+func (m *Mutation) SetDirectoryStanding(i int32) {
+	m.directory_standing = &i
+	m.adddirectory_standing = nil
+	delete(m.exprs, FieldDirectoryStanding)
 }
 
-// Directory returns the value of the "directory" field in the mutation.
-func (m *Mutation) Directory() (r string, exists bool) {
-	v := m.directory
+// DirectoryStanding returns the value of the "directory_standing" field in the mutation.
+func (m *Mutation) DirectoryStanding() (r int32, exists bool) {
+	v := m.directory_standing
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ResetDirectory resets all changes to the "directory" field.
-func (m *Mutation) ResetDirectory() {
-	m.directory = nil
-	delete(m.exprs, FieldDirectory)
+// AddDirectoryStanding adds i to the "directory_standing" field.
+func (m *Mutation) AddDirectoryStanding(i int32) {
+	if m.adddirectory_standing != nil {
+		*m.adddirectory_standing += i
+	} else {
+		m.adddirectory_standing = &i
+	}
+}
+
+// AddedDirectoryStanding returns the value that was added to the "directory_standing" field in this mutation.
+func (m *Mutation) AddedDirectoryStanding() (r int32, exists bool) {
+	v := m.adddirectory_standing
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDirectoryStanding resets all changes to the "directory_standing" field.
+func (m *Mutation) ResetDirectoryStanding() {
+	m.directory_standing = nil
+	m.adddirectory_standing = nil
+	delete(m.exprs, FieldDirectoryStanding)
 }
 
 // SetPortrait sets the "portrait" field.
@@ -668,8 +689,8 @@ func (m *Mutation) Fields() []string {
 	if m.date_disabled != nil || m.exprs[FieldDateDisabled] != nil {
 		fields = append(fields, FieldDateDisabled)
 	}
-	if m.directory != nil || m.exprs[FieldDirectory] != nil {
-		fields = append(fields, FieldDirectory)
+	if m.directory_standing != nil || m.exprs[FieldDirectoryStanding] != nil {
+		fields = append(fields, FieldDirectoryStanding)
 	}
 	if m.portrait != nil || m.exprs[FieldPortrait] != nil {
 		fields = append(fields, FieldPortrait)
@@ -722,8 +743,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateInvalidated()
 	case FieldDateDisabled:
 		return m.DateDisabled()
-	case FieldDirectory:
-		return m.Directory()
+	case FieldDirectoryStanding:
+		return m.DirectoryStanding()
 	case FieldPortrait:
 		return m.Portrait()
 	case FieldDirectorySubject:
@@ -863,15 +884,15 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDateDisabled(v)
 		return nil
-	case FieldDirectory:
-		v, ok := value.(string)
+	case FieldDirectoryStanding:
+		v, ok := value.(int32)
 		if !ok {
 			if e, ok := value.(sql.Querier); ok {
 				return m.SetFieldExpr(name, e)
 			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetDirectory(v)
+		m.SetDirectoryStanding(v)
 		return nil
 	case FieldPortrait:
 		v, ok := value.(*rstr.Portrait)
@@ -967,8 +988,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetDateInvalidated()
 	case FieldDateDisabled:
 		m.ResetDateDisabled()
-	case FieldDirectory:
-		m.ResetDirectory()
+	case FieldDirectoryStanding:
+		m.ResetDirectoryStanding()
 	case FieldPortrait:
 		m.ResetPortrait()
 	case FieldDirectorySubject:
@@ -1030,8 +1051,8 @@ func (m *Mutation) ExprFields() []string {
 	if _, ok := m.exprs[FieldDateDisabled]; ok {
 		fields = append(fields, FieldDateDisabled)
 	}
-	if _, ok := m.exprs[FieldDirectory]; ok {
-		fields = append(fields, FieldDirectory)
+	if _, ok := m.exprs[FieldDirectoryStanding]; ok {
+		fields = append(fields, FieldDirectoryStanding)
 	}
 	if _, ok := m.exprs[FieldPortrait]; ok {
 		fields = append(fields, FieldPortrait)
@@ -1051,13 +1072,21 @@ func (m *Mutation) ExprFields() []string {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *Mutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.adddirectory_standing != nil {
+		fields = append(fields, FieldDirectoryStanding)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *Mutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case FieldDirectoryStanding:
+		return m.AddedDirectoryStanding()
+	}
 	return nil, false
 }
 
@@ -1066,6 +1095,13 @@ func (m *Mutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *Mutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case FieldDirectoryStanding:
+		v, ok := value.(int32)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDirectoryStanding(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Holder numeric field %s", name)
 }
@@ -1195,8 +1231,8 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldDateDisabled:
 		m.ResetDateDisabled()
 		return nil
-	case FieldDirectory:
-		m.ResetDirectory()
+	case FieldDirectoryStanding:
+		m.ResetDirectoryStanding()
 		return nil
 	case FieldPortrait:
 		m.ResetPortrait()

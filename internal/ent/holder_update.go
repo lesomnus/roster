@@ -183,17 +183,24 @@ func (_u *HolderUpdate) ClearDateDisabled() *HolderUpdate {
 	return _u
 }
 
-// SetDirectory sets the "directory" field.
-func (_u *HolderUpdate) SetDirectory(v string) *HolderUpdate {
-	_u.mutation.SetDirectory(v)
+// SetDirectoryStanding sets the "directory_standing" field.
+func (_u *HolderUpdate) SetDirectoryStanding(v int32) *HolderUpdate {
+	_u.mutation.ResetDirectoryStanding()
+	_u.mutation.SetDirectoryStanding(v)
 	return _u
 }
 
-// SetNillableDirectory sets the "directory" field if the given value is not nil.
-func (_u *HolderUpdate) SetNillableDirectory(v *string) *HolderUpdate {
+// SetNillableDirectoryStanding sets the "directory_standing" field if the given value is not nil.
+func (_u *HolderUpdate) SetNillableDirectoryStanding(v *int32) *HolderUpdate {
 	if v != nil {
-		_u.SetDirectory(*v)
+		_u.SetDirectoryStanding(*v)
 	}
+	return _u
+}
+
+// AddDirectoryStanding adds value to the "directory_standing" field.
+func (_u *HolderUpdate) AddDirectoryStanding(v int32) *HolderUpdate {
+	_u.mutation.AddDirectoryStanding(v)
 	return _u
 }
 
@@ -422,11 +429,14 @@ func (_u *HolderUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.DateDisabledCleared() {
 		_spec.ClearField(holder.FieldDateDisabled, field.TypeTime)
 	}
-	if value, ok := _u.mutation.Directory(); ok {
-		_spec.SetField(holder.FieldDirectory, field.TypeString, value)
+	if value, ok := _u.mutation.DirectoryStanding(); ok {
+		_spec.SetField(holder.FieldDirectoryStanding, field.TypeInt32, value)
 	}
-	if e, ok := _u.mutation.FieldExpr(holder.FieldDirectory); ok {
-		_spec.SetField(holder.FieldDirectory, field.TypeString, e)
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDirectoryStanding); ok {
+		_spec.SetField(holder.FieldDirectoryStanding, field.TypeInt32, e)
+	}
+	if value, ok := _u.mutation.AddedDirectoryStanding(); ok {
+		_spec.AddField(holder.FieldDirectoryStanding, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.Portrait(); ok {
 		vv, err := holder.ValueScanner.Portrait.Value(value)
@@ -645,17 +655,24 @@ func (_u *HolderUpdateOne) ClearDateDisabled() *HolderUpdateOne {
 	return _u
 }
 
-// SetDirectory sets the "directory" field.
-func (_u *HolderUpdateOne) SetDirectory(v string) *HolderUpdateOne {
-	_u.mutation.SetDirectory(v)
+// SetDirectoryStanding sets the "directory_standing" field.
+func (_u *HolderUpdateOne) SetDirectoryStanding(v int32) *HolderUpdateOne {
+	_u.mutation.ResetDirectoryStanding()
+	_u.mutation.SetDirectoryStanding(v)
 	return _u
 }
 
-// SetNillableDirectory sets the "directory" field if the given value is not nil.
-func (_u *HolderUpdateOne) SetNillableDirectory(v *string) *HolderUpdateOne {
+// SetNillableDirectoryStanding sets the "directory_standing" field if the given value is not nil.
+func (_u *HolderUpdateOne) SetNillableDirectoryStanding(v *int32) *HolderUpdateOne {
 	if v != nil {
-		_u.SetDirectory(*v)
+		_u.SetDirectoryStanding(*v)
 	}
+	return _u
+}
+
+// AddDirectoryStanding adds value to the "directory_standing" field.
+func (_u *HolderUpdateOne) AddDirectoryStanding(v int32) *HolderUpdateOne {
+	_u.mutation.AddDirectoryStanding(v)
 	return _u
 }
 
@@ -914,11 +931,14 @@ func (_u *HolderUpdateOne) sqlSave(ctx context.Context) (_node *Holder, err erro
 	if _u.mutation.DateDisabledCleared() {
 		_spec.ClearField(holder.FieldDateDisabled, field.TypeTime)
 	}
-	if value, ok := _u.mutation.Directory(); ok {
-		_spec.SetField(holder.FieldDirectory, field.TypeString, value)
+	if value, ok := _u.mutation.DirectoryStanding(); ok {
+		_spec.SetField(holder.FieldDirectoryStanding, field.TypeInt32, value)
 	}
-	if e, ok := _u.mutation.FieldExpr(holder.FieldDirectory); ok {
-		_spec.SetField(holder.FieldDirectory, field.TypeString, e)
+	if e, ok := _u.mutation.FieldExpr(holder.FieldDirectoryStanding); ok {
+		_spec.SetField(holder.FieldDirectoryStanding, field.TypeInt32, e)
+	}
+	if value, ok := _u.mutation.AddedDirectoryStanding(); ok {
+		_spec.AddField(holder.FieldDirectoryStanding, field.TypeInt32, value)
 	}
 	if value, ok := _u.mutation.Portrait(); ok {
 		vv, err := holder.ValueScanner.Portrait.Value(value)

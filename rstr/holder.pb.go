@@ -24,6 +24,70 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// Profile is what a person is called, and it is replaced whole.
+//
+// An object rather than four fields on the Holder because it is one fact from
+// one moment: whatever last told us. Its cost is that it is one value to the
+// database -- no filter, no index -- so anything that has to be **looked up**
+// goes flat beside it. That is what [Identity] is.
+//
+// Stored as the canonical protobuf JSON, so these **names** are the storage.
+// Renaming one does not break the build and does not break the wire; it stops
+// finding the old value. From the first app's launch on, renaming a field here
+// is a migration; until then it moves the compatibility epoch (CLAUDE.md).
+// DirectoryStanding is what the directory that provisions somebody said of
+// their standing, which `Holder.directory_standing` keeps: a closed set roster
+// writes itself, from what `HolderService.Deactivate` and `Activate` are told.
+type DirectoryStanding int32
+
+const (
+	// The directory has said nothing of them, or took back what it said: they
+	// are active as far as it is concerned, and any suspension is an operator's.
+	DirectoryStanding_DIRECTORY_STANDING_UNSPECIFIED DirectoryStanding = 0
+	// The directory said they are inactive, and the suspension is its own: it
+	// lifts it when it says they are active again.
+	DirectoryStanding_DIRECTORY_STANDING_INACTIVE DirectoryStanding = 1
+	// The directory deleted them: suspended, not erased, and nobody it speaks
+	// of any more.
+	DirectoryStanding_DIRECTORY_STANDING_DELETED DirectoryStanding = 2
+)
+
+// Enum value maps for DirectoryStanding.
+var (
+	DirectoryStanding_name = map[int32]string{
+		0: "DIRECTORY_STANDING_UNSPECIFIED",
+		1: "DIRECTORY_STANDING_INACTIVE",
+		2: "DIRECTORY_STANDING_DELETED",
+	}
+	DirectoryStanding_value = map[string]int32{
+		"DIRECTORY_STANDING_UNSPECIFIED": 0,
+		"DIRECTORY_STANDING_INACTIVE":    1,
+		"DIRECTORY_STANDING_DELETED":     2,
+	}
+)
+
+func (x DirectoryStanding) Enum() *DirectoryStanding {
+	p := new(DirectoryStanding)
+	*p = x
+	return p
+}
+
+func (x DirectoryStanding) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (DirectoryStanding) Descriptor() protoreflect.EnumDescriptor {
+	return file_roster_payday_holder_proto_enumTypes[0].Descriptor()
+}
+
+func (DirectoryStanding) Type() protoreflect.EnumType {
+	return &file_roster_payday_holder_proto_enumTypes[0]
+}
+
+func (x DirectoryStanding) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
 // Holder is who a request is from.
 //
 // It is the row `payday/auth` reads to turn a credential into somebody, and the
@@ -35,27 +99,27 @@ const (
 // `holder.ext.proto` beside this. Adding an email or the subject an external
 // identity provider knows them by is exactly what that is for.
 type Holder struct {
-	state                       protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id               []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant           *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Alias            string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Name             string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Desc             string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased       *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated      *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	xxx_hidden_Profile          *Profile               `protobuf:"bytes,9,opt,name=profile"`
-	xxx_hidden_Data             *anypb.Any             `protobuf:"bytes,10,opt,name=data"`
-	xxx_hidden_DateInvalidated  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
-	xxx_hidden_DateDisabled     *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_disabled,json=dateDisabled"`
-	xxx_hidden_Directory        string                 `protobuf:"bytes,8,opt,name=directory"`
-	xxx_hidden_Portrait         *Portrait              `protobuf:"bytes,16,opt,name=portrait"`
-	xxx_hidden_DirectorySubject string                 `protobuf:"bytes,17,opt,name=directory_subject,json=directorySubject"`
-	xxx_hidden_DirectoryAddress string                 `protobuf:"bytes,18,opt,name=directory_address,json=directoryAddress"`
-	xxx_hidden_DirectoryName    string                 `protobuf:"bytes,19,opt,name=directory_name,json=directoryName"`
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
+	state                        protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id                []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant            *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Alias             string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name              string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc              string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels            map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_DateUpdated       *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased        *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_Profile           *Profile               `protobuf:"bytes,9,opt,name=profile"`
+	xxx_hidden_Data              *anypb.Any             `protobuf:"bytes,10,opt,name=data"`
+	xxx_hidden_DateInvalidated   *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
+	xxx_hidden_DateDisabled      *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_disabled,json=dateDisabled"`
+	xxx_hidden_DirectoryStanding DirectoryStanding      `protobuf:"varint,20,opt,name=directory_standing,json=directoryStanding,enum=roster.DirectoryStanding"`
+	xxx_hidden_Portrait          *Portrait              `protobuf:"bytes,16,opt,name=portrait"`
+	xxx_hidden_DirectorySubject  string                 `protobuf:"bytes,17,opt,name=directory_subject,json=directorySubject"`
+	xxx_hidden_DirectoryAddress  string                 `protobuf:"bytes,18,opt,name=directory_address,json=directoryAddress"`
+	xxx_hidden_DirectoryName     string                 `protobuf:"bytes,19,opt,name=directory_name,json=directoryName"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *Holder) Reset() {
@@ -174,11 +238,11 @@ func (x *Holder) GetDateDisabled() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *Holder) GetDirectory() string {
+func (x *Holder) GetDirectoryStanding() DirectoryStanding {
 	if x != nil {
-		return x.xxx_hidden_Directory
+		return x.xxx_hidden_DirectoryStanding
 	}
-	return ""
+	return DirectoryStanding_DIRECTORY_STANDING_UNSPECIFIED
 }
 
 func (x *Holder) GetPortrait() *Portrait {
@@ -264,8 +328,8 @@ func (x *Holder) SetDateDisabled(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateDisabled = v
 }
 
-func (x *Holder) SetDirectory(v string) {
-	x.xxx_hidden_Directory = v
+func (x *Holder) SetDirectoryStanding(v DirectoryStanding) {
+	x.xxx_hidden_DirectoryStanding = v
 }
 
 func (x *Holder) SetPortrait(v *Portrait) {
@@ -515,8 +579,8 @@ type Holder_builder struct {
 	DateDisabled *timestamppb.Timestamp
 	// Whose suspension `date_disabled` is, when it is the **directory's**: the
 	// directory provisioning this person (SCIM, `docs/scim.md`) said they are
-	// `inactive`, or `deleted` them. Empty when nobody suspended them, or an
-	// operator did.
+	// inactive, or deleted them ([DirectoryStanding]). Unspecified when nobody
+	// suspended them, or an operator did.
 	//
 	// # Why it is not a second `date_disabled`
 	//
@@ -536,10 +600,10 @@ type Holder_builder struct {
 	//
 	// Written by those verbs and nothing else: a request's `Add` is refused it
 	// -- `stamped`, so the generated gate says so (payday#29) -- and no port
-	// serves `Patch`. Not personal: it holds which of two things a directory
-	// said, `inactive` or `deleted`, and names nobody; that a directory
+	// serves `Patch`. Not personal: it holds which of two things the directory
+	// said of this person, or that it said nothing, and that a directory
 	// suspended somebody is the record.
-	Directory string
+	DirectoryStanding DirectoryStanding
 	// A picture of this person, kept here: one square image at the sizes a
 	// screen draws one, inline.
 	//
@@ -644,7 +708,7 @@ func (b0 Holder_builder) Build() *Holder {
 	x.xxx_hidden_Data = b.Data
 	x.xxx_hidden_DateInvalidated = b.DateInvalidated
 	x.xxx_hidden_DateDisabled = b.DateDisabled
-	x.xxx_hidden_Directory = b.Directory
+	x.xxx_hidden_DirectoryStanding = b.DirectoryStanding
 	x.xxx_hidden_Portrait = b.Portrait
 	x.xxx_hidden_DirectorySubject = b.DirectorySubject
 	x.xxx_hidden_DirectoryAddress = b.DirectoryAddress
@@ -652,17 +716,6 @@ func (b0 Holder_builder) Build() *Holder {
 	return m0
 }
 
-// Profile is what a person is called, and it is replaced whole.
-//
-// An object rather than four fields on the Holder because it is one fact from
-// one moment: whatever last told us. Its cost is that it is one value to the
-// database -- no filter, no index -- so anything that has to be **looked up**
-// goes flat beside it. That is what [Identity] is.
-//
-// Stored as the canonical protobuf JSON, so these **names** are the storage.
-// Renaming one does not break the build and does not break the wire; it stops
-// finding the old value. From the first app's launch on, renaming a field here
-// is a migration; until then it moves the compatibility epoch (CLAUDE.md).
 type Profile struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_DisplayName string                 `protobuf:"bytes,1,opt,name=display_name,json=displayName"`
@@ -940,7 +993,7 @@ var File_roster_payday_holder_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_proto_rawDesc = "" +
 	"\n" +
-	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xac\n" +
+	"\x1aroster/payday/holder.proto\x12\x06roster\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\x1a\x1aroster/payday/tenant.proto\"\xd8\n" +
 	"\n" +
 	"\x06Holder\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
@@ -957,8 +1010,8 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"\x04data\x18\n" +
 	" \x01(\v2\x14.google.protobuf.AnyB\x06\xaa\xc1\x16\x02\x18\x01R\x04data\x12M\n" +
 	"\x10date_invalidated\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\x0fdateInvalidated\x12G\n" +
-	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateDisabled\x12&\n" +
-	"\tdirectory\x18\b \x01(\tB\b\xaa\xc1\x16\x04\x10\x01\x18\x00R\tdirectory\x124\n" +
+	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateDisabled\x12R\n" +
+	"\x12directory_standing\x18\x14 \x01(\x0e2\x19.roster.DirectoryStandingB\b\xaa\xc1\x16\x04\x10\x01\x18\x00R\x11directoryStanding\x124\n" +
 	"\bportrait\x18\x10 \x01(\v2\x10.roster.PortraitB\x06\xaa\xc1\x16\x02\x18\x01R\bportrait\x12;\n" +
 	"\x11directory_subject\x18\x11 \x01(\tB\x0e\xea\x82\x16\x028\x01\xaa\xc1\x16\x04\x10\x01\x18\x01R\x10directorySubject\x12;\n" +
 	"\x11directory_address\x18\x12 \x01(\tB\x0e\xea\x82\x16\x028\x01\xaa\xc1\x16\x04\x10\x01\x18\x01R\x10directoryAddress\x125\n" +
@@ -1006,36 +1059,43 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"renditions\"1\n" +
 	"\tRendition\x12\x12\n" +
 	"\x04size\x18\x01 \x01(\rR\x04size\x12\x10\n" +
-	"\x03uri\x18\x02 \x01(\tR\x03uriB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\x03uri\x18\x02 \x01(\tR\x03uri*x\n" +
+	"\x11DirectoryStanding\x12\"\n" +
+	"\x1eDIRECTORY_STANDING_UNSPECIFIED\x10\x00\x12\x1f\n" +
+	"\x1bDIRECTORY_STANDING_INACTIVE\x10\x01\x12\x1e\n" +
+	"\x1aDIRECTORY_STANDING_DELETED\x10\x02B&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
+var file_roster_payday_holder_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_roster_payday_holder_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_roster_payday_holder_proto_goTypes = []any{
-	(*Holder)(nil),                // 0: roster.Holder
-	(*Profile)(nil),               // 1: roster.Profile
-	(*Portrait)(nil),              // 2: roster.Portrait
-	(*Rendition)(nil),             // 3: roster.Rendition
-	nil,                           // 4: roster.Holder.LabelsEntry
-	(*Tenant)(nil),                // 5: roster.Tenant
-	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
-	(*anypb.Any)(nil),             // 7: google.protobuf.Any
+	(DirectoryStanding)(0),        // 0: roster.DirectoryStanding
+	(*Holder)(nil),                // 1: roster.Holder
+	(*Profile)(nil),               // 2: roster.Profile
+	(*Portrait)(nil),              // 3: roster.Portrait
+	(*Rendition)(nil),             // 4: roster.Rendition
+	nil,                           // 5: roster.Holder.LabelsEntry
+	(*Tenant)(nil),                // 6: roster.Tenant
+	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
+	(*anypb.Any)(nil),             // 8: google.protobuf.Any
 }
 var file_roster_payday_holder_proto_depIdxs = []int32{
-	5,  // 0: roster.Holder.tenant:type_name -> roster.Tenant
-	4,  // 1: roster.Holder.labels:type_name -> roster.Holder.LabelsEntry
-	6,  // 2: roster.Holder.date_updated:type_name -> google.protobuf.Timestamp
-	6,  // 3: roster.Holder.date_erased:type_name -> google.protobuf.Timestamp
-	6,  // 4: roster.Holder.date_created:type_name -> google.protobuf.Timestamp
-	1,  // 5: roster.Holder.profile:type_name -> roster.Profile
-	7,  // 6: roster.Holder.data:type_name -> google.protobuf.Any
-	6,  // 7: roster.Holder.date_invalidated:type_name -> google.protobuf.Timestamp
-	6,  // 8: roster.Holder.date_disabled:type_name -> google.protobuf.Timestamp
-	2,  // 9: roster.Holder.portrait:type_name -> roster.Portrait
-	3,  // 10: roster.Portrait.renditions:type_name -> roster.Rendition
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	6,  // 0: roster.Holder.tenant:type_name -> roster.Tenant
+	5,  // 1: roster.Holder.labels:type_name -> roster.Holder.LabelsEntry
+	7,  // 2: roster.Holder.date_updated:type_name -> google.protobuf.Timestamp
+	7,  // 3: roster.Holder.date_erased:type_name -> google.protobuf.Timestamp
+	7,  // 4: roster.Holder.date_created:type_name -> google.protobuf.Timestamp
+	2,  // 5: roster.Holder.profile:type_name -> roster.Profile
+	8,  // 6: roster.Holder.data:type_name -> google.protobuf.Any
+	7,  // 7: roster.Holder.date_invalidated:type_name -> google.protobuf.Timestamp
+	7,  // 8: roster.Holder.date_disabled:type_name -> google.protobuf.Timestamp
+	0,  // 9: roster.Holder.directory_standing:type_name -> roster.DirectoryStanding
+	3,  // 10: roster.Holder.portrait:type_name -> roster.Portrait
+	4,  // 11: roster.Portrait.renditions:type_name -> roster.Rendition
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_roster_payday_holder_proto_init() }
@@ -1049,13 +1109,14 @@ func file_roster_payday_holder_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_roster_payday_holder_proto_rawDesc), len(file_roster_payday_holder_proto_rawDesc)),
-			NumEnums:      0,
+			NumEnums:      1,
 			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_roster_payday_holder_proto_goTypes,
 		DependencyIndexes: file_roster_payday_holder_proto_depIdxs,
+		EnumInfos:         file_roster_payday_holder_proto_enumTypes,
 		MessageInfos:      file_roster_payday_holder_proto_msgTypes,
 	}.Build()
 	File_roster_payday_holder_proto = out.File

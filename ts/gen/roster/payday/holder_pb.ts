@@ -3,8 +3,8 @@
 // option features.field_presence = IMPLICIT;
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Any, Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_any, file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../../orm_pb.js";
@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/holder.proto.
  */
 export const file_roster_payday_holder: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyIt0ICgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIVCgVhbGlhcxgEIAEoCUIGqsEWAhgBEhQKBG5hbWUYBSABKAlCBqrBFgIYARIUCgRkZXNjGAYgASgJQgaqwRYCGAESMgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeUIGqsEWAhgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIoCgdwcm9maWxlGAkgASgLMg8ucm9zdGVyLlByb2ZpbGVCBqrBFgIYARIqCgRkYXRhGAogASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueUIGqsEWAhgBEjwKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIbCglkaXJlY3RvcnkYCCABKAlCCKrBFgQQARgAEioKCHBvcnRyYWl0GBAgASgLMhAucm9zdGVyLlBvcnRyYWl0QgaqwRYCGAESKQoRZGlyZWN0b3J5X3N1YmplY3QYESABKAlCDuqCFgI4AarBFgQQARgBEikKEWRpcmVjdG9yeV9hZGRyZXNzGBIgASgJQg7qghYCOAGqwRYEEAEYARImCg5kaXJlY3RvcnlfbmFtZRgTIAEoCUIO6oIWAjgBqsEWBBABGAEaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqjAsr8FdkBEgIQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaKRIFbmFtZWQaEgoOZGlyZWN0b3J5X25hbWUQExoKCgZ0ZW5hbnQQAjABGiwSBWtub3duGhUKEWRpcmVjdG9yeV9zdWJqZWN0EBEaCgoGdGVuYW50EAIwARorEgRzYWlkGhUKEWRpcmVjdG9yeV9hZGRyZXNzEBIaCgoGdGVuYW50EAIwAYq7FkEIAjI5ChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoICgZsYWJlbHMgFChkOgBIAiJpCgdQcm9maWxlEhQKDGRpc3BsYXlfbmFtZRgBIAEoCRIPCgdwaWN0dXJlGAIgASgJEhIKCmRlcGFydG1lbnQYAyABKAkSEwoLZW1wbG95ZWVfbm8YBCABKAkSDgoGbG9jYWxlGAUgASgJIjEKCFBvcnRyYWl0EiUKCnJlbmRpdGlvbnMYASADKAsyES5yb3N0ZXIuUmVuZGl0aW9uIiYKCVJlbmRpdGlvbhIMCgRzaXplGAEgASgNEgsKA3VyaRgCIAEoCUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L2hvbGRlci5wcm90bxIGcm9zdGVyIoEJCgZIb2xkZXISFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIVCgVhbGlhcxgEIAEoCUIGqsEWAhgBEhQKBG5hbWUYBSABKAlCBqrBFgIYARIUCgRkZXNjGAYgASgJQgaqwRYCGAESMgoGbGFiZWxzGAcgAygLMhoucm9zdGVyLkhvbGRlci5MYWJlbHNFbnRyeUIGqsEWAhgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIoCgdwcm9maWxlGAkgASgLMg8ucm9zdGVyLlByb2ZpbGVCBqrBFgIYARIqCgRkYXRhGAogASgLMhQuZ29vZ2xlLnByb3RvYnVmLkFueUIGqsEWAhgBEjwKEGRhdGVfaW52YWxpZGF0ZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOQoNZGF0ZV9kaXNhYmxlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI/ChJkaXJlY3Rvcnlfc3RhbmRpbmcYFCABKA4yGS5yb3N0ZXIuRGlyZWN0b3J5U3RhbmRpbmdCCKrBFgQQARgAEioKCHBvcnRyYWl0GBAgASgLMhAucm9zdGVyLlBvcnRyYWl0QgaqwRYCGAESKQoRZGlyZWN0b3J5X3N1YmplY3QYESABKAlCDuqCFgI4AarBFgQQARgBEikKEWRpcmVjdG9yeV9hZGRyZXNzGBIgASgJQg7qghYCOAGqwRYEEAEYARImCg5kaXJlY3RvcnlfbmFtZRgTIAEoCUIO6oIWAjgBqsEWBBABGAEaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqjAsr8FdkBEgIQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaKRIFbmFtZWQaEgoOZGlyZWN0b3J5X25hbWUQExoKCgZ0ZW5hbnQQAjABGiwSBWtub3duGhUKEWRpcmVjdG9yeV9zdWJqZWN0EBEaCgoGdGVuYW50EAIwARorEgRzYWlkGhUKEWRpcmVjdG9yeV9hZGRyZXNzEBIaCgoGdGVuYW50EAIwAYq7FkEIAjI5ChAKDgoMZGF0ZV9jcmVhdGVkCgYKBAoCaWQaBQoDcmVmGggKBnRlbmFudBoICgZsYWJlbHMgFChkOgBIAiJpCgdQcm9maWxlEhQKDGRpc3BsYXlfbmFtZRgBIAEoCRIPCgdwaWN0dXJlGAIgASgJEhIKCmRlcGFydG1lbnQYAyABKAkSEwoLZW1wbG95ZWVfbm8YBCABKAkSDgoGbG9jYWxlGAUgASgJIjEKCFBvcnRyYWl0EiUKCnJlbmRpdGlvbnMYASADKAsyES5yb3N0ZXIuUmVuZGl0aW9uIiYKCVJlbmRpdGlvbhIMCgRzaXplGAEgASgNEgsKA3VyaRgCIAEoCSp4ChFEaXJlY3RvcnlTdGFuZGluZxIiCh5ESVJFQ1RPUllfU1RBTkRJTkdfVU5TUEVDSUZJRUQQABIfChtESVJFQ1RPUllfU1RBTkRJTkdfSU5BQ1RJVkUQARIeChpESVJFQ1RPUllfU1RBTkRJTkdfREVMRVRFRBACQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_any, file_google_protobuf_timestamp, file_orm, file_payday, file_roster_payday_tenant]);
 
 /**
  * Holder is who a request is from.
@@ -224,8 +224,8 @@ export type Holder = Message<"roster.Holder"> & {
   /**
    * Whose suspension `date_disabled` is, when it is the **directory's**: the
    * directory provisioning this person (SCIM, `docs/scim.md`) said they are
-   * `inactive`, or `deleted` them. Empty when nobody suspended them, or an
-   * operator did.
+   * inactive, or deleted them ([DirectoryStanding]). Unspecified when nobody
+   * suspended them, or an operator did.
    *
    * # Why it is not a second `date_disabled`
    *
@@ -245,13 +245,13 @@ export type Holder = Message<"roster.Holder"> & {
    *
    * Written by those verbs and nothing else: a request's `Add` is refused it
    * -- `stamped`, so the generated gate says so (payday#29) -- and no port
-   * serves `Patch`. Not personal: it holds which of two things a directory
-   * said, `inactive` or `deleted`, and names nobody; that a directory
+   * serves `Patch`. Not personal: it holds which of two things the directory
+   * said of this person, or that it said nothing, and that a directory
    * suspended somebody is the record.
    *
-   * @generated from field: string directory = 8;
+   * @generated from field: roster.DirectoryStanding directory_standing = 20;
    */
-  directory: string;
+  directoryStanding: DirectoryStanding;
 
   /**
    * A picture of this person, kept here: one square image at the sizes a
@@ -367,18 +367,6 @@ export const HolderSchema: GenMessage<Holder> = /*@__PURE__*/
   messageDesc(file_roster_payday_holder, 0);
 
 /**
- * Profile is what a person is called, and it is replaced whole.
- *
- * An object rather than four fields on the Holder because it is one fact from
- * one moment: whatever last told us. Its cost is that it is one value to the
- * database -- no filter, no index -- so anything that has to be **looked up**
- * goes flat beside it. That is what [Identity] is.
- *
- * Stored as the canonical protobuf JSON, so these **names** are the storage.
- * Renaming one does not break the build and does not break the wire; it stops
- * finding the old value. From the first app's launch on, renaming a field here
- * is a migration; until then it moves the compatibility epoch (CLAUDE.md).
- *
  * @generated from message roster.Profile
  */
 export type Profile = Message<"roster.Profile"> & {
@@ -489,4 +477,54 @@ export type Rendition = Message<"roster.Rendition"> & {
  */
 export const RenditionSchema: GenMessage<Rendition> = /*@__PURE__*/
   messageDesc(file_roster_payday_holder, 3);
+
+/**
+ * Profile is what a person is called, and it is replaced whole.
+ *
+ * An object rather than four fields on the Holder because it is one fact from
+ * one moment: whatever last told us. Its cost is that it is one value to the
+ * database -- no filter, no index -- so anything that has to be **looked up**
+ * goes flat beside it. That is what [Identity] is.
+ *
+ * Stored as the canonical protobuf JSON, so these **names** are the storage.
+ * Renaming one does not break the build and does not break the wire; it stops
+ * finding the old value. From the first app's launch on, renaming a field here
+ * is a migration; until then it moves the compatibility epoch (CLAUDE.md).
+ * DirectoryStanding is what the directory that provisions somebody said of
+ * their standing, which `Holder.directory_standing` keeps: a closed set roster
+ * writes itself, from what `HolderService.Deactivate` and `Activate` are told.
+ *
+ * @generated from enum roster.DirectoryStanding
+ */
+export enum DirectoryStanding {
+  /**
+   * The directory has said nothing of them, or took back what it said: they
+   * are active as far as it is concerned, and any suspension is an operator's.
+   *
+   * @generated from enum value: DIRECTORY_STANDING_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * The directory said they are inactive, and the suspension is its own: it
+   * lifts it when it says they are active again.
+   *
+   * @generated from enum value: DIRECTORY_STANDING_INACTIVE = 1;
+   */
+  INACTIVE = 1,
+
+  /**
+   * The directory deleted them: suspended, not erased, and nobody it speaks
+   * of any more.
+   *
+   * @generated from enum value: DIRECTORY_STANDING_DELETED = 2;
+   */
+  DELETED = 2,
+}
+
+/**
+ * Describes the enum roster.DirectoryStanding.
+ */
+export const DirectoryStandingSchema: GenEnum<DirectoryStanding> = /*@__PURE__*/
+  enumDesc(file_roster_payday_holder, 0);
 

@@ -41,11 +41,11 @@ var stamps = map[protoreflect.Name]string{
 // # Why here, and not as `stamped`
 //
 // payday has a word for a field no request asserts (`payday.field.stamped`),
-// and the generated gate refuses one: that is how a person's `directory` is
-// refused. It is said field by field in a schema, and `date_created` is
-// payday's own field on its own entities -- a person, a tenant -- which an
-// overlay may not redeclare. So it cannot be said of every entity, and the
-// entities it cannot be said of are the ones this was seen on.
+// and the generated gate refuses one: that is how a person's
+// `directory_standing` is refused. It is said field by field in a schema, and
+// `date_created` is payday's own field on its own entities -- a person, a
+// tenant -- which an overlay may not redeclare. So it cannot be said of every
+// entity, and the entities it cannot be said of are the ones this was seen on.
 //
 // What is true of all of them is where they arrive, which is [Undeclared]'s
 // reason and so its place: one rule about every write there is and will be,

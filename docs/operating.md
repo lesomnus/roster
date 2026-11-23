@@ -1925,7 +1925,8 @@ it ([ldap.md](ldap.md) § *How long a bind lasts*).
 **A directory that provisions people suspends them too**, through verbs of its
 own -- `HolderService/Deactivate` and `Activate` -- and it is the same suspension:
 one `date_disabled`, refused everywhere `Disable` is. What differs is whose it is
-(`Holder.directory`). The directory lifts what it put there and nothing else, since
+(`Holder.directory_standing`). The directory lifts what it put there and nothing
+else, since
 restarting its provisioning says `active` for everybody in scope; an operator's
 `Disable` or `Enable` makes a suspension theirs, and somebody the directory deleted
 is an operator's to bring back ([scim.md](scim.md)). An erase it does not hear at
@@ -2995,8 +2996,9 @@ nothing.
 description, the labels, the profile, `data`, their picture, and what their
 directory called them (`directory_subject`, `directory_address`,
 `directory_name`). What the row still says is its identifier, its tenant, when it
-was made, erased, suspended and signed out everywhere, and which directory
-suspended them if one did (`directory`, a connection's name).
+was made, erased, suspended and signed out everywhere, and whether their
+directory suspended them and what it said (`directory_standing`: inactive, or
+deleted).
 
 The trail keeps its **events** and loses its **contents**, in the database and in
 the archive both -- the actor, the action, the object and the time stay, and so do

@@ -85,7 +85,9 @@ breaking:
   # Changes on purpose and before the first app's launch (CLAUDE.md), each the
   # owner's answer to a name put to them (#286). `EmailService/Verify` is
   # `EmailService/Claim`, and its request and answer are named for it: `Verify`
-  # is one act, checking a secret, and `VouchService`'s.
+  # is one act, checking a secret, and `VouchService`'s. `Holder.directory`, a
+  # `string`, is `Holder.directory_standing`, a `DirectoryStanding`, at a number
+  # of its own, and goes from the requests and selections generated with it.
   #
   # Out with the first change after this reaches `main`, which is the only
   # baseline here, as #234 took #233's out: left in, it is a hole in the check
@@ -95,3 +97,6 @@ breaking:
       - proto/app/email_svc.g.proto
     PACKAGE_MESSAGE_NO_DELETE:
       - proto/app/email_svc.g.proto
+    FIELD_NO_DELETE:
+      - proto/roster/payday/holder.proto
+      - proto/roster/payday/holder_svc.g.proto

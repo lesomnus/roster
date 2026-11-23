@@ -97,7 +97,7 @@ func TestSomebodyDoesNotTakeThemselvesOutOfTheirDirectorysHands(t *testing.T) {
 		// And deletes her, which suspends her for good and removes no account.
 		code, _, _ = d.call(t, d.key, http.MethodDelete, scim.Base+"/Users/"+id, nil)
 		x.Equal(http.StatusNoContent, code)
-		x.Equal("deleted", d.holder(t, id).GetDirectory())
+		x.Equal(rstr.DirectoryStanding_DIRECTORY_STANDING_DELETED, d.holder(t, id).GetDirectoryStanding())
 	})
 
 	t.Run("and an administrator still takes one away", func(t *testing.T) {

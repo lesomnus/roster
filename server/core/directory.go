@@ -22,12 +22,8 @@ import (
 
 // A directory's say over the people it provisions: `Provision`, `Deactivate`
 // and `Activate`, which `holder_svc.ext.proto` argues for one at a time, and
-// `Holder.directory`, which says whose a suspension is. And `Tell`, which is
-// what it says about anybody and is believed about nobody.
-const (
-	directoryInactive = "inactive"
-	directoryDeleted  = "deleted"
-)
+// `Holder.directory_standing`, which says whose a suspension is. And `Tell`,
+// which is what it says about anybody and is believed about nobody.
 
 // provisioning is the connection a tenant's directory provisions its people
 // through (`Connection.provisions`). FailedPrecondition when there is none:
@@ -260,13 +256,13 @@ func (s coreHolder) Deactivate(ctx context.Context, req *app.HolderDeactivateReq
 		patch := &app.HolderPatchRequest_builder{}
 		switch {
 		case req.GetDeleted():
-			patch.Directory = z.Ptr(directoryDeleted)
-		case v.GetDirectory() == directoryDeleted:
+			patch.DirectoryStanding = z.Ptr(app.DirectoryStanding_DIRECTORY_STANDING_DELETED)
+		case v.GetDirectoryStanding() == app.DirectoryStanding_DIRECTORY_STANDING_DELETED:
 			return nil, nil
-		case v.GetDateDisabled() != nil && v.GetDirectory() == "":
+		case v.GetDateDisabled() != nil && v.GetDirectoryStanding() == app.DirectoryStanding_DIRECTORY_STANDING_UNSPECIFIED:
 			return nil, nil
 		default:
-			patch.Directory = z.Ptr(directoryInactive)
+			patch.DirectoryStanding = z.Ptr(app.DirectoryStanding_DIRECTORY_STANDING_INACTIVE)
 		}
 		if v.GetDateDisabled() == nil {
 			patch.DateDisabled = timestamppb.Now()
@@ -279,9 +275,9 @@ func (s coreHolder) Deactivate(ctx context.Context, req *app.HolderDeactivateReq
 // Activate lifts the suspension the directory made, and refuses the rest.
 func (s coreHolder) Activate(ctx context.Context, req *app.HolderActivateRequest) (*app.Holder, error) {
 	return s.said(ctx, req.GetRef(), req.GetDateUpdated(), func(v *app.Holder) (*app.HolderPatchRequest_builder, error) {
-		switch v.GetDirectory() {
-		case directoryInactive:
-		case directoryDeleted:
+		switch v.GetDirectoryStanding() {
+		case app.DirectoryStanding_DIRECTORY_STANDING_INACTIVE:
+		case app.DirectoryStanding_DIRECTORY_STANDING_DELETED:
 			return nil, status.Error(codes.FailedPrecondition,
 				"the directory deleted them; bringing them back is an operator's, with `holder enable`")
 		default:
@@ -294,8 +290,8 @@ func (s coreHolder) Activate(ctx context.Context, req *app.HolderActivateRequest
 		}
 
 		return &app.HolderPatchRequest_builder{
-			DateDisabledNull: z.Ptr(true),
-			Directory:        z.Ptr(""),
+			DateDisabledNull:  z.Ptr(true),
+			DirectoryStanding: z.Ptr(app.DirectoryStanding_DIRECTORY_STANDING_UNSPECIFIED),
 		}, nil
 	})
 }
@@ -365,10 +361,10 @@ func (s coreHolder) said(ctx context.Context, ref *app.HolderRef, was *timestamp
 		now, err := next.Holder().Get(ctx, app.HolderGetRequest_builder{
 			Ref: who,
 			Select: app.HolderSelect_builder{
-				Tenant:       app.TenantSelect_builder{}.Build(),
-				DateDisabled: z.Ptr(true),
-				Directory:    z.Ptr(true),
-				DateUpdated:  z.Ptr(true),
+				Tenant:            app.TenantSelect_builder{}.Build(),
+				DateDisabled:      z.Ptr(true),
+				DirectoryStanding: z.Ptr(true),
+				DateUpdated:       z.Ptr(true),
 			}.Build(),
 		}.Build())
 		if err != nil {
@@ -519,10 +515,10 @@ func (s coreHolder) directed(ctx context.Context, ref *app.HolderRef) (*app.Hold
 	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
 		Ref: ref,
 		Select: app.HolderSelect_builder{
-			Tenant:       app.TenantSelect_builder{}.Build(),
-			DateDisabled: z.Ptr(true),
-			Directory:    z.Ptr(true),
-			DateUpdated:  z.Ptr(true),
+			Tenant:            app.TenantSelect_builder{}.Build(),
+			DateDisabled:      z.Ptr(true),
+			DirectoryStanding: z.Ptr(true),
+			DateUpdated:       z.Ptr(true),
 		}.Build(),
 	}.Build())
 	if err != nil {

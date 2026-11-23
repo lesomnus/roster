@@ -314,7 +314,7 @@ func TestADirectoryProvisionsSomebodyTheWayEntraDoes(t *testing.T) {
 		x.Equal(false, got["active"])
 		h := d.holder(t, id)
 		x.NotNil(h.GetDateDisabled())
-		x.Equal("inactive", h.GetDirectory())
+		x.Equal(rstr.DirectoryStanding_DIRECTORY_STANDING_INACTIVE, h.GetDirectoryStanding())
 
 		code, got, _ = d.call(t, d.key, http.MethodPatch, scim.Base+"/Users/"+id,
 			`{"schemas":["urn:ietf:params:scim:api:messages:2.0:PatchOp"],"Operations":[{"op":"replace","value":{"active":true}}]}`)
@@ -336,7 +336,7 @@ func TestADirectoryProvisionsSomebodyTheWayEntraDoes(t *testing.T) {
 
 		h := d.holder(t, id)
 		x.NotNil(h.GetDateDisabled())
-		x.Equal("deleted", h.GetDirectory())
+		x.Equal(rstr.DirectoryStanding_DIRECTORY_STANDING_DELETED, h.GetDirectoryStanding())
 		x.Nil(h.GetDateErased(), "the row is the operator's to erase")
 	})
 }

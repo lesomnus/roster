@@ -319,3 +319,32 @@ func TestOnlyAVouchChecksBeforeItAnswers(t *testing.T) {
 	})
 	x.Equal([]string{"VouchService"}, has)
 }
+
+// TestADirectorysWordForSomebodyIsAClosedSet: what a directory said of
+// somebody's standing is `Holder.directory_standing`, a `DirectoryStanding`,
+// and no field is named `directory`.
+//
+// `Holder.directory` was a `string`, empty, `inactive` or `deleted`: a word a
+// directory said, not a directory, and a set roster writes and closes itself
+// (`server/core/directory.go`), which every reader compared as text. Answered:
+// a string any value of which a client must guess at; right is the enum.
+func TestADirectorysWordForSomebodyIsAClosedSet(t *testing.T) {
+	x := require.New(t)
+
+	d, err := protoregistry.GlobalFiles.FindDescriptorByName("roster.Holder")
+	x.NoError(err)
+	f := d.(protoreflect.MessageDescriptor).Fields().ByName("directory_standing")
+	x.NotNil(f, "Holder has no directory_standing")
+	x.Equal(protoreflect.EnumKind, f.Kind())
+	x.Equal("roster.DirectoryStanding", string(f.Enum().FullName()))
+
+	named := []string{}
+	for _, e := range wireNamesEntities(x) {
+		m, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName("roster." + e))
+		x.NoError(err)
+		if m.(protoreflect.MessageDescriptor).Fields().ByName("directory") != nil {
+			named = append(named, e)
+		}
+	}
+	x.Empty(named, "a field named for a directory that holds what it said")
+}

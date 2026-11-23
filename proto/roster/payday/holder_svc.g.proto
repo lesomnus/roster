@@ -270,7 +270,7 @@ service HolderService {
   // # Why it is not `Disable`
   //
   // Because the directory may lift what it put there and nothing else
-  // (`Holder.directory`), and one verb for both could not say whose a
+  // (`Holder.directory_standing`), and one verb for both could not say whose a
   // suspension is. A suspension already an operator's stays theirs.
   //
   // Held to people the directory speaks for: somebody with an identity at the
@@ -320,7 +320,7 @@ message HolderAddRequest {
   google.protobuf.Any data = 10;
   google.protobuf.Timestamp date_invalidated = 11;
   google.protobuf.Timestamp date_disabled = 12;
-  string directory = 8 [features.field_presence = IMPLICIT];
+  DirectoryStanding directory_standing = 20 [features.field_presence = IMPLICIT];
   Portrait portrait = 16;
   string directory_subject = 17;
   string directory_address = 18;
@@ -376,7 +376,7 @@ message HolderSelect {
   bool data = 10;
   bool date_invalidated = 11;
   bool date_disabled = 12;
-  bool directory = 8;
+  bool directory_standing = 20;
   bool portrait = 16;
   bool directory_subject = 17;
   bool directory_address = 18;
@@ -427,7 +427,7 @@ message HolderPatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and date_disabled clears.
   bool date_disabled_null = 25;
-  string directory = 16;
+  DirectoryStanding directory_standing = 40;
   Portrait portrait = 32;
   // Clear portrait instead of writing it.
   // It takes a field of its own because an unset value already means
