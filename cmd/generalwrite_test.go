@@ -71,7 +71,7 @@ func TestNoGeneralWriteIsServed(t *testing.T) {
 		b, ctx := build(t)
 		b.mayAnything(b.ContosoUser, b.Contoso)
 
-		g, err := b.Grpc(ctx, cmd.Config{Server: config.ServerConfig{AllowGeneralWrites: true}})
+		g, err := b.Grpc(ctx, cmd.Config{Server: cmd.ServerConfig{ServerConfig: config.ServerConfig{AllowGeneralWrites: true}}})
 		x.NoError(err)
 
 		asked := generalWrites(t, g, pdtest.Serve(t, g), func() context.Context { return asOverTheWire(ctx, b.ContosoUser) })
@@ -108,7 +108,7 @@ func TestAFileThatOpensGeneralWritesIsRefused(t *testing.T) {
 	on := config.ServerConfig{AllowGeneralWrites: true}
 
 	for name, with := range map[string]func(*cmd.Config){
-		"server":  func(c *cmd.Config) { c.Server = on },
+		"server":  func(c *cmd.Config) { c.Server.ServerConfig = on },
 		"control": func(c *cmd.Config) { c.Control.ServerConfig = on },
 		"admin":   func(c *cmd.Config) { c.Admin.ServerConfig = on },
 	} {

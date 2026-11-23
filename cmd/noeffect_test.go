@@ -11,7 +11,7 @@ import (
 )
 
 // TestWhatCannotTakeEffectIsRefused: `build` refused `control:` with no
-// database and `user_console.dir` with no sign-in because an address that is
+// database and `server.console.dir` with no sign-in because an address that is
 // written down and not served is worse than one that is refused. These are
 // the same shape, and each started and said nothing: a console's page no
 // listener serves, a switch of a listener that is not opened, a refresh of no
@@ -37,9 +37,9 @@ func TestWhatCannotTakeEffectIsRefused(t *testing.T) {
 			c.Admin.Addr = "127.0.0.1:0"
 			c.Admin.Console.Dir = page
 		}},
-		{"the user console with no listener", []string{"user_console.dir", "server.http.addr"}, func(c *cmd.Config) {
+		{"the user console with no listener", []string{"server.console.dir", "server.http.addr"}, func(c *cmd.Config) {
 			c.SignIn.Enabled = true
-			c.UserConsole.Dir = page
+			c.Server.Console.Dir = page
 		}},
 		{"the web with no listener", []string{"server.http.allow_web", "server.http.addr"}, func(c *cmd.Config) {
 			c.Server.Http.AllowWeb = true

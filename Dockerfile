@@ -173,7 +173,7 @@ COPY --from=dist /${TARGETARCH}/example-product /usr/local/bin/example-product
 # Where the four pages land. A deployment points at each:
 #
 #   admin.console.dir              the admin console, at `/` on that listener
-#   user_console.dir               the user console, at `/` on `server.http`
+#   server.console.dir             the user console, at `/` on `server.http`
 #   account.page.dir               the account page
 #   login.page.dir                 the Login App's, for a deployment with Hydra
 COPY --from=dist /pages/ /usr/share/roster/

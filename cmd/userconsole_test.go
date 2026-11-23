@@ -17,6 +17,7 @@ import (
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/web"
 
+	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -40,6 +41,11 @@ func TestTheUserConsoleAndItsDoorAreOneListener(t *testing.T) {
 	dir := t.TempDir()
 	x.NoError(os.WriteFile(filepath.Join(dir, "index.html"), []byte("<!doctype html><title>roster</title>"), 0o644))
 
+	// The page as a file names it, beside the listener that serves it.
+	file := filepath.Join(t.TempDir(), "roster.yaml")
+	x.NoError(os.WriteFile(file, []byte("server:\n  console:\n    dir: "+dir+"\n"), 0o600))
+	said := loadedFrom(t, cmd.Config{}, file)
+
 	b, ctx := build(t, func(c *cmd.Config) { c.SignIn.Enabled = true })
 
 	// Somebody in contoso, with a password and a role. Their password is what
@@ -53,7 +59,7 @@ func TestTheUserConsoleAndItsDoorAreOneListener(t *testing.T) {
 
 	h, err := web.New(config.HttpConfig{AllowWeb: true}, b.grpc(t))
 	x.NoError(err)
-	cmd.ConsoleMount(cmd.ConsoleConfig{Dir: dir})(h)
+	cmd.ConsoleMount(said.Server.Console)(h)
 
 	// `cmd.Arrived` and not a header written by hand: a browser that reaches
 	// roster through no proxy says the name in `Host` alone, and Go keeps that
@@ -276,10 +282,57 @@ func TestAUserConsoleWithNoDoorIsRefused(t *testing.T) {
 	x := require.New(t)
 
 	_, err := cmd.Build(t.Context(), cmd.Config{
-		Db:          config.DbConfig{Driver: "sqlite3", Dsn: "file:refused?mode=memory&cache=shared"},
-		Watch:       config.WatchConfig{Broker: config.BrokerMemory},
-		UserConsole: cmd.ConsoleConfig{Dir: t.TempDir()},
+		Db:     config.DbConfig{Driver: "sqlite3", Dsn: "file:refused?mode=memory&cache=shared"},
+		Watch:  config.WatchConfig{Broker: config.BrokerMemory},
+		Server: cmd.ServerConfig{Console: cmd.ConsoleConfig{Dir: t.TempDir()}},
 	})
 	x.Error(err)
+	x.ErrorContains(err, "server.console.dir")
 	x.ErrorContains(err, "sign_in.enabled")
+}
+
+// TestTheUserConsoleIsNamedBesideTheListenerThatServesIt: the file named the
+// two pages two ways. The admin console's build was `admin.console.dir`, a
+// key of the block whose listener serves it; the user console's was
+// `user_console.dir`, at the top of the file, though `server.http` serves it
+// and nothing else does. It is `server.console.dir` now, and `roster config`
+// says it under `server:`. `user_console:` is a key nothing reads, refused at
+// start by name as any is, and its variable names no key: no second spelling.
+func TestTheUserConsoleIsNamedBesideTheListenerThatServesIt(t *testing.T) {
+	read := func(t *testing.T, body string, args ...string) (string, error) {
+		t.Helper()
+		file := filepath.Join(t.TempDir(), "roster.yaml")
+		require.NoError(t, os.WriteFile(file, []byte(body), 0o600))
+
+		var c cmd.Config
+		var out strings.Builder
+		k := cli.Cmd(&c)
+		k.Writer = &out
+		err := k.Run(t.Context(), append([]string{"--config", file}, args...))
+
+		return out.String(), err
+	}
+
+	t.Run("server.console.dir is read, and said under server", func(t *testing.T) {
+		x := require.New(t)
+		out, err := read(t, "server:\n  console:\n    dir: /srv/user\n", "config")
+		x.NoError(err, "server.console.dir is not read")
+		x.Regexp(`(?m)^server:\n(  .*\n)*  console:\n    dir: /srv/user\b`, out)
+		x.NotContains(out, "user_console")
+	})
+
+	t.Run("user_console is refused by name", func(t *testing.T) {
+		_, err := read(t, "user_console:\n  dir: /srv/user\n", "config")
+		require.Error(t, err, "a key nothing reads was taken")
+		require.Contains(t, err.Error(), "user_console")
+	})
+
+	t.Run("the variable is the key's", func(t *testing.T) {
+		x := require.New(t)
+		out, err := read(t, "", "config", "env")
+		x.NoError(err)
+		said := strings.Fields(out)
+		x.Contains(said, "ROSTER_SERVER_CONSOLE_DIR", "the key has no variable")
+		x.NotContains(said, "ROSTER_USER_CONSOLE_DIR", "the old spelling is still a key")
+	})
 }

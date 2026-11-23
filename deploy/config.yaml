@@ -22,7 +22,7 @@ server:
 # and `resolver: none` for an air gap, where a roster operator writes the row
 # instead. `docs/operating.md` § "A tenant registers its own hostname".
 
-# No `sign_in:` and no `user_console:` here, and the absence is a decision
+# No `sign_in:` and no `server.console` here, and the absence is a decision
 # rather than an omission. The user console is a public sign-in on the port
 # product apps already reach, and whether a deployment wants one is the
 # deployment's to say -- `docs/operating.md` § "The user console" is the two

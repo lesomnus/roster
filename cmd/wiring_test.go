@@ -804,7 +804,7 @@ func TestTheDataPlaneCountsAStreamToo(t *testing.T) {
 	who := b.holder(t, ctx, b.Contoso, "watched-while-limited")
 
 	g, err := b.Grpc(ctx, cmd.Config{
-		Server: config.ServerConfig{Limit: config.LimitConfig{Rate: 1, Burst: 1}},
+		Server: cmd.ServerConfig{ServerConfig: config.ServerConfig{Limit: config.LimitConfig{Rate: 1, Burst: 1}}},
 	})
 	x.NoError(err)
 

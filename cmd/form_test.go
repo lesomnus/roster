@@ -44,11 +44,11 @@ func TestWhatHasAFormIsHeldToItAtStart(t *testing.T) {
 			c.Account.Addr = "127.0.0.1:0"
 			c.Account.Base = "account.example"
 		}},
-		{"the user console's page that is not there", "user_console.dir", func(c *cmd.Config) {
+		{"the user console's page that is not there", "server.console.dir", func(c *cmd.Config) {
 			c.SignIn.Enabled = true
 			c.Server.Http.Addr = "127.0.0.1:0"
 			c.Server.Http.AllowWeb = true
-			c.UserConsole.Dir = gone
+			c.Server.Console.Dir = gone
 		}},
 		{"the admin console's page that is not there", "admin.console.dir", func(c *cmd.Config) {
 			c.Admin.Http.Addr = "127.0.0.1:0"

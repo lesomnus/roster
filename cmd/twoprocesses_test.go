@@ -49,7 +49,7 @@ func replicaServing(t *testing.T, c cmd.Config) *replica {
 
 	dataL, data := listening(t)
 	adminL, admin := listening(t)
-	c.Server = config.ServerConfig{Addr: data}
+	c.Server.ServerConfig = config.ServerConfig{Addr: data}
 	c.Admin.Addr = admin
 
 	lease, err := c.Spin.Build(ctx, c.Db)

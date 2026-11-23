@@ -28,7 +28,7 @@ Three notes about the list itself:
 | **tenant administrator** | a roster user whose role administers their tenant. **Not a kind of row**: the schema has no such thing, and it is a holder with a binding (#29) |
 | **customer** | a tenant, from the roster operator's side of the table. `roster tenant add` makes one. A word for **prose** and not a name: what names rows uses the row's name, so the admin console's screen is *tenants* -- see below |
 | **admin console** | the page a **roster operator** opens, served by the admin listener (`admin.http`), which is also what it calls |
-| **user console** | the page a **roster user** opens, showing their own tenant and nothing else, over the walled data plane. `ts/user/`, served by `server.http` at `/` where `user_console.dir` names a build (#34) |
+| **user console** | the page a **roster user** opens, showing their own tenant and nothing else, over the walled data plane. `ts/user/`, served by `server.http` at `/` where `server.console.dir` names a build (#34) |
 | **a holder's credential** | what tells two holders apart, since the row does not: a `Credential` (a password, a second factor) or an `ApiKey`. One holder may have both, and roster refuses neither -- `roster control key add --allow … admin` mints a key on the operator's own row. Which plane it is in is the other difference, and the one the `rk_`/`rt_` prefix comes from |
 
 ## What protects what

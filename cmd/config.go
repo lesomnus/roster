@@ -63,12 +63,13 @@ const Name = "roster"
 //
 // The framework cannot own this struct, since what an app is configured with is
 // the app's. What it owns is the pieces: each of these is a payday type, and
-// what is written here is only which of them this app has.
+// what is written here is only which of them this app has. `server` holds one,
+// payday's listener, with the page it serves beside it, as `admin` does.
 type Config struct {
-	Server config.ServerConfig `yaml:"server"`
-	Db     config.DbConfig     `yaml:"db"`
-	Otel   config.OtelConfig   `yaml:"otel"`
-	Watch  config.WatchConfig  `yaml:"watch"`
+	Server ServerConfig       `yaml:"server"`
+	Db     config.DbConfig    `yaml:"db"`
+	Otel   config.OtelConfig  `yaml:"otel"`
+	Watch  config.WatchConfig `yaml:"watch"`
 
 	// Spin is which process of a deployment runs each background loop -- the
 	// sweeps, the trail's retention, the outbox drain -- and it is named for
@@ -136,27 +137,6 @@ type Config struct {
 	// lockout in `server/vouch`; what makes it *narrow* is that a sign-in here
 	// is about one tenant, resolved from the name the browser arrived at.
 	SignIn SignInConfig `yaml:"sign_in"`
-
-	// UserConsole is the page a **roster user** opens: their own tenant, and
-	// nothing of anybody else's. Served by `server.http` at `/`, which is the
-	// listener behind the door above. Empty serves none.
-	//
-	// Two reasons it is this listener and not a fourth. A session is a
-	// `__Host-` cookie, host-only, so a page and the listener it signs in at
-	// have to be one host -- the same thing that moved the admin console onto
-	// `admin.http` (#27). And which tenant a sign-in is about is the name the
-	// browser arrived at (`Hosted`), so the page is served at the tenant's own
-	// name and the tenant is whoever claims it -- which a listener of its own
-	// would have to be told instead.
-	//
-	// It is **not** the admin console with a filter. The caller is the tenant's
-	// own holder, narrowed by the wall; the admin console's is a roster
-	// operator, and `admin.addr` waives two rules from the port (#34, #32).
-	//
-	// Named `user_console` rather than `console` because there are two pages and
-	// naming one of them after the category would be the ambiguity the glossary
-	// settled; see `docs/glossary.md`.
-	UserConsole ConsoleConfig `yaml:"user_console"`
 
 	// Admin is where an operator administers **customers**: the data plane,
 	// with no wall, behind a session. Empty is nowhere.
@@ -668,7 +648,7 @@ func (c Config) Meant() error {
 // listener.
 func (c Config) listeners() []listenerBlock {
 	return []listenerBlock{
-		{"server", c.Server},
+		{"server", c.Server.ServerConfig},
 		{"control", c.Control.ServerConfig},
 		{"admin", c.Admin.ServerConfig},
 	}
@@ -773,7 +753,7 @@ func answersNothing(c Config) error {
 		dir       string
 	}{
 		{"admin", "admin.console.dir", c.Admin.Http, c.Admin.Console.Dir},
-		{"server", "user_console.dir", c.Server.Http, c.UserConsole.Dir},
+		{"server", "server.console.dir", c.Server.Http, c.Server.Console.Dir},
 	} {
 		if v.http.Addr == "" || v.dir == "" || v.http.AllowWeb {
 			continue
@@ -885,7 +865,7 @@ func formed(c Config) error {
 	if err := c.Host.Meant(); err != nil {
 		return err
 	}
-	if err := dirThere("user_console.dir", c.UserConsole.Dir); err != nil {
+	if err := dirThere("server.console.dir", c.Server.Console.Dir); err != nil {
 		return err
 	}
 	if err := dirThere("admin.console.dir", c.Admin.Console.Dir); err != nil {
@@ -948,7 +928,7 @@ func formed(c Config) error {
 
 // noEffect refuses a setting that is written down and cannot take effect, for
 // the reason [Build] refuses `control:` with no database and
-// `user_console.dir` with no sign-in: an address written down and not served
+// `server.console.dir` with no sign-in: an address written down and not served
 // is worse than one that is refused, because it is a port somebody believes is
 // there. Each names both keys.
 //
@@ -963,8 +943,8 @@ func noEffect(c Config) error {
 		return errors.New("admin.console.dir: the page is served by admin.http.addr, which names no listener, so " +
 			"nothing serves it. name admin.http.addr, or take the page out")
 	}
-	if c.UserConsole.Dir != "" && c.SignIn.Enabled && c.Server.Http.Addr == "" {
-		return errors.New("user_console.dir: the page is served by server.http.addr, which names no listener, so " +
+	if c.Server.Console.Dir != "" && c.SignIn.Enabled && c.Server.Http.Addr == "" {
+		return errors.New("server.console.dir: the page is served by server.http.addr, which names no listener, so " +
 			"nothing serves it. name server.http.addr, or take the page out")
 	}
 	for _, b := range c.listeners() {
@@ -1421,6 +1401,35 @@ type AdminConfig struct {
 	Console ConsoleConfig `yaml:"console"`
 }
 
+// ServerConfig is the data plane's listener, the one a product app and a
+// **roster user** call, and the user console's page, which it serves.
+type ServerConfig struct {
+	config.ServerConfig `yaml:",inline"`
+
+	// Console is the page a **roster user** opens: their own tenant, and
+	// nothing of anybody else's. Served by `server.http` at `/`, which is the
+	// listener `sign_in` puts the door on. Empty serves none.
+	//
+	// Two reasons it is this listener and not a fourth. A session is a
+	// `__Host-` cookie, host-only, so a page and the listener it signs in at
+	// have to be one host -- the same thing that moved the admin console onto
+	// `admin.http` (#27). And which tenant a sign-in is about is the name the
+	// browser arrived at (`Hosted`), so the page is served at the tenant's own
+	// name and the tenant is whoever claims it -- which a listener of its own
+	// would have to be told instead.
+	//
+	// It is **not** the admin console with a filter. The caller is the tenant's
+	// own holder, narrowed by the wall; the admin console's is a roster
+	// operator, and `admin.addr` waives two rules from the port (#34, #32).
+	//
+	// There are two pages, and each is the `console` of the listener that
+	// serves it: `admin.console` is the admin console and `server.console` the
+	// user console. The key says where a page is served because that is the
+	// fact that pins it: a `__Host-` cookie is host-only, and the name a
+	// request arrives at decides the tenant.
+	Console ConsoleConfig `yaml:"console"`
+}
+
 // SignInConfig is the data plane's own door for a roster user.
 //
 // A block rather than a boolean because what a deployment will want to say next
@@ -1437,10 +1446,10 @@ type SignInConfig struct {
 
 // ConsoleConfig is a built page, as the listener that names it serves it.
 //
-// Two of them now -- `admin.console` is the admin console and `user_console` is
-// the user console -- and the type is one because what a listener needs to know
-// about a page is where the files are. Which page it is, and which caller it is
-// for, is whichever field holds this.
+// Two of them now -- `admin.console` is the admin console and `server.console`
+// is the user console -- and the type is one because what a listener needs to
+// know about a page is where the files are. Which page it is, and which caller
+// it is for, is whichever field holds this.
 //
 // One field, and the second one is gone with the arrangement that needed it.
 // `admin` named another origin for the page to call, because the page was

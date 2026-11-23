@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// The user console: what `server.http` serves at `/` when `user_console.dir`
+// The user console: what `server.http` serves at `/` when `server.console.dir`
 // names a build. The third of the UIs this package builds from its own root
 // over the same `lib/` and `gen/`; `vite.console.ts` is the admin console's and
 // `vite.account.ts` is the account app's.

@@ -64,7 +64,7 @@ func TestAGeneralWriteDoesNotWriteANamePastItsProof(t *testing.T) {
 	later := claiming(t, b, b.ContosoUser, b.Contoso, "later.contoso.example")
 
 	// A deployment that turned general writes on.
-	g, err := b.Grpc(ctx, cmd.Config{Server: config.ServerConfig{AllowGeneralWrites: true}})
+	g, err := b.Grpc(ctx, cmd.Config{Server: cmd.ServerConfig{ServerConfig: config.ServerConfig{AllowGeneralWrites: true}}})
 	x.NoError(err)
 	conn := pdtest.Serve(t, g)
 	wire := asOverTheWire(ctx, b.ContosoUser)

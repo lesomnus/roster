@@ -457,9 +457,9 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// `Unimplemented` by a method that is not on the wire. There is nothing in
 	// that for anybody to read: the page looks served and the deployment looks
 	// up.
-	if c.UserConsole.Dir != "" && !c.SignIn.Enabled {
+	if c.Server.Console.Dir != "" && !c.SignIn.Enabled {
 		return nil, errors.New(
-			"user_console.dir: the page is where a roster user signs in, and sign_in.enabled is off " +
+			"server.console.dir: the page is where a roster user signs in, and sign_in.enabled is off " +
 				"-- so AuthService is not on this listener and the form on it can never be answered. " +
 				"turn sign_in.enabled on, or take the page out")
 	}
@@ -2205,7 +2205,7 @@ func (s *Server) accessed() access.Config {
 // that is a channel. It was briefly not, and then the one registration that
 // makes this port worth opening was reachable only by opening it.
 func (s *Server) GrpcControl(ctx context.Context, c Config, opts ...grpc.ServerOption) (*grpc.Server, error) {
-	g, err := s.Control.Grpc(ctx, Config{Server: c.Control.ServerConfig}, opts...)
+	g, err := s.Control.Grpc(ctx, Config{Server: ServerConfig{ServerConfig: c.Control.ServerConfig}}, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -2289,10 +2289,10 @@ func (s *Server) serveAdmin(ctx context.Context, c Config, g *grpc.Server) error
 // And it is where the **user console** is served, at `/`, beside the RPCs it
 // calls: a roster user signs in here, the wall narrows them to their own
 // tenant, and which tenant that is comes from the name they arrived at. See
-// [Config.UserConsole], which is refused unless `sign_in.enabled` puts the door
+// [ServerConfig.Console], which is refused unless `sign_in.enabled` puts the door
 // on this listener.
 func (s *Server) serveHttp(ctx context.Context, c Config, g *grpc.Server) (func(context.Context), error) {
-	return s.http(ctx, "http", c.Server.Http, g, ConsoleMount(c.UserConsole))
+	return s.http(ctx, "http", c.Server.Http, g, ConsoleMount(c.Server.Console))
 }
 
 // serveControlHttp is the control plane's own browser surface.

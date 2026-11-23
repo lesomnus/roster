@@ -20,27 +20,33 @@ import (
 func TestAPortThatWouldAnswerNothingIsRefused(t *testing.T) {
 	page := t.TempDir()
 
-	for key, with := range map[string]func(*cmd.Config){
-		"control.http.addr": func(c *cmd.Config) {
+	for key, v := range map[string]struct {
+		with func(*cmd.Config)
+		// page is the key of the page the listener serves, which the refusal
+		// names too.
+		page string
+	}{
+		"control.http.addr": {func(c *cmd.Config) {
 			c.Control.Addr = "127.0.0.1:0"
 			c.Control.Http.Addr = "127.0.0.1:0"
-		},
-		"admin.http.addr": func(c *cmd.Config) {
+		}, ""},
+		"admin.http.addr": {func(c *cmd.Config) {
 			c.Admin.Addr = "127.0.0.1:0"
 			c.Admin.Http.Addr = "127.0.0.1:0"
 			c.Admin.Console.Dir = page
-		},
-		"server.http.addr": func(c *cmd.Config) {
+		}, "admin.console.dir"},
+		"server.http.addr": {func(c *cmd.Config) {
 			c.SignIn.Enabled = true
 			c.Server.Http.Addr = "127.0.0.1:0"
-			c.UserConsole.Dir = page
-		},
+			c.Server.Console.Dir = page
+		}, "server.console.dir"},
 	} {
 		t.Run(key, func(t *testing.T) {
-			err := startedWith(t, with)
+			err := startedWith(t, v.with)
 			require.Error(t, err, "a listener that answers nothing it is there for")
 			require.True(t, strings.HasPrefix(err.Error(), key+":"), "named: %s", err)
 			require.Contains(t, err.Error(), "allow_web")
+			require.Contains(t, err.Error(), v.page)
 		})
 	}
 

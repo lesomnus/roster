@@ -425,8 +425,9 @@ reachable by design.
 ## The user console
 
 ```yaml
-user_console:
-  dir: /usr/share/roster/user       # empty serves no page
+server:
+  console:
+    dir: /usr/share/roster/user     # empty serves no page
 ```
 
 The page behind that door: a **roster user** signs in and sees their own tenant
@@ -452,7 +453,7 @@ roster minted for this name, which the page spends for the same session a
 password ends in. Nothing is configured on the deployment's side: the front door
 is the tenant's to name, as its providers are.
 
-**`user_console.dir` with `sign_in.enabled` off is refused**, rather than
+**`server.console.dir` with `sign_in.enabled` off is refused**, rather than
 serving a page whose form is answered `Unimplemented` by a method that is not on
 the wire. That combination looks like a working deployment from the outside,
 which is the only kind of mistake worth refusing at startup.

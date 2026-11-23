@@ -134,7 +134,7 @@ services:
       # Off by default in a deployment -- anybody who reaches the port may
       # guess passwords -- and on here because this rig is a desk.
       ROSTER_SIGN_IN_ENABLED: "true"
-      ROSTER_USER_CONSOLE_DIR: /usr/share/roster/user
+      ROSTER_SERVER_CONSOLE_DIR: /usr/share/roster/user
       # The user console on a dev server (`npm run dev:user`, :5176) is another
       # origin and is refused without this, the same line `admin.http` needs.
       ROSTER_SERVER_HTTP_ORIGINS: '["http://localhost:5176"]'

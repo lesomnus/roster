@@ -88,7 +88,7 @@ func TestServeOpensTheConsumersItIsToldTo(t *testing.T) {
 	httpL, httpAddr := listening(t)
 	accountL, accountAddr := listening(t)
 
-	c.Server = config.ServerConfig{Addr: grpcAddr}
+	c.Server.ServerConfig = config.ServerConfig{Addr: grpcAddr}
 	c.Server.Http.Addr = httpAddr
 	c.Account = cmd.AccountConfig{
 		Addr:     accountAddr,
