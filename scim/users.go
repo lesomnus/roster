@@ -254,7 +254,7 @@ func (s *Server) told(ctx context.Context, ref *rstr.HolderRef) ([]byte, error) 
 // the refusal itself arrives only on the day they leave.
 func (s *Server) tell(ctx context.Context, r *http.Request, t *tenancy, p *person, c *changes) error {
 	h := p.holder
-	req := rstr.HolderTellRequest_builder{Ref: rstr.HolderRef_builder{Id: h.GetId()}.Build()}
+	entry := rstr.DirectoryEntry_builder{}
 	said := false
 
 	if c.externalId != nil {
@@ -263,7 +263,7 @@ func (s *Server) tell(ctx context.Context, r *http.Request, t *tenancy, p *perso
 			want = ""
 		}
 		if want != h.GetDirectorySubject() {
-			req.Subject, said = proto.String(want), true
+			entry.Subject, said = proto.String(want), true
 			if want != "" && p.linked == "" {
 				s.c.Log.WarnContext(r.Context(),
 					"scim: matched by their address and not linked, so the directory cannot suspend them; "+
@@ -284,7 +284,7 @@ func (s *Server) tell(ctx context.Context, r *http.Request, t *tenancy, p *perso
 			want = ""
 		}
 		if want != h.GetDirectoryAddress() {
-			req.Address, said = proto.String(want), true
+			entry.Address, said = proto.String(want), true
 		}
 	}
 	if want := c.name(); want != "" {
@@ -292,14 +292,17 @@ func (s *Server) tell(ctx context.Context, r *http.Request, t *tenancy, p *perso
 			want = ""
 		}
 		if want != h.GetDirectoryName() {
-			req.Name, said = proto.String(want), true
+			entry.Name, said = proto.String(want), true
 		}
 	}
 	if !said {
 		return nil
 	}
 
-	_, err := s.roster.Holder().Tell(ctx, req.Build())
+	_, err := s.roster.Holder().Tell(ctx, rstr.HolderTellRequest_builder{
+		Ref:   rstr.HolderRef_builder{Id: h.GetId()}.Build(),
+		Entry: entry.Build(),
+	}.Build())
 
 	return err
 }
@@ -514,7 +517,7 @@ func (s *Server) named(ctx context.Context, u *incoming, address string, id []by
 		}
 	}
 	if n := front.Address(u.userName); n != address {
-		if _, err := s.roster.Holder().Tell(ctx, rstr.HolderTellRequest_builder{Ref: ref, Name: proto.String(n)}.Build()); err != nil {
+		if _, err := s.roster.Holder().Tell(ctx, rstr.HolderTellRequest_builder{Ref: ref, Entry: rstr.DirectoryEntry_builder{Name: proto.String(n)}.Build()}.Build()); err != nil {
 			return err
 		}
 	}

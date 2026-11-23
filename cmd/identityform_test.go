@@ -186,7 +186,7 @@ func TestAGUIDIsOneSpelling(t *testing.T) {
 		const janeOid = "4d5e6f70-8192-a3b4-c5d6-e7f8091a2b3c"
 		jane := b.holder(t, ctx, b.Contoso, "jane")
 		_, err := b.Ungated.Holder().Tell(ctx, app.HolderTellRequest_builder{
-			Ref: app.HolderRef_builder{Id: jane.Bytes()}.Build(), Subject: z.Ptr(strings.ToUpper(janeOid)),
+			Ref: app.HolderRef_builder{Id: jane.Bytes()}.Build(), Entry: app.DirectoryEntry_builder{Subject: z.Ptr(strings.ToUpper(janeOid))}.Build(),
 		}.Build())
 		x.NoError(err)
 

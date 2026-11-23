@@ -29,7 +29,7 @@ func TestADirectorySaysNothingOfItself(t *testing.T) {
 	self := app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "directory").Bytes()}.Build()
 
 	tell := func(as context.Context, ref *app.HolderRef, subject string) error {
-		_, err := b.Walled.Holder().Tell(as, app.HolderTellRequest_builder{Ref: ref, Subject: z.Ptr(subject)}.Build())
+		_, err := b.Walled.Holder().Tell(as, app.HolderTellRequest_builder{Ref: ref, Entry: app.DirectoryEntry_builder{Subject: z.Ptr(subject)}.Build()}.Build())
 
 		return err
 	}

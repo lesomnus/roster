@@ -457,42 +457,43 @@ func (s coreHolder) Tell(ctx context.Context, req *app.HolderTellRequest) (*app.
 	// In the spelling the real thing would be kept in ([front.Subject]), which
 	// is the one it is looked for in: said in another, it is the same word.
 	claim := subjectClaimOf(c.GetSubjectClaim())
-	if subject := front.Subject(claim, req.GetSubject()); req.HasSubject() && subject != v.GetDirectorySubject() {
+	entry := req.GetEntry()
+	if subject := front.Subject(claim, entry.GetSubject()); entry.HasSubject() && subject != v.GetDirectorySubject() {
 		switch subject {
 		case "":
 			patch.DirectorySubjectNull = z.Ptr(true)
 		default:
-			if err := subjectIsStable(subject); err != nil {
-				return nil, err
+			if why := front.Unstable(subject); why != "" {
+				return nil, pderr.Invalidf("entry.subject", "%s", why)
 			}
 			if claim == claimOid && !front.GUID(subject) {
-				return nil, pderr.Invalidf("subject",
+				return nil, pderr.Invalidf("entry.subject",
 					"the %s connection names people by `oid`, which is a GUID, and %s is not one", c.GetName(), quote.Sent(subject))
 			}
 			patch.DirectorySubject = z.Ptr(subject)
 		}
 		said = true
 	}
-	if req.HasAddress() && req.GetAddress() != v.GetDirectoryAddress() {
-		switch address := req.GetAddress(); address {
+	if entry.HasAddress() && entry.GetAddress() != v.GetDirectoryAddress() {
+		switch address := entry.GetAddress(); address {
 		case "":
 			patch.DirectoryAddressNull = z.Ptr(true)
 		default:
-			if err := mailboxed("address", address); err != nil {
+			if err := mailboxed("entry.address", address); err != nil {
 				return nil, err
 			}
 			patch.DirectoryAddress = z.Ptr(address)
 		}
 		said = true
 	}
-	if req.HasName() && req.GetName() != v.GetDirectoryName() {
-		switch name := req.GetName(); name {
+	if entry.HasName() && entry.GetName() != v.GetDirectoryName() {
+		switch name := entry.GetName(); name {
 		case "":
 			patch.DirectoryNameNull = z.Ptr(true)
 		default:
 			// Compared without regard to case, so kept in the one form a
 			// lookup is made in: an address's, which most of them are.
-			if err := normalised("name", name, front.Address); err != nil {
+			if err := normalised("entry.name", name, front.Address); err != nil {
 				return nil, err
 			}
 			patch.DirectoryName = z.Ptr(name)

@@ -262,3 +262,36 @@ func TestNoFieldIsNamedDateLocked(t *testing.T) {
 	})
 	x.Empty(named, "a field named for when a lock began holds when it ends")
 }
+
+// TestWhatADirectorySaysIsOneMessage: `HolderTellRequest` carries what a
+// directory says of somebody as one `DirectoryEntry`, so that no word in it
+// means one column there and another beside it.
+//
+// `HolderTellRequest` had `subject`, `address` and `name`, which are the
+// columns `directory_subject`, `directory_address` and `directory_name`, and
+// `HolderProvisionRequest` beside it has the same three words for other
+// columns: the identity a sign-in finds, an address written unverified, and
+// roster's name for them. Answered: three names meaning two things; right is
+// the directory's fields in a message of their own.
+func TestWhatADirectorySaysIsOneMessage(t *testing.T) {
+	x := require.New(t)
+
+	names := func(name string) []string {
+		d, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(name))
+		x.NoError(err, name)
+		out := []string{}
+		fs := d.(protoreflect.MessageDescriptor).Fields()
+		for i := range fs.Len() {
+			out = append(out, string(fs.Get(i).Name()))
+		}
+		return out
+	}
+	provision := names("roster.HolderProvisionRequest")
+	shared := []string{}
+	for _, v := range names("roster.HolderTellRequest") {
+		if slices.Contains(provision, v) && v != "ref" && v != "date_updated" {
+			shared = append(shared, v)
+		}
+	}
+	x.Empty(shared, "a word that is one column in `Tell` and another in `Provision`")
+}

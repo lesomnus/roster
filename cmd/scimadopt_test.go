@@ -85,7 +85,7 @@ func (b *adoptBed) person(s *cmd.Server, alias string) *app.HolderRef {
 // tell is the directory saying what it calls somebody.
 func (b *adoptBed) tell(s *cmd.Server, ref *app.HolderRef, subject string) {
 	b.t.Helper()
-	_, err := s.Ungated.Holder().Tell(b.t.Context(), app.HolderTellRequest_builder{Ref: ref, Subject: proto.String(subject)}.Build())
+	_, err := s.Ungated.Holder().Tell(b.t.Context(), app.HolderTellRequest_builder{Ref: ref, Entry: app.DirectoryEntry_builder{Subject: proto.String(subject)}.Build()}.Build())
 	require.NoError(b.t, err)
 }
 
