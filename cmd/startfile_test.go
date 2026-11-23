@@ -92,7 +92,7 @@ func startCertificateOf(t *testing.T) startCertificate {
 // the file writes it with.
 func listenerBlocks(c *cmd.Config) map[string]*config.ServerConfig {
 	return map[string]*config.ServerConfig{
-		"server":  &c.Server,
+		"server":  &c.Server.ServerConfig,
 		"control": &c.Control.ServerConfig,
 		"admin":   &c.Admin.ServerConfig,
 	}
@@ -116,7 +116,7 @@ func loadedFrom(t *testing.T, over cmd.Config, path string) cmd.Config {
 func startableHere(t *testing.T, c cmd.Config) cmd.Config {
 	t.Helper()
 
-	dirs := []*string{&c.UserConsole.Dir, &c.Admin.Console.Dir, &c.Account.Page.Dir, &c.Login.Page.Dir}
+	dirs := []*string{&c.Server.Console.Dir, &c.Admin.Console.Dir, &c.Account.Page.Dir, &c.Login.Page.Dir}
 	for _, d := range dirs {
 		if *d != "" {
 			*d = t.TempDir()
@@ -199,7 +199,7 @@ func TestTheFilesADeploymentStartsFromAreMeant(t *testing.T) {
 
 			for _, m := range regexp.MustCompile("(?s)```yaml\n(.*?)```").FindAllStringSubmatchIndex(string(src), -1) {
 				body := string(src[m[2]:m[3]])
-				if !regexp.MustCompile(`(?m)^(server|control|admin|db|watch|spin|user_console|sign_in|policy|vouch|stream|holder|consent|tenant|host|account|ldap|login|scim):`).MatchString(body) {
+				if !regexp.MustCompile(`(?m)^(server|control|admin|db|watch|spin|sign_in|policy|vouch|stream|holder|consent|tenant|host|account|ldap|login|scim):`).MatchString(body) {
 					continue
 				}
 				where := page + ":" + strconv.Itoa(1+strings.Count(string(src[:m[2]]), "\n"))

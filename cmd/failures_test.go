@@ -448,7 +448,7 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 
 	// A deployment that allows one call and then one every quarter of an hour.
 	{
-		at := failureServe(t, b, cmd.Config{Server: config.ServerConfig{Limit: config.LimitConfig{Rate: 0.001, Burst: 1}}})
+		at := failureServe(t, b, cmd.Config{Server: cmd.ServerConfig{ServerConfig: config.ServerConfig{Limit: config.LimitConfig{Rate: 0.001, Burst: 1}}}})
 		c := failureCall{"too many calls", 0, admin, "/roster.GroupService/Get", `{"ref":` + failureRef(seoul.group) + `}`}
 		x.Equal(codes.OK.String(), at.code(t, c).String(), "the one call the burst allows")
 

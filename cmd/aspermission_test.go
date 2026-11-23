@@ -150,7 +150,7 @@ func TestAGeneralWriteIsNotAWayRoundTheEscalationRule(t *testing.T) {
 
 	// A server handed the setting that used to open general writes. A file
 	// cannot say it any more; a caller of this package still can.
-	g, err := b.Grpc(ctx, cmd.Config{Server: config.ServerConfig{AllowGeneralWrites: true}})
+	g, err := b.Grpc(ctx, cmd.Config{Server: cmd.ServerConfig{ServerConfig: config.ServerConfig{AllowGeneralWrites: true}}})
 	x.NoError(err)
 
 	conn := pdtest.Serve(t, g)

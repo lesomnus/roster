@@ -67,7 +67,7 @@ func TestAGeneralWriteDoesNotOpenACredentialsRow(t *testing.T) {
 	}
 
 	t.Run("on the data plane", func(t *testing.T) {
-		g, err := b.Grpc(ctx, cmd.Config{Server: on})
+		g, err := b.Grpc(ctx, cmd.Config{Server: cmd.ServerConfig{ServerConfig: on}})
 		require.NoError(t, err)
 
 		refused(t, app.NewCredentialServiceClient(pdtest.Serve(t, g)))
@@ -75,7 +75,7 @@ func TestAGeneralWriteDoesNotOpenACredentialsRow(t *testing.T) {
 
 	t.Run("and the verbs of its own are still there", func(t *testing.T) {
 		x := require.New(t)
-		g, err := b.Grpc(ctx, cmd.Config{Server: on})
+		g, err := b.Grpc(ctx, cmd.Config{Server: cmd.ServerConfig{ServerConfig: on}})
 		x.NoError(err)
 
 		// Held to its rule, which is the point of a verb of its own: they hold

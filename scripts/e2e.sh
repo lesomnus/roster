@@ -125,6 +125,8 @@ server:
   http:
     addr: 127.0.0.1:18052
     allow_web: true
+  console:
+    dir: ${__root}/ts/dist/user
 sign_in:
   enabled: true
 # This rig cannot publish a TXT record, so it says so rather than spending a
@@ -133,8 +135,6 @@ sign_in:
 # path is \`cmd/hostproof_test.go\`, over a zone written down in Go.
 host:
   resolver: none
-user_console:
-  dir: ${__root}/ts/dist/user
 control:
   db:
     driver: sqlite3
