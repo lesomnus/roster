@@ -20431,7 +20431,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				{Number: 5, Name: entCredential.FieldName, Type: 9, Nullable: false, Key: 0},
 				{Number: 8, Name: entCredential.FieldKind, Type: 9, Nullable: false, Key: 0},
 				{Number: 10, Name: entCredential.FieldFailures, Type: 5, Nullable: false, Key: 0},
-				{Number: 11, Name: entCredential.FieldDateLocked, Type: 65, Nullable: true, Key: 0},
+				{Number: 11, Name: entCredential.FieldDateUnlocked, Type: 65, Nullable: true, Key: 0},
 				{Number: 12, Name: entCredential.FieldDateRotated, Type: 65, Nullable: true, Key: 0},
 				{Number: 16, Name: entCredential.FieldLastStep, Type: 3, Nullable: false, Key: 0},
 				{Number: 13, Name: entCredential.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},

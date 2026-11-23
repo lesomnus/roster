@@ -406,7 +406,7 @@ var (
 		{Name: "kind", Type: field.TypeString},
 		{Name: "secret", Type: field.TypeBytes},
 		{Name: "failures", Type: field.TypeInt32},
-		{Name: "date_locked", Type: field.TypeTime, Nullable: true},
+		{Name: "date_unlocked", Type: field.TypeTime, Nullable: true},
 		{Name: "date_rotated", Type: field.TypeTime, Nullable: true},
 		{Name: "last_step", Type: field.TypeInt64},
 		{Name: "previous", Type: field.TypeJson, Nullable: true},

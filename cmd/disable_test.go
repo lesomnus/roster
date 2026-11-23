@@ -111,7 +111,7 @@ func TestADisabledHolderIsNotToSignInAndNotSignedIn(t *testing.T) {
 		// And the refusal says nothing more than no. A lockout is the one
 		// refusal this service distinguishes, because it admits the account
 		// exists; a suspension must not become a second one.
-		x.Nil(res.GetDateLocked())
+		x.Nil(res.GetDateUnlocked())
 	})
 
 	t.Run("and what they already held stops working", func(t *testing.T) {

@@ -147,8 +147,8 @@ func (st CredentialServiceServer) create(ctx context.Context, req *rstr.Credenti
 	q.SetKind(req.GetKind())
 	q.SetSecret(req.GetSecret())
 	q.SetFailures(req.GetFailures())
-	if req.HasDateLocked() {
-		q.SetDateLocked(req.GetDateLocked().AsTime())
+	if req.HasDateUnlocked() {
+		q.SetDateUnlocked(req.GetDateUnlocked().AsTime())
 	}
 	if req.HasDateRotated() {
 		q.SetDateRotated(req.GetDateRotated().AsTime())
@@ -304,8 +304,8 @@ func CredentialSelectedFields(m *rstr.CredentialSelect) []string {
 	if m.GetFailures() {
 		vs = append(vs, credential.FieldFailures)
 	}
-	if m.GetDateLocked() {
-		vs = append(vs, credential.FieldDateLocked)
+	if m.GetDateUnlocked() {
+		vs = append(vs, credential.FieldDateUnlocked)
 	}
 	if m.GetDateRotated() {
 		vs = append(vs, credential.FieldDateRotated)
@@ -412,7 +412,7 @@ func CredentialGetKey(ctx context.Context, db *ent.Client, ref *rstr.CredentialR
 var credentialOrmEntity = ormpatch.MustEntityOf(rstr.File_app_credential_proto, "Credential")
 
 var credentialPatchColumns = entpatch.Columns{
-	1: credential.FieldId, 2: credential.HolderColumn, 5: credential.FieldName, 8: credential.FieldKind, 9: credential.FieldSecret, 10: credential.FieldFailures, 11: credential.FieldDateLocked, 12: credential.FieldDateRotated, 16: credential.FieldLastStep, 17: credential.FieldPrevious, 13: credential.FieldDateUpdated, 14: credential.FieldDateErased, 15: credential.FieldDateCreated}
+	1: credential.FieldId, 2: credential.HolderColumn, 5: credential.FieldName, 8: credential.FieldKind, 9: credential.FieldSecret, 10: credential.FieldFailures, 11: credential.FieldDateUnlocked, 12: credential.FieldDateRotated, 16: credential.FieldLastStep, 17: credential.FieldPrevious, 13: credential.FieldDateUpdated, 14: credential.FieldDateErased, 15: credential.FieldDateCreated}
 
 func (s CredentialServiceServer) Apply(ctx context.Context, req *rstr.CredentialApplyRequest) (*rstr.Credential, error) {
 	if !req.HasPatch() {

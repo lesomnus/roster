@@ -501,11 +501,11 @@ func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.SignInCre
 		if v.DateRotated != nil {
 			c.DateRotated = timestamppb.New(*v.DateRotated)
 		}
-		if v.DateLocked != nil && v.DateLocked.After(time.Now()) {
+		if v.DateUnlocked != nil && v.DateUnlocked.After(time.Now()) {
 			// Only while it is closed. A stamp left over from a lockout that
 			// has expired would put "locked until" on a page for an account
 			// somebody can sign into right now.
-			c.DateLocked = timestamppb.New(*v.DateLocked)
+			c.DateUnlocked = timestamppb.New(*v.DateUnlocked)
 		}
 
 		out = append(out, c.Build())

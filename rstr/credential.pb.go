@@ -47,22 +47,22 @@ const (
 // So nothing reads `secret` back. It is written and compared, and the RPC that
 // compares it is roster's.
 type Credential struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Holder      *Holder                `protobuf:"bytes,2,opt,name=holder"`
-	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Kind        string                 `protobuf:"bytes,8,opt,name=kind"`
-	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
-	xxx_hidden_Failures    int32                  `protobuf:"varint,10,opt,name=failures"`
-	xxx_hidden_DateLocked  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_locked,json=dateLocked"`
-	xxx_hidden_DateRotated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_rotated,json=dateRotated"`
-	xxx_hidden_LastStep    int64                  `protobuf:"varint,16,opt,name=last_step,json=lastStep"`
-	xxx_hidden_Previous    [][]byte               `protobuf:"bytes,17,rep,name=previous"`
-	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id           []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Holder       *Holder                `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Name         string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Kind         string                 `protobuf:"bytes,8,opt,name=kind"`
+	xxx_hidden_Secret       []byte                 `protobuf:"bytes,9,opt,name=secret"`
+	xxx_hidden_Failures     int32                  `protobuf:"varint,10,opt,name=failures"`
+	xxx_hidden_DateUnlocked *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_unlocked,json=dateUnlocked"`
+	xxx_hidden_DateRotated  *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_rotated,json=dateRotated"`
+	xxx_hidden_LastStep     int64                  `protobuf:"varint,16,opt,name=last_step,json=lastStep"`
+	xxx_hidden_Previous     [][]byte               `protobuf:"bytes,17,rep,name=previous"`
+	xxx_hidden_DateUpdated  *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased   *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated  *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *Credential) Reset() {
@@ -132,9 +132,9 @@ func (x *Credential) GetFailures() int32 {
 	return 0
 }
 
-func (x *Credential) GetDateLocked() *timestamppb.Timestamp {
+func (x *Credential) GetDateUnlocked() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateLocked
+		return x.xxx_hidden_DateUnlocked
 	}
 	return nil
 }
@@ -211,8 +211,8 @@ func (x *Credential) SetFailures(v int32) {
 	x.xxx_hidden_Failures = v
 }
 
-func (x *Credential) SetDateLocked(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateLocked = v
+func (x *Credential) SetDateUnlocked(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUnlocked = v
 }
 
 func (x *Credential) SetDateRotated(v *timestamppb.Timestamp) {
@@ -246,11 +246,11 @@ func (x *Credential) HasHolder() bool {
 	return x.xxx_hidden_Holder != nil
 }
 
-func (x *Credential) HasDateLocked() bool {
+func (x *Credential) HasDateUnlocked() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateLocked != nil
+	return x.xxx_hidden_DateUnlocked != nil
 }
 
 func (x *Credential) HasDateRotated() bool {
@@ -285,8 +285,8 @@ func (x *Credential) ClearHolder() {
 	x.xxx_hidden_Holder = nil
 }
 
-func (x *Credential) ClearDateLocked() {
-	x.xxx_hidden_DateLocked = nil
+func (x *Credential) ClearDateUnlocked() {
+	x.xxx_hidden_DateUnlocked = nil
 }
 
 func (x *Credential) ClearDateRotated() {
@@ -364,8 +364,14 @@ type Credential_builder struct {
 	// How many times in a row somebody has failed, and until when they may not
 	// try again. Both live here because the thing being protected is here --
 	// counting attempts anywhere else is counting them per process.
-	Failures   int32
-	DateLocked *timestamppb.Timestamp
+	Failures int32
+	// The moment they may try again: when the lockout ends, and null for an
+	// account that is open. Not when it was locked.
+	//
+	// Every `date_*` names its event in the past tense, so that the name is
+	// still true once the moment has passed: this is when the account is, or
+	// was, unlocked.
+	DateUnlocked *timestamppb.Timestamp
 	// When it was last changed, for a policy that expires them and for showing
 	// somebody why they are being asked.
 	DateRotated *timestamppb.Timestamp
@@ -411,7 +417,7 @@ func (b0 Credential_builder) Build() *Credential {
 	x.xxx_hidden_Kind = b.Kind
 	x.xxx_hidden_Secret = b.Secret
 	x.xxx_hidden_Failures = b.Failures
-	x.xxx_hidden_DateLocked = b.DateLocked
+	x.xxx_hidden_DateUnlocked = b.DateUnlocked
 	x.xxx_hidden_DateRotated = b.DateRotated
 	x.xxx_hidden_LastStep = b.LastStep
 	x.xxx_hidden_Previous = b.Previous
@@ -425,7 +431,7 @@ var File_app_credential_proto protoreflect.FileDescriptor
 
 const file_app_credential_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/credential.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x97\x06\n" +
+	"\x14app/credential.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x9b\x06\n" +
 	"\n" +
 	"Credential\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
@@ -434,9 +440,8 @@ const file_app_credential_proto_rawDesc = "" +
 	"\x04kind\x18\b \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04kind\x12\x1e\n" +
 	"\x06secret\x18\t \x01(\fB\x06\xaa\xc1\x16\x02\b\x01R\x06secret\x12\x1a\n" +
 	"\bfailures\x18\n" +
-	" \x01(\x05R\bfailures\x12C\n" +
-	"\vdate_locked\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\n" +
-	"dateLocked\x12E\n" +
+	" \x01(\x05R\bfailures\x12G\n" +
+	"\rdate_unlocked\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\fdateUnlocked\x12E\n" +
 	"\fdate_rotated\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateRotated\x12\x1b\n" +
 	"\tlast_step\x18\x10 \x01(\x03R\blastStep\x12\"\n" +
 	"\bprevious\x18\x11 \x03(\fB\x06\xaa\xc1\x16\x02\b\x01R\bprevious\x12F\n" +
@@ -468,7 +473,7 @@ var file_app_credential_proto_goTypes = []any{
 }
 var file_app_credential_proto_depIdxs = []int32{
 	1, // 0: roster.Credential.holder:type_name -> roster.Holder
-	2, // 1: roster.Credential.date_locked:type_name -> google.protobuf.Timestamp
+	2, // 1: roster.Credential.date_unlocked:type_name -> google.protobuf.Timestamp
 	2, // 2: roster.Credential.date_rotated:type_name -> google.protobuf.Timestamp
 	2, // 3: roster.Credential.date_updated:type_name -> google.protobuf.Timestamp
 	2, // 4: roster.Credential.date_erased:type_name -> google.protobuf.Timestamp

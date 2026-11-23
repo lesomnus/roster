@@ -25,7 +25,7 @@ func (Credential) Fields() []ent.Field {
 		field.String("kind"),
 		field.Bytes("secret"),
 		field.Int32("failures"),
-		field.Time("date_locked").
+		field.Time("date_unlocked").
 			Nillable().
 			Optional(),
 		field.Time("date_rotated").

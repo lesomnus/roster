@@ -234,3 +234,31 @@ func TestVouchTenantIsATenantRef(t *testing.T) {
 	x.Equal(protoreflect.MessageKind, f.Kind())
 	x.Equal("VouchTenant", string(f.Message().Name()))
 }
+
+// TestNoFieldIsNamedDateLocked: a moment is named for its event in the past
+// tense, so that the name does not turn wrong once the moment has passed.
+//
+// `date_locked` held the moment a lockout **ends**, which is not when the
+// account was locked, on `Credential` and in the four messages that answer
+// it. Answered: a name for the start that holds the end; right is
+// `date_unlocked`, the moment somebody may try again.
+func TestNoFieldIsNamedDateLocked(t *testing.T) {
+	x := require.New(t)
+
+	named := []string{}
+	var walk func(protoreflect.MessageDescriptors)
+	walk = func(ms protoreflect.MessageDescriptors) {
+		for i := range ms.Len() {
+			m := ms.Get(i)
+			walk(m.Messages())
+			if m.Fields().ByName("date_locked") != nil {
+				named = append(named, string(m.FullName()))
+			}
+		}
+	}
+	protoregistry.GlobalFiles.RangeFilesByPackage("roster", func(file protoreflect.FileDescriptor) bool {
+		walk(file.Messages())
+		return true
+	})
+	x.Empty(named, "a field named for when a lock began holds when it ends")
+}

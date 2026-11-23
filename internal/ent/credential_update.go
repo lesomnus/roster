@@ -85,23 +85,23 @@ func (_u *CredentialUpdate) AddFailures(v int32) *CredentialUpdate {
 	return _u
 }
 
-// SetDateLocked sets the "date_locked" field.
-func (_u *CredentialUpdate) SetDateLocked(v time.Time) *CredentialUpdate {
-	_u.mutation.SetDateLocked(v)
+// SetDateUnlocked sets the "date_unlocked" field.
+func (_u *CredentialUpdate) SetDateUnlocked(v time.Time) *CredentialUpdate {
+	_u.mutation.SetDateUnlocked(v)
 	return _u
 }
 
-// SetNillableDateLocked sets the "date_locked" field if the given value is not nil.
-func (_u *CredentialUpdate) SetNillableDateLocked(v *time.Time) *CredentialUpdate {
+// SetNillableDateUnlocked sets the "date_unlocked" field if the given value is not nil.
+func (_u *CredentialUpdate) SetNillableDateUnlocked(v *time.Time) *CredentialUpdate {
 	if v != nil {
-		_u.SetDateLocked(*v)
+		_u.SetDateUnlocked(*v)
 	}
 	return _u
 }
 
-// ClearDateLocked clears the value of the "date_locked" field.
-func (_u *CredentialUpdate) ClearDateLocked() *CredentialUpdate {
-	_u.mutation.ClearDateLocked()
+// ClearDateUnlocked clears the value of the "date_unlocked" field.
+func (_u *CredentialUpdate) ClearDateUnlocked() *CredentialUpdate {
+	_u.mutation.ClearDateUnlocked()
 	return _u
 }
 
@@ -283,14 +283,14 @@ func (_u *CredentialUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.AddedFailures(); ok {
 		_spec.AddField(credential.FieldFailures, field.TypeInt32, value)
 	}
-	if value, ok := _u.mutation.DateLocked(); ok {
-		_spec.SetField(credential.FieldDateLocked, field.TypeTime, value)
+	if value, ok := _u.mutation.DateUnlocked(); ok {
+		_spec.SetField(credential.FieldDateUnlocked, field.TypeTime, value)
 	}
-	if e, ok := _u.mutation.FieldExpr(credential.FieldDateLocked); ok {
-		_spec.SetField(credential.FieldDateLocked, field.TypeTime, e)
+	if e, ok := _u.mutation.FieldExpr(credential.FieldDateUnlocked); ok {
+		_spec.SetField(credential.FieldDateUnlocked, field.TypeTime, e)
 	}
-	if _u.mutation.DateLockedCleared() {
-		_spec.ClearField(credential.FieldDateLocked, field.TypeTime)
+	if _u.mutation.DateUnlockedCleared() {
+		_spec.ClearField(credential.FieldDateUnlocked, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateRotated(); ok {
 		_spec.SetField(credential.FieldDateRotated, field.TypeTime, value)
@@ -419,23 +419,23 @@ func (_u *CredentialUpdateOne) AddFailures(v int32) *CredentialUpdateOne {
 	return _u
 }
 
-// SetDateLocked sets the "date_locked" field.
-func (_u *CredentialUpdateOne) SetDateLocked(v time.Time) *CredentialUpdateOne {
-	_u.mutation.SetDateLocked(v)
+// SetDateUnlocked sets the "date_unlocked" field.
+func (_u *CredentialUpdateOne) SetDateUnlocked(v time.Time) *CredentialUpdateOne {
+	_u.mutation.SetDateUnlocked(v)
 	return _u
 }
 
-// SetNillableDateLocked sets the "date_locked" field if the given value is not nil.
-func (_u *CredentialUpdateOne) SetNillableDateLocked(v *time.Time) *CredentialUpdateOne {
+// SetNillableDateUnlocked sets the "date_unlocked" field if the given value is not nil.
+func (_u *CredentialUpdateOne) SetNillableDateUnlocked(v *time.Time) *CredentialUpdateOne {
 	if v != nil {
-		_u.SetDateLocked(*v)
+		_u.SetDateUnlocked(*v)
 	}
 	return _u
 }
 
-// ClearDateLocked clears the value of the "date_locked" field.
-func (_u *CredentialUpdateOne) ClearDateLocked() *CredentialUpdateOne {
-	_u.mutation.ClearDateLocked()
+// ClearDateUnlocked clears the value of the "date_unlocked" field.
+func (_u *CredentialUpdateOne) ClearDateUnlocked() *CredentialUpdateOne {
+	_u.mutation.ClearDateUnlocked()
 	return _u
 }
 
@@ -647,14 +647,14 @@ func (_u *CredentialUpdateOne) sqlSave(ctx context.Context) (_node *Credential, 
 	if value, ok := _u.mutation.AddedFailures(); ok {
 		_spec.AddField(credential.FieldFailures, field.TypeInt32, value)
 	}
-	if value, ok := _u.mutation.DateLocked(); ok {
-		_spec.SetField(credential.FieldDateLocked, field.TypeTime, value)
+	if value, ok := _u.mutation.DateUnlocked(); ok {
+		_spec.SetField(credential.FieldDateUnlocked, field.TypeTime, value)
 	}
-	if e, ok := _u.mutation.FieldExpr(credential.FieldDateLocked); ok {
-		_spec.SetField(credential.FieldDateLocked, field.TypeTime, e)
+	if e, ok := _u.mutation.FieldExpr(credential.FieldDateUnlocked); ok {
+		_spec.SetField(credential.FieldDateUnlocked, field.TypeTime, e)
 	}
-	if _u.mutation.DateLockedCleared() {
-		_spec.ClearField(credential.FieldDateLocked, field.TypeTime)
+	if _u.mutation.DateUnlockedCleared() {
+		_spec.ClearField(credential.FieldDateUnlocked, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateRotated(); ok {
 		_spec.SetField(credential.FieldDateRotated, field.TypeTime, value)

@@ -993,13 +993,13 @@ func (b0 SignInIdentity_builder) Build() *SignInIdentity {
 // is absent rather than deselected. That is the same statement D13 makes by not
 // registering the service, said again where a page can hear it.
 type SignInCredential struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Kind        string                 `protobuf:"bytes,8,opt,name=kind"`
-	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_DateRotated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_rotated,json=dateRotated"`
-	xxx_hidden_DateLocked  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_locked,json=dateLocked"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                   protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Kind         string                 `protobuf:"bytes,8,opt,name=kind"`
+	xxx_hidden_Name         string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_DateRotated  *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_rotated,json=dateRotated"`
+	xxx_hidden_DateUnlocked *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_unlocked,json=dateUnlocked"`
+	unknownFields           protoimpl.UnknownFields
+	sizeCache               protoimpl.SizeCache
 }
 
 func (x *SignInCredential) Reset() {
@@ -1048,9 +1048,9 @@ func (x *SignInCredential) GetDateRotated() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *SignInCredential) GetDateLocked() *timestamppb.Timestamp {
+func (x *SignInCredential) GetDateUnlocked() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateLocked
+		return x.xxx_hidden_DateUnlocked
 	}
 	return nil
 }
@@ -1067,8 +1067,8 @@ func (x *SignInCredential) SetDateRotated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateRotated = v
 }
 
-func (x *SignInCredential) SetDateLocked(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateLocked = v
+func (x *SignInCredential) SetDateUnlocked(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUnlocked = v
 }
 
 func (x *SignInCredential) HasDateRotated() bool {
@@ -1078,19 +1078,19 @@ func (x *SignInCredential) HasDateRotated() bool {
 	return x.xxx_hidden_DateRotated != nil
 }
 
-func (x *SignInCredential) HasDateLocked() bool {
+func (x *SignInCredential) HasDateUnlocked() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateLocked != nil
+	return x.xxx_hidden_DateUnlocked != nil
 }
 
 func (x *SignInCredential) ClearDateRotated() {
 	x.xxx_hidden_DateRotated = nil
 }
 
-func (x *SignInCredential) ClearDateLocked() {
-	x.xxx_hidden_DateLocked = nil
+func (x *SignInCredential) ClearDateUnlocked() {
+	x.xxx_hidden_DateUnlocked = nil
 }
 
 type SignInCredential_builder struct {
@@ -1107,7 +1107,7 @@ type SignInCredential_builder struct {
 	// Until when they may not try again, and null for an account that is open.
 	// Shown because somebody locked out being told nothing is somebody who tries
 	// forever -- the trade `VouchVerifyResponse` already took.
-	DateLocked *timestamppb.Timestamp
+	DateUnlocked *timestamppb.Timestamp
 }
 
 func (b0 SignInCredential_builder) Build() *SignInCredential {
@@ -1117,7 +1117,7 @@ func (b0 SignInCredential_builder) Build() *SignInCredential {
 	x.xxx_hidden_Kind = b.Kind
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_DateRotated = b.DateRotated
-	x.xxx_hidden_DateLocked = b.DateLocked
+	x.xxx_hidden_DateUnlocked = b.DateUnlocked
 	return m0
 }
 
@@ -1501,13 +1501,12 @@ const file_app_me_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1a\n" +
 	"\bprovider\x18\b \x01(\tR\bprovider\x12\x18\n" +
 	"\asubject\x18\t \x01(\tR\asubject\x12=\n" +
-	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"\xb6\x01\n" +
+	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"\xba\x01\n" +
 	"\x10SignInCredential\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12=\n" +
-	"\fdate_rotated\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\vdateRotated\x12;\n" +
-	"\vdate_locked\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"dateLocked\"d\n" +
+	"\fdate_rotated\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\vdateRotated\x12?\n" +
+	"\rdate_unlocked\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\fdateUnlocked\"d\n" +
 	"\aMeEmail\x12\x18\n" +
 	"\aaddress\x18\b \x01(\tR\aaddress\x12?\n" +
 	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\fdateVerified\"q\n" +
@@ -1561,7 +1560,7 @@ var file_app_me_proto_depIdxs = []int32{
 	12, // 10: roster.SignInKey.date_used:type_name -> google.protobuf.Timestamp
 	12, // 11: roster.SignInIdentity.date_created:type_name -> google.protobuf.Timestamp
 	12, // 12: roster.SignInCredential.date_rotated:type_name -> google.protobuf.Timestamp
-	12, // 13: roster.SignInCredential.date_locked:type_name -> google.protobuf.Timestamp
+	12, // 13: roster.SignInCredential.date_unlocked:type_name -> google.protobuf.Timestamp
 	12, // 14: roster.MeEmail.date_verified:type_name -> google.protobuf.Timestamp
 	0,  // 15: roster.MeService.Get:input_type -> roster.MeGetRequest
 	1,  // 16: roster.MeService.SignOutEverywhere:input_type -> roster.MeSignOutEverywhereRequest

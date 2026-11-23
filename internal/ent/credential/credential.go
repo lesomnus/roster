@@ -20,8 +20,8 @@ const (
 	FieldSecret = "secret"
 	// FieldFailures holds the string denoting the failures field in the database.
 	FieldFailures = "failures"
-	// FieldDateLocked holds the string denoting the date_locked field in the database.
-	FieldDateLocked = "date_locked"
+	// FieldDateUnlocked holds the string denoting the date_unlocked field in the database.
+	FieldDateUnlocked = "date_unlocked"
 	// FieldDateRotated holds the string denoting the date_rotated field in the database.
 	FieldDateRotated = "date_rotated"
 	// FieldLastStep holds the string denoting the last_step field in the database.
@@ -56,7 +56,7 @@ var Columns = []string{
 	FieldKind,
 	FieldSecret,
 	FieldFailures,
-	FieldDateLocked,
+	FieldDateUnlocked,
 	FieldDateRotated,
 	FieldLastStep,
 	FieldPrevious,
@@ -99,9 +99,9 @@ func ByFailures(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFailures, opts...).ToFunc()
 }
 
-// ByDateLocked orders the results by the date_locked field.
-func ByDateLocked(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDateLocked, opts...).ToFunc()
+// ByDateUnlocked orders the results by the date_unlocked field.
+func ByDateUnlocked(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateUnlocked, opts...).ToFunc()
 }
 
 // ByDateRotated orders the results by the date_rotated field.

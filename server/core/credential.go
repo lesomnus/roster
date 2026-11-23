@@ -62,9 +62,9 @@ func (s coreCredential) Unlock(ctx context.Context, req *app.CredentialUnlockReq
 			}.Build(),
 		}.Build(),
 		Select: app.CredentialSelect_builder{
-			DateLocked:  z.Ptr(true),
-			DateUpdated: z.Ptr(true),
-			Holder:      app.HolderSelect_builder{}.Build(),
+			DateUnlocked: z.Ptr(true),
+			DateUpdated:  z.Ptr(true),
+			Holder:       app.HolderSelect_builder{}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -79,19 +79,19 @@ func (s coreCredential) Unlock(ctx context.Context, req *app.CredentialUnlockReq
 		return nil, err
 	}
 
-	was := v.GetDateLocked()
+	was := v.GetDateUnlocked()
 	if _, err := s.Next().Credential().Patch(ctx, app.CredentialPatchRequest_builder{
-		Ref:            app.CredentialRef_builder{Id: v.GetId()}.Build(),
-		Failures:       z.Ptr(int32(0)),
-		DateLockedNull: z.Ptr(true),
-		DateUpdated:    v.GetDateUpdated(),
+		Ref:              app.CredentialRef_builder{Id: v.GetId()}.Build(),
+		Failures:         z.Ptr(int32(0)),
+		DateUnlockedNull: z.Ptr(true),
+		DateUpdated:      v.GetDateUpdated(),
 	}.Build()); err != nil {
 		return nil, err
 	}
 
 	res := app.CredentialUnlockResponse_builder{}
 	if was != nil {
-		res.DateLocked = was
+		res.DateUnlocked = was
 	}
 
 	return res.Build(), nil
@@ -243,11 +243,11 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	v, err := s.Next().Credential().Get(ctx, app.CredentialGetRequest_builder{
 		Ref: byKind,
 		Select: app.CredentialSelect_builder{
-			DateUpdated: z.Ptr(true),
-			Secret:      z.Ptr(own || s.password.NoReuse > 0),
-			Previous:    z.Ptr(s.password.NoReuse > 0),
-			Failures:    z.Ptr(own),
-			DateLocked:  z.Ptr(own),
+			DateUpdated:  z.Ptr(true),
+			Secret:       z.Ptr(own || s.password.NoReuse > 0),
+			Previous:     z.Ptr(s.password.NoReuse > 0),
+			Failures:     z.Ptr(own),
+			DateUnlocked: z.Ptr(own),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -294,12 +294,12 @@ func (s coreCredential) Set(ctx context.Context, req *app.CredentialSetRequest) 
 	// lockout was protecting against -- under the version read, so a concurrent
 	// write is reported rather than lost.
 	patch := app.CredentialPatchRequest_builder{
-		Ref:            app.CredentialRef_builder{Id: v.GetId()}.Build(),
-		Secret:         sum,
-		Failures:       z.Ptr(int32(0)),
-		DateLockedNull: z.Ptr(true),
-		DateRotated:    timestamppb.Now(),
-		DateUpdated:    v.GetDateUpdated(),
+		Ref:              app.CredentialRef_builder{Id: v.GetId()}.Build(),
+		Secret:           sum,
+		Failures:         z.Ptr(int32(0)),
+		DateUnlockedNull: z.Ptr(true),
+		DateRotated:      timestamppb.Now(),
+		DateUpdated:      v.GetDateUpdated(),
 	}
 	if kind == vouch.KindPassword && s.password.NoReuse > 0 {
 		// Against the one held and the ones before it, compared the way a
@@ -602,7 +602,7 @@ func (s coreCredential) whosePassword(ctx context.Context, req *app.CredentialIs
 // A locked row is refused before it is compared, for the reason the sign-in
 // refuses one: the lock is what the comparison's cost was buying.
 func (s coreCredential) reauth(ctx context.Context, v *app.Credential, current []byte) error {
-	if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
+	if until := v.GetDateUnlocked(); until != nil && until.AsTime().After(time.Now()) {
 		return status.Errorf(codes.PermissionDenied,
 			"locked until %s after too many wrong answers", until.AsTime().Format(time.RFC3339))
 	}
@@ -622,7 +622,7 @@ func (s coreCredential) reauth(ctx context.Context, v *app.Credential, current [
 		DateUpdated: v.GetDateUpdated(),
 	}
 	if n >= s.lockout.Failures {
-		patch.DateLocked = timestamppb.New(time.Now().Add(s.lockout.For))
+		patch.DateUnlocked = timestamppb.New(time.Now().Add(s.lockout.For))
 		patch.Failures = z.Ptr(int32(0))
 	}
 	// Best effort, like `Verify`'s: a count lost to a concurrent write is a

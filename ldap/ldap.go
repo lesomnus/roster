@@ -561,7 +561,7 @@ func (d *Directory) bind(ctx context.Context, c *wire.Conn, req wire.BindRequest
 		how.ended = endedFactor
 
 		return wire.Refuse(wire.InvalidCredentials, "a second factor is enrolled; use an app password for this client"), how
-	case v.GetDateLocked() != nil:
+	case v.GetDateUnlocked() != nil:
 		// Said to the log, where whoever is asked which client locked
 		// somebody out reads it, and not to the client.
 		how.ended = endedLocked

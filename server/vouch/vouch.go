@@ -372,7 +372,7 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 		return no(), nil, nil
 	}
 
-	if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
+	if until := v.GetDateUnlocked(); until != nil && until.AsTime().After(time.Now()) {
 		// Not compared, and nothing written. An attempt that was never going to
 		// be answered must not move the expiry, or one continuous stream of
 		// guesses keeps the account closed for as long as it lasts.
@@ -390,7 +390,7 @@ func (s *Server) verify(ctx context.Context, who *app.VouchWho, kind, name strin
 		// eleventh wrong password knew the name was somebody's (#275).
 		by.Burn(secret)
 
-		return app.VouchVerifyResponse_builder{DateLocked: until}.Build(), nil, nil
+		return app.VouchVerifyResponse_builder{DateUnlocked: until}.Build(), nil, nil
 	}
 
 	ok, step, err := by.Compare(v.GetSecret(), secret, v.GetLastStep())
@@ -497,9 +497,9 @@ func (s *Server) failed(ctx context.Context, v *app.Credential) (*app.VouchVerif
 		v, err = s.open.Credential().Get(ctx, app.CredentialGetRequest_builder{
 			Ref: app.CredentialRef_builder{Id: v.GetId()}.Build(),
 			Select: app.CredentialSelect_builder{
-				Failures:    z.Ptr(true),
-				DateLocked:  z.Ptr(true),
-				DateUpdated: z.Ptr(true),
+				Failures:     z.Ptr(true),
+				DateUnlocked: z.Ptr(true),
+				DateUpdated:  z.Ptr(true),
 			}.Build(),
 		}.Build())
 		if err != nil {
@@ -509,10 +509,10 @@ func (s *Server) failed(ctx context.Context, v *app.Credential) (*app.VouchVerif
 
 			return nil, err
 		}
-		if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
+		if until := v.GetDateUnlocked(); until != nil && until.AsTime().After(time.Now()) {
 			// Closed by the ones ahead of this. Said, as the answer that
 			// closed it was.
-			return app.VouchVerifyResponse_builder{DateLocked: until}.Build(), nil
+			return app.VouchVerifyResponse_builder{DateUnlocked: until}.Build(), nil
 		}
 	}
 
@@ -536,14 +536,14 @@ func (s *Server) count(ctx context.Context, v *app.Credential) (*app.VouchVerify
 	res := no()
 	if n >= s.lockout.Failures {
 		until := timestamppb.New(time.Now().Add(s.lockout.For))
-		patch.DateLocked = until
+		patch.DateUnlocked = until
 
 		// The count starts again, so that the lock expiring gives a full set of
 		// attempts rather than one -- otherwise every later mistake re-locks
 		// immediately and the account is effectively gone.
 		patch.Failures = z.Ptr(int32(0))
 
-		res = app.VouchVerifyResponse_builder{DateLocked: until}.Build()
+		res = app.VouchVerifyResponse_builder{DateUnlocked: until}.Build()
 	}
 
 	if _, err := s.open.Credential().Patch(ctx, patch.Build()); err != nil {
@@ -588,7 +588,7 @@ func raced(err error) bool {
 // was protecting against, and somebody who has proved one of two things has not
 // proved that yet.
 func (s *Server) passed(ctx context.Context, v *app.Credential, step int64, done bool) error {
-	clears := done && (v.GetFailures() != 0 || v.GetDateLocked() != nil)
+	clears := done && (v.GetFailures() != 0 || v.GetDateUnlocked() != nil)
 	moves := step > v.GetLastStep()
 
 	// A step that has to be spent is a write whatever else is true, and it is
@@ -605,7 +605,7 @@ func (s *Server) passed(ctx context.Context, v *app.Credential, step int64, done
 	}
 	if clears {
 		patch.Failures = z.Ptr(int32(0))
-		patch.DateLockedNull = z.Ptr(true)
+		patch.DateUnlockedNull = z.Ptr(true)
 	}
 	if moves {
 		patch.LastStep = z.Ptr(step)
@@ -677,10 +677,10 @@ func (s *Server) claim(ctx context.Context, v *app.Credential, step int64) (*app
 		at, err := s.open.Credential().Get(ctx, app.CredentialGetRequest_builder{
 			Ref: app.CredentialRef_builder{Id: v.GetId()}.Build(),
 			Select: app.CredentialSelect_builder{
-				LastStep:    z.Ptr(true),
-				Failures:    z.Ptr(true),
-				DateLocked:  z.Ptr(true),
-				DateUpdated: z.Ptr(true),
+				LastStep:     z.Ptr(true),
+				Failures:     z.Ptr(true),
+				DateUnlocked: z.Ptr(true),
+				DateUpdated:  z.Ptr(true),
 			}.Build(),
 		}.Build())
 		if err != nil {
@@ -699,10 +699,10 @@ func (s *Server) claim(ctx context.Context, v *app.Credential, step int64) (*app
 		next.SetLastStep(at.GetLastStep())
 		next.SetFailures(at.GetFailures())
 		next.SetDateUpdated(at.GetDateUpdated())
-		if u := at.GetDateLocked(); u != nil {
-			next.SetDateLocked(u)
+		if u := at.GetDateUnlocked(); u != nil {
+			next.SetDateUnlocked(u)
 		} else {
-			next.ClearDateLocked()
+			next.ClearDateUnlocked()
 		}
 		v = next
 	}

@@ -520,7 +520,7 @@ the local account: the deployment with no IdP in front of it, and the
 break-glass administrator who signs in when everything else is down. Nothing
 reads `secret` back: a comparison done anywhere else is a hash that has left the
 store, and it puts timing-safe comparison, attempt counting and lockout in two
-places that will disagree. `failures` and `date_locked` are on the row because
+places that will disagree. `failures` and `date_unlocked` are on the row because
 counting attempts anywhere else counts them per process. The unique index is
 `(holder, kind, name)` and not `(holder, kind)`, because registering a second
 security key is the standard WebAuthn recovery advice.

@@ -2960,21 +2960,21 @@ func (m *CredentialMutation) OldFailures(ctx context.Context) (v int32, err erro
 	return oldValue.Failures, nil
 }
 
-// OldDateLocked returns the old "date_locked" field's value of the Credential entity.
+// OldDateUnlocked returns the old "date_unlocked" field's value of the Credential entity.
 // If the Credential object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *CredentialMutation) OldDateLocked(ctx context.Context) (v *time.Time, err error) {
+func (m *CredentialMutation) OldDateUnlocked(ctx context.Context) (v *time.Time, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateLocked is only allowed on UpdateOne operations")
+		return v, errors.New("OldDateUnlocked is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateLocked requires an Id field in the mutation")
+		return v, errors.New("OldDateUnlocked requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateLocked: %w", err)
+		return v, fmt.Errorf("querying old value for OldDateUnlocked: %w", err)
 	}
-	return oldValue.DateLocked, nil
+	return oldValue.DateUnlocked, nil
 }
 
 // OldDateRotated returns the old "date_rotated" field's value of the Credential entity.
@@ -3109,8 +3109,8 @@ func (m *CredentialMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldSecret(ctx)
 	case credential.FieldFailures:
 		return m.OldFailures(ctx)
-	case credential.FieldDateLocked:
-		return m.OldDateLocked(ctx)
+	case credential.FieldDateUnlocked:
+		return m.OldDateUnlocked(ctx)
 	case credential.FieldDateRotated:
 		return m.OldDateRotated(ctx)
 	case credential.FieldLastStep:

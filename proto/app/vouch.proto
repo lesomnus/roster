@@ -459,7 +459,7 @@ message VouchFactor {
   string name = 5;
 
   // When they may try this one again, and unset for one that is open.
-  google.protobuf.Timestamp date_locked = 4;
+  google.protobuf.Timestamp date_unlocked = 4;
 
   // For `webauthn`: the credential identifier the authenticator chose, as a
   // browser is told to look for it (`allowCredentials`), base64url. What a
@@ -507,7 +507,7 @@ message VouchVerifyResponse {
   // which every other refusal here is careful not to. The alternative is a
   // product where somebody locked out is told nothing and tries forever, and
   // being locked out is already something they can discover by succeeding.
-  google.protobuf.Timestamp date_locked = 4;
+  google.protobuf.Timestamp date_unlocked = 4;
 
   // What has been proved so far, and what else this person has.
   //

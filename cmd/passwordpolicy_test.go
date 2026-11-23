@@ -67,10 +67,10 @@ func TestTheLockoutIsTheDeploymentsNumbers(t *testing.T) {
 	}
 	first := wrong()
 	x.False(first.GetOk())
-	x.Nil(first.GetDateLocked(), "locked one answer early")
+	x.Nil(first.GetDateUnlocked(), "locked one answer early")
 	res := wrong()
-	x.NotNil(res.GetDateLocked(), "two wrong answers did not lock, as the deployment said they should")
-	x.WithinDuration(time.Now().Add(time.Hour), res.GetDateLocked().AsTime(), time.Minute, "locked for the default rather than for what was said")
+	x.NotNil(res.GetDateUnlocked(), "two wrong answers did not lock, as the deployment said they should")
+	x.WithinDuration(time.Now().Add(time.Hour), res.GetDateUnlocked().AsTime(), time.Minute, "locked for the default rather than for what was said")
 
 	t.Run("and unset is the default", func(t *testing.T) {
 		x := require.New(t)
@@ -138,8 +138,8 @@ func TestTheConsolesSignInCountsByTheDeploymentsLockout(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 		x.Len(v.GetCredentials(), 1)
-		x.NotNil(v.GetCredentials()[0].GetDateLocked())
-		x.WithinDuration(time.Now().Add(time.Hour), v.GetCredentials()[0].GetDateLocked().AsTime(), time.Minute)
+		x.NotNil(v.GetCredentials()[0].GetDateUnlocked())
+		x.WithinDuration(time.Now().Add(time.Hour), v.GetCredentials()[0].GetDateUnlocked().AsTime(), time.Minute)
 	})
 
 	t.Run("an operator, at the admin listener", func(t *testing.T) {
@@ -209,7 +209,7 @@ func TestAClosedAccountCostsWhatAWrongPasswordCosts(t *testing.T) {
 	x.NoError(err)
 
 	closed, locked := ask(theirs)
-	x.NotNil(closed.GetDateLocked(), "the account is not closed, so this measured nothing")
+	x.NotNil(closed.GetDateUnlocked(), "the account is not closed, so this measured nothing")
 
 	_, stranger := ask(app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "nobody-by-this-name"}.Build())
 

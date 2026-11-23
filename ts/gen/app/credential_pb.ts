@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/credential.proto.
  */
 export const file_app_credential: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvY3JlZGVudGlhbC5wcm90bxIGcm9zdGVyIpoFCgpDcmVkZW50aWFsEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESFAoEbmFtZRgFIAEoCUIGqsEWAhgBEhQKBGtpbmQYCCABKAlCBqrBFgIYABIWCgZzZWNyZXQYCSABKAxCBqrBFgIIARIQCghmYWlsdXJlcxgKIAEoBRI3CgtkYXRlX2xvY2tlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI4CgxkYXRlX3JvdGF0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESEQoJbGFzdF9zdGVwGBAgASgDEhgKCHByZXZpb3VzGBEgAygMQgaqwRYCCAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOqIByvwVUBICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGigSBGtpbmQaCgoGaG9sZGVyEAIaCAoEa2luZBAIGggKBG5hbWUQBTABirsWSggNMjMKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGggKBmhvbGRlciAUKGQ6ACIPCg1ob2xkZXIudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChRhcHAvY3JlZGVudGlhbC5wcm90bxIGcm9zdGVyIpwFCgpDcmVkZW50aWFsEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESFAoEbmFtZRgFIAEoCUIGqsEWAhgBEhQKBGtpbmQYCCABKAlCBqrBFgIYABIWCgZzZWNyZXQYCSABKAxCBqrBFgIIARIQCghmYWlsdXJlcxgKIAEoBRI5Cg1kYXRlX3VubG9ja2VkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEjgKDGRhdGVfcm90YXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARIRCglsYXN0X3N0ZXAYECABKAMSGAoIcHJldmlvdXMYESADKAxCBqrBFgIIARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6ogHK/BVQEgIQARogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaKBIEa2luZBoKCgZob2xkZXIQAhoICgRraW5kEAgaCAoEbmFtZRAFMAGKuxZKCA0yMwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGaG9sZGVyIBQoZDoAIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Credential is a secret somebody proves themselves with here, rather than at a
@@ -133,9 +133,16 @@ export type Credential = Message<"roster.Credential"> & {
   failures: number;
 
   /**
-   * @generated from field: google.protobuf.Timestamp date_locked = 11;
+   * The moment they may try again: when the lockout ends, and null for an
+   * account that is open. Not when it was locked.
+   *
+   * Every `date_*` names its event in the past tense, so that the name is
+   * still true once the moment has passed: this is when the account is, or
+   * was, unlocked.
+   *
+   * @generated from field: google.protobuf.Timestamp date_unlocked = 11;
    */
-  dateLocked?: Timestamp | undefined;
+  dateUnlocked?: Timestamp | undefined;
 
   /**
    * When it was last changed, for a policy that expires them and for showing

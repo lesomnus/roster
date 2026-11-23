@@ -411,7 +411,7 @@ func newCmdVouchUnlock(c *cmd.Config, control bool) *xli.Command {
 			// is not" from "it was never locked" -- which is the difference
 			// between having fixed something and having looked in the wrong
 			// place.
-			if u := res.GetDateLocked(); u != nil {
+			if u := res.GetDateUnlocked(); u != nil {
 				fmt.Fprintf(os.Stderr, "was locked until %s; open now.\n", u.AsTime().Format("15:04:05"))
 			} else {
 				fmt.Fprintln(os.Stderr, "was not locked.")

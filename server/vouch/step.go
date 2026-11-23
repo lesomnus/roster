@@ -115,10 +115,10 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 		return no(), nil, nil
 	}
 
-	if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
+	if until := v.GetDateUnlocked(); until != nil && until.AsTime().After(time.Now()) {
 		_, _ = s.spend(ctx, c)
 
-		return app.VouchVerifyResponse_builder{DateLocked: until}.Build(), nil, nil
+		return app.VouchVerifyResponse_builder{DateUnlocked: until}.Build(), nil, nil
 	}
 
 	// And the row this attempt is **metered on**, which is the one a wrong
@@ -138,7 +138,7 @@ func (s *Server) step(ctx context.Context, handle, kind, name string, secret []b
 	if until != nil {
 		_, _ = s.spend(ctx, c)
 
-		return app.VouchVerifyResponse_builder{DateLocked: until}.Build(), nil, nil
+		return app.VouchVerifyResponse_builder{DateUnlocked: until}.Build(), nil, nil
 	}
 
 	ok, at, err := by.Compare(v.GetSecret(), secret, v.GetLastStep())
@@ -244,7 +244,7 @@ func (s *Server) lockedAt(ctx context.Context, id []byte) (*timestamppb.Timestam
 
 	v, err := s.open.Credential().Get(ctx, app.CredentialGetRequest_builder{
 		Ref:    app.CredentialRef_builder{Id: id}.Build(),
-		Select: app.CredentialSelect_builder{DateLocked: z.Ptr(true)}.Build(),
+		Select: app.CredentialSelect_builder{DateUnlocked: z.Ptr(true)}.Build(),
 	}.Build())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -256,7 +256,7 @@ func (s *Server) lockedAt(ctx context.Context, id []byte) (*timestamppb.Timestam
 		return nil, err
 	}
 
-	if until := v.GetDateLocked(); until != nil && until.AsTime().After(time.Now()) {
+	if until := v.GetDateUnlocked(); until != nil && until.AsTime().After(time.Now()) {
 		return until, nil
 	}
 
@@ -273,9 +273,9 @@ func (s *Server) settle(ctx context.Context, metered, last []byte) error {
 	v, err := s.open.Credential().Get(ctx, app.CredentialGetRequest_builder{
 		Ref: app.CredentialRef_builder{Id: metered}.Build(),
 		Select: app.CredentialSelect_builder{
-			Failures:    z.Ptr(true),
-			DateLocked:  z.Ptr(true),
-			DateUpdated: z.Ptr(true),
+			Failures:     z.Ptr(true),
+			DateUnlocked: z.Ptr(true),
+			DateUpdated:  z.Ptr(true),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -285,15 +285,15 @@ func (s *Server) settle(ctx context.Context, metered, last []byte) error {
 
 		return err
 	}
-	if v.GetFailures() == 0 && v.GetDateLocked() == nil {
+	if v.GetFailures() == 0 && v.GetDateUnlocked() == nil {
 		return nil
 	}
 
 	_, err = s.open.Credential().Patch(ctx, app.CredentialPatchRequest_builder{
-		Ref:            app.CredentialRef_builder{Id: metered}.Build(),
-		Failures:       z.Ptr(int32(0)),
-		DateLockedNull: z.Ptr(true),
-		DateUpdated:    v.GetDateUpdated(),
+		Ref:              app.CredentialRef_builder{Id: metered}.Build(),
+		Failures:         z.Ptr(int32(0)),
+		DateUnlockedNull: z.Ptr(true),
+		DateUpdated:      v.GetDateUpdated(),
 	}.Build())
 	if raced(err) {
 		// Somebody counted, or cleared, this instant: theirs stands.
@@ -423,8 +423,8 @@ func (s *Server) factors(ctx context.Context, who pdid.Id, satisfied []string) (
 		}
 
 		f := app.VouchFactor_builder{Kind: v.GetKind(), Name: v.GetName()}
-		if u := v.GetDateLocked(); u != nil && u.AsTime().After(time.Now()) {
-			f.DateLocked = u
+		if u := v.GetDateUnlocked(); u != nil && u.AsTime().After(time.Now()) {
+			f.DateUnlocked = u
 		}
 		if v.GetKind() == KindWebAuthn {
 			// What a browser is told to look for: the identifier the
@@ -600,9 +600,9 @@ func (s *Server) failedAt(ctx context.Context, id []byte) (*app.VouchVerifyRespo
 	v, err := s.open.Credential().Get(ctx, app.CredentialGetRequest_builder{
 		Ref: app.CredentialRef_builder{Id: id}.Build(),
 		Select: app.CredentialSelect_builder{
-			Failures:    z.Ptr(true),
-			DateLocked:  z.Ptr(true),
-			DateUpdated: z.Ptr(true),
+			Failures:     z.Ptr(true),
+			DateUnlocked: z.Ptr(true),
+			DateUpdated:  z.Ptr(true),
 		}.Build(),
 	}.Build())
 	if err != nil {
@@ -631,11 +631,11 @@ func (s *Server) credentialNamed(ctx context.Context, from app.Server, ref *app.
 			}.Build(),
 		}.Build(),
 		Select: app.CredentialSelect_builder{
-			Secret:      z.Ptr(true),
-			Failures:    z.Ptr(true),
-			DateLocked:  z.Ptr(true),
-			LastStep:    z.Ptr(true),
-			DateUpdated: z.Ptr(true),
+			Secret:       z.Ptr(true),
+			Failures:     z.Ptr(true),
+			DateUnlocked: z.Ptr(true),
+			LastStep:     z.Ptr(true),
+			DateUpdated:  z.Ptr(true),
 
 			Holder: app.HolderSelect_builder{
 				Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),

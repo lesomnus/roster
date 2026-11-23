@@ -48,16 +48,16 @@ func (_c *CredentialCreate) SetFailures(v int32) *CredentialCreate {
 	return _c
 }
 
-// SetDateLocked sets the "date_locked" field.
-func (_c *CredentialCreate) SetDateLocked(v time.Time) *CredentialCreate {
-	_c.mutation.SetDateLocked(v)
+// SetDateUnlocked sets the "date_unlocked" field.
+func (_c *CredentialCreate) SetDateUnlocked(v time.Time) *CredentialCreate {
+	_c.mutation.SetDateUnlocked(v)
 	return _c
 }
 
-// SetNillableDateLocked sets the "date_locked" field if the given value is not nil.
-func (_c *CredentialCreate) SetNillableDateLocked(v *time.Time) *CredentialCreate {
+// SetNillableDateUnlocked sets the "date_unlocked" field if the given value is not nil.
+func (_c *CredentialCreate) SetNillableDateUnlocked(v *time.Time) *CredentialCreate {
 	if v != nil {
-		_c.SetDateLocked(*v)
+		_c.SetDateUnlocked(*v)
 	}
 	return _c
 }
@@ -267,9 +267,9 @@ func (_c *CredentialCreate) createSpec() (*Credential, *sqlgraph.CreateSpec) {
 		_spec.SetField(credential.FieldFailures, field.TypeInt32, value)
 		_node.Failures = value
 	}
-	if value, ok := _c.mutation.DateLocked(); ok {
-		_spec.SetField(credential.FieldDateLocked, field.TypeTime, value)
-		_node.DateLocked = &value
+	if value, ok := _c.mutation.DateUnlocked(); ok {
+		_spec.SetField(credential.FieldDateUnlocked, field.TypeTime, value)
+		_node.DateUnlocked = &value
 	}
 	if value, ok := _c.mutation.DateRotated(); ok {
 		_spec.SetField(credential.FieldDateRotated, field.TypeTime, value)

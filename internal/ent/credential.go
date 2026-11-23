@@ -28,8 +28,8 @@ type Credential struct {
 	Secret []byte `json:"secret,omitempty"`
 	// Failures holds the value of the "failures" field.
 	Failures int32 `json:"failures,omitempty"`
-	// DateLocked holds the value of the "date_locked" field.
-	DateLocked *time.Time `json:"date_locked,omitempty"`
+	// DateUnlocked holds the value of the "date_unlocked" field.
+	DateUnlocked *time.Time `json:"date_unlocked,omitempty"`
 	// DateRotated holds the value of the "date_rotated" field.
 	DateRotated *time.Time `json:"date_rotated,omitempty"`
 	// LastStep holds the value of the "last_step" field.
@@ -81,7 +81,7 @@ func (*Credential) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case credential.FieldName, credential.FieldKind:
 			values[i] = new(sql.NullString)
-		case credential.FieldDateLocked, credential.FieldDateRotated, credential.FieldDateUpdated, credential.FieldDateErased, credential.FieldDateCreated:
+		case credential.FieldDateUnlocked, credential.FieldDateRotated, credential.FieldDateUpdated, credential.FieldDateErased, credential.FieldDateCreated:
 			values[i] = new(sql.NullTime)
 		case credential.FieldId, credential.FieldHolderId:
 			values[i] = new(uuid.UUID)
@@ -133,12 +133,12 @@ func (_m *Credential) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Failures = int32(value.Int64)
 			}
-		case credential.FieldDateLocked:
+		case credential.FieldDateUnlocked:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field date_locked", values[i])
+				return fmt.Errorf("unexpected type %T for field date_unlocked", values[i])
 			} else if value.Valid {
-				_m.DateLocked = new(time.Time)
-				*_m.DateLocked = value.Time
+				_m.DateUnlocked = new(time.Time)
+				*_m.DateUnlocked = value.Time
 			}
 		case credential.FieldDateRotated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -239,8 +239,8 @@ func (_m *Credential) String() string {
 	builder.WriteString("failures=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Failures))
 	builder.WriteString(", ")
-	if v := _m.DateLocked; v != nil {
-		builder.WriteString("date_locked=")
+	if v := _m.DateUnlocked; v != nil {
+		builder.WriteString("date_unlocked=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
