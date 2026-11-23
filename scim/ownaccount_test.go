@@ -89,7 +89,7 @@ func TestADirectoryFindsNobodyByAnAccountTheyWroteThemselves(t *testing.T) {
 
 		her := d.holder(t, mallory.String())
 		x.Nil(her.GetDateDisabled(), "what the directory said of its own user was written onto somebody else")
-		x.Empty(her.GetDirectory())
+		x.Empty(her.GetDirectoryStanding())
 		x.Empty(her.GetProfile().GetDisplayName())
 	})
 

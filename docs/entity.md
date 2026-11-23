@@ -148,8 +148,8 @@ which is temporary and belongs to 🔒 `Credential`, nor an erasure. Both are
 timestamps rather than flags because the value travels and is monotonic: a
 duplicate is a no-op and a stale one cannot un-revoke.
 
-`directory` says whose a suspension is when it is a directory's -- `inactive`, or
-`deleted` -- because a directory provisioning people is one way and lifts what it
+`directory_standing` says whose a suspension is when it is a directory's --
+`DIRECTORY_STANDING_INACTIVE`, or `DIRECTORY_STANDING_DELETED` -- because a directory provisioning people is one way and lifts what it
 put there and nothing else; an operator's suspension stays the operator's
 ([scim.md](scim.md)).
 

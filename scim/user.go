@@ -24,9 +24,10 @@ import (
 // door's, never a person a directory provisioned.
 const declared = "roster.declared"
 
-// directoryDeleted is `Holder.directory` for somebody the directory deleted:
-// gone, as far as it is concerned, and so as far as this endpoint answers.
-const directoryDeleted = "deleted"
+// directoryDeleted is `Holder.directory_standing` for somebody the directory
+// deleted: gone, as far as it is concerned, and so as far as this endpoint
+// answers.
+const directoryDeleted = rstr.DirectoryStanding_DIRECTORY_STANDING_DELETED
 
 // changes is what a write says about a person, attribute by attribute: nil is
 // not said, which leaves the attribute as it is.
@@ -543,7 +544,7 @@ func speaksOf(t *tenancy, h *rstr.Holder) bool {
 // standing is [speaksOf] without the question of who declared them, which is
 // all a count, or a list of who is in a group, asks ([Server.present]).
 func standing(t *tenancy, h *rstr.Holder) bool {
-	return !bytes.Equal(h.GetId(), t.self) && h.GetDirectory() != directoryDeleted
+	return !bytes.Equal(h.GetId(), t.self) && h.GetDirectoryStanding() != directoryDeleted
 }
 
 // answers is whether the endpoint speaks of somebody, asked with no more of
@@ -551,12 +552,12 @@ func standing(t *tenancy, h *rstr.Holder) bool {
 // of each person a write names as a member, and its `labels` are personal, so
 // it may be a row of the access record each: somebody is being written about.
 func (s *Server) answers(ctx context.Context, t *tenancy, id []byte) (bool, error) {
-	return s.ask(ctx, t, id, rstr.HolderSelect_builder{Labels: proto.Bool(true), Directory: proto.Bool(true)}.Build(), speaksOf)
+	return s.ask(ctx, t, id, rstr.HolderSelect_builder{Labels: proto.Bool(true), DirectoryStanding: proto.Bool(true)}.Build(), speaksOf)
 }
 
 // present is the question a read that only counts or names somebody asks:
 // that they are there, which somebody erased is not, and [standing]. It reads
-// nothing personal -- `directory` is not -- so it is one call a person and no
+// nothing personal -- `directory_standing` is not -- so it is one call a person and no
 // row of the access record, where a count of ten thousand people on every page
 // would otherwise be ten thousand rows.
 //
@@ -568,7 +569,7 @@ func (s *Server) answers(ctx context.Context, t *tenancy, id []byte) (bool, erro
 // counted, or named among `members`, while `GET /Users/{id}` of it is `404`.
 // That is said here and not mended by reading `labels` for everybody.
 func (s *Server) present(ctx context.Context, t *tenancy, id []byte) (bool, error) {
-	return s.ask(ctx, t, id, rstr.HolderSelect_builder{Directory: proto.Bool(true)}.Build(), standing)
+	return s.ask(ctx, t, id, rstr.HolderSelect_builder{DirectoryStanding: proto.Bool(true)}.Build(), standing)
 }
 
 func (s *Server) ask(ctx context.Context, t *tenancy, id []byte, sel *rstr.HolderSelect, is func(*tenancy, *rstr.Holder) bool) (bool, error) {
@@ -592,17 +593,17 @@ func (s *Server) read(ctx context.Context, t *tenancy, id []byte) (*person, erro
 	h, err := s.roster.Holder().Get(ctx, rstr.HolderGetRequest_builder{
 		Ref: rstr.HolderRef_builder{Id: id}.Build(),
 		Select: rstr.HolderSelect_builder{
-			Alias:            proto.Bool(true),
-			Name:             proto.Bool(true),
-			Labels:           proto.Bool(true),
-			Profile:          proto.Bool(true),
-			DateDisabled:     proto.Bool(true),
-			Directory:        proto.Bool(true),
-			DirectorySubject: proto.Bool(true),
-			DirectoryAddress: proto.Bool(true),
-			DirectoryName:    proto.Bool(true),
-			DateCreated:      proto.Bool(true),
-			DateUpdated:      proto.Bool(true),
+			Alias:             proto.Bool(true),
+			Name:              proto.Bool(true),
+			Labels:            proto.Bool(true),
+			Profile:           proto.Bool(true),
+			DateDisabled:      proto.Bool(true),
+			DirectoryStanding: proto.Bool(true),
+			DirectorySubject:  proto.Bool(true),
+			DirectoryAddress:  proto.Bool(true),
+			DirectoryName:     proto.Bool(true),
+			DateCreated:       proto.Bool(true),
+			DateUpdated:       proto.Bool(true),
 		}.Build(),
 	}.Build())
 	switch status.Code(err) {

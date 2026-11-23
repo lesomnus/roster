@@ -10439,8 +10439,8 @@ func (s gateHolder) admit(ctx context.Context, req *rstr.HolderAddRequest) (*rst
 		return nil, err
 	}
 
-	if req.GetDirectory() != "" {
-		return nil, pderr.Invalidf("directory", "is established by this deployment and not asserted by a request")
+	if req.GetDirectoryStanding() != 0 {
+		return nil, pderr.Invalidf("directory_standing", "is established by this deployment and not asserted by a request")
 	}
 
 	if req.HasDirectorySubject() {
@@ -20648,7 +20648,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				{Number: 15, Name: entHolder.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
 				{Number: 11, Name: entHolder.FieldDateInvalidated, Type: 65, Nullable: true, Key: 0},
 				{Number: 12, Name: entHolder.FieldDateDisabled, Type: 65, Nullable: true, Key: 0},
-				{Number: 8, Name: entHolder.FieldDirectory, Type: 9, Nullable: false, Key: 0},
+				{Number: 20, Name: entHolder.FieldDirectoryStanding, Type: 14, Nullable: false, Key: 0},
 			}, v)
 			if err != nil {
 				return nil, err

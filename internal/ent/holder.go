@@ -44,8 +44,8 @@ type Holder struct {
 	DateInvalidated *time.Time `json:"date_invalidated,omitempty"`
 	// DateDisabled holds the value of the "date_disabled" field.
 	DateDisabled *time.Time `json:"date_disabled,omitempty"`
-	// Directory holds the value of the "directory" field.
-	Directory string `json:"directory,omitempty"`
+	// DirectoryStanding holds the value of the "directory_standing" field.
+	DirectoryStanding int32 `json:"directory_standing,omitempty"`
 	// Portrait holds the value of the "portrait" field.
 	Portrait *rstr.Portrait `json:"portrait,omitempty"`
 	// DirectorySubject holds the value of the "directory_subject" field.
@@ -89,7 +89,9 @@ func (*Holder) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case holder.FieldLabels:
 			values[i] = new([]byte)
-		case holder.FieldAlias, holder.FieldName, holder.FieldDesc, holder.FieldDirectory, holder.FieldDirectorySubject, holder.FieldDirectoryAddress, holder.FieldDirectoryName:
+		case holder.FieldDirectoryStanding:
+			values[i] = new(sql.NullInt64)
+		case holder.FieldAlias, holder.FieldName, holder.FieldDesc, holder.FieldDirectorySubject, holder.FieldDirectoryAddress, holder.FieldDirectoryName:
 			values[i] = new(sql.NullString)
 		case holder.FieldDateUpdated, holder.FieldDateErased, holder.FieldDateCreated, holder.FieldDateInvalidated, holder.FieldDateDisabled:
 			values[i] = new(sql.NullTime)
@@ -193,11 +195,11 @@ func (_m *Holder) assignValues(columns []string, values []any) error {
 				_m.DateDisabled = new(time.Time)
 				*_m.DateDisabled = value.Time
 			}
-		case holder.FieldDirectory:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field directory", values[i])
+		case holder.FieldDirectoryStanding:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field directory_standing", values[i])
 			} else if value.Valid {
-				_m.Directory = value.String
+				_m.DirectoryStanding = int32(value.Int64)
 			}
 		case holder.FieldPortrait:
 			if value, err := holder.ValueScanner.Portrait.FromValue(values[i]); err != nil {
@@ -312,8 +314,8 @@ func (_m *Holder) String() string {
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
-	builder.WriteString("directory=")
-	builder.WriteString(_m.Directory)
+	builder.WriteString("directory_standing=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DirectoryStanding))
 	builder.WriteString(", ")
 	builder.WriteString("portrait=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Portrait))

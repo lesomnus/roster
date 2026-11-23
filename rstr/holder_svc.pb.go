@@ -24,27 +24,27 @@ const (
 )
 
 type HolderAddRequest struct {
-	state                       protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id               []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Tenant           *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Alias            string                 `protobuf:"bytes,4,opt,name=alias"`
-	xxx_hidden_Name             string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_Desc             string                 `protobuf:"bytes,6,opt,name=desc"`
-	xxx_hidden_Labels           map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	xxx_hidden_DateCreated      *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	xxx_hidden_Profile          *Profile               `protobuf:"bytes,9,opt,name=profile"`
-	xxx_hidden_Data             *anypb.Any             `protobuf:"bytes,10,opt,name=data"`
-	xxx_hidden_DateInvalidated  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
-	xxx_hidden_DateDisabled     *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_disabled,json=dateDisabled"`
-	xxx_hidden_Directory        string                 `protobuf:"bytes,8,opt,name=directory"`
-	xxx_hidden_Portrait         *Portrait              `protobuf:"bytes,16,opt,name=portrait"`
-	xxx_hidden_DirectorySubject *string                `protobuf:"bytes,17,opt,name=directory_subject,json=directorySubject"`
-	xxx_hidden_DirectoryAddress *string                `protobuf:"bytes,18,opt,name=directory_address,json=directoryAddress"`
-	xxx_hidden_DirectoryName    *string                `protobuf:"bytes,19,opt,name=directory_name,json=directoryName"`
-	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
-	XXX_presence                [1]uint32
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
+	state                        protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id                []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Tenant            *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Alias             string                 `protobuf:"bytes,4,opt,name=alias"`
+	xxx_hidden_Name              string                 `protobuf:"bytes,5,opt,name=name"`
+	xxx_hidden_Desc              string                 `protobuf:"bytes,6,opt,name=desc"`
+	xxx_hidden_Labels            map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_DateCreated       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_Profile           *Profile               `protobuf:"bytes,9,opt,name=profile"`
+	xxx_hidden_Data              *anypb.Any             `protobuf:"bytes,10,opt,name=data"`
+	xxx_hidden_DateInvalidated   *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_invalidated,json=dateInvalidated"`
+	xxx_hidden_DateDisabled      *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_disabled,json=dateDisabled"`
+	xxx_hidden_DirectoryStanding DirectoryStanding      `protobuf:"varint,20,opt,name=directory_standing,json=directoryStanding,enum=roster.DirectoryStanding"`
+	xxx_hidden_Portrait          *Portrait              `protobuf:"bytes,16,opt,name=portrait"`
+	xxx_hidden_DirectorySubject  *string                `protobuf:"bytes,17,opt,name=directory_subject,json=directorySubject"`
+	xxx_hidden_DirectoryAddress  *string                `protobuf:"bytes,18,opt,name=directory_address,json=directoryAddress"`
+	xxx_hidden_DirectoryName     *string                `protobuf:"bytes,19,opt,name=directory_name,json=directoryName"`
+	XXX_raceDetectHookData       protoimpl.RaceDetectHookData
+	XXX_presence                 [1]uint32
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *HolderAddRequest) Reset() {
@@ -149,11 +149,11 @@ func (x *HolderAddRequest) GetDateDisabled() *timestamppb.Timestamp {
 	return nil
 }
 
-func (x *HolderAddRequest) GetDirectory() string {
+func (x *HolderAddRequest) GetDirectoryStanding() DirectoryStanding {
 	if x != nil {
-		return x.xxx_hidden_Directory
+		return x.xxx_hidden_DirectoryStanding
 	}
-	return ""
+	return DirectoryStanding_DIRECTORY_STANDING_UNSPECIFIED
 }
 
 func (x *HolderAddRequest) GetPortrait() *Portrait {
@@ -241,8 +241,8 @@ func (x *HolderAddRequest) SetDateDisabled(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateDisabled = v
 }
 
-func (x *HolderAddRequest) SetDirectory(v string) {
-	x.xxx_hidden_Directory = v
+func (x *HolderAddRequest) SetDirectoryStanding(v DirectoryStanding) {
+	x.xxx_hidden_DirectoryStanding = v
 }
 
 func (x *HolderAddRequest) SetPortrait(v *Portrait) {
@@ -392,22 +392,22 @@ func (x *HolderAddRequest) ClearDirectoryName() {
 type HolderAddRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Id               []byte
-	Tenant           *TenantRef
-	Alias            string
-	Name             string
-	Desc             string
-	Labels           map[string]string
-	DateCreated      *timestamppb.Timestamp
-	Profile          *Profile
-	Data             *anypb.Any
-	DateInvalidated  *timestamppb.Timestamp
-	DateDisabled     *timestamppb.Timestamp
-	Directory        string
-	Portrait         *Portrait
-	DirectorySubject *string
-	DirectoryAddress *string
-	DirectoryName    *string
+	Id                []byte
+	Tenant            *TenantRef
+	Alias             string
+	Name              string
+	Desc              string
+	Labels            map[string]string
+	DateCreated       *timestamppb.Timestamp
+	Profile           *Profile
+	Data              *anypb.Any
+	DateInvalidated   *timestamppb.Timestamp
+	DateDisabled      *timestamppb.Timestamp
+	DirectoryStanding DirectoryStanding
+	Portrait          *Portrait
+	DirectorySubject  *string
+	DirectoryAddress  *string
+	DirectoryName     *string
 }
 
 func (b0 HolderAddRequest_builder) Build() *HolderAddRequest {
@@ -428,7 +428,7 @@ func (b0 HolderAddRequest_builder) Build() *HolderAddRequest {
 	x.xxx_hidden_Data = b.Data
 	x.xxx_hidden_DateInvalidated = b.DateInvalidated
 	x.xxx_hidden_DateDisabled = b.DateDisabled
-	x.xxx_hidden_Directory = b.Directory
+	x.xxx_hidden_DirectoryStanding = b.DirectoryStanding
 	x.xxx_hidden_Portrait = b.Portrait
 	if b.DirectorySubject != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 16)
@@ -1253,29 +1253,29 @@ func (b0 HolderRefByNamed_builder) Build() *HolderRefByNamed {
 }
 
 type HolderSelect struct {
-	state                       protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_All              bool                   `protobuf:"varint,1,opt,name=all"`
-	xxx_hidden_Tenant           *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
-	xxx_hidden_Alias            bool                   `protobuf:"varint,4,opt,name=alias"`
-	xxx_hidden_Name             bool                   `protobuf:"varint,5,opt,name=name"`
-	xxx_hidden_Desc             bool                   `protobuf:"varint,6,opt,name=desc"`
-	xxx_hidden_Labels           bool                   `protobuf:"varint,7,opt,name=labels"`
-	xxx_hidden_DateUpdated      bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased       bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated      bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
-	xxx_hidden_Profile          bool                   `protobuf:"varint,9,opt,name=profile"`
-	xxx_hidden_Data             bool                   `protobuf:"varint,10,opt,name=data"`
-	xxx_hidden_DateInvalidated  bool                   `protobuf:"varint,11,opt,name=date_invalidated,json=dateInvalidated"`
-	xxx_hidden_DateDisabled     bool                   `protobuf:"varint,12,opt,name=date_disabled,json=dateDisabled"`
-	xxx_hidden_Directory        bool                   `protobuf:"varint,8,opt,name=directory"`
-	xxx_hidden_Portrait         bool                   `protobuf:"varint,16,opt,name=portrait"`
-	xxx_hidden_DirectorySubject bool                   `protobuf:"varint,17,opt,name=directory_subject,json=directorySubject"`
-	xxx_hidden_DirectoryAddress bool                   `protobuf:"varint,18,opt,name=directory_address,json=directoryAddress"`
-	xxx_hidden_DirectoryName    bool                   `protobuf:"varint,19,opt,name=directory_name,json=directoryName"`
-	XXX_raceDetectHookData      protoimpl.RaceDetectHookData
-	XXX_presence                [1]uint32
-	unknownFields               protoimpl.UnknownFields
-	sizeCache                   protoimpl.SizeCache
+	state                        protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_All               bool                   `protobuf:"varint,1,opt,name=all"`
+	xxx_hidden_Tenant            *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
+	xxx_hidden_Alias             bool                   `protobuf:"varint,4,opt,name=alias"`
+	xxx_hidden_Name              bool                   `protobuf:"varint,5,opt,name=name"`
+	xxx_hidden_Desc              bool                   `protobuf:"varint,6,opt,name=desc"`
+	xxx_hidden_Labels            bool                   `protobuf:"varint,7,opt,name=labels"`
+	xxx_hidden_DateUpdated       bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased        bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated       bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
+	xxx_hidden_Profile           bool                   `protobuf:"varint,9,opt,name=profile"`
+	xxx_hidden_Data              bool                   `protobuf:"varint,10,opt,name=data"`
+	xxx_hidden_DateInvalidated   bool                   `protobuf:"varint,11,opt,name=date_invalidated,json=dateInvalidated"`
+	xxx_hidden_DateDisabled      bool                   `protobuf:"varint,12,opt,name=date_disabled,json=dateDisabled"`
+	xxx_hidden_DirectoryStanding bool                   `protobuf:"varint,20,opt,name=directory_standing,json=directoryStanding"`
+	xxx_hidden_Portrait          bool                   `protobuf:"varint,16,opt,name=portrait"`
+	xxx_hidden_DirectorySubject  bool                   `protobuf:"varint,17,opt,name=directory_subject,json=directorySubject"`
+	xxx_hidden_DirectoryAddress  bool                   `protobuf:"varint,18,opt,name=directory_address,json=directoryAddress"`
+	xxx_hidden_DirectoryName     bool                   `protobuf:"varint,19,opt,name=directory_name,json=directoryName"`
+	XXX_raceDetectHookData       protoimpl.RaceDetectHookData
+	XXX_presence                 [1]uint32
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *HolderSelect) Reset() {
@@ -1394,9 +1394,9 @@ func (x *HolderSelect) GetDateDisabled() bool {
 	return false
 }
 
-func (x *HolderSelect) GetDirectory() bool {
+func (x *HolderSelect) GetDirectoryStanding() bool {
 	if x != nil {
-		return x.xxx_hidden_Directory
+		return x.xxx_hidden_DirectoryStanding
 	}
 	return false
 }
@@ -1493,8 +1493,8 @@ func (x *HolderSelect) SetDateDisabled(v bool) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 12, 18)
 }
 
-func (x *HolderSelect) SetDirectory(v bool) {
-	x.xxx_hidden_Directory = v
+func (x *HolderSelect) SetDirectoryStanding(v bool) {
+	x.xxx_hidden_DirectoryStanding = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 13, 18)
 }
 
@@ -1609,7 +1609,7 @@ func (x *HolderSelect) HasDateDisabled() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 12)
 }
 
-func (x *HolderSelect) HasDirectory() bool {
+func (x *HolderSelect) HasDirectoryStanding() bool {
 	if x == nil {
 		return false
 	}
@@ -1708,9 +1708,9 @@ func (x *HolderSelect) ClearDateDisabled() {
 	x.xxx_hidden_DateDisabled = false
 }
 
-func (x *HolderSelect) ClearDirectory() {
+func (x *HolderSelect) ClearDirectoryStanding() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 13)
-	x.xxx_hidden_Directory = false
+	x.xxx_hidden_DirectoryStanding = false
 }
 
 func (x *HolderSelect) ClearPortrait() {
@@ -1736,24 +1736,24 @@ func (x *HolderSelect) ClearDirectoryName() {
 type HolderSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	All              *bool
-	Tenant           *TenantSelect
-	Alias            *bool
-	Name             *bool
-	Desc             *bool
-	Labels           *bool
-	DateUpdated      *bool
-	DateErased       *bool
-	DateCreated      *bool
-	Profile          *bool
-	Data             *bool
-	DateInvalidated  *bool
-	DateDisabled     *bool
-	Directory        *bool
-	Portrait         *bool
-	DirectorySubject *bool
-	DirectoryAddress *bool
-	DirectoryName    *bool
+	All               *bool
+	Tenant            *TenantSelect
+	Alias             *bool
+	Name              *bool
+	Desc              *bool
+	Labels            *bool
+	DateUpdated       *bool
+	DateErased        *bool
+	DateCreated       *bool
+	Profile           *bool
+	Data              *bool
+	DateInvalidated   *bool
+	DateDisabled      *bool
+	DirectoryStanding *bool
+	Portrait          *bool
+	DirectorySubject  *bool
+	DirectoryAddress  *bool
+	DirectoryName     *bool
 }
 
 func (b0 HolderSelect_builder) Build() *HolderSelect {
@@ -1809,9 +1809,9 @@ func (b0 HolderSelect_builder) Build() *HolderSelect {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 12, 18)
 		x.xxx_hidden_DateDisabled = *b.DateDisabled
 	}
-	if b.Directory != nil {
+	if b.DirectoryStanding != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 13, 18)
-		x.xxx_hidden_Directory = *b.Directory
+		x.xxx_hidden_DirectoryStanding = *b.DirectoryStanding
 	}
 	if b.Portrait != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 18)
@@ -1849,7 +1849,7 @@ type HolderPatchRequest struct {
 	xxx_hidden_DateInvalidatedNull  bool                   `protobuf:"varint,23,opt,name=date_invalidated_null,json=dateInvalidatedNull"`
 	xxx_hidden_DateDisabled         *timestamppb.Timestamp `protobuf:"bytes,24,opt,name=date_disabled,json=dateDisabled"`
 	xxx_hidden_DateDisabledNull     bool                   `protobuf:"varint,25,opt,name=date_disabled_null,json=dateDisabledNull"`
-	xxx_hidden_Directory            *string                `protobuf:"bytes,16,opt,name=directory"`
+	xxx_hidden_DirectoryStanding    DirectoryStanding      `protobuf:"varint,40,opt,name=directory_standing,json=directoryStanding,enum=roster.DirectoryStanding"`
 	xxx_hidden_Portrait             *Portrait              `protobuf:"bytes,32,opt,name=portrait"`
 	xxx_hidden_PortraitNull         bool                   `protobuf:"varint,33,opt,name=portrait_null,json=portraitNull"`
 	xxx_hidden_DirectorySubject     *string                `protobuf:"bytes,34,opt,name=directory_subject,json=directorySubject"`
@@ -2003,14 +2003,13 @@ func (x *HolderPatchRequest) GetDateDisabledNull() bool {
 	return false
 }
 
-func (x *HolderPatchRequest) GetDirectory() string {
+func (x *HolderPatchRequest) GetDirectoryStanding() DirectoryStanding {
 	if x != nil {
-		if x.xxx_hidden_Directory != nil {
-			return *x.xxx_hidden_Directory
+		if protoimpl.X.Present(&(x.XXX_presence[0]), 15) {
+			return x.xxx_hidden_DirectoryStanding
 		}
-		return ""
 	}
-	return ""
+	return DirectoryStanding_DIRECTORY_STANDING_UNSPECIFIED
 }
 
 func (x *HolderPatchRequest) GetPortrait() *Portrait {
@@ -2146,8 +2145,8 @@ func (x *HolderPatchRequest) SetDateDisabledNull(v bool) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 14, 24)
 }
 
-func (x *HolderPatchRequest) SetDirectory(v string) {
-	x.xxx_hidden_Directory = &v
+func (x *HolderPatchRequest) SetDirectoryStanding(v DirectoryStanding) {
+	x.xxx_hidden_DirectoryStanding = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 15, 24)
 }
 
@@ -2288,7 +2287,7 @@ func (x *HolderPatchRequest) HasDateDisabledNull() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 14)
 }
 
-func (x *HolderPatchRequest) HasDirectory() bool {
+func (x *HolderPatchRequest) HasDirectoryStanding() bool {
 	if x == nil {
 		return false
 	}
@@ -2415,9 +2414,9 @@ func (x *HolderPatchRequest) ClearDateDisabledNull() {
 	x.xxx_hidden_DateDisabledNull = false
 }
 
-func (x *HolderPatchRequest) ClearDirectory() {
+func (x *HolderPatchRequest) ClearDirectoryStanding() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 15)
-	x.xxx_hidden_Directory = nil
+	x.xxx_hidden_DirectoryStanding = DirectoryStanding_DIRECTORY_STANDING_UNSPECIFIED
 }
 
 func (x *HolderPatchRequest) ClearPortrait() {
@@ -2504,9 +2503,9 @@ type HolderPatchRequest_builder struct {
 	// It takes a field of its own because an unset value already means
 	// "leave it alone", so no value could have meant NULL. It wins
 	// outright: setting both this and date_disabled clears.
-	DateDisabledNull *bool
-	Directory        *string
-	Portrait         *Portrait
+	DateDisabledNull  *bool
+	DirectoryStanding *DirectoryStanding
+	Portrait          *Portrait
 	// Clear portrait instead of writing it.
 	// It takes a field of its own because an unset value already means
 	// "leave it alone", so no value could have meant NULL. It wins
@@ -2575,9 +2574,9 @@ func (b0 HolderPatchRequest_builder) Build() *HolderPatchRequest {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 14, 24)
 		x.xxx_hidden_DateDisabledNull = *b.DateDisabledNull
 	}
-	if b.Directory != nil {
+	if b.DirectoryStanding != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 15, 24)
-		x.xxx_hidden_Directory = b.Directory
+		x.xxx_hidden_DirectoryStanding = *b.DirectoryStanding
 	}
 	x.xxx_hidden_Portrait = b.Portrait
 	if b.PortraitNull != nil {
@@ -5519,7 +5518,7 @@ var File_roster_payday_holder_svc_g_proto protoreflect.FileDescriptor
 
 const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\n" +
-	" roster/payday/holder_svc.g.proto\x12\x06roster\x1a\fapp/me.proto\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/holder.proto\x1a roster/payday/tenant_svc.g.proto\"\x89\x06\n" +
+	" roster/payday/holder_svc.g.proto\x12\x06roster\x1a\fapp/me.proto\x1a\x19google/protobuf/any.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a\x1aroster/payday/holder.proto\x1a roster/payday/tenant_svc.g.proto\"\xb5\x06\n" +
 	"\x10HolderAddRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x1b\n" +
@@ -5532,8 +5531,8 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x04data\x18\n" +
 	" \x01(\v2\x14.google.protobuf.AnyR\x04data\x12E\n" +
 	"\x10date_invalidated\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateInvalidated\x12?\n" +
-	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\fdateDisabled\x12#\n" +
-	"\tdirectory\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\tdirectory\x12,\n" +
+	"\rdate_disabled\x18\f \x01(\v2\x1a.google.protobuf.TimestampR\fdateDisabled\x12O\n" +
+	"\x12directory_standing\x18\x14 \x01(\x0e2\x19.roster.DirectoryStandingB\x05\xaa\x01\x02\b\x02R\x11directoryStanding\x12,\n" +
 	"\bportrait\x18\x10 \x01(\v2\x10.roster.PortraitR\bportrait\x12+\n" +
 	"\x11directory_subject\x18\x11 \x01(\tR\x10directorySubject\x12+\n" +
 	"\x11directory_address\x18\x12 \x01(\tR\x10directoryAddress\x12%\n" +
@@ -5562,7 +5561,7 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"d\n" +
 	"\x10HolderRefByNamed\x12%\n" +
 	"\x0edirectory_name\x18\x13 \x01(\tR\rdirectoryName\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"\xc4\x04\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\"\xd5\x04\n" +
 	"\fHolderSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12\x14\n" +
@@ -5578,12 +5577,12 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x04data\x18\n" +
 	" \x01(\bR\x04data\x12)\n" +
 	"\x10date_invalidated\x18\v \x01(\bR\x0fdateInvalidated\x12#\n" +
-	"\rdate_disabled\x18\f \x01(\bR\fdateDisabled\x12\x1c\n" +
-	"\tdirectory\x18\b \x01(\bR\tdirectory\x12\x1a\n" +
+	"\rdate_disabled\x18\f \x01(\bR\fdateDisabled\x12-\n" +
+	"\x12directory_standing\x18\x14 \x01(\bR\x11directoryStanding\x12\x1a\n" +
 	"\bportrait\x18\x10 \x01(\bR\bportrait\x12+\n" +
 	"\x11directory_subject\x18\x11 \x01(\bR\x10directorySubject\x12+\n" +
 	"\x11directory_address\x18\x12 \x01(\bR\x10directoryAddress\x12%\n" +
-	"\x0edirectory_name\x18\x13 \x01(\bR\rdirectoryName\"\xec\b\n" +
+	"\x0edirectory_name\x18\x13 \x01(\bR\rdirectoryName\"\x98\t\n" +
 	"\x12HolderPatchRequest\x12#\n" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\x14\n" +
 	"\x05alias\x18\b \x01(\tR\x05alias\x12\x12\n" +
@@ -5600,8 +5599,8 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x10date_invalidated\x18\x16 \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateInvalidated\x122\n" +
 	"\x15date_invalidated_null\x18\x17 \x01(\bR\x13dateInvalidatedNull\x12?\n" +
 	"\rdate_disabled\x18\x18 \x01(\v2\x1a.google.protobuf.TimestampR\fdateDisabled\x12,\n" +
-	"\x12date_disabled_null\x18\x19 \x01(\bR\x10dateDisabledNull\x12\x1c\n" +
-	"\tdirectory\x18\x10 \x01(\tR\tdirectory\x12,\n" +
+	"\x12date_disabled_null\x18\x19 \x01(\bR\x10dateDisabledNull\x12H\n" +
+	"\x12directory_standing\x18( \x01(\x0e2\x19.roster.DirectoryStandingR\x11directoryStanding\x12,\n" +
 	"\bportrait\x18  \x01(\v2\x10.roster.PortraitR\bportrait\x12#\n" +
 	"\rportrait_null\x18! \x01(\bR\fportraitNull\x12+\n" +
 	"\x11directory_subject\x18\" \x01(\tR\x10directorySubject\x124\n" +
@@ -5800,13 +5799,14 @@ var file_roster_payday_holder_svc_g_proto_goTypes = []any{
 	(*timestamppb.Timestamp)(nil),   // 40: google.protobuf.Timestamp
 	(*Profile)(nil),                 // 41: roster.Profile
 	(*anypb.Any)(nil),               // 42: google.protobuf.Any
-	(*Portrait)(nil),                // 43: roster.Portrait
-	(*TenantSelect)(nil),            // 44: roster.TenantSelect
-	(*patchpb.Patch)(nil),           // 45: patch.Patch
-	(*Holder)(nil),                  // 46: roster.Holder
-	(*SignInIdentity)(nil),          // 47: roster.SignInIdentity
-	(*SignInCredential)(nil),        // 48: roster.SignInCredential
-	(*SignInKey)(nil),               // 49: roster.SignInKey
+	(DirectoryStanding)(0),          // 43: roster.DirectoryStanding
+	(*Portrait)(nil),                // 44: roster.Portrait
+	(*TenantSelect)(nil),            // 45: roster.TenantSelect
+	(*patchpb.Patch)(nil),           // 46: patch.Patch
+	(*Holder)(nil),                  // 47: roster.Holder
+	(*SignInIdentity)(nil),          // 48: roster.SignInIdentity
+	(*SignInCredential)(nil),        // 49: roster.SignInCredential
+	(*SignInKey)(nil),               // 50: roster.SignInKey
 }
 var file_roster_payday_holder_svc_g_proto_depIdxs = []int32{
 	39, // 0: roster.HolderAddRequest.tenant:type_name -> roster.TenantRef
@@ -5816,114 +5816,116 @@ var file_roster_payday_holder_svc_g_proto_depIdxs = []int32{
 	42, // 4: roster.HolderAddRequest.data:type_name -> google.protobuf.Any
 	40, // 5: roster.HolderAddRequest.date_invalidated:type_name -> google.protobuf.Timestamp
 	40, // 6: roster.HolderAddRequest.date_disabled:type_name -> google.protobuf.Timestamp
-	43, // 7: roster.HolderAddRequest.portrait:type_name -> roster.Portrait
-	2,  // 8: roster.HolderGetRequest.ref:type_name -> roster.HolderRef
-	7,  // 9: roster.HolderGetRequest.select:type_name -> roster.HolderSelect
-	3,  // 10: roster.HolderRef.slug:type_name -> roster.HolderRefBySlug
-	4,  // 11: roster.HolderRef.known:type_name -> roster.HolderRefByKnown
-	5,  // 12: roster.HolderRef.said:type_name -> roster.HolderRefBySaid
-	6,  // 13: roster.HolderRef.named:type_name -> roster.HolderRefByNamed
-	39, // 14: roster.HolderRefBySlug.tenant:type_name -> roster.TenantRef
-	39, // 15: roster.HolderRefByKnown.tenant:type_name -> roster.TenantRef
-	39, // 16: roster.HolderRefBySaid.tenant:type_name -> roster.TenantRef
-	39, // 17: roster.HolderRefByNamed.tenant:type_name -> roster.TenantRef
-	44, // 18: roster.HolderSelect.tenant:type_name -> roster.TenantSelect
-	2,  // 19: roster.HolderPatchRequest.ref:type_name -> roster.HolderRef
-	37, // 20: roster.HolderPatchRequest.labels:type_name -> roster.HolderPatchRequest.LabelsEntry
-	40, // 21: roster.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	41, // 22: roster.HolderPatchRequest.profile:type_name -> roster.Profile
-	42, // 23: roster.HolderPatchRequest.data:type_name -> google.protobuf.Any
-	40, // 24: roster.HolderPatchRequest.date_invalidated:type_name -> google.protobuf.Timestamp
-	40, // 25: roster.HolderPatchRequest.date_disabled:type_name -> google.protobuf.Timestamp
-	43, // 26: roster.HolderPatchRequest.portrait:type_name -> roster.Portrait
-	2,  // 27: roster.HolderApplyRequest.ref:type_name -> roster.HolderRef
-	45, // 28: roster.HolderApplyRequest.patch:type_name -> patch.Patch
-	13, // 29: roster.HolderListRequest.filters:type_name -> roster.HolderFilter
-	46, // 30: roster.HolderListResponse.items:type_name -> roster.Holder
-	2,  // 31: roster.HolderFilter.ref:type_name -> roster.HolderRef
-	39, // 32: roster.HolderFilter.tenant:type_name -> roster.TenantRef
-	38, // 33: roster.HolderFilter.labels:type_name -> roster.HolderFilter.LabelsEntry
-	13, // 34: roster.HolderWatchRequest.filters:type_name -> roster.HolderFilter
-	16, // 35: roster.HolderWatchResponse.items:type_name -> roster.HolderWatchItem
-	46, // 36: roster.HolderWatchItem.value:type_name -> roster.Holder
-	2,  // 37: roster.HolderUpdateRequest.ref:type_name -> roster.HolderRef
-	40, // 38: roster.HolderUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	41, // 39: roster.HolderUpdateRequest.profile:type_name -> roster.Profile
-	42, // 40: roster.HolderUpdateRequest.data:type_name -> google.protobuf.Any
-	2,  // 41: roster.HolderRealiasRequest.ref:type_name -> roster.HolderRef
-	40, // 42: roster.HolderRealiasRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 43: roster.HolderDisableRequest.ref:type_name -> roster.HolderRef
-	40, // 44: roster.HolderDisableRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 45: roster.HolderEnableRequest.ref:type_name -> roster.HolderRef
-	40, // 46: roster.HolderEnableRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 47: roster.HolderInvalidateRequest.ref:type_name -> roster.HolderRef
-	40, // 48: roster.HolderInvalidateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 49: roster.HolderSignsInRequest.ref:type_name -> roster.HolderRef
-	47, // 50: roster.HolderSignsInResponse.identities:type_name -> roster.SignInIdentity
-	48, // 51: roster.HolderSignsInResponse.credentials:type_name -> roster.SignInCredential
-	49, // 52: roster.HolderSignsInResponse.keys:type_name -> roster.SignInKey
-	2,  // 53: roster.HolderReachesRequest.ref:type_name -> roster.HolderRef
-	13, // 54: roster.HolderSearchRequest.filters:type_name -> roster.HolderFilter
-	46, // 55: roster.HolderSearchResponse.items:type_name -> roster.Holder
-	2,  // 56: roster.HolderFillRequest.ref:type_name -> roster.HolderRef
-	2,  // 57: roster.HolderPortrayRequest.ref:type_name -> roster.HolderRef
-	40, // 58: roster.HolderPortrayRequest.date_updated:type_name -> google.protobuf.Timestamp
-	39, // 59: roster.HolderProvisionRequest.tenant:type_name -> roster.TenantRef
-	41, // 60: roster.HolderProvisionRequest.profile:type_name -> roster.Profile
-	2,  // 61: roster.HolderDeactivateRequest.ref:type_name -> roster.HolderRef
-	40, // 62: roster.HolderDeactivateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 63: roster.HolderActivateRequest.ref:type_name -> roster.HolderRef
-	40, // 64: roster.HolderActivateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 65: roster.HolderTellRequest.ref:type_name -> roster.HolderRef
-	35, // 66: roster.HolderTellRequest.entry:type_name -> roster.DirectoryEntry
-	40, // 67: roster.HolderTellRequest.date_updated:type_name -> google.protobuf.Timestamp
-	0,  // 68: roster.HolderService.Add:input_type -> roster.HolderAddRequest
-	1,  // 69: roster.HolderService.Get:input_type -> roster.HolderGetRequest
-	8,  // 70: roster.HolderService.Patch:input_type -> roster.HolderPatchRequest
-	9,  // 71: roster.HolderService.Apply:input_type -> roster.HolderApplyRequest
-	2,  // 72: roster.HolderService.Erase:input_type -> roster.HolderRef
-	11, // 73: roster.HolderService.List:input_type -> roster.HolderListRequest
-	14, // 74: roster.HolderService.Watch:input_type -> roster.HolderWatchRequest
-	17, // 75: roster.HolderService.Update:input_type -> roster.HolderUpdateRequest
-	18, // 76: roster.HolderService.Realias:input_type -> roster.HolderRealiasRequest
-	19, // 77: roster.HolderService.Disable:input_type -> roster.HolderDisableRequest
-	20, // 78: roster.HolderService.Enable:input_type -> roster.HolderEnableRequest
-	21, // 79: roster.HolderService.Invalidate:input_type -> roster.HolderInvalidateRequest
-	22, // 80: roster.HolderService.SignsIn:input_type -> roster.HolderSignsInRequest
-	24, // 81: roster.HolderService.Reaches:input_type -> roster.HolderReachesRequest
-	26, // 82: roster.HolderService.Search:input_type -> roster.HolderSearchRequest
-	28, // 83: roster.HolderService.Fill:input_type -> roster.HolderFillRequest
-	30, // 84: roster.HolderService.Portray:input_type -> roster.HolderPortrayRequest
-	31, // 85: roster.HolderService.Provision:input_type -> roster.HolderProvisionRequest
-	32, // 86: roster.HolderService.Deactivate:input_type -> roster.HolderDeactivateRequest
-	33, // 87: roster.HolderService.Activate:input_type -> roster.HolderActivateRequest
-	34, // 88: roster.HolderService.Tell:input_type -> roster.HolderTellRequest
-	46, // 89: roster.HolderService.Add:output_type -> roster.Holder
-	46, // 90: roster.HolderService.Get:output_type -> roster.Holder
-	46, // 91: roster.HolderService.Patch:output_type -> roster.Holder
-	46, // 92: roster.HolderService.Apply:output_type -> roster.Holder
-	10, // 93: roster.HolderService.Erase:output_type -> roster.HolderEraseResponse
-	12, // 94: roster.HolderService.List:output_type -> roster.HolderListResponse
-	15, // 95: roster.HolderService.Watch:output_type -> roster.HolderWatchResponse
-	46, // 96: roster.HolderService.Update:output_type -> roster.Holder
-	46, // 97: roster.HolderService.Realias:output_type -> roster.Holder
-	46, // 98: roster.HolderService.Disable:output_type -> roster.Holder
-	46, // 99: roster.HolderService.Enable:output_type -> roster.Holder
-	46, // 100: roster.HolderService.Invalidate:output_type -> roster.Holder
-	23, // 101: roster.HolderService.SignsIn:output_type -> roster.HolderSignsInResponse
-	25, // 102: roster.HolderService.Reaches:output_type -> roster.HolderReachesResponse
-	27, // 103: roster.HolderService.Search:output_type -> roster.HolderSearchResponse
-	29, // 104: roster.HolderService.Fill:output_type -> roster.HolderFillResponse
-	46, // 105: roster.HolderService.Portray:output_type -> roster.Holder
-	46, // 106: roster.HolderService.Provision:output_type -> roster.Holder
-	46, // 107: roster.HolderService.Deactivate:output_type -> roster.Holder
-	46, // 108: roster.HolderService.Activate:output_type -> roster.Holder
-	46, // 109: roster.HolderService.Tell:output_type -> roster.Holder
-	89, // [89:110] is the sub-list for method output_type
-	68, // [68:89] is the sub-list for method input_type
-	68, // [68:68] is the sub-list for extension type_name
-	68, // [68:68] is the sub-list for extension extendee
-	0,  // [0:68] is the sub-list for field type_name
+	43, // 7: roster.HolderAddRequest.directory_standing:type_name -> roster.DirectoryStanding
+	44, // 8: roster.HolderAddRequest.portrait:type_name -> roster.Portrait
+	2,  // 9: roster.HolderGetRequest.ref:type_name -> roster.HolderRef
+	7,  // 10: roster.HolderGetRequest.select:type_name -> roster.HolderSelect
+	3,  // 11: roster.HolderRef.slug:type_name -> roster.HolderRefBySlug
+	4,  // 12: roster.HolderRef.known:type_name -> roster.HolderRefByKnown
+	5,  // 13: roster.HolderRef.said:type_name -> roster.HolderRefBySaid
+	6,  // 14: roster.HolderRef.named:type_name -> roster.HolderRefByNamed
+	39, // 15: roster.HolderRefBySlug.tenant:type_name -> roster.TenantRef
+	39, // 16: roster.HolderRefByKnown.tenant:type_name -> roster.TenantRef
+	39, // 17: roster.HolderRefBySaid.tenant:type_name -> roster.TenantRef
+	39, // 18: roster.HolderRefByNamed.tenant:type_name -> roster.TenantRef
+	45, // 19: roster.HolderSelect.tenant:type_name -> roster.TenantSelect
+	2,  // 20: roster.HolderPatchRequest.ref:type_name -> roster.HolderRef
+	37, // 21: roster.HolderPatchRequest.labels:type_name -> roster.HolderPatchRequest.LabelsEntry
+	40, // 22: roster.HolderPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	41, // 23: roster.HolderPatchRequest.profile:type_name -> roster.Profile
+	42, // 24: roster.HolderPatchRequest.data:type_name -> google.protobuf.Any
+	40, // 25: roster.HolderPatchRequest.date_invalidated:type_name -> google.protobuf.Timestamp
+	40, // 26: roster.HolderPatchRequest.date_disabled:type_name -> google.protobuf.Timestamp
+	43, // 27: roster.HolderPatchRequest.directory_standing:type_name -> roster.DirectoryStanding
+	44, // 28: roster.HolderPatchRequest.portrait:type_name -> roster.Portrait
+	2,  // 29: roster.HolderApplyRequest.ref:type_name -> roster.HolderRef
+	46, // 30: roster.HolderApplyRequest.patch:type_name -> patch.Patch
+	13, // 31: roster.HolderListRequest.filters:type_name -> roster.HolderFilter
+	47, // 32: roster.HolderListResponse.items:type_name -> roster.Holder
+	2,  // 33: roster.HolderFilter.ref:type_name -> roster.HolderRef
+	39, // 34: roster.HolderFilter.tenant:type_name -> roster.TenantRef
+	38, // 35: roster.HolderFilter.labels:type_name -> roster.HolderFilter.LabelsEntry
+	13, // 36: roster.HolderWatchRequest.filters:type_name -> roster.HolderFilter
+	16, // 37: roster.HolderWatchResponse.items:type_name -> roster.HolderWatchItem
+	47, // 38: roster.HolderWatchItem.value:type_name -> roster.Holder
+	2,  // 39: roster.HolderUpdateRequest.ref:type_name -> roster.HolderRef
+	40, // 40: roster.HolderUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	41, // 41: roster.HolderUpdateRequest.profile:type_name -> roster.Profile
+	42, // 42: roster.HolderUpdateRequest.data:type_name -> google.protobuf.Any
+	2,  // 43: roster.HolderRealiasRequest.ref:type_name -> roster.HolderRef
+	40, // 44: roster.HolderRealiasRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 45: roster.HolderDisableRequest.ref:type_name -> roster.HolderRef
+	40, // 46: roster.HolderDisableRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 47: roster.HolderEnableRequest.ref:type_name -> roster.HolderRef
+	40, // 48: roster.HolderEnableRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 49: roster.HolderInvalidateRequest.ref:type_name -> roster.HolderRef
+	40, // 50: roster.HolderInvalidateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 51: roster.HolderSignsInRequest.ref:type_name -> roster.HolderRef
+	48, // 52: roster.HolderSignsInResponse.identities:type_name -> roster.SignInIdentity
+	49, // 53: roster.HolderSignsInResponse.credentials:type_name -> roster.SignInCredential
+	50, // 54: roster.HolderSignsInResponse.keys:type_name -> roster.SignInKey
+	2,  // 55: roster.HolderReachesRequest.ref:type_name -> roster.HolderRef
+	13, // 56: roster.HolderSearchRequest.filters:type_name -> roster.HolderFilter
+	47, // 57: roster.HolderSearchResponse.items:type_name -> roster.Holder
+	2,  // 58: roster.HolderFillRequest.ref:type_name -> roster.HolderRef
+	2,  // 59: roster.HolderPortrayRequest.ref:type_name -> roster.HolderRef
+	40, // 60: roster.HolderPortrayRequest.date_updated:type_name -> google.protobuf.Timestamp
+	39, // 61: roster.HolderProvisionRequest.tenant:type_name -> roster.TenantRef
+	41, // 62: roster.HolderProvisionRequest.profile:type_name -> roster.Profile
+	2,  // 63: roster.HolderDeactivateRequest.ref:type_name -> roster.HolderRef
+	40, // 64: roster.HolderDeactivateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 65: roster.HolderActivateRequest.ref:type_name -> roster.HolderRef
+	40, // 66: roster.HolderActivateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 67: roster.HolderTellRequest.ref:type_name -> roster.HolderRef
+	35, // 68: roster.HolderTellRequest.entry:type_name -> roster.DirectoryEntry
+	40, // 69: roster.HolderTellRequest.date_updated:type_name -> google.protobuf.Timestamp
+	0,  // 70: roster.HolderService.Add:input_type -> roster.HolderAddRequest
+	1,  // 71: roster.HolderService.Get:input_type -> roster.HolderGetRequest
+	8,  // 72: roster.HolderService.Patch:input_type -> roster.HolderPatchRequest
+	9,  // 73: roster.HolderService.Apply:input_type -> roster.HolderApplyRequest
+	2,  // 74: roster.HolderService.Erase:input_type -> roster.HolderRef
+	11, // 75: roster.HolderService.List:input_type -> roster.HolderListRequest
+	14, // 76: roster.HolderService.Watch:input_type -> roster.HolderWatchRequest
+	17, // 77: roster.HolderService.Update:input_type -> roster.HolderUpdateRequest
+	18, // 78: roster.HolderService.Realias:input_type -> roster.HolderRealiasRequest
+	19, // 79: roster.HolderService.Disable:input_type -> roster.HolderDisableRequest
+	20, // 80: roster.HolderService.Enable:input_type -> roster.HolderEnableRequest
+	21, // 81: roster.HolderService.Invalidate:input_type -> roster.HolderInvalidateRequest
+	22, // 82: roster.HolderService.SignsIn:input_type -> roster.HolderSignsInRequest
+	24, // 83: roster.HolderService.Reaches:input_type -> roster.HolderReachesRequest
+	26, // 84: roster.HolderService.Search:input_type -> roster.HolderSearchRequest
+	28, // 85: roster.HolderService.Fill:input_type -> roster.HolderFillRequest
+	30, // 86: roster.HolderService.Portray:input_type -> roster.HolderPortrayRequest
+	31, // 87: roster.HolderService.Provision:input_type -> roster.HolderProvisionRequest
+	32, // 88: roster.HolderService.Deactivate:input_type -> roster.HolderDeactivateRequest
+	33, // 89: roster.HolderService.Activate:input_type -> roster.HolderActivateRequest
+	34, // 90: roster.HolderService.Tell:input_type -> roster.HolderTellRequest
+	47, // 91: roster.HolderService.Add:output_type -> roster.Holder
+	47, // 92: roster.HolderService.Get:output_type -> roster.Holder
+	47, // 93: roster.HolderService.Patch:output_type -> roster.Holder
+	47, // 94: roster.HolderService.Apply:output_type -> roster.Holder
+	10, // 95: roster.HolderService.Erase:output_type -> roster.HolderEraseResponse
+	12, // 96: roster.HolderService.List:output_type -> roster.HolderListResponse
+	15, // 97: roster.HolderService.Watch:output_type -> roster.HolderWatchResponse
+	47, // 98: roster.HolderService.Update:output_type -> roster.Holder
+	47, // 99: roster.HolderService.Realias:output_type -> roster.Holder
+	47, // 100: roster.HolderService.Disable:output_type -> roster.Holder
+	47, // 101: roster.HolderService.Enable:output_type -> roster.Holder
+	47, // 102: roster.HolderService.Invalidate:output_type -> roster.Holder
+	23, // 103: roster.HolderService.SignsIn:output_type -> roster.HolderSignsInResponse
+	25, // 104: roster.HolderService.Reaches:output_type -> roster.HolderReachesResponse
+	27, // 105: roster.HolderService.Search:output_type -> roster.HolderSearchResponse
+	29, // 106: roster.HolderService.Fill:output_type -> roster.HolderFillResponse
+	47, // 107: roster.HolderService.Portray:output_type -> roster.Holder
+	47, // 108: roster.HolderService.Provision:output_type -> roster.Holder
+	47, // 109: roster.HolderService.Deactivate:output_type -> roster.Holder
+	47, // 110: roster.HolderService.Activate:output_type -> roster.Holder
+	47, // 111: roster.HolderService.Tell:output_type -> roster.Holder
+	91, // [91:112] is the sub-list for method output_type
+	70, // [70:91] is the sub-list for method input_type
+	70, // [70:70] is the sub-list for extension type_name
+	70, // [70:70] is the sub-list for extension extendee
+	0,  // [0:70] is the sub-list for field type_name
 }
 
 func init() { file_roster_payday_holder_svc_g_proto_init() }

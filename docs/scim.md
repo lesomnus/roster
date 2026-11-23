@@ -459,7 +459,8 @@ somebody erased between the count and the page -- and a page skips them.
 
 **The directory lifts its own suspensions and no other.** It is one way: it never
 hears that an operator suspended somebody, and restarting its provisioning says
-`active` for everybody in scope. So `Holder.directory` says whose a suspension is,
+`active` for everybody in scope. So `Holder.directory_standing` says whose a
+suspension is,
 `Activate` refuses an operator's, an operator's `Disable` or `Enable` makes a
 suspension theirs, and somebody the directory deleted is an operator's to bring
 back ([operating.md](operating.md) § *Stopping somebody*).

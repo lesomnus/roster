@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/scim"
 )
 
@@ -94,7 +95,7 @@ func TestADirectorysWordThatSomebodyLeftIsWrittenFirst(t *testing.T) {
 
 			h := d.holder(t, id)
 			x.NotNil(h.GetDateDisabled(), "suspended, though the rest was refused")
-			x.Equal("inactive", h.GetDirectory(), "and by the directory")
+			x.Equal(rstr.DirectoryStanding_DIRECTORY_STANDING_INACTIVE, h.GetDirectoryStanding(), "and by the directory")
 		})
 	}
 

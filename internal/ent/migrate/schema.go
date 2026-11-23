@@ -698,7 +698,7 @@ var (
 		{Name: "data", Type: field.TypeJson, Nullable: true},
 		{Name: "date_invalidated", Type: field.TypeTime, Nullable: true},
 		{Name: "date_disabled", Type: field.TypeTime, Nullable: true},
-		{Name: "directory", Type: field.TypeString},
+		{Name: "directory_standing", Type: field.TypeInt32},
 		{Name: "portrait", Type: field.TypeJson, Nullable: true},
 		{Name: "directory_subject", Type: field.TypeString, Nullable: true},
 		{Name: "directory_address", Type: field.TypeString, Nullable: true},

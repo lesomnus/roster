@@ -305,7 +305,7 @@ type HolderServiceClient interface {
 	// # Why it is not `Disable`
 	//
 	// Because the directory may lift what it put there and nothing else
-	// (`Holder.directory`), and one verb for both could not say whose a
+	// (`Holder.directory_standing`), and one verb for both could not say whose a
 	// suspension is. A suspension already an operator's stays theirs.
 	//
 	// Held to people the directory speaks for: somebody with an identity at the
@@ -833,7 +833,7 @@ type HolderServiceServer interface {
 	// # Why it is not `Disable`
 	//
 	// Because the directory may lift what it put there and nothing else
-	// (`Holder.directory`), and one verb for both could not say whose a
+	// (`Holder.directory_standing`), and one verb for both could not say whose a
 	// suspension is. A suspension already an operator's stays theirs.
 	//
 	// Held to people the directory speaks for: somebody with an identity at the

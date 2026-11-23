@@ -109,6 +109,6 @@ func TestACreateThatMeetsThePersonItWasMakingFinishesThem(t *testing.T) {
 		x.Equal(http.StatusCreated, code, "%v", got)
 		x.Equal(moon, got["id"])
 		x.Equal(false, got["active"])
-		x.Equal("inactive", d.holder(t, moon).GetDirectory())
+		x.Equal(rstr.DirectoryStanding_DIRECTORY_STANDING_INACTIVE, d.holder(t, moon).GetDirectoryStanding())
 	})
 }

@@ -243,7 +243,7 @@ func TestASecondSuspensionKeepsTheFirstMoment(t *testing.T) {
 	got, err := b.Ent.Holder.Get(ctx, mustId(t, h.GetId()).Uuid())
 	x.NoError(err)
 	x.True(said.GetDateDisabled().AsTime().Equal(*got.DateDisabled), "the moment the directory suspended them")
-	x.Empty(got.Directory, "and the operator's suspension now")
+	x.Zero(got.DirectoryStanding, "and the operator's suspension now")
 }
 
 // TestADirectorysWordAndAnOperatorsSuspensionAtOnce: an operator's suspension
@@ -337,7 +337,7 @@ func TestADirectorysWordAndAnOperatorsSuspensionAtOnce(t *testing.T) {
 			v, err := b.Ent.Holder.Get(ctx, mustId(t, h.GetId()).Uuid())
 			x.NoError(err)
 			x.NotNil(v.DateDisabled)
-			if v.Directory != "" {
+			if v.DirectoryStanding != 0 {
 				directorys++
 			}
 		}

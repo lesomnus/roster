@@ -177,7 +177,7 @@ func TestADirectoryLiftsOnlyItsOwnSuspension(t *testing.T) {
 		t.Helper()
 		v, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
 			Ref:    ref,
-			Select: app.HolderSelect_builder{DateDisabled: z.Ptr(true), Directory: z.Ptr(true)}.Build(),
+			Select: app.HolderSelect_builder{DateDisabled: z.Ptr(true), DirectoryStanding: z.Ptr(true)}.Build(),
 		}.Build())
 		require.NoError(t, err)
 
@@ -201,12 +201,12 @@ func TestADirectoryLiftsOnlyItsOwnSuspension(t *testing.T) {
 		x.NoError(deactivate(false))
 		v := read()
 		x.NotNil(v.GetDateDisabled())
-		x.Equal("inactive", v.GetDirectory())
+		x.Equal(app.DirectoryStanding_DIRECTORY_STANDING_INACTIVE, v.GetDirectoryStanding())
 
 		x.NoError(activate())
 		v = read()
 		x.Nil(v.GetDateDisabled())
-		x.Empty(v.GetDirectory())
+		x.Empty(v.GetDirectoryStanding())
 	})
 
 	t.Run("not an operator's", func(t *testing.T) {
@@ -219,7 +219,7 @@ func TestADirectoryLiftsOnlyItsOwnSuspension(t *testing.T) {
 		x.NotNil(read().GetDateDisabled(), "the directory lifted an operator's suspension")
 
 		x.NoError(deactivate(false))
-		x.Empty(read().GetDirectory(), "the directory took an operator's suspension for its own")
+		x.Empty(read().GetDirectoryStanding(), "the directory took an operator's suspension for its own")
 
 		_, err = b.Walled.Holder().Enable(admin, app.HolderEnableRequest_builder{Ref: ref}.Build())
 		x.NoError(err)
@@ -231,7 +231,7 @@ func TestADirectoryLiftsOnlyItsOwnSuspension(t *testing.T) {
 		x.NoError(deactivate(false))
 		_, err := b.Walled.Holder().Disable(admin, app.HolderDisableRequest_builder{Ref: ref}.Build())
 		x.NoError(err)
-		x.Empty(read().GetDirectory())
+		x.Empty(read().GetDirectoryStanding())
 
 		err = activate()
 		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
@@ -245,7 +245,7 @@ func TestADirectoryLiftsOnlyItsOwnSuspension(t *testing.T) {
 		x.NoError(deactivate(true))
 		v := read()
 		x.NotNil(v.GetDateDisabled())
-		x.Equal("deleted", v.GetDirectory())
+		x.Equal(app.DirectoryStanding_DIRECTORY_STANDING_DELETED, v.GetDirectoryStanding())
 
 		err := activate()
 		x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)
@@ -253,7 +253,7 @@ func TestADirectoryLiftsOnlyItsOwnSuspension(t *testing.T) {
 		_, err = b.Walled.Holder().Enable(admin, app.HolderEnableRequest_builder{Ref: ref}.Build())
 		x.NoError(err)
 		x.Nil(read().GetDateDisabled())
-		x.Empty(read().GetDirectory())
+		x.Empty(read().GetDirectoryStanding())
 	})
 
 	t.Run("and only people who sign in through it", func(t *testing.T) {
@@ -267,9 +267,9 @@ func TestADirectoryLiftsOnlyItsOwnSuspension(t *testing.T) {
 
 	t.Run("and the state is not something an Add carries", func(t *testing.T) {
 		_, err := b.Walled.Holder().Add(admin, app.HolderAddRequest_builder{
-			Tenant:    app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
-			Alias:     "ghost",
-			Directory: "inactive",
+			Tenant:            app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+			Alias:             "ghost",
+			DirectoryStanding: app.DirectoryStanding_DIRECTORY_STANDING_INACTIVE,
 		}.Build())
 		require.Equal(t, codes.InvalidArgument, status.Code(err), "%v", err)
 	})

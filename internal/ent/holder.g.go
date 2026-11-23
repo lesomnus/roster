@@ -40,7 +40,7 @@ func (e *Holder) Proto() *rstr.Holder {
 	if e.DateDisabled != nil {
 		x.SetDateDisabled(timestamppb.New(*e.DateDisabled))
 	}
-	x.SetDirectory(e.Directory)
+	x.SetDirectoryStanding(rstr.DirectoryStanding(e.DirectoryStanding))
 	if e.Portrait != nil {
 		x.SetPortrait(e.Portrait)
 	}
