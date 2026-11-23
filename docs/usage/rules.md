@@ -536,6 +536,15 @@ that names the key as the file writes it (`cmd.Config.Meant`).
 | A lease of several processes over a plane whose database is SQLite is refused, naming the plane's `db.driver` and `spin.lease`. A control plane's broker refusing its database says where it was taken from, where `control.watch.broker` is unsaid | `cmd/config.go` · `cmd/serve.go` | `TestALeaseOfSeveralOverSqliteIsRefused` · `TestTheControlPlanesTakenBrokerIsSaidWhereItIsRefused` |
 | A listener block's certificate is read before anything is opened, by its key: `cert_file` and `key_file` both or neither, and each, and `client_ca_file`, a file that can be read | `cmd/config.go` | `TestACertificateThatCannotBeReadIsRefusedBeforeAnythingIsOpened` |
 
+### Of a release
+
+Not a call's: what an operator deploying a release may rely on of the image it
+names ([README](../../README.md#what-the-image-is-made-of)).
+
+| | written in | held to it by |
+| --- | --- | --- |
+| A release's image is the build `main` pushed for the tagged commit, by its digest, and no other: nothing is built for a tag, and the one write is the tag's own name. A tag of a commit with none fails and names nothing. A release's name does not move: where the registry has it at another digest the run fails and writes nothing | `.github/workflows/release.yml` | `TestATagNamesTheImageMainPushedAndBuildsNothing` |
+
 ## What roster does by itself
 
 Not refusals. These are rows roster writes beside the one a caller asked for,

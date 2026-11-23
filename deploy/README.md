@@ -84,6 +84,15 @@ its `ci` run on `main`, whose id is the tag:
 docker buildx imagetools inspect ghcr.io/lesomnus/roster:r<the run's id>   # Digest: sha256:…
 ```
 
+A release is a commit's image by a name of its own: a `v*` tag names the image
+`main` pushed for the tagged commit, at the same digest, and the name does not
+move ([README](../README.md#what-the-image-is-made-of)). From a release to a
+digest is the registry's:
+
+```sh
+docker buildx imagetools inspect ghcr.io/lesomnus/roster:v<the release>   # Digest: sha256:…
+```
+
 What an overlay is expected to bring, and what it should leave alone:
 
 | | |
@@ -185,7 +194,8 @@ last pushed from `main`, and sets no `imagePullPolicy`, so Kubernetes' default
 for a tag is `IfNotPresent`: a node keeps the `edge` it pulled first. Two nodes
 are then two builds, and a pod that moves between them changes build without a
 commit. An overlay names roster's image by digest in its `images:` -- from a
-commit to a digest is above -- and Hydra's and curl's the same way.
+commit or a release to a digest is above -- or by a release's name, which does
+not move; and Hydra's and curl's the same way.
 
 **No `NetworkPolicy` is shipped.** Nothing here is a `NodePort`, a
 `LoadBalancer` or an `Ingress`, so nothing is reached from outside the cluster
