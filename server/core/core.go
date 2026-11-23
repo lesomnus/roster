@@ -280,7 +280,18 @@ type Rules struct {
 	// Nil is a stack that cannot, and a deployment key reading nominations is
 	// refused rather than shown every app's. See [coreNomination.List].
 	Borrower Borrower
+
+	// TenantOf is the tenant a holder is of, read past the wall, which
+	// `IdentityService/Attest` asks of the app a delegation was issued to:
+	// its grant vouches only where it is held, in the person's own tenant. Nil
+	// is a stack that cannot say, and such a word is not taken. See
+	// [TenantOf].
+	TenantOf TenantOf
 }
+
+// TenantOf answers the tenant `who` is of, and the nil identifier where `who`
+// is no live holder -- nobody, or of no tenant.
+type TenantOf func(ctx context.Context, who pdid.Id) (pdid.Id, error)
 
 // Borrower answers which control-plane holder the deployment key `key` hangs
 // off, or `NotFound` where there is no such key.

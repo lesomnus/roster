@@ -319,8 +319,8 @@ func ofTheWholeTenant(method string) bool {
 // but subject-less, for the grant that let a role name -- *may add a way into
 // your own account* -- without the entity permission that reaches the tenant.
 // They are gone: CLAUDE.md, *no self-only twin of a verb*. A person calls
-// `Identity.Add`, `ApiKey.Issue` and `ApiKey.Erase` with their own
-// reference, RBAC grants the method as it grants any other, and *whose row* is
+// `Identity.Attest` (through a front door), `ApiKey.Issue` and `ApiKey.Erase`
+// with their own reference, RBAC grants the method as it grants any other, and *whose row* is
 // `server/core`'s (`mayReach`, `mayWriteAWayIn`: yourself always passes). So
 // what is on this list is exactly what cannot be asked for with a role, and a
 // method that takes a subject can never join it -- `cmd/asself_test.go`
@@ -932,6 +932,23 @@ func Rules(db *ent.Client, sources ...rbac.Source) core.Rules {
 		Sited:        Sited(db),
 		Bound:        Bound(db),
 		Unsited:      Unsited(db),
+		TenantOf:     TenantOf(db),
+	}
+}
+
+// TenantOf is the tenant a live holder is of, for [core.TenantOf], and the
+// nil identifier for anybody else.
+func TenantOf(db *ent.Client) core.TenantOf {
+	return func(ctx context.Context, who pdid.Id) (pdid.Id, error) {
+		v, err := db.Holder.Query().Where(holder.IdEQ(who.Uuid()), holder.DateErasedIsNil()).Only(ctx)
+		if ent.IsNotFound(err) {
+			return pdid.Nil, nil
+		}
+		if err != nil {
+			return pdid.Nil, err
+		}
+
+		return pdid.Id(v.TenantId), nil
 	}
 }
 

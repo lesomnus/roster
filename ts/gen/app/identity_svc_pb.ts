@@ -18,7 +18,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/identity_svc.g.proto.
  */
 export const file_app_identity_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChhhcHAvaWRlbnRpdHlfc3ZjLmcucHJvdG8SBnJvc3RlciLAAQoSSWRlbnRpdHlBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFwoIcHJvdmlkZXIYCCABKAlCBaoBAggCEhYKB3N1YmplY3QYCSABKAlCBaoBAggCEhgKCXRlbmFudF9pZBgKIAEoDEIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChJJZGVudGl0eUdldFJlcXVlc3QSIAoDcmVmGAEgASgLMhMucm9zdGVyLklkZW50aXR5UmVmEiYKBnNlbGVjdBgCIAEoCzIWLnJvc3Rlci5JZGVudGl0eVNlbGVjdCJTCgtJZGVudGl0eVJlZhIMCgJpZBgBIAEoDEgAEi8KB3N1YmplY3QYCiABKAsyHC5yb3N0ZXIuSWRlbnRpdHlSZWZCeVN1YmplY3RIAEIFCgNrZXkiTAoUSWRlbnRpdHlSZWZCeVN1YmplY3QSEQoJdGVuYW50X2lkGAogASgMEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkiugEKDklkZW50aXR5U2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhAKCHByb3ZpZGVyGAggASgIEg8KB3N1YmplY3QYCSABKAgSEQoJdGVuYW50X2lkGAogASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiqQEKFElkZW50aXR5UGF0Y2hSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIQCghwcm92aWRlchgQIAEoCRIPCgdzdWJqZWN0GBIgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIlUKFElkZW50aXR5QXBwbHlSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIicKFUlkZW50aXR5RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgigQEKE0lkZW50aXR5TGlzdFJlcXVlc3QSJwoHZmlsdGVycxgBIAMoCzIWLnJvc3Rlci5JZGVudGl0eUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiTAoUSWRlbnRpdHlMaXN0UmVzcG9uc2USHwoFaXRlbXMYASADKAsyEC5yb3N0ZXIuSWRlbnRpdHkSEwoEbmV4dBgCIAEoCUIFqgECCAIiaAoOSWRlbnRpdHlGaWx0ZXISIAoDcmVmGAEgASgLMhMucm9zdGVyLklkZW50aXR5UmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSEQoJdGVuYW50X2lkGAMgASgMIl0KFElkZW50aXR5V2F0Y2hSZXF1ZXN0EicKB2ZpbHRlcnMYASADKAsyFi5yb3N0ZXIuSWRlbnRpdHlGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiQQoVSWRlbnRpdHlXYXRjaFJlc3BvbnNlEigKBWl0ZW1zGAEgAygLMhkucm9zdGVyLklkZW50aXR5V2F0Y2hJdGVtIlcKEUlkZW50aXR5V2F0Y2hJdGVtEgoKAmlkGAEgASgMEh8KBXZhbHVlGAIgASgLMhAucm9zdGVyLklkZW50aXR5EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIihgEKGElkZW50aXR5UmVzdWJqZWN0UmVxdWVzdBIgCgNyZWYYASABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSMAoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIWCgdzdWJqZWN0GAkgASgJQgWqAQIIAjL2AwoPSWRlbnRpdHlTZXJ2aWNlEjMKA0FkZBIaLnJvc3Rlci5JZGVudGl0eUFkZFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSMwoDR2V0Ehoucm9zdGVyLklkZW50aXR5R2V0UmVxdWVzdBoQLnJvc3Rlci5JZGVudGl0eRI3CgVQYXRjaBIcLnJvc3Rlci5JZGVudGl0eVBhdGNoUmVxdWVzdBoQLnJvc3Rlci5JZGVudGl0eRI3CgVBcHBseRIcLnJvc3Rlci5JZGVudGl0eUFwcGx5UmVxdWVzdBoQLnJvc3Rlci5JZGVudGl0eRI7CgVFcmFzZRITLnJvc3Rlci5JZGVudGl0eVJlZhodLnJvc3Rlci5JZGVudGl0eUVyYXNlUmVzcG9uc2USQQoETGlzdBIbLnJvc3Rlci5JZGVudGl0eUxpc3RSZXF1ZXN0Ghwucm9zdGVyLklkZW50aXR5TGlzdFJlc3BvbnNlEkYKBVdhdGNoEhwucm9zdGVyLklkZW50aXR5V2F0Y2hSZXF1ZXN0Gh0ucm9zdGVyLklkZW50aXR5V2F0Y2hSZXNwb25zZTABEj8KCVJlc3ViamVjdBIgLnJvc3Rlci5JZGVudGl0eVJlc3ViamVjdFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHlCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_identity, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChhhcHAvaWRlbnRpdHlfc3ZjLmcucHJvdG8SBnJvc3RlciLAAQoSSWRlbnRpdHlBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFwoIcHJvdmlkZXIYCCABKAlCBaoBAggCEhYKB3N1YmplY3QYCSABKAlCBaoBAggCEhgKCXRlbmFudF9pZBgKIAEoDEIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJeChJJZGVudGl0eUdldFJlcXVlc3QSIAoDcmVmGAEgASgLMhMucm9zdGVyLklkZW50aXR5UmVmEiYKBnNlbGVjdBgCIAEoCzIWLnJvc3Rlci5JZGVudGl0eVNlbGVjdCJTCgtJZGVudGl0eVJlZhIMCgJpZBgBIAEoDEgAEi8KB3N1YmplY3QYCiABKAsyHC5yb3N0ZXIuSWRlbnRpdHlSZWZCeVN1YmplY3RIAEIFCgNrZXkiTAoUSWRlbnRpdHlSZWZCeVN1YmplY3QSEQoJdGVuYW50X2lkGAogASgMEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkiugEKDklkZW50aXR5U2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhAKCHByb3ZpZGVyGAggASgIEg8KB3N1YmplY3QYCSABKAgSEQoJdGVuYW50X2lkGAogASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiqQEKFElkZW50aXR5UGF0Y2hSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIQCghwcm92aWRlchgQIAEoCRIPCgdzdWJqZWN0GBIgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIlUKFElkZW50aXR5QXBwbHlSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIicKFUlkZW50aXR5RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgigQEKE0lkZW50aXR5TGlzdFJlcXVlc3QSJwoHZmlsdGVycxgBIAMoCzIWLnJvc3Rlci5JZGVudGl0eUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiTAoUSWRlbnRpdHlMaXN0UmVzcG9uc2USHwoFaXRlbXMYASADKAsyEC5yb3N0ZXIuSWRlbnRpdHkSEwoEbmV4dBgCIAEoCUIFqgECCAIiaAoOSWRlbnRpdHlGaWx0ZXISIAoDcmVmGAEgASgLMhMucm9zdGVyLklkZW50aXR5UmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSEQoJdGVuYW50X2lkGAMgASgMIl0KFElkZW50aXR5V2F0Y2hSZXF1ZXN0EicKB2ZpbHRlcnMYASADKAsyFi5yb3N0ZXIuSWRlbnRpdHlGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiQQoVSWRlbnRpdHlXYXRjaFJlc3BvbnNlEigKBWl0ZW1zGAEgAygLMhkucm9zdGVyLklkZW50aXR5V2F0Y2hJdGVtIlcKEUlkZW50aXR5V2F0Y2hJdGVtEgoKAmlkGAEgASgMEh8KBXZhbHVlGAIgASgLMhAucm9zdGVyLklkZW50aXR5EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIihgEKGElkZW50aXR5UmVzdWJqZWN0UmVxdWVzdBIgCgNyZWYYASABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSMAoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIWCgdzdWJqZWN0GAkgASgJQgWqAQIIAiJrChVJZGVudGl0eUF0dGVzdFJlcXVlc3QSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIXCghwcm92aWRlchgIIAEoCUIFqgECCAISFgoHc3ViamVjdBgJIAEoCUIFqgECCAIysQQKD0lkZW50aXR5U2VydmljZRIzCgNBZGQSGi5yb3N0ZXIuSWRlbnRpdHlBZGRSZXF1ZXN0GhAucm9zdGVyLklkZW50aXR5EjMKA0dldBIaLnJvc3Rlci5JZGVudGl0eUdldFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSNwoFUGF0Y2gSHC5yb3N0ZXIuSWRlbnRpdHlQYXRjaFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSNwoFQXBwbHkSHC5yb3N0ZXIuSWRlbnRpdHlBcHBseVJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSOwoFRXJhc2USEy5yb3N0ZXIuSWRlbnRpdHlSZWYaHS5yb3N0ZXIuSWRlbnRpdHlFcmFzZVJlc3BvbnNlEkEKBExpc3QSGy5yb3N0ZXIuSWRlbnRpdHlMaXN0UmVxdWVzdBocLnJvc3Rlci5JZGVudGl0eUxpc3RSZXNwb25zZRJGCgVXYXRjaBIcLnJvc3Rlci5JZGVudGl0eVdhdGNoUmVxdWVzdBodLnJvc3Rlci5JZGVudGl0eVdhdGNoUmVzcG9uc2UwARI/CglSZXN1YmplY3QSIC5yb3N0ZXIuSWRlbnRpdHlSZXN1YmplY3RSZXF1ZXN0GhAucm9zdGVyLklkZW50aXR5EjkKBkF0dGVzdBIdLnJvc3Rlci5JZGVudGl0eUF0dGVzdFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHlCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_identity, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.IdentityAddRequest
@@ -532,6 +532,39 @@ export const IdentityResubjectRequestSchema: GenMessage<IdentityResubjectRequest
   messageDesc(file_app_identity_svc_g, 14);
 
 /**
+ * @generated from message roster.IdentityAttestRequest
+ */
+export type IdentityAttestRequest = Message<"roster.IdentityAttestRequest"> & {
+  /**
+   * Whose account it is: the caller's own.
+   *
+   * @generated from field: roster.HolderRef holder = 2;
+   */
+  holder?: HolderRef | undefined;
+
+  /**
+   * The provider, by the name of the tenant's connection to it.
+   *
+   * @generated from field: string provider = 8 [features.field_presence = IMPLICIT];
+   */
+  provider: string;
+
+  /**
+   * Who that provider says they are.
+   *
+   * @generated from field: string subject = 9 [features.field_presence = IMPLICIT];
+   */
+  subject: string;
+};
+
+/**
+ * Describes the message roster.IdentityAttestRequest.
+ * Use `create(IdentityAttestRequestSchema)` to create a new message.
+ */
+export const IdentityAttestRequestSchema: GenMessage<IdentityAttestRequest> = /*@__PURE__*/
+  messageDesc(file_app_identity_svc_g, 15);
+
+/**
  * @generated from service roster.IdentityService
  */
 export const IdentityService: GenService<{
@@ -630,6 +663,42 @@ export const IdentityService: GenService<{
   resubject: {
     methodKind: "unary";
     input: typeof IdentityResubjectRequestSchema;
+    output: typeof IdentitySchema;
+  },
+  /**
+   * Attest writes an account at a provider onto the caller's own row, on the
+   * word of a front door that saw the provider say it is theirs.
+   *
+   * # Why it is not `Add`
+   *
+   * `Add` takes no proof: whoever may call it writes an account under any
+   * provider's name and any subject, and the row is live at once -- a way in
+   * for whoever holds that account and, at a connection a directory
+   * provisions through, who the directory finds its user by. So `Add` is for
+   * whoever holds it across the tenant: an administrator, and a front door
+   * linking somebody at their first sign-in. What a person connects
+   * themselves is proved by the round trip to the provider, which roster
+   * cannot see and the front door that made it can. This is the verb it
+   * vouches with, as `EmailService/Attest` is beside `EmailService/Add`.
+   *
+   * # Who it is taken from
+   *
+   * It is in what everybody holds over what is their own (`self-service`), so
+   * a tenant switches its people's *connect* off by taking it out of that
+   * role. It is taken for the caller's own row only, and only through a
+   * delegation whose app holds `IdentityService/Attest` across the tenant --
+   * a binding with no site -- which is the front door vouching. A key of
+   * one's own, or a session, is refused `PermissionDenied`, and so is a
+   * delegation whose app does not hold it. Somebody else's row is answered as
+   * any method of `self-service` answers one: there is nobody there.
+   *
+   * It writes what `Add` writes, held to every rule `Add` asks of the row.
+   *
+   * @generated from rpc roster.IdentityService.Attest
+   */
+  attest: {
+    methodKind: "unary";
+    input: typeof IdentityAttestRequestSchema;
     output: typeof IdentitySchema;
   },
 }> = /*@__PURE__*/

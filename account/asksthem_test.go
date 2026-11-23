@@ -202,7 +202,7 @@ func TestWhatTheAppWritesForSomebodyItAsksThemFor(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 
-		without(t, d, rstr.IdentityService_Add_FullMethodName)
+		without(t, d, rstr.IdentityService_Attest_FullMethodName)
 		without(t, d, rstr.EmailService_Add_FullMethodName)
 
 		b := d.browser(t, "contoso.test")
@@ -210,7 +210,7 @@ func TestWhatTheAppWritesForSomebodyItAsksThemFor(t *testing.T) {
 		code, _ := b.do(t, http.MethodGet, "/login?connection=example", "", nil)
 		x.Equal(http.StatusOK, code)
 
-		code, body := b.rpc(t, "/roster.IdentityService/Add",
+		code, body := b.rpc(t, "/roster.IdentityService/Attest",
 			`{"holder":{"id":"`+std(frank.GetId())+`"},"provider":"other","subject":"9003"}`)
 		x.Equal(http.StatusForbidden, code, "the control: roster refuses him, as himself: %s", body)
 

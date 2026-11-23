@@ -1134,7 +1134,7 @@ roster --as admin email add '{"holder":{"slug":{"alias":"intern-kim","tenant":{"
 The first sign-in through the directory then finds that row, links the identity to
 it, and every sign-in after that is the ordinary lookup. The other way round works
 too and is the person's own: signed in with their password, they attach the
-provider account from the account page (`Identity.Add` with their own reference)
+provider account from the account page (`Identity.Attest` with their own reference)
 -- except at the connection the tenant's directory provisions through, where an
 account is the directory's to say and not the person's ([scim.md](scim.md)).
 

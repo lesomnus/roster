@@ -261,7 +261,9 @@ func serve(t *testing.T, enrol func(rstr.Client) sso.Enrol, tenants map[string]s
 			"/roster.DelegationService/Revoke",
 			"/roster.MeService/Get",
 			"/roster.MeService/SignOutEverywhere",
-			"/roster.IdentityService/Add",
+			// Across the tenant, which is this app vouching for the account a
+			// person connects through it (`IdentityService/Attest`).
+			"/roster.IdentityService/Attest",
 			"/roster.IdentityService/Erase",
 			"/roster.ApiKeyService/Issue",
 			"/roster.ApiKeyService/Erase",
@@ -1531,7 +1533,7 @@ func TestAddingAWayInIsRoutedNow(t *testing.T) {
 		x := require.New(t)
 
 		_, err := d.ungated.Role().Narrow(ctx, rstr.RoleNarrowRequest_builder{
-			Ref: own, Methods: []string{rstr.IdentityService_Add_FullMethodName},
+			Ref: own, Methods: []string{rstr.IdentityService_Attest_FullMethodName},
 		}.Build())
 		x.NoError(err)
 
@@ -1546,7 +1548,7 @@ func TestAddingAWayInIsRoutedNow(t *testing.T) {
 	// Put back, which is the role as a tenant is made with it. Nobody is
 	// bound anything: it is not a role that names a verb about anybody.
 	_, err = d.ungated.Role().Widen(ctx, rstr.RoleWidenRequest_builder{
-		Ref: own, Methods: []string{rstr.IdentityService_Add_FullMethodName},
+		Ref: own, Methods: []string{rstr.IdentityService_Attest_FullMethodName},
 	}.Build())
 	x.NoError(err)
 

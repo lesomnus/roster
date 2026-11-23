@@ -15,13 +15,15 @@ import (
 
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/scim"
+	"github.com/lesomnus/roster/server/keys"
 )
 
 // TestADirectoryFindsNobodyByAnAccountTheyWroteThemselves: a directory finds
 // its user by `externalId` through the identity at the connection it
 // provisions through, and that identity was anybody's to write onto their own
-// row, with no proof the subject is theirs (`self-service` names
-// `IdentityService/Add`).
+// row, with no proof the subject is theirs (`self-service` named
+// `IdentityService/Add`). It names `IdentityService/Attest` now, which a
+// front door vouches for, and the rule here is the same for it.
 //
 // # What it was
 //
@@ -51,22 +53,49 @@ func TestADirectoryFindsNobodyByAnAccountTheyWroteThemselves(t *testing.T) {
 	x.NoError(err)
 
 	// Mallory: somebody of the tenant who holds nothing, calling the one verb
-	// with a key of her own -- hers to call by `self-service`, bound to nobody.
+	// through a front door she signed in at -- hers to call by `self-service`,
+	// bound to nobody, and the front door's to vouch for.
 	h, err := d.s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: "mallory", Name: "Mallory"}.Build())
 	x.NoError(err)
 	mallory, err := pdid.From(h.GetId())
 	x.NoError(err)
 	own := rstr.HolderRef_builder{Id: h.GetId()}.Build()
-	key := d.mint(t, h.GetId(), "her-own", []string{rstr.IdentityService_Add_FullMethodName})
+	_, err = d.s.Ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
+		Holder: own, Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+
+	door, err := d.s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: at, Alias: "door"}.Build())
+	x.NoError(err)
+	fronts, err := d.s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
+		Tenant: at, Alias: "a-front-door", Methods: []string{
+			rstr.VouchService_Verify_FullMethodName, rstr.VouchService_Delegate_FullMethodName,
+			rstr.IdentityService_Attest_FullMethodName,
+		},
+	}.Build())
+	x.NoError(err)
+	_, err = d.s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role: rstr.RoleRef_builder{Id: fronts.GetId()}.Build(), Holder: rstr.HolderRef_builder{Id: door.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+	doorKey := d.mint(t, door.GetId(), "door", []string{"/roster.*/*"})
 
 	conn, err := grpc.NewClient(d.rpc, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	x.NoError(err)
 	defer conn.Close()
-	as := metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+key)
+	signedIn, err := rstr.NewVouchServiceClient(conn).Delegate(
+		metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+doorKey),
+		rstr.VouchDelegateRequest_builder{
+			Who:     rstr.VouchWho_builder{Id: h.GetId()}.Build(),
+			Secret:  []byte("correct horse battery staple"),
+			Methods: []string{rstr.IdentityService_Attest_FullMethodName},
+		}.Build())
+	x.NoError(err)
+	as := metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+doorKey, keys.HeaderActing, signedIn.GetToken())
 	hers := rstr.NewClient(conn).Identity()
 
 	// Erin's object id at the directory, which is not Mallory's.
-	_, err = hers.Add(as, rstr.IdentityAddRequest_builder{Holder: own, Provider: "entra", Subject: erinOid}.Build())
+	_, err = hers.Attest(as, rstr.IdentityAttestRequest_builder{Holder: own, Provider: "entra", Subject: erinOid}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err), "somebody wrote themselves an account at the connection their directory provisions through: %v", err)
 	x.ErrorContains(err, "directory", "the refusal does not say whose these are to write")
 
@@ -94,7 +123,7 @@ func TestADirectoryFindsNobodyByAnAccountTheyWroteThemselves(t *testing.T) {
 	})
 
 	t.Run("and an account anywhere else is still somebody's own to write", func(t *testing.T) {
-		_, err := hers.Add(as, rstr.IdentityAddRequest_builder{Holder: own, Provider: "github", Subject: "4242"}.Build())
+		_, err := hers.Attest(as, rstr.IdentityAttestRequest_builder{Holder: own, Provider: "github", Subject: "4242"}.Build())
 		require.NoError(t, err)
 	})
 

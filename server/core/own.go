@@ -86,8 +86,11 @@ var Owning = []string{
 	app.PhoneService_Add_FullMethodName,
 	app.PhoneService_Erase_FullMethodName,
 
-	// How they sign in.
-	app.IdentityService_Add_FullMethodName,
+	// How they sign in. An account at a provider is `Attest` and not `Add`:
+	// `Add` takes no proof, and what proves an account is theirs is the round
+	// trip to the provider, which a front door makes and vouches for
+	// (`identity.go`, [coreIdentity.Attest]).
+	app.IdentityService_Attest_FullMethodName,
 	app.IdentityService_Erase_FullMethodName,
 	app.CredentialService_Set_FullMethodName,
 	app.CredentialService_Enrol_FullMethodName,

@@ -532,8 +532,9 @@ not say when it last authenticated them -- GitHub, which has no such claim, and
 Google where its project does not let it: all are refused with *sign in again*.
 
 Everything else a person does about their own row is the **operator's verb with
-their own reference**: `IdentityService/Add` to attach a provider account,
-`ApiKeyService/Issue` and `/Erase` for their own keys. There is no self-only twin
+their own reference**: `IdentityService/Erase` to take a provider account
+back, `ApiKeyService/Issue` and `/Erase` for their own keys. Attaching a
+provider account is a front door's word, `IdentityService/Attest`, below. There is no self-only twin
 of a verb anywhere in roster. What lets somebody call one about themselves is
 their tenant's `self-service` role, which everybody of it holds over what is
 their own and nobody is bound ([permissions.md](permissions.md) § *What
@@ -602,11 +603,14 @@ arrived through one of them and may want both. That is the account page's *signs
 in with* section: a row per directory the operator offers, where the one they
 arrived through says who they are there and offers to unlink, and the one they
 have not used offers **connect**. Pressing it is a round trip to that directory
-and back, and what lands on their row is `Identity.Add` with their own
-reference, **made as them**: the provider proves the account, which is the
-front door's part, and roster is asked what it is asked of any call of theirs --
-that their session still stands when the round trip ends, and that their tenant
-lets them (`IdentityService/Add` in its `self-service` role, or a role of their
+and back, and what lands on their row is `Identity.Attest` with their own
+reference, **made as them** through the delegation their sign-in handed the
+account app: the provider proves the account, which is the front door's part,
+and roster takes its word for it only from an app that holds
+`IdentityService/Attest` across the tenant, which `roster account provision`
+binds it. And roster is asked what it is asked of any call of theirs -- that
+their session still stands when the round trip ends, and that their tenant lets
+them (`IdentityService/Attest` in its `self-service` role, or a role of their
 own).
 
 Two things it does not do, each for a reason:

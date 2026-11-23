@@ -509,10 +509,14 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 // And `Bound` and `Unsited`, which are whether a customer's binding or team
 // is there already: asked of the control plane neither ever is, and an
 // operator made each twice.
+//
+// And `TenantOf`, which is of whom a customer's delegation was issued to: on
+// the control plane nobody of a customer's is anybody.
 func adminRules(s *Server) core.Rules {
 	r := Rules(s.Control.Ent)
 	r.Held = core.Held(Everything(s.Ent, s.policySources...))
 	r.Everywhere = Everywhere(s.Ent, s.policySources...)
+	r.TenantOf = TenantOf(s.Ent)
 	r.Releasing = Releasing(s.Ent, s.contents)
 	r.Giving = Giving(s.Ent)
 	r.Sited = Sited(s.Ent)

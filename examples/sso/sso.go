@@ -292,8 +292,11 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 			// a key that acts as them, end one -- with a reference this app takes from the session
 			// and never from the request. Roster's part is `mayWriteAWayIn` and
 			// `mayGrant` (your own row passes; what you hand out is what you
-			// hold); the part that says *only your own* is this app's.
-			rstr.IdentityService_Add_FullMethodName,
+			// hold); the part that says *only your own* is this app's. An
+			// account is attached by `Attest`, which roster takes through a
+			// delegation of an app that holds it across the tenant: this app,
+			// vouching for the round trip it made.
+			rstr.IdentityService_Attest_FullMethodName,
 			rstr.IdentityService_Erase_FullMethodName,
 			rstr.ApiKeyService_Issue_FullMethodName,
 			rstr.ApiKeyService_Erase_FullMethodName,
@@ -583,7 +586,7 @@ func matches(r *http.Request, name string) bool {
 //
 // # And roster is the one that refuses
 //
-// Not this app. `Identity.Add` -- called with the session's person and no
+// Not this app. `Identity.Attest` -- called with the session's person and no
 // reference from the request, which is this app's whole part -- refuses a
 // second identity of one provider, and refuses an account already attached to
 // somebody, without saying whose. This handler turns those into pages and adds
@@ -613,7 +616,7 @@ func (a *App) link(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := a.roster.Identity().Add(as, rstr.IdentityAddRequest_builder{
+	res, err := a.roster.Identity().Attest(as, rstr.IdentityAttestRequest_builder{
 		Holder:   rstr.HolderRef_builder{Id: own.Bytes()}.Build(),
 		Provider: who.Provider,
 		Subject:  who.Subject,
@@ -638,7 +641,7 @@ func (a *App) link(w http.ResponseWriter, r *http.Request) {
 			}
 
 			// That account is already a way in, here or for somebody else.
-			// Told apart from nothing, for the reason `Identity.Add` gives.
+			// Told apart from nothing, for the reason `Identity.Attest` gives.
 			http.Error(w, "that account is already a way in", http.StatusConflict)
 			return
 		}
@@ -871,7 +874,7 @@ func Enrolling(c rstr.Client) Enrol {
 		// And **not** what they may do, which is the line this app does not
 		// cross.
 		//
-		// `Identity.Add` is not waived the way `MeService`'s three are -- adding
+		// `Identity.Attest` is not waived the way `MeService`'s three are -- adding
 		// a way in is a feature a deployment offers rather than something
 		// somebody must be able to do with no role -- so somebody enrolled here
 		// cannot add one until a role says they may, and the account page tells

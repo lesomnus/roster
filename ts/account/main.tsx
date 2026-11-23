@@ -339,7 +339,7 @@ function Ways(props: {
 		f.submit()
 	}
 
-	const may = props.may('/roster.IdentityService/Add')
+	const may = props.may('/roster.IdentityService/Attest')
 	const ids = props.identities.filter((i) => !gone.includes(uuid(i.id)))
 	const passwords = props.credentials.filter((c) => c.kind === 'password')
 
@@ -407,7 +407,7 @@ function Ways(props: {
 				</tbody>
 			</table>
 			{!may && rows.some((r) => r.offered && at(r.provider) === undefined) && (
-				<Needs method="/roster.IdentityService/Add" />
+				<Needs method="/roster.IdentityService/Attest" />
 			)}
 			{note !== null && (
 				<p className={note.ok ? 'note' : 'bad'} onClick={() => setNote(null)}>

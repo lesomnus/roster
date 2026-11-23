@@ -394,9 +394,9 @@ linked, and a sentence after the list names it. Nor does a directory say
 anything of its own holder: `Tell` of the caller's own row is refused.
 
 **An account at the connection is not somebody's own to write.** Anywhere else
-a person may write an account at a provider onto their own row, and roster
-checks nothing about it (`IdentityService/Add`, in the tenant's `self-service`
-role). At the connection a directory provisions through, that row is who the
+a person may write an account at a provider onto their own row through a front
+door that vouches for it, and roster checks nothing more about it
+(`IdentityService/Attest`, in the tenant's `self-service` role). At the connection a directory provisions through, that row is who the
 directory means: it finds its user by `externalId` through it and speaks for
 whoever has one. Somebody who wrote a colleague's id onto their own row would
 be that colleague to the directory -- found by its lookup, the reason creating
@@ -414,7 +414,7 @@ of them. So before a tenant's connection is marked, whoever turns provisioning
 on reads the tenant's accounts at providers (`roster identity list`; each says
 its provider) for the ones at that connection, beside what the directory calls
 each of those people, and a tenant that does not want one written in the
-meantime takes `IdentityService/Add` out of its `self-service` role first.
+meantime takes `IdentityService/Attest` out of its `self-service` role first.
 
 **Nor theirs to take away.** The same row is what makes somebody one the
 directory speaks for. Somebody it made, who also has a password, could

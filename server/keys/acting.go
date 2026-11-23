@@ -40,6 +40,41 @@ import (
 // connection roster trusts; what changes is who the request is about.
 const HeaderActing = "roster-as"
 
+// authorityActing begins the `auth.Identity.Authority` of an identity [Acting]
+// answered, and the delegation's identifier follows it.
+const authorityActing = HeaderActing + ":"
+
+// Through is the delegation a call came through, read off the identity
+// [Acting] answered for it, and false for an identity anything else answered.
+//
+// # Why a rule can believe it
+//
+// A front door vouches for what a person does through the delegation it was
+// handed (`IdentityService/Attest`), so a rule has to know that a call came
+// through one and which. A header says so, and a header is the caller's to
+// write. `Authority` is not: payday's handlers never fill it and never read it
+// from a request -- *handlers set it after verifying the credential* -- and of
+// roster's, [Acting] alone sets it, after the key and the delegation were both
+// checked and the delegation was found to be the key's. So what this answers is
+// a delegation that was presented with the key it was minted for, and nothing
+// a caller wrote.
+//
+// It is the identifier and not the row: the resolver reads the row, as it
+// reads the person, so that what a rule is handed is what the database says
+// (`cmd.Resolver`).
+func Through(id auth.Identity) (pdid.Id, bool) {
+	v, ok := strings.CutPrefix(id.Authority, authorityActing)
+	if !ok {
+		return pdid.Nil, false
+	}
+	k, err := pdid.Parse(v)
+	if err != nil {
+		return pdid.Nil, false
+	}
+
+	return k, true
+}
+
 // Acting resolves a request that carries a key **and** a delegation.
 //
 // It answers as the **person** the delegation names, narrowed by the
@@ -205,10 +240,19 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 			return no()
 		}
 
+		through, err := pdid.From(v.Id)
+		if err != nil {
+			return auth.Identity{}, err
+		}
+
 		id := auth.Identity{
 			// The person, and only what the delegation was minted for. An
 			// empty list allows nothing, which is `frame.Grant`'s zero.
 			Grant: frame.Whole().To(v.Methods...),
+
+			// And which delegation it was, for a rule that asks who vouched:
+			// see [Through].
+			Authority: authorityActing + through.String(),
 
 			// Always set on a delegation -- [findDelegation] refuses a row
 			// without one -- so a stream carrying this ends when it does.

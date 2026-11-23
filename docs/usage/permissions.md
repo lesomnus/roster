@@ -529,7 +529,7 @@ unless that person's permissions are a subset of the caller's:
 | --- | --- |
 | `CredentialService/Set`, `/Issue`, `/Unlock` | their secret |
 | `CredentialService/Enrol` | their second factor |
-| `IdentityService/Add` | an account at a provider that signs in as them |
+| `IdentityService/Add`, `/Attest` | an account at a provider that signs in as them |
 | `EmailService/Add` | a mailbox a recovery link is sent to |
 | `PhoneService/Add` | a number, which says who they are to whoever reads it, and is where a code is sent the day one is |
 | `ApiKeyService/Add`, `/Issue` | a key that **acts as** them |
@@ -593,7 +593,7 @@ roster --as admin role get @newco/self-service
 methods   /roster.HolderService/Get  /roster.HolderService/Update  /roster.HolderService/Portray
           /roster.EmailService/Get   /roster.EmailService/List     /roster.EmailService/Add   /roster.EmailService/Erase
           /roster.PhoneService/Get   /roster.PhoneService/List     /roster.PhoneService/Add   /roster.PhoneService/Erase
-          /roster.IdentityService/Add  /roster.IdentityService/Erase
+          /roster.IdentityService/Attest  /roster.IdentityService/Erase
           /roster.CredentialService/Set  /roster.CredentialService/Enrol  /roster.CredentialService/Erase
           /roster.ApiKeyService/List /roster.ApiKeyService/Issue   /roster.ApiKeyService/Erase
           /roster.DelegationService/List  /roster.DelegationService/Erase
@@ -633,6 +633,12 @@ whoever called it, and a link is spent by whoever minted it -- so a person who
 may call it is one verb, `EmailService/Confirm`, from proving an address they
 do not read. Both are a front door's: the account app mints the link as itself
 and mails it.
+
+`IdentityService/Add` is not on it either: it writes an account under any
+provider's name and any subject, with no proof. What is on it is
+`IdentityService/Attest`, which roster takes about one's own row only through
+the delegation a sign-in handed an app that holds it across the tenant: the
+account app makes the round trip to the provider and vouches for what it saw.
 
 **So a role that names these verbs is for somebody who manages other people.**
 `EmailService/Add` in a role bound across the tenant is *may add an address to

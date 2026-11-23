@@ -1972,6 +1972,105 @@ func (b0 IdentityResubjectRequest_builder) Build() *IdentityResubjectRequest {
 	return m0
 }
 
+type IdentityAttestRequest struct {
+	state               protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Holder   *HolderRef             `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Provider string                 `protobuf:"bytes,8,opt,name=provider"`
+	xxx_hidden_Subject  string                 `protobuf:"bytes,9,opt,name=subject"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
+}
+
+func (x *IdentityAttestRequest) Reset() {
+	*x = IdentityAttestRequest{}
+	mi := &file_app_identity_svc_g_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IdentityAttestRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IdentityAttestRequest) ProtoMessage() {}
+
+func (x *IdentityAttestRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_app_identity_svc_g_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+func (x *IdentityAttestRequest) GetHolder() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_Holder
+	}
+	return nil
+}
+
+func (x *IdentityAttestRequest) GetProvider() string {
+	if x != nil {
+		return x.xxx_hidden_Provider
+	}
+	return ""
+}
+
+func (x *IdentityAttestRequest) GetSubject() string {
+	if x != nil {
+		return x.xxx_hidden_Subject
+	}
+	return ""
+}
+
+func (x *IdentityAttestRequest) SetHolder(v *HolderRef) {
+	x.xxx_hidden_Holder = v
+}
+
+func (x *IdentityAttestRequest) SetProvider(v string) {
+	x.xxx_hidden_Provider = v
+}
+
+func (x *IdentityAttestRequest) SetSubject(v string) {
+	x.xxx_hidden_Subject = v
+}
+
+func (x *IdentityAttestRequest) HasHolder() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Holder != nil
+}
+
+func (x *IdentityAttestRequest) ClearHolder() {
+	x.xxx_hidden_Holder = nil
+}
+
+type IdentityAttestRequest_builder struct {
+	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
+
+	// Whose account it is: the caller's own.
+	Holder *HolderRef
+	// The provider, by the name of the tenant's connection to it.
+	Provider string
+	// Who that provider says they are.
+	Subject string
+}
+
+func (b0 IdentityAttestRequest_builder) Build() *IdentityAttestRequest {
+	m0 := &IdentityAttestRequest{}
+	b, x := &b0, m0
+	_, _ = b, x
+	x.xxx_hidden_Holder = b.Holder
+	x.xxx_hidden_Provider = b.Provider
+	x.xxx_hidden_Subject = b.Subject
+	return m0
+}
+
 var File_app_identity_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_identity_svc_g_proto_rawDesc = "" +
@@ -2044,7 +2143,11 @@ const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\x18IdentityResubjectRequest\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x1f\n" +
-	"\asubject\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\asubject2\xf6\x03\n" +
+	"\asubject\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\asubject\"\x86\x01\n" +
+	"\x15IdentityAttestRequest\x12)\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12!\n" +
+	"\bprovider\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\bprovider\x12\x1f\n" +
+	"\asubject\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\asubject2\xb1\x04\n" +
 	"\x0fIdentityService\x123\n" +
 	"\x03Add\x12\x1a.roster.IdentityAddRequest\x1a\x10.roster.Identity\x123\n" +
 	"\x03Get\x12\x1a.roster.IdentityGetRequest\x1a\x10.roster.Identity\x127\n" +
@@ -2053,9 +2156,10 @@ const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\x05Erase\x12\x13.roster.IdentityRef\x1a\x1d.roster.IdentityEraseResponse\x12A\n" +
 	"\x04List\x12\x1b.roster.IdentityListRequest\x1a\x1c.roster.IdentityListResponse\x12F\n" +
 	"\x05Watch\x12\x1c.roster.IdentityWatchRequest\x1a\x1d.roster.IdentityWatchResponse0\x01\x12?\n" +
-	"\tResubject\x12 .roster.IdentityResubjectRequest\x1a\x10.roster.IdentityB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
+	"\tResubject\x12 .roster.IdentityResubjectRequest\x1a\x10.roster.Identity\x129\n" +
+	"\x06Attest\x12\x1d.roster.IdentityAttestRequest\x1a\x10.roster.IdentityB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_identity_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_app_identity_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_app_identity_svc_g_proto_goTypes = []any{
 	(*IdentityAddRequest)(nil),       // 0: roster.IdentityAddRequest
 	(*IdentityGetRequest)(nil),       // 1: roster.IdentityGetRequest
@@ -2072,53 +2176,57 @@ var file_app_identity_svc_g_proto_goTypes = []any{
 	(*IdentityWatchResponse)(nil),    // 12: roster.IdentityWatchResponse
 	(*IdentityWatchItem)(nil),        // 13: roster.IdentityWatchItem
 	(*IdentityResubjectRequest)(nil), // 14: roster.IdentityResubjectRequest
-	(*HolderRef)(nil),                // 15: roster.HolderRef
-	(*timestamppb.Timestamp)(nil),    // 16: google.protobuf.Timestamp
-	(*HolderSelect)(nil),             // 17: roster.HolderSelect
-	(*patchpb.Patch)(nil),            // 18: patch.Patch
-	(*Identity)(nil),                 // 19: roster.Identity
+	(*IdentityAttestRequest)(nil),    // 15: roster.IdentityAttestRequest
+	(*HolderRef)(nil),                // 16: roster.HolderRef
+	(*timestamppb.Timestamp)(nil),    // 17: google.protobuf.Timestamp
+	(*HolderSelect)(nil),             // 18: roster.HolderSelect
+	(*patchpb.Patch)(nil),            // 19: patch.Patch
+	(*Identity)(nil),                 // 20: roster.Identity
 }
 var file_app_identity_svc_g_proto_depIdxs = []int32{
-	15, // 0: roster.IdentityAddRequest.holder:type_name -> roster.HolderRef
-	16, // 1: roster.IdentityAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	16, // 0: roster.IdentityAddRequest.holder:type_name -> roster.HolderRef
+	17, // 1: roster.IdentityAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 2: roster.IdentityGetRequest.ref:type_name -> roster.IdentityRef
 	4,  // 3: roster.IdentityGetRequest.select:type_name -> roster.IdentitySelect
 	3,  // 4: roster.IdentityRef.subject:type_name -> roster.IdentityRefBySubject
-	17, // 5: roster.IdentitySelect.holder:type_name -> roster.HolderSelect
+	18, // 5: roster.IdentitySelect.holder:type_name -> roster.HolderSelect
 	2,  // 6: roster.IdentityPatchRequest.ref:type_name -> roster.IdentityRef
-	16, // 7: roster.IdentityPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	17, // 7: roster.IdentityPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	2,  // 8: roster.IdentityApplyRequest.ref:type_name -> roster.IdentityRef
-	18, // 9: roster.IdentityApplyRequest.patch:type_name -> patch.Patch
+	19, // 9: roster.IdentityApplyRequest.patch:type_name -> patch.Patch
 	10, // 10: roster.IdentityListRequest.filters:type_name -> roster.IdentityFilter
-	19, // 11: roster.IdentityListResponse.items:type_name -> roster.Identity
+	20, // 11: roster.IdentityListResponse.items:type_name -> roster.Identity
 	2,  // 12: roster.IdentityFilter.ref:type_name -> roster.IdentityRef
-	15, // 13: roster.IdentityFilter.holder:type_name -> roster.HolderRef
+	16, // 13: roster.IdentityFilter.holder:type_name -> roster.HolderRef
 	10, // 14: roster.IdentityWatchRequest.filters:type_name -> roster.IdentityFilter
 	13, // 15: roster.IdentityWatchResponse.items:type_name -> roster.IdentityWatchItem
-	19, // 16: roster.IdentityWatchItem.value:type_name -> roster.Identity
+	20, // 16: roster.IdentityWatchItem.value:type_name -> roster.Identity
 	2,  // 17: roster.IdentityResubjectRequest.ref:type_name -> roster.IdentityRef
-	16, // 18: roster.IdentityResubjectRequest.date_updated:type_name -> google.protobuf.Timestamp
-	0,  // 19: roster.IdentityService.Add:input_type -> roster.IdentityAddRequest
-	1,  // 20: roster.IdentityService.Get:input_type -> roster.IdentityGetRequest
-	5,  // 21: roster.IdentityService.Patch:input_type -> roster.IdentityPatchRequest
-	6,  // 22: roster.IdentityService.Apply:input_type -> roster.IdentityApplyRequest
-	2,  // 23: roster.IdentityService.Erase:input_type -> roster.IdentityRef
-	8,  // 24: roster.IdentityService.List:input_type -> roster.IdentityListRequest
-	11, // 25: roster.IdentityService.Watch:input_type -> roster.IdentityWatchRequest
-	14, // 26: roster.IdentityService.Resubject:input_type -> roster.IdentityResubjectRequest
-	19, // 27: roster.IdentityService.Add:output_type -> roster.Identity
-	19, // 28: roster.IdentityService.Get:output_type -> roster.Identity
-	19, // 29: roster.IdentityService.Patch:output_type -> roster.Identity
-	19, // 30: roster.IdentityService.Apply:output_type -> roster.Identity
-	7,  // 31: roster.IdentityService.Erase:output_type -> roster.IdentityEraseResponse
-	9,  // 32: roster.IdentityService.List:output_type -> roster.IdentityListResponse
-	12, // 33: roster.IdentityService.Watch:output_type -> roster.IdentityWatchResponse
-	19, // 34: roster.IdentityService.Resubject:output_type -> roster.Identity
-	27, // [27:35] is the sub-list for method output_type
-	19, // [19:27] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	17, // 18: roster.IdentityResubjectRequest.date_updated:type_name -> google.protobuf.Timestamp
+	16, // 19: roster.IdentityAttestRequest.holder:type_name -> roster.HolderRef
+	0,  // 20: roster.IdentityService.Add:input_type -> roster.IdentityAddRequest
+	1,  // 21: roster.IdentityService.Get:input_type -> roster.IdentityGetRequest
+	5,  // 22: roster.IdentityService.Patch:input_type -> roster.IdentityPatchRequest
+	6,  // 23: roster.IdentityService.Apply:input_type -> roster.IdentityApplyRequest
+	2,  // 24: roster.IdentityService.Erase:input_type -> roster.IdentityRef
+	8,  // 25: roster.IdentityService.List:input_type -> roster.IdentityListRequest
+	11, // 26: roster.IdentityService.Watch:input_type -> roster.IdentityWatchRequest
+	14, // 27: roster.IdentityService.Resubject:input_type -> roster.IdentityResubjectRequest
+	15, // 28: roster.IdentityService.Attest:input_type -> roster.IdentityAttestRequest
+	20, // 29: roster.IdentityService.Add:output_type -> roster.Identity
+	20, // 30: roster.IdentityService.Get:output_type -> roster.Identity
+	20, // 31: roster.IdentityService.Patch:output_type -> roster.Identity
+	20, // 32: roster.IdentityService.Apply:output_type -> roster.Identity
+	7,  // 33: roster.IdentityService.Erase:output_type -> roster.IdentityEraseResponse
+	9,  // 34: roster.IdentityService.List:output_type -> roster.IdentityListResponse
+	12, // 35: roster.IdentityService.Watch:output_type -> roster.IdentityWatchResponse
+	20, // 36: roster.IdentityService.Resubject:output_type -> roster.Identity
+	20, // 37: roster.IdentityService.Attest:output_type -> roster.Identity
+	29, // [29:38] is the sub-list for method output_type
+	20, // [20:29] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_app_identity_svc_g_proto_init() }
@@ -2138,7 +2246,7 @@ func file_app_identity_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_identity_svc_g_proto_rawDesc), len(file_app_identity_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

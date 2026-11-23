@@ -152,7 +152,7 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 			x.Contains(got, grant)
 			x.Equal([]string{"/roster.*/*"}, got[grant].GetMethods(), grant)
 		}
-		x.Len(got, 19, "and nothing that is another plane's, or somebody's own")
+		x.Len(got, 20, "and nothing that is another plane's, or somebody's own")
 
 		// A service's, for what is that service's and no more.
 		got = handedOver(t, ctx, b.Ungated, tenant, "/roster.VouchService/*")
@@ -214,10 +214,14 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 			app.CredentialService_Enrol_FullMethodName,
 		))
 
-		// One of them is worth knowing even so.
-		got := handedOver(t, ctx, b.Ungated, own, app.IdentityService_Add_FullMethodName)
+		// One of them is worth knowing even so: whose word it is taken on.
+		got := handedOver(t, ctx, b.Ungated, own, app.IdentityService_Attest_FullMethodName)
 		x.Len(got, 1)
-		x.Contains(got["the-self-service-role"].GetHandsOver(), "no proof")
+		x.Contains(got["the-self-service-role"].GetHandsOver(), "on the word of any app")
+
+		// And held across the tenant, it is that app's word.
+		got = handedOver(t, ctx, b.Ungated, tenant, app.IdentityService_Attest_FullMethodName)
+		x.Contains(got["identityserviceattest"].GetHandsOver(), "vouches for any account")
 	})
 
 	t.Run("where it is not said, it is across the tenant", func(t *testing.T) {

@@ -59,6 +59,136 @@ func (s coreIdentity) Add(ctx context.Context, req *app.IdentityAddRequest) (*ap
 	return s.add(ctx, req)
 }
 
+// Attest writes an account at a provider onto the caller's own row, on the
+// word of the front door the call came through, and is [coreIdentity.Add]
+// after that: every rule `Add` asks of the row holds, the connection a
+// directory provisions through among them.
+//
+// # Why it is a verb of its own
+//
+// `IdentityService/Add` takes no proof. It was in what everybody holds over
+// their own account, so anybody with a key of their own wrote an account
+// under any provider's name and any subject onto their own row, live at once
+// -- a subject somebody else would one day sign in with, taken first. What
+// proves an account is somebody's is the round trip to the provider, and
+// roster sees none of it; the front door that made it does. So the front door
+// vouches, and how it vouches is the grant this asks for: the call comes
+// through a delegation it was handed at the person's sign-in, and it holds
+// `IdentityService/Attest` across the tenant ([coreIdentity.vouched]).
+//
+// # Only one's own
+//
+// It is for what somebody connects to their own account, so it is taken for
+// the caller's own row and nobody else's, whatever else the caller holds: an
+// administrator writes somebody else's account with `Add`. Somebody else is
+// answered as a method of `self-service` answers them -- the wall shows a
+// person their own row and no other, so there is nobody there -- and an
+// administrator, whom the wall shows everybody, is answered the same.
+//
+// A call with no frame -- a command at the box, a server in this process -- is
+// not asked, as nowhere in this package. A frame over every tenant is: a
+// deployment key, or an operator at `admin.addr`, is not a front door and has
+// no row of its own, and writes an account with `Add`.
+func (s coreIdentity) Attest(ctx context.Context, req *app.IdentityAttestRequest) (*app.Identity, error) {
+	if err := s.vouched(ctx); err != nil {
+		return nil, err
+	}
+	if err := s.theirOwn(ctx, req.GetHolder()); err != nil {
+		return nil, err
+	}
+
+	return s.Add(ctx, app.IdentityAddRequest_builder{
+		Holder:   req.GetHolder(),
+		Provider: req.GetProvider(),
+		Subject:  req.GetSubject(),
+	}.Build())
+}
+
+// vouched refuses a call to [coreIdentity.Attest] that did not come through a
+// delegation whose app holds the verb across the tenant.
+//
+// What the call came through is the frame's row: the resolver puts the
+// delegation there, read from the database, where `keys.Acting` said the call
+// was made through one (`cmd.Resolver`, `keys.Through`). A key of the
+// person's own, or a session, has their own row there and no delegation; a
+// delegation's `issued_to` is the app it was handed to -- the key's holder, or
+// the holder a tenant nominated for a deployment key -- and what that app
+// holds across the tenant is a binding with no site, as for every write that
+// is the tenant's as a whole. One that holds it in a site, or not at all, is
+// an app that signs people in and was not given this to say.
+//
+// # And across the person's own tenant
+//
+// A binding is held in the tenant of whoever it binds, so an app's holder of
+// another tenant that holds the verb across its own vouches for nobody here,
+// and one of no tenant for nobody at all. It is asked here rather than left to
+// how a delegation comes to be made: `VouchService/Delegate` mints only for
+// somebody the app's own tenant holds today, and the next way a delegation is
+// made would not know this rule stood on it. Refused in the same words as an
+// app that does not hold the verb, so that nothing is told by which it was.
+func (s coreIdentity) vouched(ctx context.Context) error {
+	f, framed := frame.From(ctx)
+	if !framed {
+		return nil
+	}
+
+	no := status.Errorf(codes.PermissionDenied,
+		"a front door attests an account once the provider has said so: %s is called through the delegation a sign-in handed it, "+
+			"by a front door that holds it across the tenant, and not with a credential of your own",
+		app.IdentityService_Attest_FullMethodName)
+
+	d, ok := f.Row.(*app.Delegation)
+	if !ok || len(d.GetIssuedTo()) == 0 {
+		return no
+	}
+	issuer, err := pdid.From(d.GetIssuedTo())
+	if err != nil {
+		return no
+	}
+
+	if s.rules.Everywhere == nil || s.rules.TenantOf == nil {
+		return status.Error(codes.PermissionDenied,
+			"this server cannot say what an app holds across the tenant, so it will not take its word for an account")
+	}
+	of, err := s.rules.TenantOf(ctx, issuer)
+	if err != nil {
+		return err
+	}
+	if of.IsZero() || of.Uuid() != f.Tenant.Uuid() {
+		return no
+	}
+	held, err := s.rules.Everywhere(ctx, issuer)
+	if err != nil {
+		return err
+	}
+	if !slices.ContainsFunc(held, func(m string) bool { return frame.Covers(m, app.IdentityService_Attest_FullMethodName) }) {
+		return no
+	}
+
+	return nil
+}
+
+// theirOwn refuses a reference that is not the caller's own row, in the
+// answer the wall gives somebody about a row it does not show them, in the
+// words the generated read says it in.
+func (s coreIdentity) theirOwn(ctx context.Context, ref *app.HolderRef) error {
+	f, framed := frame.From(ctx)
+	if ref == nil || !framed {
+		// No reference is `Add`'s to refuse, as it refuses one there.
+		return nil
+	}
+
+	k, err := s.holderOf(ctx, ref)
+	if err != nil {
+		return err
+	}
+	if k != f.Actor {
+		return status.Error(codes.NotFound, "Holder not found")
+	}
+
+	return nil
+}
+
 // What is done to an account at the connection a directory provisions
 // through, each with the verb that does it and who holds that verb across a
 // tenant ([coreIdentity.directorys]).
@@ -91,10 +221,12 @@ type directorysWrite struct {
 //
 // # What a person's own write did there
 //
-// `IdentityService/Add` is somebody's own to call about their own row
-// (`self-service`), and roster checks nothing about the subject: being the
-// relying party is what it is not. Anywhere else that is a second way into the
-// account of whoever wrote it, and nobody else's business.
+// An account at a provider is somebody's own to write onto their own row
+// (`IdentityService/Attest`, in `self-service`, through a front door), and it
+// was `Add` with no front door at all when this was written. roster checks
+// nothing about the subject: being the relying party is what it is not.
+// Anywhere else that is a second way into the account of whoever wrote it,
+// and nobody else's business.
 //
 // At the connection a directory provisions through, the row is also **who the
 // directory means**. It finds its user by `externalId` through that identity
