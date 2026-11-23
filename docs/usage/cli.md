@@ -355,9 +355,10 @@ payday's own framework service gets no `roster` command either:
 `TokenService/Introspect` is what an app calls to check a credential, and it
 is not roster's to wrap.
 
-And nine have none yet, and are reached only by a client of the RPC:
+And ten have none yet, and are reached only by a client of the RPC:
 `HolderService` `Activate`, `Deactivate`, `Provision` and `Tell`;
-`EmailService/Attest`; `DelegationService/Exchange`; and over the wire
+`EmailService/Attest` and `IdentityService/Attest`;
+`DelegationService/Exchange`; and over the wire
 `CredentialService` `Set`, `Unlock` and `Issue` by reference, whose commands
 (`vouch set`, `unlock`, `reset`) are the box's.
 

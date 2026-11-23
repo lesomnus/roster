@@ -42,6 +42,34 @@ service IdentityService {
   // and once -- and the caller may write a way into this person
   // (`server/core/escalate.go`).
   rpc Resubject(IdentityResubjectRequest) returns (Identity);
+  // Attest writes an account at a provider onto the caller's own row, on the
+  // word of a front door that saw the provider say it is theirs.
+  //
+  // # Why it is not `Add`
+  //
+  // `Add` takes no proof: whoever may call it writes an account under any
+  // provider's name and any subject, and the row is live at once -- a way in
+  // for whoever holds that account and, at a connection a directory
+  // provisions through, who the directory finds its user by. So `Add` is for
+  // whoever holds it across the tenant: an administrator, and a front door
+  // linking somebody at their first sign-in. What a person connects
+  // themselves is proved by the round trip to the provider, which roster
+  // cannot see and the front door that made it can. This is the verb it
+  // vouches with, as `EmailService/Attest` is beside `EmailService/Add`.
+  //
+  // # Who it is taken from
+  //
+  // It is in what everybody holds over what is their own (`self-service`), so
+  // a tenant switches its people's *connect* off by taking it out of that
+  // role. It is taken for the caller's own row only, and only through a
+  // delegation whose app holds `IdentityService/Attest` across the tenant --
+  // a binding with no site -- which is the front door vouching. A key of
+  // one's own, or a session, is refused `PermissionDenied`, and so is a
+  // delegation whose app does not hold it. Somebody else's row is answered as
+  // any method of `self-service` answers one: there is nobody there.
+  //
+  // It writes what `Add` writes, held to every rule `Add` asks of the row.
+  rpc Attest(IdentityAttestRequest) returns (Identity);
 }
 
 message IdentityAddRequest {
@@ -217,5 +245,16 @@ message IdentityResubjectRequest {
   google.protobuf.Timestamp date_updated = 13;
 
   // What the provider calls this person under the connection's claim.
+  string subject = 9 [features.field_presence = IMPLICIT];
+}
+
+message IdentityAttestRequest {
+  // Whose account it is: the caller's own.
+  HolderRef holder = 2;
+
+  // The provider, by the name of the tenant's connection to it.
+  string provider = 8 [features.field_presence = IMPLICIT];
+
+  // Who that provider says they are.
   string subject = 9 [features.field_presence = IMPLICIT];
 }

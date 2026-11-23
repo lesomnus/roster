@@ -22,6 +22,7 @@ writing a role whose methods end in `*`.
 | [`ConnectionService/Add` and `Update`](#connectionserviceadd-and-update) | *may set up sign-in through a directory* | everybody who signs in through it |
 | [`EmailService/Claim` with `Confirm`](#emailserviceclaim-with-confirm) | *may confirm addresses* | any address, proved with no mailbox |
 | [`EmailService/Attest`](#emailserviceattest) | *may record a directory's address* | an address proved on the caller's word |
+| [`IdentityService/Attest`](#identityserviceattest) | *may connect the accounts people sign in with* | any account a person connects through it, on its word |
 | [`NominationService/Add`](#nominationserviceadd) | *may install an app* | an app's key answered as somebody |
 | [The same verbs at `admin.addr`](#the-same-verbs-at-adminaddr) | an operator's helpdesk role | any account in any tenant |
 | [`BindingService/Add`](#bindingserviceadd) | *may assign roles* | everything its holder holds, to anybody |
@@ -160,6 +161,20 @@ hold no more than the caller.
 
 **It is for** a front door. Beside `Claim` with `Confirm` it is the shorter
 road to the same place, and it is not somebody's own to call.
+
+### `IdentityService/Attest`
+
+**Reads as** *may connect the accounts people sign in with*. **Is** whoever
+holds it vouches for any account a person of the tenant connects through it.
+
+A person calls it, about their own row, through the delegation an app was
+handed at their sign-in; roster takes it from an app that holds it across the
+tenant, and from no other. What it takes on the app's word is the round trip
+to the provider, which roster cannot see: an app that says a subject is the
+person's has given them that account as a way in.
+
+**It is for** a front door that makes the round trip itself, as the account
+app does.
 
 ### `NominationService/Add`
 
@@ -404,15 +419,16 @@ over what is their own, the moment a method is in it.
 
 It names only what is somebody's own to do, and a write that would put
 anything else there is refused. Of what it does name, one is worth knowing:
-`IdentityService/Add` writes an account at a provider onto the caller's own
-row with no proof that the account is theirs. Not at the connection the
+`IdentityService/Attest` writes an account at a provider onto the caller's own
+row on the word of any app the tenant bound it across the tenant
+([`IdentityService/Attest`](#identityserviceattest)). Not at the connection the
 tenant's directory provisions through: an account there is who the directory
 means by somebody, so it is the directory's to say, and one's own write is
 refused ([scim.md](../scim.md)). A tenant whose people do not link a second
 directory themselves takes it out:
 
 ```sh
-roster --as admin role narrow @newco/self-service '{"methods":["/roster.IdentityService/Add"]}'
+roster --as admin role narrow @newco/self-service '{"methods":["/roster.IdentityService/Attest"]}'
 ```
 
 ## What says so when one is granted

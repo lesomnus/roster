@@ -49,6 +49,10 @@ func everyPage[P interface {
 // name had a length (`TestAListOfPeopleAtTheirLongestIsAnswered`). Right is
 // that each write is refused, naming `subject` and the bound.
 //
+// What everybody holds is `IdentityService/Attest` now, through a front door,
+// and it writes through `Add`; so the writer here is somebody a role lets
+// call `Add` about their own row, and the bound is the form's, whoever writes.
+//
 // 255 bytes, which is what OpenID Connect lets a subject be and what a
 // directory's id for somebody already was. And a hundred accounts at that
 // length, which is the most a page holds, are one answer.
@@ -59,6 +63,7 @@ func TestAListOfAccountsAtTheirLongestIsAnswered(t *testing.T) {
 	ids, holders := app.NewIdentityServiceClient(conn), app.NewHolderServiceClient(conn)
 
 	who := b.holder(t, ctx, b.Contoso, "plain")
+	b.binds(t, who, b.role(t, ctx, "links-themselves", app.IdentityService_Add_FullMethodName), nil)
 	ref := app.HolderRef_builder{Id: who.Bytes()}.Build()
 	wire := asOverTheWire(ctx, who)
 
@@ -142,6 +147,7 @@ func TestAListOfKeysAtTheirLongestIsAnswered(t *testing.T) {
 
 	// Somebody who holds one role, and may list on a key what it covers.
 	who := b.holder(t, ctx, b.Contoso, "plain")
+	b.binds(t, who, b.role(t, ctx, "links-themselves", app.IdentityService_Add_FullMethodName), nil)
 	ref := app.HolderRef_builder{Id: who.Bytes()}.Build()
 	b.binds(t, who, b.role(t, ctx, "reads-people", "/roster.HolderService/*"), nil)
 	wire := asOverTheWire(ctx, who)

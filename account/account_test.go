@@ -209,7 +209,7 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 	self, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
 		Tenant: rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(), Alias: "self",
 		Methods: []string{
-			"/roster.IdentityService/Add", "/roster.EmailService/List", "/roster.EmailService/Get",
+			"/roster.IdentityService/Attest", "/roster.EmailService/List", "/roster.EmailService/Get",
 			"/roster.EmailService/Add", "/roster.EmailService/Claim",
 			"/roster.CredentialService/Set", "/roster.CredentialService/Enrol",
 		},

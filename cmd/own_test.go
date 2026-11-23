@@ -285,8 +285,8 @@ func TestWhatIsSomebodysOwnReachesNobodyElse(t *testing.T) {
 			x.False(v.GetErased())
 		},
 
-		app.IdentityService_Add_FullMethodName: func(x *require.Assertions) {
-			_, err := idents.Add(as, app.IdentityAddRequest_builder{Holder: theirs, Provider: "github", Subject: "an-account-of-mallorys"}.Build())
+		app.IdentityService_Attest_FullMethodName: func(x *require.Assertions) {
+			_, err := idents.Attest(as, app.IdentityAttestRequest_builder{Holder: theirs, Provider: "github", Subject: "an-account-of-mallorys"}.Build())
 			refused(x, err)
 		},
 		app.IdentityService_Erase_FullMethodName: func(x *require.Assertions) {

@@ -161,6 +161,16 @@ var handsOver = []handedOver{
 			"signs in through a directory",
 	},
 	{
+		// Taken only through a delegation of an app that holds it across the
+		// tenant, and only for the person's own row (`identity.go`, `Attest`):
+		// held anywhere smaller, or by a deployment key as itself, it does
+		// nothing.
+		grant:   "identityserviceattest",
+		methods: []string{app.IdentityService_Attest_FullMethodName},
+		readsAs: "may connect the accounts people sign in with",
+		tenant:  "whoever holds it vouches for any account a person of the tenant connects through it",
+	},
+	{
 		// The tenant's as a whole (`nomination.go`).
 		grant:   "nominationserviceadd",
 		methods: []string{app.NominationService_Add_FullMethodName},
@@ -338,9 +348,9 @@ var handsOver = []handedOver{
 	{
 		// The one of what is somebody's own that is worth knowing (`own.go`).
 		grant:   "the-self-service-role",
-		methods: []string{app.IdentityService_Add_FullMethodName},
+		methods: []string{app.IdentityService_Attest_FullMethodName},
 		readsAs: "may link an account at a provider to their own",
-		own:     "an account at a provider written onto their own row, with no proof that the account is theirs",
+		own:     "an account at a provider written onto their own row on the word of any app the tenant bound `IdentityService/Attest` across the tenant",
 	},
 }
 

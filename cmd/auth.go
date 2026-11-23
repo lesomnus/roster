@@ -1,18 +1,21 @@
 package cmd
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -28,12 +31,12 @@ import (
 // is calling happens **before** there is anybody to be walled by, so a resolver
 // behind the wall would be asking a question whose answer it needs in order to
 // ask it.
-// `keys` is the control plane, or nil for a deployment that has none. It is
+// `keyrows` is the control plane, or nil for a deployment that has none. It is
 // what makes an api-key identifier a **row that exists** rather than a shape a
 // caller can write down; see [keyed].
-func Resolver(s app.Server, keys app.Server) auth.Resolver {
+func Resolver(s app.Server, keyrows app.Server) auth.Resolver {
 	return auth.ResolverFunc(func(ctx context.Context, id auth.Identity) (*frame.Frame, error) {
-		f, ok, err := keyed(ctx, keys, id)
+		f, ok, err := keyed(ctx, keyrows, id)
 		if err != nil {
 			return nil, err
 		}
@@ -101,11 +104,63 @@ func Resolver(s app.Server, keys app.Server) auth.Resolver {
 			return nil, err
 		}
 
+		// A call made through a delegation carries the delegation as its row,
+		// and the person inside it: see [delegated].
+		var row proto.Message = v
+		if d, ok := keys.Through(id); ok {
+			if row, err = delegated(ctx, s, d, v); err != nil {
+				return nil, err
+			}
+		}
+
 		// The grant is not set here. The interceptor takes it from the
 		// credential rather than from whatever a resolver felt like answering,
 		// so a resolver cannot widen a token by forgetting.
-		return frame.New(actor, tenant, frame.Grant{}).WithRow(v), nil
+		return frame.New(actor, tenant, frame.Grant{}).WithRow(row), nil
 	})
+}
+
+// delegated is the row of a call made through a delegation: the delegation,
+// as the database holds it, with `who` -- the person it is about, as just read
+// -- as its holder.
+//
+// # Why a rule needs it
+//
+// A delegation is a front door acting for somebody, and one verb is taken only
+// that way: `IdentityService/Attest`, which writes what the front door saw a
+// provider say, on the word of an app that holds the verb across the tenant
+// (`server/core`, `identity.go`). So a rule has to be told that a call came
+// through a delegation and whom it was issued to. The frame says who the call
+// is about; `frame.Frame.Row` is the one thing on it that is the app's to
+// fill and payday's to leave alone, so the delegation is put there, and a row
+// that is a person's is still reachable as its holder.
+//
+// Which delegation is [keys.Through]'s to say, and it says what `keys.Acting`
+// checked: nothing a caller writes reaches it. It is read here rather than
+// carried, as the person is, so a delegation erased since is nobody's, and one
+// about somebody other than who the call resolved to is refused rather than
+// believed.
+func delegated(ctx context.Context, s app.Server, through pdid.Id, who *app.Holder) (*app.Delegation, error) {
+	v, err := s.Delegation().Get(ctx, app.DelegationGetRequest_builder{
+		Ref: app.DelegationRef_builder{Id: through.Bytes()}.Build(),
+		Select: app.DelegationSelect_builder{
+			IssuedTo: z.Ptr(true),
+			Holder:   app.HolderSelect_builder{}.Build(),
+		}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return nil, fmt.Errorf("%w: no such delegation", auth.ErrNoCredential)
+	}
+	if err != nil {
+		return nil, err
+	}
+	if !bytes.Equal(v.GetHolder().GetId(), who.GetId()) {
+		return nil, fmt.Errorf("%w: a delegation of somebody else", auth.ErrNoCredential)
+	}
+
+	v.SetHolder(who)
+
+	return v, nil
 }
 
 // refOf is the claim as a reference: an identifier when the credential named
@@ -163,9 +218,12 @@ func refOf(id auth.Identity) (*app.HolderRef, error) {
 // A second read of a row `keys.Store` looked up moments earlier, on the key
 // path only. It is paid rather than avoided because the alternatives are worse:
 // a field on `auth.Identity` saying "the store vouched for this" is a field
-// `auth.Plain` can also fill in, and there is no channel between a handler and
-// a resolver that a caller cannot write to. Reading the row is the only answer
-// that does not depend on which handler happened to be wired up.
+// some handler could one day fill from what a caller sent, and whether the
+// one that answered a request was that handler is a fact about how the chain
+// happened to be wired. Reading the row is the only answer that does not
+// depend on it. (`Authority` is such a field and is read for one thing, by
+// [delegated]: which delegation a call came through, which only `keys.Acting`
+// says, and whose row is read here all the same.)
 //
 // # What the frame says
 //

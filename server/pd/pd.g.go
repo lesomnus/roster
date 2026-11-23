@@ -17479,6 +17479,11 @@ func (s interceptIdentity) Resubject(ctx context.Context, req *rstr.IdentityResu
 		rstr.IdentityService_Resubject_FullMethodName, req, s.IdentityServiceServer.Resubject)
 }
 
+func (s interceptIdentity) Attest(ctx context.Context, req *rstr.IdentityAttestRequest) (*rstr.Identity, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.IdentityServiceServer,
+		rstr.IdentityService_Attest_FullMethodName, req, s.IdentityServiceServer.Attest)
+}
+
 func (s Intercept) Email() rstr.EmailServiceServer {
 	return interceptEmail{s, s.Next().Email()}
 }

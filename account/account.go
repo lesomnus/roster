@@ -224,7 +224,9 @@ var Methods = []string{
 	rstr.HolderService_Portray_FullMethodName,
 	rstr.ApiKeyService_List_FullMethodName,
 	rstr.ApiKeyService_Erase_FullMethodName,
-	rstr.IdentityService_Add_FullMethodName,
+	// *Connect*: the account the round trip to a provider proved, written
+	// onto the person's row on this app's word ([App.callback]).
+	rstr.IdentityService_Attest_FullMethodName,
 	rstr.IdentityService_Erase_FullMethodName,
 	rstr.EmailService_List_FullMethodName,
 	rstr.EmailService_Get_FullMethodName,
@@ -266,6 +268,11 @@ var Calls = append([]string{
 	rstr.ConnectionService_List_FullMethodName,
 	rstr.ConnectionService_Get_FullMethodName,
 	rstr.IdentityService_Get_FullMethodName,
+	// A first sign-in's link, as itself: the account a provider vouched for,
+	// written onto somebody already here who has none there
+	// (`arrives.Providers`). Held across the tenant, as whoever links
+	// somebody else holds it.
+	rstr.IdentityService_Add_FullMethodName,
 	// Whether the person an invitation names has arrived yet
 	// (`cli.LoginMethods` says why).
 	rstr.HolderService_SignsIn_FullMethodName,
@@ -943,7 +950,7 @@ func (a *App) addWay(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "no", http.StatusForbidden)
 		return
 	}
-	if !lets(me, rstr.IdentityService_Add_FullMethodName) {
+	if !lets(me, rstr.IdentityService_Attest_FullMethodName) {
 		http.Error(w, "your organisation does not let its people connect an account themselves", http.StatusForbidden)
 		return
 	}
@@ -1059,11 +1066,15 @@ func (a *App) callback(w http.ResponseWriter, r *http.Request) {
 		// signed in, and whether their tenant lets them, is roster's, and a
 		// write made as them is asked both. A round trip is ten minutes long,
 		// and one begun before somebody signed out finished after it.
+		//
+		// `Attest`, which is taken only through a delegation whose app holds
+		// it across the tenant: this app's role is roster's reason to believe
+		// the round trip happened (`server/core`, `identity.go`).
 		err := status.Error(codes.Unauthenticated, "nobody is signed in")
 		if now, ok := a.door.Who(ctx, r); ok && now == f.who {
 			var theirs context.Context
 			if theirs, err = a.door.Acting(ctx, r); err == nil {
-				_, err = a.roster.Identity().Add(f.tenant.on(theirs), rstr.IdentityAddRequest_builder{
+				_, err = a.roster.Identity().Attest(f.tenant.on(theirs), rstr.IdentityAttestRequest_builder{
 					Holder:   rstr.HolderRef_builder{Id: f.who.Bytes()}.Build(),
 					Provider: who.Provider,
 					Subject:  who.Subject,

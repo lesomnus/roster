@@ -27,6 +27,7 @@ const (
 	IdentityService_List_FullMethodName      = "/roster.IdentityService/List"
 	IdentityService_Watch_FullMethodName     = "/roster.IdentityService/Watch"
 	IdentityService_Resubject_FullMethodName = "/roster.IdentityService/Resubject"
+	IdentityService_Attest_FullMethodName    = "/roster.IdentityService/Attest"
 )
 
 // IdentityServiceClient is the client API for IdentityService service.
@@ -66,6 +67,34 @@ type IdentityServiceClient interface {
 	// and once -- and the caller may write a way into this person
 	// (`server/core/escalate.go`).
 	Resubject(ctx context.Context, in *IdentityResubjectRequest, opts ...grpc.CallOption) (*Identity, error)
+	// Attest writes an account at a provider onto the caller's own row, on the
+	// word of a front door that saw the provider say it is theirs.
+	//
+	// # Why it is not `Add`
+	//
+	// `Add` takes no proof: whoever may call it writes an account under any
+	// provider's name and any subject, and the row is live at once -- a way in
+	// for whoever holds that account and, at a connection a directory
+	// provisions through, who the directory finds its user by. So `Add` is for
+	// whoever holds it across the tenant: an administrator, and a front door
+	// linking somebody at their first sign-in. What a person connects
+	// themselves is proved by the round trip to the provider, which roster
+	// cannot see and the front door that made it can. This is the verb it
+	// vouches with, as `EmailService/Attest` is beside `EmailService/Add`.
+	//
+	// # Who it is taken from
+	//
+	// It is in what everybody holds over what is their own (`self-service`), so
+	// a tenant switches its people's *connect* off by taking it out of that
+	// role. It is taken for the caller's own row only, and only through a
+	// delegation whose app holds `IdentityService/Attest` across the tenant --
+	// a binding with no site -- which is the front door vouching. A key of
+	// one's own, or a session, is refused `PermissionDenied`, and so is a
+	// delegation whose app does not hold it. Somebody else's row is answered as
+	// any method of `self-service` answers one: there is nobody there.
+	//
+	// It writes what `Add` writes, held to every rule `Add` asks of the row.
+	Attest(ctx context.Context, in *IdentityAttestRequest, opts ...grpc.CallOption) (*Identity, error)
 }
 
 type identityServiceClient struct {
@@ -165,6 +194,16 @@ func (c *identityServiceClient) Resubject(ctx context.Context, in *IdentityResub
 	return out, nil
 }
 
+func (c *identityServiceClient) Attest(ctx context.Context, in *IdentityAttestRequest, opts ...grpc.CallOption) (*Identity, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(Identity)
+	err := c.cc.Invoke(ctx, IdentityService_Attest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // IdentityServiceServer is the server API for IdentityService service.
 // All implementations must embed UnimplementedIdentityServiceServer
 // for forward compatibility.
@@ -202,6 +241,34 @@ type IdentityServiceServer interface {
 	// and once -- and the caller may write a way into this person
 	// (`server/core/escalate.go`).
 	Resubject(context.Context, *IdentityResubjectRequest) (*Identity, error)
+	// Attest writes an account at a provider onto the caller's own row, on the
+	// word of a front door that saw the provider say it is theirs.
+	//
+	// # Why it is not `Add`
+	//
+	// `Add` takes no proof: whoever may call it writes an account under any
+	// provider's name and any subject, and the row is live at once -- a way in
+	// for whoever holds that account and, at a connection a directory
+	// provisions through, who the directory finds its user by. So `Add` is for
+	// whoever holds it across the tenant: an administrator, and a front door
+	// linking somebody at their first sign-in. What a person connects
+	// themselves is proved by the round trip to the provider, which roster
+	// cannot see and the front door that made it can. This is the verb it
+	// vouches with, as `EmailService/Attest` is beside `EmailService/Add`.
+	//
+	// # Who it is taken from
+	//
+	// It is in what everybody holds over what is their own (`self-service`), so
+	// a tenant switches its people's *connect* off by taking it out of that
+	// role. It is taken for the caller's own row only, and only through a
+	// delegation whose app holds `IdentityService/Attest` across the tenant --
+	// a binding with no site -- which is the front door vouching. A key of
+	// one's own, or a session, is refused `PermissionDenied`, and so is a
+	// delegation whose app does not hold it. Somebody else's row is answered as
+	// any method of `self-service` answers one: there is nobody there.
+	//
+	// It writes what `Add` writes, held to every rule `Add` asks of the row.
+	Attest(context.Context, *IdentityAttestRequest) (*Identity, error)
 	mustEmbedUnimplementedIdentityServiceServer()
 }
 
@@ -235,6 +302,9 @@ func (UnimplementedIdentityServiceServer) Watch(*IdentityWatchRequest, grpc.Serv
 }
 func (UnimplementedIdentityServiceServer) Resubject(context.Context, *IdentityResubjectRequest) (*Identity, error) {
 	return nil, status.Error(codes.Unimplemented, "method Resubject not implemented")
+}
+func (UnimplementedIdentityServiceServer) Attest(context.Context, *IdentityAttestRequest) (*Identity, error) {
+	return nil, status.Error(codes.Unimplemented, "method Attest not implemented")
 }
 func (UnimplementedIdentityServiceServer) mustEmbedUnimplementedIdentityServiceServer() {}
 func (UnimplementedIdentityServiceServer) testEmbeddedByValue()                         {}
@@ -394,6 +464,24 @@ func _IdentityService_Resubject_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IdentityService_Attest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IdentityAttestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IdentityServiceServer).Attest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IdentityService_Attest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IdentityServiceServer).Attest(ctx, req.(*IdentityAttestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // IdentityService_ServiceDesc is the grpc.ServiceDesc for IdentityService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -428,6 +516,10 @@ var IdentityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Resubject",
 			Handler:    _IdentityService_Resubject_Handler,
+		},
+		{
+			MethodName: "Attest",
+			Handler:    _IdentityService_Attest_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
