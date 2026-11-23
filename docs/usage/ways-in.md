@@ -93,7 +93,7 @@ Your front door — a login app, an account portal, a product's session
 endpoint — asks roster:
 
 ```
-VouchService.Verify { who: {tenant: "newco", alias: "alice"}, secret: … }
+VouchService.Verify { who: {tenant: {alias: "newco"}, alias: "alice"}, secret: … }
   → { ok: true, holder: …, tenant: … }
 ```
 

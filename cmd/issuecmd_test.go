@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -143,7 +144,7 @@ func TestIssueMintsOverTheWire(t *testing.T) {
 		res, err := vouch.New(b.Server.Control.Ungated, b.Server.Control.Ungated).Verify(ctx,
 			app.VouchVerifyRequest_builder{
 				Who: app.VouchWho_builder{
-					Tenant: ts.GetItems()[0].GetAlias(),
+					Tenant: app.VouchTenant_builder{Alias: z.Ptr(ts.GetItems()[0].GetAlias())}.Build(),
 					Alias:  "ops",
 				}.Build(),
 				Secret: []byte(pw),

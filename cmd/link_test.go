@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -149,12 +150,12 @@ func TestAskingForALinkSaysNothingAboutWhoIsHere(t *testing.T) {
 	proves(t, ctx, b.Server, b.Who, "someone@contoso.example")
 
 	real, err := c.Link(as, app.VouchLinkRequest_builder{
-		Who: app.VouchWho_builder{Tenant: "contoso", Address: "someone@contoso.example"}.Build(),
+		Who: app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Address: "someone@contoso.example"}.Build(),
 	}.Build())
 	x.NoError(err)
 
 	stranger, err := c.Link(as, app.VouchLinkRequest_builder{
-		Who: app.VouchWho_builder{Tenant: "contoso", Address: "nobody@contoso.example"}.Build(),
+		Who: app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Address: "nobody@contoso.example"}.Build(),
 	}.Build())
 	x.NoError(err)
 

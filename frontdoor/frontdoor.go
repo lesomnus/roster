@@ -106,11 +106,12 @@ type Config struct {
 	Methods []string
 
 	// Tenant answers which operator a request arrived at, from the host it
-	// arrived under.
+	// arrived under, by identifier or by alias: what `VouchWho.tenant` takes.
 	//
 	// Supplied rather than done here, because a deployment that serves one
 	// operator knows the answer at build time and one that serves many asks
-	// roster -- `FrontService.WhoseHost` -- and both are a line the app writes.
+	// roster -- `FrontService.WhoseHost`, whose identifier is passed as it is
+	// -- and both are a line the app writes.
 	//
 	// A name this deployment serves nobody under is [ErrUnknownHost], and that
 	// is the only error a person is ever told "no" for. Everything else --
@@ -120,7 +121,7 @@ type Config struct {
 	// which; getting it wrong in the safe direction costs a page saying
 	// something is down, and in the other it costs somebody being told their
 	// correct password was wrong.
-	Tenant func(ctx context.Context, host string) (string, error)
+	Tenant func(ctx context.Context, host string) (*rstr.VouchTenant, error)
 
 	// TenantOf is the tenant a host is, by identifier, for an app where every
 	// tenant has a name of its own -- the account app. Set, a session is held to

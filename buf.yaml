@@ -90,7 +90,9 @@ breaking:
   # `CredentialService/Issue` are for go into a `oneof whose`, their numbers
   # as they were. `MeService/Unlink` goes, and its request and answer with
   # it: an account at a provider is taken away by `IdentityService/Erase` of
-  # one's own row, which everybody holds.
+  # one's own row, which everybody holds. `VouchWho.tenant` is a
+  # `VouchTenant`, `TenantRef`'s shape, at a number of its own, the old one
+  # reserved.
   #
   # Out with the first change after this reaches `main`, which is the only
   # baseline here, as #234 took #233's out: left in, it is a hole in the check
@@ -98,6 +100,7 @@ breaking:
   ignore_only:
     FIELD_NO_DELETE:
       - proto/app/auth.proto
+      - proto/app/vouch.proto
     FIELD_SAME_ONEOF:
       - proto/app/apikey_svc.g.proto
       - proto/app/credential_svc.g.proto

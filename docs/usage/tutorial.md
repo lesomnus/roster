@@ -147,7 +147,7 @@ SEC=$(printf '%s' "${PW}" | base64 -w0)
 curl -sS -X POST http://127.0.0.1:8080/roster.VouchService/Verify \
   -H 'content-type: application/json' -H 'connect-protocol-version: 1' \
   -H "authorization: Bearer ${APP}" \
-  -d "{\"who\":{\"tenant\":\"newco\",\"alias\":\"alice\"},\"secret\":\"${SEC}\"}"
+  -d "{\"who\":{\"tenant\":{\"alias\":\"newco\"},\"alias\":\"alice\"},\"secret\":\"${SEC}\"}"
 ```
 ```json
 {"ok":true, "holder":"AaAzL9WPhJmTAjnR775IOg==", "tenant":"AaAzL9UtgPCAAVfY/uAN+Q==",
@@ -222,7 +222,9 @@ curl -sS -X POST http://127.0.0.1:8080/roster.FrontService/WhoseHost \
 ```
 
 A tenant identifier and nothing else, which is what makes it safe to ask before
-anybody has authenticated. A name nobody claimed is `not_found`.
+anybody has authenticated. A name nobody claimed is `not_found`. The identifier
+is what `VouchService.Verify` takes as it is, `"who":{"tenant":{"id":…}}`, as a
+tenant's alias is `{"alias":…}`.
 
 Note the portal's key could not make that call — it was minted with two methods
 and this is a third. That refusal is the system working, and it is what a role

@@ -165,7 +165,7 @@ func TestNobodyWritesAWayInForSomebodyWiderThanThey(t *testing.T) {
 		v := b.vouchedWalled()
 
 		made, err := v.Link(asDesk, app.VouchLinkRequest_builder{
-			Who: app.VouchWho_builder{Tenant: "contoso", Address: mailbox}.Build(),
+			Who: app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Address: mailbox}.Build(),
 		}.Build())
 		x.NoError(err)
 
@@ -366,7 +366,7 @@ func (b *built) verifiesAt(t *testing.T, ctx context.Context, tenant, address, s
 	t.Helper()
 
 	v, err := b.vouched().Verify(ctx, app.VouchVerifyRequest_builder{
-		Who:    app.VouchWho_builder{Tenant: tenant, Address: address}.Build(),
+		Who:    app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr(tenant)}.Build(), Address: address}.Build(),
 		Secret: []byte(secret),
 	}.Build())
 	require.NoError(t, err)

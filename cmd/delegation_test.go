@@ -616,7 +616,7 @@ func TestOverAskingIsRefusedBeforeThePasswordIsCompared(t *testing.T) {
 	// request rather than about the person.
 	_, err = app.NewVouchServiceClient(b.Conn).Delegate(bearing(ctx, b.Token),
 		app.VouchDelegateRequest_builder{
-			Who:     app.VouchWho_builder{Tenant: "contoso", Alias: "nobody-at-all"}.Build(),
+			Who:     app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "nobody-at-all"}.Build(),
 			Secret:  []byte("whatever"),
 			Methods: []string{"/roster.HolderService/Erase"},
 		}.Build())

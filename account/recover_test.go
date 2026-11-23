@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -39,7 +40,7 @@ func TestARecoveryLinkGoesOutOnlyWhereItWouldWork(t *testing.T) {
 	works := func(address string) bool {
 		before := d.links(t)
 		_, err := vouch.Link(asFabrikam, rstr.VouchLinkRequest_builder{
-			Who: rstr.VouchWho_builder{Tenant: "fabrikam", Address: address}.Build(),
+			Who: rstr.VouchWho_builder{Tenant: rstr.VouchTenant_builder{Alias: z.Ptr("fabrikam")}.Build(), Address: address}.Build(),
 		}.Build())
 		x.NoError(err)
 

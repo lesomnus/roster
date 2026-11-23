@@ -51,7 +51,7 @@ func TestAKindNothingChecksIsRefusedBeforeAnybodyIsLookedFor(t *testing.T) {
 		t.Helper()
 
 		_, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Tenant: "contoso", Address: address}.Build(),
+			Who:    app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Address: address}.Build(),
 			Kind:   kind,
 			Secret: []byte("hunter2hunter2"),
 		}.Build())
@@ -113,7 +113,7 @@ func TestAKindNothingChecksIsRefusedBeforeAnybodyIsLookedFor(t *testing.T) {
 			for range n {
 				at := time.Now()
 				_, _ = v.Verify(ctx, app.VouchVerifyRequest_builder{
-					Who:    app.VouchWho_builder{Tenant: "contoso", Address: "nobody@contoso.example"}.Build(),
+					Who:    app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Address: "nobody@contoso.example"}.Build(),
 					Kind:   kind,
 					Secret: []byte("000000"),
 				}.Build())

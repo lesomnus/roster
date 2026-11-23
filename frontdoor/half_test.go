@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -105,7 +106,9 @@ func doorFor(t *testing.T, f *vouch, with func(*Config)) *Door {
 		Vouch:      f,
 		Delegation: f,
 		Methods:    []string{rstr.MeService_Get_FullMethodName},
-		Tenant:     func(ctx context.Context, host string) (string, error) { return "contoso", nil },
+		Tenant: func(ctx context.Context, host string) (*rstr.VouchTenant, error) {
+			return rstr.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), nil
+		},
 	}
 	if with != nil {
 		with(&c)
@@ -234,8 +237,8 @@ func TestARosterThatIsDownIsNotAWrongPassword(t *testing.T) {
 		x := require.New(t)
 
 		d := doorFor(t, f, func(c *Config) {
-			c.Tenant = func(ctx context.Context, host string) (string, error) {
-				return "", errors.New("connection refused")
+			c.Tenant = func(ctx context.Context, host string) (*rstr.VouchTenant, error) {
+				return nil, errors.New("connection refused")
 			}
 		})
 
@@ -248,8 +251,8 @@ func TestARosterThatIsDownIsNotAWrongPassword(t *testing.T) {
 		x := require.New(t)
 
 		d := doorFor(t, f, func(c *Config) {
-			c.Tenant = func(ctx context.Context, host string) (string, error) {
-				return "", ErrUnknownHost
+			c.Tenant = func(ctx context.Context, host string) (*rstr.VouchTenant, error) {
+				return nil, ErrUnknownHost
 			}
 		})
 

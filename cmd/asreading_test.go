@@ -765,7 +765,7 @@ func TestNoRefusalSaysWhoIsHere(t *testing.T) {
 
 	// The baseline every other answer is compared against: somebody who is
 	// certainly here, getting it wrong.
-	baseline := answer(t, app.VouchWho_builder{Tenant: "contoso", Alias: "someone"}.Build(), wrong)
+	baseline := answer(t, app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "someone"}.Build(), wrong)
 	x.False(baseline.GetOk(), "the control")
 
 	for _, tc := range []struct {
@@ -773,16 +773,16 @@ func TestNoRefusalSaysWhoIsHere(t *testing.T) {
 		who    *app.VouchWho
 		secret string
 	}{
-		{"a name nobody has", app.VouchWho_builder{Tenant: "contoso", Alias: "nobody"}.Build(), wrong},
-		{"a tenant nobody serves", app.VouchWho_builder{Tenant: "nowhere", Alias: "someone"}.Build(), wrong},
+		{"a name nobody has", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "nobody"}.Build(), wrong},
+		{"a tenant nobody serves", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("nowhere")}.Build(), Alias: "someone"}.Build(), wrong},
 		{"an identifier nobody has", app.VouchWho_builder{Id: pdid.New(pd.HolderDomain).Bytes()}.Build(), wrong},
-		{"somebody with no secret of that kind", app.VouchWho_builder{Tenant: "contoso", Alias: "passwordless"}.Build(), wrong},
-		{"somebody suspended, right secret", app.VouchWho_builder{Tenant: "contoso", Alias: "suspended"}.Build(), right},
-		{"somebody erased, right secret", app.VouchWho_builder{Tenant: "contoso", Alias: "leaver"}.Build(), right},
+		{"somebody with no secret of that kind", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "passwordless"}.Build(), wrong},
+		{"somebody suspended, right secret", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "suspended"}.Build(), right},
+		{"somebody erased, right secret", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "leaver"}.Build(), right},
 
-		{"an address nobody has", app.VouchWho_builder{Tenant: "contoso", Address: "nobody@contoso.example"}.Build(), wrong},
-		{"an address in a tenant nobody serves", app.VouchWho_builder{Tenant: "nowhere", Address: "someone@contoso.example"}.Build(), wrong},
-		{"an address, wrong secret", app.VouchWho_builder{Tenant: "contoso", Address: "someone@contoso.example"}.Build(), wrong},
+		{"an address nobody has", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Address: "nobody@contoso.example"}.Build(), wrong},
+		{"an address in a tenant nobody serves", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("nowhere")}.Build(), Address: "someone@contoso.example"}.Build(), wrong},
+		{"an address, wrong secret", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Address: "someone@contoso.example"}.Build(), wrong},
 	} {
 		t.Run(tc.desc, func(t *testing.T) {
 			x := require.New(t)
@@ -811,10 +811,10 @@ func TestNoRefusalSaysWhoIsHere(t *testing.T) {
 			desc string
 			who  *app.VouchWho
 		}{
-			{"a name nobody has", app.VouchWho_builder{Tenant: "contoso", Alias: "nobody"}.Build()},
-			{"an address nobody has", app.VouchWho_builder{Tenant: "contoso", Address: "nobody@contoso.example"}.Build()},
-			{"somebody suspended", app.VouchWho_builder{Tenant: "contoso", Alias: "suspended"}.Build()},
-			{"somebody erased", app.VouchWho_builder{Tenant: "contoso", Alias: "leaver"}.Build()},
+			{"a name nobody has", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "nobody"}.Build()},
+			{"an address nobody has", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Address: "nobody@contoso.example"}.Build()},
+			{"somebody suspended", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "suspended"}.Build()},
+			{"somebody erased", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "leaver"}.Build()},
 		} {
 			for range vouch.MaxFailures + 1 {
 				got := answer(t, tc.who, wrong)
@@ -827,7 +827,7 @@ func TestNoRefusalSaysWhoIsHere(t *testing.T) {
 		// asserted above is the branch rather than a lockout nothing reaches.
 		var last *app.VouchVerifyResponse
 		for range vouch.MaxFailures {
-			last = answer(t, app.VouchWho_builder{Tenant: "contoso", Alias: "someone"}.Build(), wrong)
+			last = answer(t, app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "someone"}.Build(), wrong)
 		}
 		x.NotNil(last.GetDateLocked(), "nothing locks, so the checks above looked at nothing")
 	})

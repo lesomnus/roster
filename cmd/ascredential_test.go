@@ -193,7 +193,7 @@ func TestNobodyMintsAWayIntoAnotherTenant(t *testing.T) {
 	})
 
 	made, err := c.Link(as, app.VouchLinkRequest_builder{
-		Who: app.VouchWho_builder{Tenant: "fabrikam", Alias: "erlich"}.Build(),
+		Who: app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("fabrikam")}.Build(), Alias: "erlich"}.Build(),
 	}.Build())
 	x.NoError(err, "asking is allowed to succeed -- TestAskingForALinkSaysNothingAboutWhoIsHere")
 

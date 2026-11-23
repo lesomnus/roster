@@ -431,13 +431,13 @@ func New(ctx context.Context, c Config) (*App, error) {
 		// takes a `ctx` to answer from, which is the whole of what this app
 		// needs: `flow` has already put the tenant there, resolved from the
 		// challenge through Hydra.
-		Tenant: func(ctx context.Context, host string) (string, error) {
+		Tenant: func(ctx context.Context, host string) (*rstr.VouchTenant, error) {
 			o, ok := tenantOf(ctx)
 			if !ok {
-				return "", frontdoor.ErrUnknownHost
+				return nil, frontdoor.ErrUnknownHost
 			}
 
-			return o.alias, nil
+			return rstr.VouchTenant_builder{Id: o.id.Bytes()}.Build(), nil
 		},
 
 		// What a sign-in made at this door is for: the login challenge its form

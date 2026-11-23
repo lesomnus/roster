@@ -498,13 +498,13 @@ func New(ctx context.Context, c Config) (*App, error) {
 		Vouch:      rstr.NewVouchServiceClient(conn),
 		Delegation: rstr.NewDelegationServiceClient(conn),
 		Methods:    Methods,
-		Tenant: func(ctx context.Context, host string) (string, error) {
+		Tenant: func(ctx context.Context, host string) (*rstr.VouchTenant, error) {
 			t, err := a.tenantOf(ctx, host)
 			if err != nil {
-				return "", frontdoor.ErrUnknownHost
+				return nil, frontdoor.ErrUnknownHost
 			}
 
-			return t.alias, nil
+			return rstr.VouchTenant_builder{Id: t.id.Bytes()}.Build(), nil
 		},
 		// And held to it: every tenant is here at names of its own, and a
 		// browser's cookie goes to all of them.
@@ -1471,7 +1471,7 @@ func (a *App) recover(w http.ResponseWriter, r *http.Request) {
 		}
 
 		res, err := a.vouch.Link(t.on(ask), rstr.VouchLinkRequest_builder{
-			Who: rstr.VouchWho_builder{Tenant: t.alias, Address: address}.Build(),
+			Who: rstr.VouchWho_builder{Tenant: rstr.VouchTenant_builder{Id: t.id.Bytes()}.Build(), Address: address}.Build(),
 		}.Build())
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "account: recover at %s: %s\n", t.alias, mail.Redact(err.Error()))

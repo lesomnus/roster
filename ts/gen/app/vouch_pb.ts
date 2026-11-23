@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/vouch.proto.
  */
 export const file_app_vouch: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJGCghWb3VjaFdobxIKCgJpZBgBIAEoDBIOCgZ0ZW5hbnQYAiABKAkSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCSJ3CgpWb3VjaENsYWltEg4KBnRlbmFudBgBIAEoDBIQCghwcm92aWRlchgCIAEoCRIPCgdzdWJqZWN0GAMgASgJEjYKEmRhdGVfYXV0aGVudGljYXRlZBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiXwoSVm91Y2hWZXJpZnlSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIMCgRuYW1lGAUgASgJIoQBCgtWb3VjaEZhY3RvchIMCgRraW5kGAggASgJEgwKBG5hbWUYBSABKAkSLwoLZGF0ZV9sb2NrZWQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhUKDWNyZWRlbnRpYWxfaWQYCSABKAkSEQoJY2hhbGxlbmdlGAogASgJIsMBChNWb3VjaFZlcmlmeVJlc3BvbnNlEgoKAm9rGAEgASgIEg4KBmhvbGRlchgCIAEoDBIOCgZ0ZW5hbnQYAyABKAwSLwoLZGF0ZV9sb2NrZWQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhEKCXNhdGlzZmllZBgKIAMoCRImCglhdmFpbGFibGUYCyADKAsyEy5yb3N0ZXIuVm91Y2hGYWN0b3ISFAoMY29udGludWF0aW9uGAwgASgJIlgKFFZvdWNoQ29udGludWVSZXF1ZXN0EhQKDGNvbnRpbnVhdGlvbhgBIAEoCRIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIMCgRuYW1lGAUgASgJIkYKFVZvdWNoQ29udGludWVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlIroBChRWb3VjaERlbGVnYXRlUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDAoEa2luZBgIIAEoCRIOCgZzZWNyZXQYCSABKAwSFAoMY29udGludWF0aW9uGAwgASgJEgwKBG5hbWUYBSABKAkSDwoHbWV0aG9kcxgKIAMoCRIwCgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIoYBChJWb3VjaEFjY2VwdFJlcXVlc3QSIQoFY2xhaW0YASABKAsyEi5yb3N0ZXIuVm91Y2hDbGFpbRIPCgdtZXRob2RzGAIgAygJEjAKDGRhdGVfZXhwaXJlcxgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASCgoCYXQYBCABKAkizAEKFVZvdWNoRGVsZWdhdGVSZXNwb25zZRItCgh2ZXJpZmllZBgBIAEoCzIbLnJvc3Rlci5Wb3VjaFZlcmlmeVJlc3BvbnNlEg0KBXRva2VuGAogASgJEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDAoEbGluaxgMIAEoCRI1ChFkYXRlX2xpbmtfZXhwaXJlcxgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYwoQVm91Y2hMaW5rUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJUChFWb3VjaExpbmtSZXNwb25zZRINCgV0b2tlbhgBIAEoCRIwCgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIkcKFVZvdWNoTGVhdmVMaW5rUmVxdWVzdBIdCgN3aG8YASABKAsyEC5yb3N0ZXIuVm91Y2hXaG8SDwoHYWRkcmVzcxgCIAEoCSJqChZWb3VjaExlYXZlTGlua1Jlc3BvbnNlEg0KBXRva2VuGAEgASgJEg8KB2FkZHJlc3MYAiABKAkSMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIzChFWb3VjaExlYXZlUmVxdWVzdBINCgV0b2tlbhgBIAEoCRIPCgdjb25maXJtGAIgASgJImYKElZvdWNoUmVkZWVtUmVxdWVzdBINCgV0b2tlbhgBIAEoCRIPCgdtZXRob2RzGAogAygJEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAyswQKDFZvdWNoU2VydmljZRJBCgZWZXJpZnkSGi5yb3N0ZXIuVm91Y2hWZXJpZnlSZXF1ZXN0Ghsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USRwoIRGVsZWdhdGUSHC5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEjsKBExpbmsSGC5yb3N0ZXIuVm91Y2hMaW5rUmVxdWVzdBoZLnJvc3Rlci5Wb3VjaExpbmtSZXNwb25zZRJDCgZSZWRlZW0SGi5yb3N0ZXIuVm91Y2hSZWRlZW1SZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZRJKCglMZWF2ZUxpbmsSHS5yb3N0ZXIuVm91Y2hMZWF2ZUxpbmtSZXF1ZXN0Gh4ucm9zdGVyLlZvdWNoTGVhdmVMaW5rUmVzcG9uc2USOwoFTGVhdmUSGS5yb3N0ZXIuVm91Y2hMZWF2ZVJlcXVlc3QaFy5yb3N0ZXIuTWVMZWF2ZVJlc3BvbnNlEkcKCENvbnRpbnVlEhwucm9zdGVyLlZvdWNoQ29udGludWVSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoQ29udGludWVSZXNwb25zZRJDCgZBY2NlcHQSGi5yb3N0ZXIuVm91Y2hBY2NlcHRSZXF1ZXN0Gh0ucm9zdGVyLlZvdWNoRGVsZWdhdGVSZXNwb25zZUImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_app_me, file_google_protobuf_timestamp]);
+  fileDesc("Cg9hcHAvdm91Y2gucHJvdG8SBnJvc3RlciJhCghWb3VjaFdobxIKCgJpZBgBIAEoDBIjCgZ0ZW5hbnQYBSABKAsyEy5yb3N0ZXIuVm91Y2hUZW5hbnQSDQoFYWxpYXMYAyABKAkSDwoHYWRkcmVzcxgEIAEoCUoECAIQAyIzCgtWb3VjaFRlbmFudBIMCgJpZBgBIAEoDEgAEg8KBWFsaWFzGAQgASgJSABCBQoDa2V5IncKClZvdWNoQ2xhaW0SDgoGdGVuYW50GAEgASgMEhAKCHByb3ZpZGVyGAIgASgJEg8KB3N1YmplY3QYAyABKAkSNgoSZGF0ZV9hdXRoZW50aWNhdGVkGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJfChJWb3VjaFZlcmlmeVJlcXVlc3QSHQoDd2hvGAEgASgLMhAucm9zdGVyLlZvdWNoV2hvEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEgwKBG5hbWUYBSABKAkihAEKC1ZvdWNoRmFjdG9yEgwKBGtpbmQYCCABKAkSDAoEbmFtZRgFIAEoCRIvCgtkYXRlX2xvY2tlZBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASFQoNY3JlZGVudGlhbF9pZBgJIAEoCRIRCgljaGFsbGVuZ2UYCiABKAkiwwEKE1ZvdWNoVmVyaWZ5UmVzcG9uc2USCgoCb2sYASABKAgSDgoGaG9sZGVyGAIgASgMEg4KBnRlbmFudBgDIAEoDBIvCgtkYXRlX2xvY2tlZBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEQoJc2F0aXNmaWVkGAogAygJEiYKCWF2YWlsYWJsZRgLIAMoCzITLnJvc3Rlci5Wb3VjaEZhY3RvchIUCgxjb250aW51YXRpb24YDCABKAkiWAoUVm91Y2hDb250aW51ZVJlcXVlc3QSFAoMY29udGludWF0aW9uGAEgASgJEgwKBGtpbmQYCCABKAkSDgoGc2VjcmV0GAkgASgMEgwKBG5hbWUYBSABKAkiRgoVVm91Y2hDb250aW51ZVJlc3BvbnNlEi0KCHZlcmlmaWVkGAEgASgLMhsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2UiugEKFFZvdWNoRGVsZWdhdGVSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIMCgRraW5kGAggASgJEg4KBnNlY3JldBgJIAEoDBIUCgxjb250aW51YXRpb24YDCABKAkSDAoEbmFtZRgFIAEoCRIPCgdtZXRob2RzGAogAygJEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAihgEKElZvdWNoQWNjZXB0UmVxdWVzdBIhCgVjbGFpbRgBIAEoCzISLnJvc3Rlci5Wb3VjaENsYWltEg8KB21ldGhvZHMYAiADKAkSMAoMZGF0ZV9leHBpcmVzGAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIKCgJhdBgEIAEoCSLMAQoVVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEi0KCHZlcmlmaWVkGAEgASgLMhsucm9zdGVyLlZvdWNoVmVyaWZ5UmVzcG9uc2USDQoFdG9rZW4YCiABKAkSMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIMCgRsaW5rGAwgASgJEjUKEWRhdGVfbGlua19leHBpcmVzGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJjChBWb3VjaExpbmtSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIwCgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlQKEVZvdWNoTGlua1Jlc3BvbnNlEg0KBXRva2VuGAEgASgJEjAKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiRwoVVm91Y2hMZWF2ZUxpbmtSZXF1ZXN0Eh0KA3dobxgBIAEoCzIQLnJvc3Rlci5Wb3VjaFdobxIPCgdhZGRyZXNzGAIgASgJImoKFlZvdWNoTGVhdmVMaW5rUmVzcG9uc2USDQoFdG9rZW4YASABKAkSDwoHYWRkcmVzcxgCIAEoCRIwCgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIjMKEVZvdWNoTGVhdmVSZXF1ZXN0Eg0KBXRva2VuGAEgASgJEg8KB2NvbmZpcm0YAiABKAkiZgoSVm91Y2hSZWRlZW1SZXF1ZXN0Eg0KBXRva2VuGAEgASgJEg8KB21ldGhvZHMYCiADKAkSMAoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcDKzBAoMVm91Y2hTZXJ2aWNlEkEKBlZlcmlmeRIaLnJvc3Rlci5Wb3VjaFZlcmlmeVJlcXVlc3QaGy5yb3N0ZXIuVm91Y2hWZXJpZnlSZXNwb25zZRJHCghEZWxlZ2F0ZRIcLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVxdWVzdBodLnJvc3Rlci5Wb3VjaERlbGVnYXRlUmVzcG9uc2USOwoETGluaxIYLnJvc3Rlci5Wb3VjaExpbmtSZXF1ZXN0Ghkucm9zdGVyLlZvdWNoTGlua1Jlc3BvbnNlEkMKBlJlZGVlbRIaLnJvc3Rlci5Wb3VjaFJlZGVlbVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlEkoKCUxlYXZlTGluaxIdLnJvc3Rlci5Wb3VjaExlYXZlTGlua1JlcXVlc3QaHi5yb3N0ZXIuVm91Y2hMZWF2ZUxpbmtSZXNwb25zZRI7CgVMZWF2ZRIZLnJvc3Rlci5Wb3VjaExlYXZlUmVxdWVzdBoXLnJvc3Rlci5NZUxlYXZlUmVzcG9uc2USRwoIQ29udGludWUSHC5yb3N0ZXIuVm91Y2hDb250aW51ZVJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hDb250aW51ZVJlc3BvbnNlEkMKBkFjY2VwdBIaLnJvc3Rlci5Wb3VjaEFjY2VwdFJlcXVlc3QaHS5yb3N0ZXIuVm91Y2hEZWxlZ2F0ZVJlc3BvbnNlQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_app_me, file_google_protobuf_timestamp]);
 
 /**
  * VouchWho names somebody in the words a sign-in form collects.
@@ -45,10 +45,10 @@ export type VouchWho = Message<"roster.VouchWho"> & {
    * make -- or the tenant and an [VouchWho.address], which is what a form that
    * asks for an email collects.
    *
-   * The tenant's alias, and it comes from the front door rather than from the
-   * form. `FrontService.WhoseHost` turns the name a browser arrived at into
-   * the tenant's identifier, which this field does not take: the front door
-   * says the alias that identifier is.
+   * The tenant by its identifier or by its alias ([VouchTenant]), and it comes
+   * from the front door rather than from the form: `FrontService.WhoseHost`
+   * answers the identifier of the tenant a browser arrived at, and that is
+   * passed as it is.
    *
    * **Optional for a caller that is inside a tenant**, which a front door
    * holding one key per tenant is: the key already says which one, `Verify`
@@ -58,9 +58,9 @@ export type VouchWho = Message<"roster.VouchWho"> & {
    * tenant -- an `rk_`, or one with no frame at all -- must still name it, and
    * naming none is the error it was.
    *
-   * @generated from field: string tenant = 2;
+   * @generated from field: roster.VouchTenant tenant = 5;
    */
-  tenant: string;
+  tenant?: VouchTenant | undefined;
 
   /**
    * @generated from field: string alias = 3;
@@ -103,6 +103,44 @@ export type VouchWho = Message<"roster.VouchWho"> & {
  */
 export const VouchWhoSchema: GenMessage<VouchWho> = /*@__PURE__*/
   messageDesc(file_app_vouch, 0);
+
+/**
+ * VouchTenant names a tenant: `TenantRef`'s `oneof key`, arm for arm, the
+ * same names, numbers and types.
+ *
+ * Written here rather than named, for [VouchWho]'s reason: the references are
+ * generated from the entities in a later step than this file, so a service
+ * written by hand cannot name `TenantRef`. It is that shape and nothing else,
+ * so a caller holding a `TenantRef`, or the identifier
+ * `FrontService.WhoseHost` answers, fills it in as it is.
+ *
+ * @generated from message roster.VouchTenant
+ */
+export type VouchTenant = Message<"roster.VouchTenant"> & {
+  /**
+   * @generated from oneof roster.VouchTenant.key
+   */
+  key: {
+    /**
+     * @generated from field: bytes id = 1;
+     */
+    value: Uint8Array;
+    case: "id";
+  } | {
+    /**
+     * @generated from field: string alias = 4;
+     */
+    value: string;
+    case: "alias";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message roster.VouchTenant.
+ * Use `create(VouchTenantSchema)` to create a new message.
+ */
+export const VouchTenantSchema: GenMessage<VouchTenant> = /*@__PURE__*/
+  messageDesc(file_app_vouch, 1);
 
 /**
  * VouchClaim is what a front door read out of a token it verified.
@@ -179,7 +217,7 @@ export type VouchClaim = Message<"roster.VouchClaim"> & {
  * Use `create(VouchClaimSchema)` to create a new message.
  */
 export const VouchClaimSchema: GenMessage<VouchClaim> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 1);
+  messageDesc(file_app_vouch, 2);
 
 /**
  * @generated from message roster.VouchVerifyRequest
@@ -236,7 +274,7 @@ export type VouchVerifyRequest = Message<"roster.VouchVerifyRequest"> & {
  * Use `create(VouchVerifyRequestSchema)` to create a new message.
  */
 export const VouchVerifyRequestSchema: GenMessage<VouchVerifyRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 2);
+  messageDesc(file_app_vouch, 3);
 
 /**
  * VouchFactor is one way somebody can prove themselves, and when.
@@ -308,7 +346,7 @@ export type VouchFactor = Message<"roster.VouchFactor"> & {
  * Use `create(VouchFactorSchema)` to create a new message.
  */
 export const VouchFactorSchema: GenMessage<VouchFactor> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 3);
+  messageDesc(file_app_vouch, 4);
 
 /**
  * @generated from message roster.VouchVerifyResponse
@@ -394,7 +432,7 @@ export type VouchVerifyResponse = Message<"roster.VouchVerifyResponse"> & {
  * Use `create(VouchVerifyResponseSchema)` to create a new message.
  */
 export const VouchVerifyResponseSchema: GenMessage<VouchVerifyResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 4);
+  messageDesc(file_app_vouch, 5);
 
 /**
  * @generated from message roster.VouchContinueRequest
@@ -430,7 +468,7 @@ export type VouchContinueRequest = Message<"roster.VouchContinueRequest"> & {
  * Use `create(VouchContinueRequestSchema)` to create a new message.
  */
 export const VouchContinueRequestSchema: GenMessage<VouchContinueRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 5);
+  messageDesc(file_app_vouch, 6);
 
 /**
  * @generated from message roster.VouchContinueResponse
@@ -450,7 +488,7 @@ export type VouchContinueResponse = Message<"roster.VouchContinueResponse"> & {
  * Use `create(VouchContinueResponseSchema)` to create a new message.
  */
 export const VouchContinueResponseSchema: GenMessage<VouchContinueResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 6);
+  messageDesc(file_app_vouch, 7);
 
 /**
  * @generated from message roster.VouchDelegateRequest
@@ -553,7 +591,7 @@ export type VouchDelegateRequest = Message<"roster.VouchDelegateRequest"> & {
  * Use `create(VouchDelegateRequestSchema)` to create a new message.
  */
 export const VouchDelegateRequestSchema: GenMessage<VouchDelegateRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 7);
+  messageDesc(file_app_vouch, 8);
 
 /**
  * @generated from message roster.VouchAcceptRequest
@@ -631,7 +669,7 @@ export type VouchAcceptRequest = Message<"roster.VouchAcceptRequest"> & {
  * Use `create(VouchAcceptRequestSchema)` to create a new message.
  */
 export const VouchAcceptRequestSchema: GenMessage<VouchAcceptRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 8);
+  messageDesc(file_app_vouch, 9);
 
 /**
  * @generated from message roster.VouchDelegateResponse
@@ -695,7 +733,7 @@ export type VouchDelegateResponse = Message<"roster.VouchDelegateResponse"> & {
  * Use `create(VouchDelegateResponseSchema)` to create a new message.
  */
 export const VouchDelegateResponseSchema: GenMessage<VouchDelegateResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 9);
+  messageDesc(file_app_vouch, 10);
 
 /**
  * @generated from message roster.VouchLinkRequest
@@ -724,7 +762,7 @@ export type VouchLinkRequest = Message<"roster.VouchLinkRequest"> & {
  * Use `create(VouchLinkRequestSchema)` to create a new message.
  */
 export const VouchLinkRequestSchema: GenMessage<VouchLinkRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 10);
+  messageDesc(file_app_vouch, 11);
 
 /**
  * @generated from message roster.VouchLinkResponse
@@ -752,7 +790,7 @@ export type VouchLinkResponse = Message<"roster.VouchLinkResponse"> & {
  * Use `create(VouchLinkResponseSchema)` to create a new message.
  */
 export const VouchLinkResponseSchema: GenMessage<VouchLinkResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 11);
+  messageDesc(file_app_vouch, 12);
 
 /**
  * @generated from message roster.VouchLeaveLinkRequest
@@ -779,7 +817,7 @@ export type VouchLeaveLinkRequest = Message<"roster.VouchLeaveLinkRequest"> & {
  * Use `create(VouchLeaveLinkRequestSchema)` to create a new message.
  */
 export const VouchLeaveLinkRequestSchema: GenMessage<VouchLeaveLinkRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 12);
+  messageDesc(file_app_vouch, 13);
 
 /**
  * @generated from message roster.VouchLeaveLinkResponse
@@ -811,7 +849,7 @@ export type VouchLeaveLinkResponse = Message<"roster.VouchLeaveLinkResponse"> & 
  * Use `create(VouchLeaveLinkResponseSchema)` to create a new message.
  */
 export const VouchLeaveLinkResponseSchema: GenMessage<VouchLeaveLinkResponse> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 13);
+  messageDesc(file_app_vouch, 14);
 
 /**
  * @generated from message roster.VouchLeaveRequest
@@ -838,7 +876,7 @@ export type VouchLeaveRequest = Message<"roster.VouchLeaveRequest"> & {
  * Use `create(VouchLeaveRequestSchema)` to create a new message.
  */
 export const VouchLeaveRequestSchema: GenMessage<VouchLeaveRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 14);
+  messageDesc(file_app_vouch, 15);
 
 /**
  * @generated from message roster.VouchRedeemRequest
@@ -873,7 +911,7 @@ export type VouchRedeemRequest = Message<"roster.VouchRedeemRequest"> & {
  * Use `create(VouchRedeemRequestSchema)` to create a new message.
  */
 export const VouchRedeemRequestSchema: GenMessage<VouchRedeemRequest> = /*@__PURE__*/
-  messageDesc(file_app_vouch, 15);
+  messageDesc(file_app_vouch, 16);
 
 /**
  * VouchService is how a secret is used without ever leaving the store.

@@ -5,6 +5,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -267,7 +268,7 @@ func TestEveryNoOverTheWireIsTheSameNo(t *testing.T) {
 		t.Helper()
 
 		v, err := c.Verify(bearing(ctx, b.Token), app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Tenant: tenant, Alias: alias}.Build(),
+			Who:    app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr(tenant)}.Build(), Alias: alias}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 		require.NoError(t, err, "each of these is an answer, not an error")

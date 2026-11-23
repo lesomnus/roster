@@ -93,10 +93,10 @@ func refFrom(who *app.VouchWho) (*app.HolderRef, error) {
 	if id := who.GetId(); len(id) > 0 {
 		return app.HolderRef_builder{Id: id}.Build(), nil
 	}
-	if who.GetTenant() != "" && who.GetAlias() != "" {
+	if t := who.GetTenant(); t.GetAlias() != "" && who.GetAlias() != "" {
 		return app.HolderRef_builder{
 			Slug: app.HolderRefBySlug_builder{
-				Tenant: app.TenantRef_builder{Alias: z.Ptr(who.GetTenant())}.Build(),
+				Tenant: app.TenantRef_builder{Alias: z.Ptr(t.GetAlias())}.Build(),
 				Alias:  z.Ptr(who.GetAlias()),
 			}.Build(),
 		}.Build(), nil
@@ -124,7 +124,7 @@ func whoSaid(cl *xli.Command) (*app.VouchWho, error) {
 		// The tenant does not travel inside an address, deliberately -- the
 		// server refuses an address alone, so the refusal here can name the
 		// flag instead of echoing the server's sentence.
-		return app.VouchWho_builder{Tenant: tenant, Address: address}.Build(), nil
+		return app.VouchWho_builder{Tenant: vouchTenant(tenant), Address: address}.Build(), nil
 	}
 	if tenant != "" {
 		return nil, invocation(errors.New("--tenant goes with --address; with WHO the tenant is in the name"))
@@ -140,7 +140,16 @@ func whoSaid(cl *xli.Command) (*app.VouchWho, error) {
 		return app.VouchWho_builder{Id: ref.Id.Bytes()}.Build(), nil
 	}
 
-	return app.VouchWho_builder{Tenant: ref.Tenant, Alias: ref.Alias}.Build(), nil
+	return app.VouchWho_builder{Tenant: vouchTenant(ref.Tenant), Alias: ref.Alias}.Build(), nil
+}
+
+// vouchTenant is a tenant's alias as `VouchWho` takes it, and none for none.
+func vouchTenant(alias string) *app.VouchTenant {
+	if alias == "" {
+		return nil
+	}
+
+	return app.VouchTenant_builder{Alias: z.Ptr(alias)}.Build()
 }
 
 // whoTyped is the WHO a command was given, back in the words it was given in,

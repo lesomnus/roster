@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -210,7 +211,7 @@ func TestAClosedAccountCostsWhatAWrongPasswordCosts(t *testing.T) {
 	closed, locked := ask(theirs)
 	x.NotNil(closed.GetDateLocked(), "the account is not closed, so this measured nothing")
 
-	_, stranger := ask(app.VouchWho_builder{Tenant: "contoso", Alias: "nobody-by-this-name"}.Build())
+	_, stranger := ask(app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "nobody-by-this-name"}.Build())
 
 	// Not *equal*, which no clock would hold to. A closed account answered
 	// some thirty times sooner; a third is far inside what the same work on

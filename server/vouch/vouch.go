@@ -746,16 +746,19 @@ func kindOf(v string) string {
 //
 // # What somebody typed is folded
 //
-// The tenant here and the alias in [refOf] are what a person typed into a
-// form, as an address is, and an address has always been folded before it is
-// looked for ([Server.byAddress]). These two were looked for as typed: a
+// The tenant's alias here and the alias in [refOf] are what a person typed
+// into a form, as an address is, and an address has always been folded before
+// it is looked for ([Server.byAddress]). These two were looked for as typed: a
 // password that was right was refused for `Alice` and for `Contoso`, and
 // accepted for `Alice@Contoso.Example`. A row's alias is in small letters or
 // it was not written (`server/core`, `spelled`), so there is one row a typed
 // name can mean, and it is found. Here and not in a reference anywhere else:
 // what a program names, it names exactly.
 func tenantOf(w *app.VouchWho, ctx context.Context) *app.TenantRef {
-	if v := front.Alias(w.GetTenant()); v != "" {
+	if v := w.GetTenant().GetId(); len(v) > 0 {
+		return app.TenantRef_builder{Id: v}.Build()
+	}
+	if v := front.Alias(w.GetTenant().GetAlias()); v != "" {
 		return app.TenantRef_builder{Alias: z.Ptr(v)}.Build()
 	}
 
@@ -779,14 +782,15 @@ func refOf(w *app.VouchWho, in *app.TenantRef) (*app.HolderRef, error) {
 	id := w.GetId()
 
 	// Folded, as [tenantOf] folds the tenant and for its reason.
-	tenant, alias, address := front.Alias(w.GetTenant()), front.Alias(w.GetAlias()), w.GetAddress()
+	alias, address := front.Alias(w.GetAlias()), w.GetAddress()
+	named := len(w.GetTenant().GetId()) > 0 || front.Alias(w.GetTenant().GetAlias()) != ""
 
 	byId := len(id) > 0
 	bySlug := alias != ""
 	byAddress := address != ""
 
 	switch {
-	case byId && (bySlug || byAddress || tenant != ""),
+	case byId && (bySlug || byAddress || named),
 		bySlug && byAddress:
 		// Against what the request **named**, not against `in`: a caller whose
 		// own tenant was filled in for it has not named two ways of finding
@@ -815,7 +819,7 @@ func refOf(w *app.VouchWho, in *app.TenantRef) (*app.HolderRef, error) {
 
 		return app.HolderRef_builder{Id: k.Bytes()}.Build(), nil
 
-	case bySlug || tenant != "":
+	case bySlug || named:
 		if in == nil || alias == "" {
 			return nil, status.Error(codes.InvalidArgument,
 				"who: a name is a tenant and an alias; the alias is always the request's, and the tenant is the caller's own unless it is in none")

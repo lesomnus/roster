@@ -159,17 +159,16 @@ func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.Au
 		return nil, status.Error(codes.InvalidArgument, "both an alias and a password, as secret")
 	}
 
-	// Which tenant, by **alias**, because that is what `VouchWho` names one by:
-	// the pair a username field and a tenant selector make, rather than an
-	// identifier a form would have to be told.
-	tenant, door, err := a.door(ctx)
+	// Which tenant, by the identifier `door` has just read: `VouchWho` takes
+	// either, as a `TenantRef` does.
+	door, err := a.door(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	res, err := a.v.VerifyAt(ctx, door, app.VouchVerifyRequest_builder{
 		Who: app.VouchWho_builder{
-			Tenant: tenant,
+			Tenant: app.VouchTenant_builder{Id: door.Bytes()}.Build(),
 			Alias:  req.GetAlias(),
 		}.Build(),
 		Secret: req.GetSecret(),
@@ -184,7 +183,7 @@ func (a authed) SignIn(ctx context.Context, req *app.AuthSignInRequest) (*app.Au
 // proceed is the second call: the attempt a first answer left open, and the
 // next proof. `AuthSignInRequest.continuation` is the why.
 func (a authed) proceed(ctx context.Context, req *app.AuthSignInRequest) (*app.AuthSignInResponse, error) {
-	_, door, err := a.door(ctx)
+	door, err := a.door(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -231,16 +230,16 @@ func (a authed) answered(ctx context.Context, res *app.VouchVerifyResponse) (*ap
 	return nil, status.Error(codes.Unauthenticated, "no")
 }
 
-// door is the tenant this sign-in is about, by alias and as what an attempt
-// begun here is issued to.
+// door is the tenant this sign-in is about, as what an attempt begun here is
+// issued to.
 //
 // The tenant's own identifier is the door. An attempt is spent by whoever it
 // was issued to and nobody else; a key's actor is a row of another kind and
 // never equals it, and another tenant's name is another tenant's door.
-func (a authed) door(ctx context.Context) (string, pdid.Id, error) {
+func (a authed) door(ctx context.Context) (pdid.Id, error) {
 	tenant, err := a.whose(ctx)
 	if err != nil {
-		return "", pdid.Nil, err
+		return pdid.Nil, err
 	}
 
 	t, err := a.s.Tenant().Get(ctx, app.TenantGetRequest_builder{
@@ -250,18 +249,18 @@ func (a authed) door(ctx context.Context) (string, pdid.Id, error) {
 		if status.Code(err) == codes.NotFound {
 			// A name whose tenant has gone since it was resolved: nobody signs
 			// in there, and it is answered as nobody.
-			return "", pdid.Nil, status.Error(codes.Unauthenticated, "no")
+			return pdid.Nil, status.Error(codes.Unauthenticated, "no")
 		}
 
-		return "", pdid.Nil, err
+		return pdid.Nil, err
 	}
 
 	id, err := pdid.From(t.GetId())
 	if err != nil {
-		return "", pdid.Nil, err
+		return pdid.Nil, err
 	}
 
-	return tenant, id, nil
+	return id, nil
 }
 
 // handed is a sign-in by a link a front door handed the browser: the person

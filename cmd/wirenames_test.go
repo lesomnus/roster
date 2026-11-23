@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 	"testing"
@@ -199,4 +200,37 @@ func TestWhoseIsAOneofInTheTwoIssueRequests(t *testing.T) {
 		slices.Sort(has)
 		x.Equal(want, has, name)
 	}
+}
+
+// TestVouchTenantIsATenantRef: what `VouchWho.tenant` takes is
+// `TenantRef`'s `oneof key`, arm for arm, written in `vouch.proto` because
+// that file compiles before the references are generated.
+//
+// `VouchWho.tenant` was a `string`, the tenant's alias, where `tenant` is the
+// identifier in six other messages and `FrontService/WhoseHost` answers an
+// identifier, which a front door turned back into an alias to fill it.
+// Answered: an alias alone; right is either, as a `TenantRef` names one.
+func TestVouchTenantIsATenantRef(t *testing.T) {
+	x := require.New(t)
+
+	arms := func(name string) map[string]string {
+		d, err := protoregistry.GlobalFiles.FindDescriptorByName(protoreflect.FullName(name))
+		x.NoError(err, name)
+		o := d.(protoreflect.MessageDescriptor).Oneofs().ByName("key")
+		x.NotNil(o, "%s has no `oneof key`", name)
+		out := map[string]string{}
+		for i := range o.Fields().Len() {
+			f := o.Fields().Get(i)
+			out[string(f.Name())] = fmt.Sprintf("%d %s", f.Number(), f.Kind())
+		}
+		x.Equal(o.Fields().Len(), d.(protoreflect.MessageDescriptor).Fields().Len(), "%s has a field beside its key", name)
+		return out
+	}
+	x.Equal(arms("roster.TenantRef"), arms("roster.VouchTenant"))
+
+	who, err := protoregistry.GlobalFiles.FindDescriptorByName("roster.VouchWho")
+	x.NoError(err)
+	f := who.(protoreflect.MessageDescriptor).Fields().ByName("tenant")
+	x.Equal(protoreflect.MessageKind, f.Kind())
+	x.Equal("VouchTenant", string(f.Message().Name()))
 }
