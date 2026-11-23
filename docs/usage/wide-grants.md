@@ -20,7 +20,7 @@ writing a role whose methods end in `*`.
 | [`VouchService/Link` with `Redeem`](#vouchservicelink-with-redeem) | *may send recovery links* | every account of the tenant |
 | [`VouchService/Accept`](#vouchserviceaccept) | *may sign people in* | a credential for anybody, on the caller's word |
 | [`ConnectionService/Add` and `Update`](#connectionserviceadd-and-update) | *may set up sign-in through a directory* | everybody who signs in through it |
-| [`EmailService/Verify` with `Confirm`](#emailserviceverify-with-confirm) | *may confirm addresses* | any address, proved with no mailbox |
+| [`EmailService/Claim` with `Confirm`](#emailserviceclaim-with-confirm) | *may confirm addresses* | any address, proved with no mailbox |
 | [`EmailService/Attest`](#emailserviceattest) | *may record a directory's address* | an address proved on the caller's word |
 | [`NominationService/Add`](#nominationserviceadd) | *may install an app* | an app's key answered as somebody |
 | [The same verbs at `admin.addr`](#the-same-verbs-at-adminaddr) | an operator's helpdesk role | any account in any tenant |
@@ -125,14 +125,14 @@ issuer says a person's proved address is verified is linked to that person.
 **It is for** whoever administers the tenant, and nobody narrower. `Erase`
 alone signs nobody in.
 
-### `EmailService/Verify` with `Confirm`
+### `EmailService/Claim` with `Confirm`
 
 **Reads as** *may confirm addresses*. **Is** any address, proved, with no
 mailbox read.
 
 > 1. Somebody whose role names both writes `ceo@contoso.example` onto their own
 >    account. Writing an address onto your own account is nobody's to refuse.
-> 2. `Email.Verify` answers the link that proves it -- to the caller.
+> 2. `Email.Claim` answers the link that proves it -- to the caller.
 > 3. `Email.Confirm` spends it. The address is theirs, and proved.
 
 A proved address names them to every relying party that reads one, and its
@@ -140,7 +140,7 @@ owner cannot take it back: a proved address does not change hands.
 
 **It is for** a front door, which mints the link as itself and mails it. Neither
 verb is somebody's own to call, and `Confirm` alone is one step from this the
-day `Verify` is granted beside it.
+day `Claim` is granted beside it.
 
 ### `EmailService/Attest`
 
@@ -158,7 +158,7 @@ hold no more than the caller.
 > if somebody had written it onto their own account without proving it, it has
 > been taken from them.
 
-**It is for** a front door. Beside `Verify` with `Confirm` it is the shorter
+**It is for** a front door. Beside `Claim` with `Confirm` it is the shorter
 road to the same place, and it is not somebody's own to call.
 
 ### `NominationService/Add`

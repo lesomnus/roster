@@ -30,7 +30,7 @@ import (
 // signed in as Alice. That costs Alice.
 //
 // What it cost the CEO is the thing: the unique index meant `Email.Add` answered
-// `AlreadyExists`, so they could not write the row, could not reach `Email.Verify`,
+// `AlreadyExists`, so they could not write the row, could not reach `Email.Claim`,
 // and had no road to their own address at all -- a name the rightful holder is
 // refused, with a refusal that says only that somebody has it. That is
 // `host.proto` § *Why a hostname is not checked* one entity along.
@@ -42,7 +42,7 @@ import (
 //   - **`byAddress` reads the stamp**, so an unproved row resolves nobody. Alone,
 //     the squat becomes a permanent denial: the address resolves nobody and the
 //     rightful holder still cannot write it.
-//   - **A proof takes an unproved address** (`EmailVerifyRequest.holder`), so the
+//   - **A proof takes an unproved address** (`EmailClaimRequest.holder`), so the
 //     rightful holder has a road. Alone, the squatter still answers for the address
 //     until somebody notices.
 func TestAnAddressNobodyProvedNamesNobody(t *testing.T) {
@@ -88,7 +88,7 @@ func TestAnAddressNobodyProvedNamesNobody(t *testing.T) {
 	// unproved row, naming whose claim it is. The token goes to the caller, which
 	// is a front door, which mails it to the address -- so whoever reads that
 	// mailbox is who ends up holding it.
-	v, err := b.Walled.Email().Verify(door, app.EmailVerifyRequest_builder{
+	v, err := b.Walled.Email().Claim(door, app.EmailClaimRequest_builder{
 		Ref:    app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(theirs)}.Build()}.Build(),
 		Holder: app.HolderRef_builder{Id: ceo.Bytes()}.Build(),
 	}.Build())
@@ -135,7 +135,7 @@ func TestAProvedAddressDoesNotChangeHands(t *testing.T) {
 
 	// Refused at the mint, which is where there is somebody to tell: a page that
 	// drew *claim this address* over a confirmed one should stop drawing it.
-	_, err := b.Walled.Email().Verify(door, app.EmailVerifyRequest_builder{
+	_, err := b.Walled.Email().Claim(door, app.EmailClaimRequest_builder{
 		Ref:    app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(theirs)}.Build()}.Build(),
 		Holder: app.HolderRef_builder{Id: alice.Bytes()}.Build(),
 	}.Build())
@@ -164,7 +164,7 @@ func TestAClaimIsCheckedAgainWhenItIsSpent(t *testing.T) {
 	door := b.as(ctx, b.holder(t, ctx, b.Contoso, "front-door"), b.Contoso)
 
 	// A claim, minted while the row was unproved.
-	v, err := b.Walled.Email().Verify(door, app.EmailVerifyRequest_builder{
+	v, err := b.Walled.Email().Claim(door, app.EmailClaimRequest_builder{
 		Ref:    app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(theirs)}.Build()}.Build(),
 		Holder: app.HolderRef_builder{Id: alice.Bytes()}.Build(),
 	}.Build())
@@ -172,7 +172,7 @@ func TestAClaimIsCheckedAgainWhenItIsSpent(t *testing.T) {
 
 	// And the incumbent proves it in the meantime, which is the ordinary road:
 	// their own link, on their own row.
-	own, err := b.Walled.Email().Verify(door, app.EmailVerifyRequest_builder{
+	own, err := b.Walled.Email().Claim(door, app.EmailClaimRequest_builder{
 		Ref: app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(theirs)}.Build()}.Build(),
 	}.Build())
 	x.NoError(err)
@@ -230,14 +230,14 @@ func TestNobodyClaimsAnAddressOntoAnAccountWiderThanTheirOwn(t *testing.T) {
 	// it nowhere, they would not see the administrator at all: `cmd.People`.)
 	nobody := b.holder(t, ctx, b.Contoso, "nobody")
 
-	_, err = b.Walled.Email().Verify(b.mayCall(t, ctx, nobody, "verifies", app.EmailService_Verify_FullMethodName), app.EmailVerifyRequest_builder{
+	_, err = b.Walled.Email().Claim(b.mayCall(t, ctx, nobody, "verifies", app.EmailService_Claim_FullMethodName), app.EmailClaimRequest_builder{
 		Ref:    app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(theirs)}.Build()}.Build(),
 		Holder: app.HolderRef_builder{Id: admin.Bytes()}.Build(),
 	}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err))
 
 	// Their own is fine, which is the case the rule passes for and has to.
-	_, err = b.Walled.Email().Verify(b.asNobody(ctx, nobody, b.Contoso), app.EmailVerifyRequest_builder{
+	_, err = b.Walled.Email().Claim(b.asNobody(ctx, nobody, b.Contoso), app.EmailClaimRequest_builder{
 		Ref:    app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(theirs)}.Build()}.Build(),
 		Holder: app.HolderRef_builder{Id: nobody.Bytes()}.Build(),
 	}.Build())
@@ -264,7 +264,7 @@ func TestAClaimDoesNotCrossATenant(t *testing.T) {
 	stranger := b.holder(t, ctx, b.Fabrikam, "someone")
 
 	// Through the wall as somebody at the other customer: the row is not there.
-	_, err = b.Walled.Email().Verify(b.as(ctx, stranger, b.Fabrikam), app.EmailVerifyRequest_builder{
+	_, err = b.Walled.Email().Claim(b.as(ctx, stranger, b.Fabrikam), app.EmailClaimRequest_builder{
 		Ref:    app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(theirs)}.Build()}.Build(),
 		Holder: app.HolderRef_builder{Id: stranger.Bytes()}.Build(),
 	}.Build())
@@ -371,7 +371,7 @@ func TestTheOrdinaryVerificationIsUnchanged(t *testing.T) {
 	door := b.as(ctx, b.holder(t, ctx, b.Contoso, "front-door"), b.Contoso)
 
 	ref := app.EmailRef_builder{Id: e.GetId()}.Build()
-	v, err := b.Walled.Email().Verify(door, app.EmailVerifyRequest_builder{Ref: ref}.Build())
+	v, err := b.Walled.Email().Claim(door, app.EmailClaimRequest_builder{Ref: ref}.Build())
 	x.NoError(err)
 
 	done, err := b.Walled.Email().Confirm(door, app.EmailConfirmRequest_builder{Token: v.GetToken()}.Build())

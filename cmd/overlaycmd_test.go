@@ -27,11 +27,11 @@ func TestTheTerminalReachesEveryOverlayVerb(t *testing.T) {
 		connectionUpdate = "/roster.ConnectionService/Update"
 		reaches          = "/roster.HolderService/Reaches"
 		search           = "/roster.HolderService/Search"
-		verify           = "/roster.EmailService/Verify"
+		claim            = "/roster.EmailService/Claim"
 		confirm          = "/roster.EmailService/Confirm"
 	)
 
-	b := cliUp(t, tenantUpdate, hostUpdate, domainUpdate, connectionUpdate, reaches, search, verify, confirm)
+	b := cliUp(t, tenantUpdate, hostUpdate, domainUpdate, connectionUpdate, reaches, search, claim, confirm)
 	ctx := t.Context()
 	at := app.TenantRef_builder{Id: b.Tenant.GetId()}.Build()
 	id := func(v []byte) string {
@@ -118,14 +118,14 @@ func TestTheTerminalReachesEveryOverlayVerb(t *testing.T) {
 		x.NotContains(out, "bob")
 	})
 
-	t.Run("email verify, then confirm", func(t *testing.T) {
+	t.Run("email claim, then confirm", func(t *testing.T) {
 		x := require.New(t)
 		e, err := b.Server.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{
 			Holder: app.HolderRef_builder{Id: b.Alice.GetId()}.Build(), Address: "alice@newco.example",
 		}.Build())
 		x.NoError(err)
 
-		out, err := cliRun(t, &b.Hers, "email", "verify", "-o", "protojson", id(e.GetId()))
+		out, err := cliRun(t, &b.Hers, "email", "claim", "-o", "protojson", id(e.GetId()))
 		x.NoError(err, out)
 		token := regexp.MustCompile(`rl_[A-Za-z0-9_-]+`).FindString(out)
 		x.NotEmpty(token, "no link in: %s", out)

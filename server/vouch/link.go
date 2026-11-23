@@ -282,7 +282,7 @@ func (s *Server) link(ctx context.Context, token string, by pdid.Id) (*app.Link,
 	}
 
 	// A verification link names its `email`, and this is the door it must not
-	// open. `Email.Verify` mints into this table with this shape on purpose --
+	// open. `Email.Claim` mints into this table with this shape on purpose --
 	// one table, one sweep -- and the `email` edge is what tells the two apart;
 	// `Email.Confirm` refuses a link that names none, and until this the other
 	// direction was not refused at all. So a token mailed to prove an address
@@ -513,7 +513,7 @@ func (s *Server) linkAt(ctx context.Context, holder, issuer pdid.Id, at string) 
 
 // mintLink is the token and the verifier stored for it.
 // MintLink is a link token and the hash that is stored for it -- `PrefixLink`
-// and thirty-two random bytes. Exported for `Email.Verify`, which mints the
+// and thirty-two random bytes. Exported for `Email.Claim`, which mints the
 // same shape for a different purpose and must not mint a different one.
 func MintLink() (string, []byte, error) {
 	b := make([]byte, 32)

@@ -121,11 +121,11 @@ func TestTheLastAdministratorWhoAsksToLeaveStaysSignedIn(t *testing.T) {
 	x.NotNil(invalidated, "signed out everywhere, with the erase")
 }
 
-// TestNoLinkProvesAnAddressForSomebodyWhoMayNotSignIn: `EmailService/Verify`
+// TestNoLinkProvesAnAddressForSomebodyWhoMayNotSignIn: `EmailService/Claim`
 // mints no link for somebody suspended, as `Confirm` spends none.
 //
 // `Confirm` refuses a link whose person is suspended, erased or of a closed
-// tenant (#277), and `Verify` asked none of it: it minted the link and
+// tenant (#277), and `Claim` asked none of it: it minted the link and
 // answered it, a front door mailed it, and the person who clicked it was told
 // there was no such link -- until they were enabled, when the same link
 // confirmed. Right is the refusal where there is somebody to tell: NotFound,
@@ -143,8 +143,8 @@ func TestNoLinkProvesAnAddressForSomebodyWhoMayNotSignIn(t *testing.T) {
 	ref := app.HolderRef_builder{Id: who.Bytes()}.Build()
 	row, err := b.Ungated.Email().Add(ctx, app.EmailAddRequest_builder{Holder: ref, Address: "stopped@contoso.example"}.Build())
 	x.NoError(err)
-	verify := func(claimant *app.HolderRef, of []byte) (*app.EmailVerifyResponse, error) {
-		return emails.Verify(wire, app.EmailVerifyRequest_builder{Ref: app.EmailRef_builder{Id: of}.Build(), Holder: claimant}.Build())
+	verify := func(claimant *app.HolderRef, of []byte) (*app.EmailClaimResponse, error) {
+		return emails.Claim(wire, app.EmailClaimRequest_builder{Ref: app.EmailRef_builder{Id: of}.Build(), Holder: claimant}.Build())
 	}
 
 	_, err = b.Ungated.Holder().Disable(ctx, app.HolderDisableRequest_builder{Ref: ref}.Build())

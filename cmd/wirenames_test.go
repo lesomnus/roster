@@ -295,3 +295,27 @@ func TestWhatADirectorySaysIsOneMessage(t *testing.T) {
 	}
 	x.Empty(shared, "a word that is one column in `Tell` and another in `Provision`")
 }
+
+// TestOnlyAVouchChecksBeforeItAnswers: `Verify` is one act, checking a secret,
+// and so an RPC of `VouchService` alone.
+//
+// `EmailService/Verify` checked nothing: it minted a link to be mailed, which
+// `EmailService/Confirm` spends, while `VouchService/Verify` checks a secret.
+// A role's list of methods is read by these names. Answered: two acts under
+// one verb; right is `EmailService/Claim`, which its comment already called
+// what it mints.
+func TestOnlyAVouchChecksBeforeItAnswers(t *testing.T) {
+	x := require.New(t)
+
+	has := []string{}
+	protoregistry.GlobalFiles.RangeFilesByPackage("roster", func(file protoreflect.FileDescriptor) bool {
+		for i := range file.Services().Len() {
+			s := file.Services().Get(i)
+			if s.Methods().ByName("Verify") != nil {
+				has = append(has, string(s.Name()))
+			}
+		}
+		return true
+	})
+	x.Equal([]string{"VouchService"}, has)
+}

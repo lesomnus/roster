@@ -221,7 +221,7 @@ func TestAnAddressProvedAgainIsStillTheOneProvedFirst(t *testing.T) {
 	// A link for the first, minted and spent as a front door does both: over
 	// the wire, by one caller.
 	emails := rstr.NewEmailServiceClient(d.conn)
-	link, err := emails.Verify(d.ops, rstr.EmailVerifyRequest_builder{Ref: zed}.Build())
+	link, err := emails.Claim(d.ops, rstr.EmailClaimRequest_builder{Ref: zed}.Build())
 	x.NoError(err)
 	res, err := emails.Confirm(d.ops, rstr.EmailConfirmRequest_builder{Token: link.GetToken()}.Build())
 	x.NoError(err)

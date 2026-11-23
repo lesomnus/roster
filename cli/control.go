@@ -231,13 +231,13 @@ func newCmdControlEntities(c *cmd.Config) xli.Commands {
 	// first and has nothing to undo for the second (#284).
 	//
 	// And five more the overlays mount: `consent agree`, `withdraw`,
-	// `settled`, `email verify` and `confirm` ask who is calling and refuse a
+	// `settled`, `email claim` and `confirm` ask who is calling and refuse a
 	// call made as nobody, which every call at the box is. On the data
 	// plane's tree they go over the wire; this tree is local and nothing
 	// else, so here they could only refuse (#286).
 	for _, path := range []string{
 		"tenant/add", "tenant/erase", "tenant/close", "tenant/restore",
-		"consent/agree", "consent/withdraw", "consent/settled", "email/verify", "email/confirm",
+		"consent/agree", "consent/withdraw", "consent/settled", "email/claim", "email/confirm",
 	} {
 		if err := t.Drop(path); err != nil {
 			// A path the schema no longer has, which is a mistake in this file

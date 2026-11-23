@@ -198,7 +198,7 @@ func TestSomebodyForgottenIsABlankRow(t *testing.T) {
 // address: there is no moment the row is there and names nothing.
 func TestALinkThatProvesAnAddressGoesWithTheAddress(t *testing.T) {
 	x := require.New(t)
-	b := keyFor(t, verifyEmail, link, redeem, listHolders)
+	b := keyFor(t, claimEmail, link, redeem, listHolders)
 	ctx := t.Context()
 	as := bearing(ctx, b.Token)
 	c := app.NewVouchServiceClient(b.Conn)
@@ -211,7 +211,7 @@ func TestALinkThatProvesAnAddressGoesWithTheAddress(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 
-	claim, err := app.NewEmailServiceClient(b.Conn).Verify(as, app.EmailVerifyRequest_builder{
+	claim, err := app.NewEmailServiceClient(b.Conn).Claim(as, app.EmailClaimRequest_builder{
 		Ref:    app.EmailRef_builder{Id: row.GetId()}.Build(),
 		Holder: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 	}.Build())

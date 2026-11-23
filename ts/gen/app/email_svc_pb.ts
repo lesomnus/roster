@@ -20,7 +20,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/email_svc.g.proto.
  */
 export const file_app_email_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChVhcHAvZW1haWxfc3ZjLmcucHJvdG8SBnJvc3RlciKUAgoPRW1haWxBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFgoHYWRkcmVzcxgIIAEoCUIFqgECCAISMQoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJwoKdm91Y2hlZF9ieRgKIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhISCgplbnRlcmVkX2J5GAwgASgMEhgKCXRlbmFudF9pZBgLIAEoDEIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJVCg9FbWFpbEdldFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEiMKBnNlbGVjdBgCIAEoCzITLnJvc3Rlci5FbWFpbFNlbGVjdCJxCghFbWFpbFJlZhIMCgJpZBgBIAEoDEgAEiwKB2FkZHJlc3MYAiABKAsyGS5yb3N0ZXIuRW1haWxSZWZCeUFkZHJlc3NIABIiCgJhdBgLIAEoCzIULnJvc3Rlci5FbWFpbFJlZkJ5QXRIAEIFCgNrZXkiRwoRRW1haWxSZWZCeUFkZHJlc3MSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIPCgdhZGRyZXNzGAggASgJIjIKDEVtYWlsUmVmQnlBdBIRCgl0ZW5hbnRfaWQYCyABKAwSDwoHYWRkcmVzcxgIIAEoCSL8AQoLRW1haWxTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDwoHYWRkcmVzcxgIIAEoCBIVCg1kYXRlX3ZlcmlmaWVkGAkgASgIEioKCnZvdWNoZWRfYnkYCiABKAsyFi5yb3N0ZXIuSWRlbnRpdHlTZWxlY3QSEgoKZW50ZXJlZF9ieRgMIAEoCBIRCgl0ZW5hbnRfaWQYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKiAgoRRW1haWxQYXRjaFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEg8KB2FkZHJlc3MYECABKAkSMQoNZGF0ZV92ZXJpZmllZBgSIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV92ZXJpZmllZF9udWxsGBMgASgIEicKCnZvdWNoZWRfYnkYFCABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSFwoPdm91Y2hlZF9ieV9udWxsGBUgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIk8KEUVtYWlsQXBwbHlSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiQKEkVtYWlsRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiewoQRW1haWxMaXN0UmVxdWVzdBIkCgdmaWx0ZXJzGAEgAygLMhMucm9zdGVyLkVtYWlsRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJGChFFbWFpbExpc3RSZXNwb25zZRIcCgVpdGVtcxgBIAMoCzINLnJvc3Rlci5FbWFpbBITCgRuZXh0GAIgASgJQgWqAQIIAiJPCgtFbWFpbEZpbHRlchIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZiJXChFFbWFpbFdhdGNoUmVxdWVzdBIkCgdmaWx0ZXJzGAEgAygLMhMucm9zdGVyLkVtYWlsRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjsKEkVtYWlsV2F0Y2hSZXNwb25zZRIlCgVpdGVtcxgBIAMoCzIWLnJvc3Rlci5FbWFpbFdhdGNoSXRlbSJRCg5FbWFpbFdhdGNoSXRlbRIKCgJpZBgBIAEoDBIcCgV2YWx1ZRgCIAEoCzINLnJvc3Rlci5FbWFpbBIVCgZhY3Rpb24YAyABKAlCBaoBAggCIogBChJFbWFpbFZlcmlmeVJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEiEKBmhvbGRlchgDIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSMAoMZGF0ZV9leHBpcmVzGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJdChNFbWFpbFZlcmlmeVJlc3BvbnNlEhQKBXRva2VuGAEgASgJQgWqAQIIAhIwCgxkYXRlX2V4cGlyZXMYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIisKE0VtYWlsQ29uZmlybVJlcXVlc3QSFAoFdG9rZW4YASABKAlCBaoBAggCIjQKFEVtYWlsQ29uZmlybVJlc3BvbnNlEhwKBWVtYWlsGAEgASgLMg0ucm9zdGVyLkVtYWlsIpEBChJFbWFpbEF0dGVzdFJlcXVlc3QSIQoGaG9sZGVyGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIWCgdhZGRyZXNzGAggASgJQgWqAQIIAhInCgp2b3VjaGVkX2J5GAogASgLMhMucm9zdGVyLklkZW50aXR5UmVmEhcKCHZlcmlmaWVkGAkgASgIQgWqAQIIAjLGBAoMRW1haWxTZXJ2aWNlEi0KA0FkZBIXLnJvc3Rlci5FbWFpbEFkZFJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSLQoDR2V0Ehcucm9zdGVyLkVtYWlsR2V0UmVxdWVzdBoNLnJvc3Rlci5FbWFpbBIxCgVQYXRjaBIZLnJvc3Rlci5FbWFpbFBhdGNoUmVxdWVzdBoNLnJvc3Rlci5FbWFpbBIxCgVBcHBseRIZLnJvc3Rlci5FbWFpbEFwcGx5UmVxdWVzdBoNLnJvc3Rlci5FbWFpbBI1CgVFcmFzZRIQLnJvc3Rlci5FbWFpbFJlZhoaLnJvc3Rlci5FbWFpbEVyYXNlUmVzcG9uc2USOwoETGlzdBIYLnJvc3Rlci5FbWFpbExpc3RSZXF1ZXN0Ghkucm9zdGVyLkVtYWlsTGlzdFJlc3BvbnNlEkAKBVdhdGNoEhkucm9zdGVyLkVtYWlsV2F0Y2hSZXF1ZXN0Ghoucm9zdGVyLkVtYWlsV2F0Y2hSZXNwb25zZTABEkEKBlZlcmlmeRIaLnJvc3Rlci5FbWFpbFZlcmlmeVJlcXVlc3QaGy5yb3N0ZXIuRW1haWxWZXJpZnlSZXNwb25zZRJECgdDb25maXJtEhsucm9zdGVyLkVtYWlsQ29uZmlybVJlcXVlc3QaHC5yb3N0ZXIuRW1haWxDb25maXJtUmVzcG9uc2USMwoGQXR0ZXN0Ehoucm9zdGVyLkVtYWlsQXR0ZXN0UmVxdWVzdBoNLnJvc3Rlci5FbWFpbEIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_email, file_app_identity_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChVhcHAvZW1haWxfc3ZjLmcucHJvdG8SBnJvc3RlciKUAgoPRW1haWxBZGRSZXF1ZXN0EgoKAmlkGAEgASgMEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFgoHYWRkcmVzcxgIIAEoCUIFqgECCAISMQoNZGF0ZV92ZXJpZmllZBgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASJwoKdm91Y2hlZF9ieRgKIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhISCgplbnRlcmVkX2J5GAwgASgMEhgKCXRlbmFudF9pZBgLIAEoDEIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJVCg9FbWFpbEdldFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEiMKBnNlbGVjdBgCIAEoCzITLnJvc3Rlci5FbWFpbFNlbGVjdCJxCghFbWFpbFJlZhIMCgJpZBgBIAEoDEgAEiwKB2FkZHJlc3MYAiABKAsyGS5yb3N0ZXIuRW1haWxSZWZCeUFkZHJlc3NIABIiCgJhdBgLIAEoCzIULnJvc3Rlci5FbWFpbFJlZkJ5QXRIAEIFCgNrZXkiRwoRRW1haWxSZWZCeUFkZHJlc3MSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIPCgdhZGRyZXNzGAggASgJIjIKDEVtYWlsUmVmQnlBdBIRCgl0ZW5hbnRfaWQYCyABKAwSDwoHYWRkcmVzcxgIIAEoCSL8AQoLRW1haWxTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDwoHYWRkcmVzcxgIIAEoCBIVCg1kYXRlX3ZlcmlmaWVkGAkgASgIEioKCnZvdWNoZWRfYnkYCiABKAsyFi5yb3N0ZXIuSWRlbnRpdHlTZWxlY3QSEgoKZW50ZXJlZF9ieRgMIAEoCBIRCgl0ZW5hbnRfaWQYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKiAgoRRW1haWxQYXRjaFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEg8KB2FkZHJlc3MYECABKAkSMQoNZGF0ZV92ZXJpZmllZBgSIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV92ZXJpZmllZF9udWxsGBMgASgIEicKCnZvdWNoZWRfYnkYFCABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSFwoPdm91Y2hlZF9ieV9udWxsGBUgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIk8KEUVtYWlsQXBwbHlSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiQKEkVtYWlsRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiewoQRW1haWxMaXN0UmVxdWVzdBIkCgdmaWx0ZXJzGAEgAygLMhMucm9zdGVyLkVtYWlsRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJGChFFbWFpbExpc3RSZXNwb25zZRIcCgVpdGVtcxgBIAMoCzINLnJvc3Rlci5FbWFpbBITCgRuZXh0GAIgASgJQgWqAQIIAiJPCgtFbWFpbEZpbHRlchIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZiJXChFFbWFpbFdhdGNoUmVxdWVzdBIkCgdmaWx0ZXJzGAEgAygLMhMucm9zdGVyLkVtYWlsRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjsKEkVtYWlsV2F0Y2hSZXNwb25zZRIlCgVpdGVtcxgBIAMoCzIWLnJvc3Rlci5FbWFpbFdhdGNoSXRlbSJRCg5FbWFpbFdhdGNoSXRlbRIKCgJpZBgBIAEoDBIcCgV2YWx1ZRgCIAEoCzINLnJvc3Rlci5FbWFpbBIVCgZhY3Rpb24YAyABKAlCBaoBAggCIocBChFFbWFpbENsYWltUmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSIQoGaG9sZGVyGAMgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX2V4cGlyZXMYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlwKEkVtYWlsQ2xhaW1SZXNwb25zZRIUCgV0b2tlbhgBIAEoCUIFqgECCAISMAoMZGF0ZV9leHBpcmVzGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIrChNFbWFpbENvbmZpcm1SZXF1ZXN0EhQKBXRva2VuGAEgASgJQgWqAQIIAiI0ChRFbWFpbENvbmZpcm1SZXNwb25zZRIcCgVlbWFpbBgBIAEoCzINLnJvc3Rlci5FbWFpbCKRAQoSRW1haWxBdHRlc3RSZXF1ZXN0EiEKBmhvbGRlchgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFgoHYWRkcmVzcxgIIAEoCUIFqgECCAISJwoKdm91Y2hlZF9ieRgKIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIXCgh2ZXJpZmllZBgJIAEoCEIFqgECCAIywwQKDEVtYWlsU2VydmljZRItCgNBZGQSFy5yb3N0ZXIuRW1haWxBZGRSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsEi0KA0dldBIXLnJvc3Rlci5FbWFpbEdldFJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSMQoFUGF0Y2gSGS5yb3N0ZXIuRW1haWxQYXRjaFJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSMQoFQXBwbHkSGS5yb3N0ZXIuRW1haWxBcHBseVJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSNQoFRXJhc2USEC5yb3N0ZXIuRW1haWxSZWYaGi5yb3N0ZXIuRW1haWxFcmFzZVJlc3BvbnNlEjsKBExpc3QSGC5yb3N0ZXIuRW1haWxMaXN0UmVxdWVzdBoZLnJvc3Rlci5FbWFpbExpc3RSZXNwb25zZRJACgVXYXRjaBIZLnJvc3Rlci5FbWFpbFdhdGNoUmVxdWVzdBoaLnJvc3Rlci5FbWFpbFdhdGNoUmVzcG9uc2UwARI+CgVDbGFpbRIZLnJvc3Rlci5FbWFpbENsYWltUmVxdWVzdBoaLnJvc3Rlci5FbWFpbENsYWltUmVzcG9uc2USRAoHQ29uZmlybRIbLnJvc3Rlci5FbWFpbENvbmZpcm1SZXF1ZXN0Ghwucm9zdGVyLkVtYWlsQ29uZmlybVJlc3BvbnNlEjMKBkF0dGVzdBIaLnJvc3Rlci5FbWFpbEF0dGVzdFJlcXVlc3QaDS5yb3N0ZXIuRW1haWxCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_email, file_app_identity_svc_g, file_google_protobuf_timestamp, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.EmailAddRequest
@@ -562,9 +562,9 @@ export const EmailWatchItemSchema: GenMessage<EmailWatchItem> = /*@__PURE__*/
   messageDesc(file_app_email_svc_g, 14);
 
 /**
- * @generated from message roster.EmailVerifyRequest
+ * @generated from message roster.EmailClaimRequest
  */
-export type EmailVerifyRequest = Message<"roster.EmailVerifyRequest"> & {
+export type EmailClaimRequest = Message<"roster.EmailClaimRequest"> & {
   /**
    * Which address, by reference.
    *
@@ -606,16 +606,16 @@ export type EmailVerifyRequest = Message<"roster.EmailVerifyRequest"> & {
 };
 
 /**
- * Describes the message roster.EmailVerifyRequest.
- * Use `create(EmailVerifyRequestSchema)` to create a new message.
+ * Describes the message roster.EmailClaimRequest.
+ * Use `create(EmailClaimRequestSchema)` to create a new message.
  */
-export const EmailVerifyRequestSchema: GenMessage<EmailVerifyRequest> = /*@__PURE__*/
+export const EmailClaimRequestSchema: GenMessage<EmailClaimRequest> = /*@__PURE__*/
   messageDesc(file_app_email_svc_g, 15);
 
 /**
- * @generated from message roster.EmailVerifyResponse
+ * @generated from message roster.EmailClaimResponse
  */
-export type EmailVerifyResponse = Message<"roster.EmailVerifyResponse"> & {
+export type EmailClaimResponse = Message<"roster.EmailClaimResponse"> & {
   /**
    * The link, and the only time it is readable. What is stored is a hash.
    *
@@ -630,10 +630,10 @@ export type EmailVerifyResponse = Message<"roster.EmailVerifyResponse"> & {
 };
 
 /**
- * Describes the message roster.EmailVerifyResponse.
- * Use `create(EmailVerifyResponseSchema)` to create a new message.
+ * Describes the message roster.EmailClaimResponse.
+ * Use `create(EmailClaimResponseSchema)` to create a new message.
  */
-export const EmailVerifyResponseSchema: GenMessage<EmailVerifyResponse> = /*@__PURE__*/
+export const EmailClaimResponseSchema: GenMessage<EmailClaimResponse> = /*@__PURE__*/
   messageDesc(file_app_email_svc_g, 16);
 
 /**
@@ -806,7 +806,7 @@ export const EmailService: GenService<{
     output: typeof EmailWatchResponseSchema;
   },
   /**
-   * Verify mints a link that proves this address, and answers with it once.
+   * Claim mints a link that proves this address, and answers with it once.
    *
    * roster does not deliver it -- that is the point, as it is for `Vouch.Link`:
    * a store that mailed would be a store that knows how to reach people, which
@@ -816,7 +816,7 @@ export const EmailService: GenService<{
    *
    * # It also mints a link for an address that is somebody else's
    *
-   * Which is [EmailVerifyRequest.holder], and it exists because the shape
+   * Which is [EmailClaimRequest.holder], and it exists because the shape
    * without it left an address **squattable**. `Email` is unique on
    * `(tenant, address)` and `vouch.byAddress` resolves a person by one, so a row
    * nobody proved still named somebody -- and `Add` answering `AlreadyExists`
@@ -831,12 +831,12 @@ export const EmailService: GenService<{
    * [EmailService.Confirm] is where the address moves. What is deliberately not
    * here is a proved address moving; see `Confirm`.
    *
-   * @generated from rpc roster.EmailService.Verify
+   * @generated from rpc roster.EmailService.Claim
    */
-  verify: {
+  claim: {
     methodKind: "unary";
-    input: typeof EmailVerifyRequestSchema;
-    output: typeof EmailVerifyResponseSchema;
+    input: typeof EmailClaimRequestSchema;
+    output: typeof EmailClaimResponseSchema;
   },
   /**
    * Confirm spends a link and stamps the row it was minted for.
@@ -859,7 +859,7 @@ export const EmailService: GenService<{
    *
    * # And it is where an address changes hands
    *
-   * A link minted with [EmailVerifyRequest.holder] is a claim by somebody who
+   * A link minted with [EmailClaimRequest.holder] is a claim by somebody who
    * does not hold the address. Spending one **moves** it: the row that held it
    * unproved is erased and the address is written on the claimant, stamped, in
    * one transaction. `host.proto`'s `proved()` is the same three writes for the
@@ -887,7 +887,7 @@ export const EmailService: GenService<{
    *
    * # Why a link cannot answer this
    *
-   * `Verify` and `Confirm` are for an address nobody has vouched for: somebody
+   * `Claim` and `Confirm` are for an address nobody has vouched for: somebody
    * typed it, and the way to find out whether they hold that mailbox is to send
    * a nonce there and see it come back. An address that arrived inside a token
    * a directory signed is not that. The check has been done, by whoever the

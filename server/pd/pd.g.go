@@ -17523,9 +17523,9 @@ func (s interceptEmail) Watch(req *rstr.EmailWatchRequest, out grpc.ServerStream
 		rstr.EmailService_Watch_FullMethodName, req, out, s.EmailServiceServer.Watch)
 }
 
-func (s interceptEmail) Verify(ctx context.Context, req *rstr.EmailVerifyRequest) (*rstr.EmailVerifyResponse, error) {
+func (s interceptEmail) Claim(ctx context.Context, req *rstr.EmailClaimRequest) (*rstr.EmailClaimResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.EmailServiceServer,
-		rstr.EmailService_Verify_FullMethodName, req, s.EmailServiceServer.Verify)
+		rstr.EmailService_Claim_FullMethodName, req, s.EmailServiceServer.Claim)
 }
 
 func (s interceptEmail) Confirm(ctx context.Context, req *rstr.EmailConfirmRequest) (*rstr.EmailConfirmResponse, error) {

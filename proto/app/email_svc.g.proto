@@ -34,7 +34,7 @@ service EmailService {
   // once in that first message and once as a change that happened while it was
   // being read -- and that is harmless for the same reason.
   rpc Watch(EmailWatchRequest) returns (stream EmailWatchResponse);
-  // Verify mints a link that proves this address, and answers with it once.
+  // Claim mints a link that proves this address, and answers with it once.
   //
   // roster does not deliver it -- that is the point, as it is for `Vouch.Link`:
   // a store that mailed would be a store that knows how to reach people, which
@@ -44,7 +44,7 @@ service EmailService {
   //
   // # It also mints a link for an address that is somebody else's
   //
-  // Which is [EmailVerifyRequest.holder], and it exists because the shape
+  // Which is [EmailClaimRequest.holder], and it exists because the shape
   // without it left an address **squattable**. `Email` is unique on
   // `(tenant, address)` and `vouch.byAddress` resolves a person by one, so a row
   // nobody proved still named somebody -- and `Add` answering `AlreadyExists`
@@ -58,7 +58,7 @@ service EmailService {
   // whoever wants the address, the proof is a round trip to the mailbox, and
   // [EmailService.Confirm] is where the address moves. What is deliberately not
   // here is a proved address moving; see `Confirm`.
-  rpc Verify(EmailVerifyRequest) returns (EmailVerifyResponse);
+  rpc Claim(EmailClaimRequest) returns (EmailClaimResponse);
   // Confirm spends a link and stamps the row it was minted for.
   //
   // Everything wrong answers the same `NotFound`: a token never minted, one
@@ -79,7 +79,7 @@ service EmailService {
   //
   // # And it is where an address changes hands
   //
-  // A link minted with [EmailVerifyRequest.holder] is a claim by somebody who
+  // A link minted with [EmailClaimRequest.holder] is a claim by somebody who
   // does not hold the address. Spending one **moves** it: the row that held it
   // unproved is erased and the address is written on the claimant, stamped, in
   // one transaction. `host.proto`'s `proved()` is the same three writes for the
@@ -99,7 +99,7 @@ service EmailService {
   //
   // # Why a link cannot answer this
   //
-  // `Verify` and `Confirm` are for an address nobody has vouched for: somebody
+  // `Claim` and `Confirm` are for an address nobody has vouched for: somebody
   // typed it, and the way to find out whether they hold that mailbox is to send
   // a nonce there and see it come back. An address that arrived inside a token
   // a directory signed is not that. The check has been done, by whoever the
@@ -307,7 +307,7 @@ message EmailWatchItem {
   string action = 3 [features.field_presence = IMPLICIT];
 }
 
-message EmailVerifyRequest {
+message EmailClaimRequest {
   // Which address, by reference.
   EmailRef ref = 1;
 
@@ -336,7 +336,7 @@ message EmailVerifyRequest {
   google.protobuf.Timestamp date_expires = 2;
 }
 
-message EmailVerifyResponse {
+message EmailClaimResponse {
   // The link, and the only time it is readable. What is stored is a hash.
   string token = 1 [features.field_presence = IMPLICIT];
 

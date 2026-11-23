@@ -627,7 +627,7 @@ Erase the role and there is none of it. It names only what is on the list
 above: a write that would put `HolderService/Erase` there is refused, and one
 that got there another way is not held through it.
 
-`EmailService/Verify` is **not** on the list, though an address is confirmed
+`EmailService/Claim` is **not** on the list, though an address is confirmed
 from somebody's own page. It answers the link that proves an address to
 whoever called it, and a link is spent by whoever minted it -- so a person who
 may call it is one verb, `EmailService/Confirm`, from proving an address they

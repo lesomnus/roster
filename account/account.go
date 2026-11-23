@@ -212,7 +212,7 @@ type Config struct {
 // intersection -- and what does is their tenant's `self-service` role, which
 // everybody of it holds over what is their own (`server/core`, `own.go`). So
 // a tenant that does not want self-service key minting takes `ApiKey.Issue`
-// out of that role. `Email.Verify` is not on it, and a person's delegation
+// out of that role. `Email.Claim` is not on it, and a person's delegation
 // does not carry it past the gate: the link that confirms an address is minted
 // by this app, as itself, and mailed (`verify` below).
 var Methods = []string{
@@ -282,10 +282,10 @@ var Calls = append([]string{
 	rstr.DelegationService_Revoke_FullMethodName,
 	rstr.CredentialService_Issue_FullMethodName,
 	// The link that confirms an address, minted by this app as itself and
-	// mailed (`verify`), and spent by what its page posts. `Verify` is here
+	// mailed (`verify`), and spent by what its page posts. `Claim` is here
 	// and not on [Methods]: it answers the link to its caller, and through
 	// the page's road that caller was a browser.
-	rstr.EmailService_Verify_FullMethodName,
+	rstr.EmailService_Claim_FullMethodName,
 	rstr.EmailService_Confirm_FullMethodName,
 
 	// What a tenant's profile setting fills at a sign-in here, as the Login
@@ -1635,7 +1635,7 @@ func (a *App) answered(w http.ResponseWriter, r *http.Request) (string, *tenant,
 // verify mails a link that proves one of the signed-in person's addresses.
 //
 // The row is read as the person, through their delegation, and the link is
-// minted by this app as itself: `Email.Verify` answers the link to whoever
+// minted by this app as itself: `Email.Claim` answers the link to whoever
 // calls it, so it is not a call the page makes -- it is not on [Methods] -- and
 // the reason there is a route here at all is delivery: the app mails, roster
 // does not. The address is read off the row, never from the request.
@@ -1693,7 +1693,7 @@ func (a *App) verify(w http.ResponseWriter, r *http.Request) {
 	}
 	defer done()
 
-	res, err := a.roster.Email().Verify(t.on(ctx), rstr.EmailVerifyRequest_builder{Ref: ref}.Build())
+	res, err := a.roster.Email().Claim(t.on(ctx), rstr.EmailClaimRequest_builder{Ref: ref}.Build())
 	if err != nil {
 		if status.Code(err) == codes.PermissionDenied {
 			http.Error(w, "no", http.StatusForbidden)
@@ -1784,7 +1784,7 @@ func (a *App) claim(w http.ResponseWriter, r *http.Request) {
 	}
 	defer done()
 
-	res, err := a.roster.Email().Verify(t.on(ctx), rstr.EmailVerifyRequest_builder{
+	res, err := a.roster.Email().Claim(t.on(ctx), rstr.EmailClaimRequest_builder{
 		Ref: rstr.EmailRef_builder{
 			At: rstr.EmailRefByAt_builder{TenantId: t.id.Bytes(), Address: proto.String(address)}.Build(),
 		}.Build(),

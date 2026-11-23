@@ -44,7 +44,7 @@ func TestWhatAStrangerIsToldOfATenant(t *testing.T) {
 // more.
 //
 // `Methods` -- what the page may ask roster as the person -- carried
-// `EmailService/Verify`, under a comment saying it does not. No screen calls
+// `EmailService/Claim`, under a comment saying it does not. No screen calls
 // it through the page's road; for somebody whose own role names it, that road
 // answered the token of a link to the browser. `Calls` carried
 // `FrontService/WhereFrom`, which nothing in the app calls, in every tenant
@@ -53,8 +53,8 @@ func TestWhatAStrangerIsToldOfATenant(t *testing.T) {
 func TestTheAppsListsAreWhatItCalls(t *testing.T) {
 	x := require.New(t)
 
-	x.NotContains(account.Methods, rstr.EmailService_Verify_FullMethodName)
-	x.Contains(account.Calls, rstr.EmailService_Verify_FullMethodName)
+	x.NotContains(account.Methods, rstr.EmailService_Claim_FullMethodName)
+	x.Contains(account.Calls, rstr.EmailService_Claim_FullMethodName)
 	x.NotContains(account.Calls, rstr.FrontService_WhereFrom_FullMethodName)
 
 	// And everything a person's delegation carries, the app's key may hand on.

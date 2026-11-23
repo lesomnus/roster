@@ -87,11 +87,11 @@ func TestWhatSomebodyDoesToTheirOwnAccountNeedsNoRole(t *testing.T) {
 		v, err := app.NewEmailServiceClient(conn).Add(as, app.EmailAddRequest_builder{Holder: own, Address: "ceo@contoso.example"}.Build())
 		x.NoError(err, "writing an address onto your own account is not what is refused")
 
-		// `Verify` answers the link to its caller, and whoever minted a link
+		// `Claim` answers the link to its caller, and whoever minted a link
 		// spends it. Somebody's own to call, it left one verb between them
 		// and an address they do not read -- and somebody bound that verb
 		// alone, `Confirm`, proved the CEO's address onto their own account.
-		_, err = app.NewEmailServiceClient(conn).Verify(as, app.EmailVerifyRequest_builder{Ref: app.EmailRef_builder{Id: v.GetId()}.Build()}.Build())
+		_, err = app.NewEmailServiceClient(conn).Claim(as, app.EmailClaimRequest_builder{Ref: app.EmailRef_builder{Id: v.GetId()}.Build()}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
 
 		// And somebody bound `Confirm`, which is what it took: there is no
@@ -104,7 +104,7 @@ func TestWhatSomebodyDoesToTheirOwnAccountNeedsNoRole(t *testing.T) {
 			Holder: app.HolderRef_builder{Id: sam.Bytes()}.Build(), Address: "cfo@contoso.example",
 		}.Build())
 		x.NoError(err)
-		_, err = app.NewEmailServiceClient(conn).Verify(asSam, app.EmailVerifyRequest_builder{Ref: app.EmailRef_builder{Id: w.GetId()}.Build()}.Build())
+		_, err = app.NewEmailServiceClient(conn).Claim(asSam, app.EmailClaimRequest_builder{Ref: app.EmailRef_builder{Id: w.GetId()}.Build()}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
 
 		for _, id := range [][]byte{v.GetId(), w.GetId()} {
