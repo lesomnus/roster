@@ -9,6 +9,8 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/lesomnus/roster/cli"
+	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
 	app "github.com/lesomnus/roster/rstr"
@@ -159,4 +161,19 @@ func TestAnAccountAtAProviderIsAttestedThroughAFrontDoor(t *testing.T) {
 		x.Equal(codes.AlreadyExists, status.Code(err), "%v", err)
 		x.Equal(1, accounts(erin))
 	})
+}
+
+// TestNoCommandWritesAnAccountAtAProviderWithNoProof: `roster me link
+// PROVIDER SUBJECT` wrote an account onto the caller's own row with
+// `IdentityService/Add`, on nothing but what was typed. An account somebody
+// connects themselves is a front door's word now
+// (`TestAnAccountAtAProviderIsAttestedThroughAFrontDoor`), and a terminal saw
+// no round trip to vouch for, so the command is not offered (#286); taking
+// one back, `me unlink`, stays.
+func TestNoCommandWritesAnAccountAtAProviderWithNoProof(t *testing.T) {
+	x := require.New(t)
+	root := cli.Cmd(&cmd.Config{})
+
+	x.NotNil(boxCommand(root, "me", "unlink"), "the tree is not where this looks")
+	x.Nil(boxCommand(root, "me", "link"), "`me link` is offered, and writes an account nobody proved")
 }

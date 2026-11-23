@@ -35,7 +35,7 @@ import (
 // Every command here is about the **caller**. `me get` answers from the frame;
 // the writes name the caller's own row, by the identifier `me get` answers
 // with, and call the entity's own verb -- `ApiKey.Issue`, `ApiKey.Erase`,
-// `Identity.Add` -- which is what "the app is the layer that passes only your
+// `Identity.Erase` -- which is what "the app is the layer that passes only your
 // reference" means at a shell (CLAUDE.md, *no self-only twin of a verb*). A
 // local run has no frame, because there is no caller; it opens the database.
 //
@@ -53,7 +53,6 @@ func newCmdMe(c *cmd.Config) *xli.Command {
 			newCmdMeGet(c),
 			newCmdMeIssueKey(c),
 			newCmdMeRevokeKey(c),
-			newCmdMeLink(c),
 			newCmdMeUnlink(c),
 			newCmdMeSignOut(c),
 			newCmdMeLeave(c),
@@ -245,49 +244,6 @@ func newCmdMeRevokeKey(c *cmd.Config) *xli.Command {
 			// not yours -- or is somebody wider's -- is refused there.
 			_, err = app.NewApiKeyServiceClient(conn).Erase(ctx,
 				app.ApiKeyRef_builder{Id: k.Bytes()}.Build())
-
-			return err
-		}),
-	}
-}
-
-// newCmdMeLink attaches a provider account you have already proved is yours:
-// `Identity.Add` with your own reference.
-//
-// There is no role that comes with it: attaching a way in is a feature a
-// deployment offers rather than something nobody may be locked out of, so this
-// is refused unless a role names `Identity.Add` -- which is the answer and not
-// a limitation. `server/core` refuses a second account at one provider and an
-// account already somebody else's, without saying whose.
-func newCmdMeLink(c *cmd.Config) *xli.Command {
-	return &xli.Command{
-		Name:  "link",
-		Brief: "attach a provider account of yours",
-
-		Args: arg.Args{
-			&arg.String{Name: "PROVIDER", Brief: `the provider, e.g. "entra"`},
-			&arg.String{Name: "SUBJECT", Brief: "who that provider says you are"},
-		},
-
-		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
-			conn, err := calling(ctx, c)
-			if err != nil {
-				return err
-			}
-
-			provider, _ := arg.Get[string](cl, "PROVIDER")
-			subject, _ := arg.Get[string](cl, "SUBJECT")
-			if provider == "" || subject == "" {
-				return invocation(errors.New("PROVIDER and SUBJECT: which account, at which provider"))
-			}
-
-			own, err := myself(ctx, conn)
-			if err != nil {
-				return err
-			}
-
-			_, err = app.NewIdentityServiceClient(conn).Add(ctx,
-				app.IdentityAddRequest_builder{Holder: own, Provider: provider, Subject: subject}.Build())
 
 			return err
 		}),
