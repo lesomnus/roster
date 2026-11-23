@@ -308,7 +308,7 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 			rstr.CredentialService_Enrol_FullMethodName,
 		},
 
-		Tenant: func(ctx context.Context, host string) (string, error) {
+		Tenant: func(ctx context.Context, host string) (*rstr.VouchTenant, error) {
 			t, err := tenantOf(ctx, roster, front, c.Tenants, host)
 			if errors.Is(err, ErrUnknown) {
 				// The one cause `frontdoor` says "no" to, in the word this app
@@ -316,10 +316,13 @@ func New(ctx context.Context, c Config, conn *grpc.ClientConn, s *authsession.Se
 				// answered as broken, which is the difference between a person
 				// being told their password was wrong and being told the place
 				// they are typing it at is down.
-				return "", frontdoor.ErrUnknownHost
+				return nil, frontdoor.ErrUnknownHost
+			}
+			if err != nil {
+				return nil, err
 			}
 
-			return t, err
+			return rstr.VouchTenant_builder{Alias: &t}.Build(), nil
 		},
 	})
 	if err != nil {
@@ -934,7 +937,7 @@ func tenantOf(
 		return "", err
 	}
 
-	// By alias, because that is what `VouchWho` and the identity lookup take.
+	// By alias, because that is what the identity lookup and [Caller] take.
 	// One read, and it is the same read `find` would have made anyway.
 	t, err := roster.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 		Ref:    rstr.TenantRef_builder{Id: v.GetTenant()}.Build(),

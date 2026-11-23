@@ -304,12 +304,66 @@ func TestSomebodyNamedByTenantAndAlias(t *testing.T) {
 	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
 
 	v, err := b.vouched().Verify(ctx, app.VouchVerifyRequest_builder{
-		Who:    app.VouchWho_builder{Tenant: "contoso", Alias: "someone"}.Build(),
+		Who:    app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "someone"}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
 	x.True(v.GetOk())
 	x.Equal(b.ContosoUser.Bytes(), v.GetHolder())
+}
+
+// TestVouchWhoNamesATenantEitherWay: `VouchWho.tenant` is a tenant by its
+// identifier or by its alias, as a `TenantRef` names one.
+//
+// It took the alias alone, so a front door that asked `FrontService/WhoseHost`
+// which tenant a name is, and was answered an identifier, read the tenant
+// again for its alias only to fill this field. Answered: an identifier is not
+// a tenant here; right is either. The rule about the tenant is as it was: a
+// caller inside a tenant may leave it out, and one it names is checked against
+// the caller's own.
+func TestVouchWhoNamesATenantEitherWay(t *testing.T) {
+	b, ctx := build(t)
+	b.sets(t, ctx, b.ContosoUser, "correct horse battery staple")
+
+	byId := app.VouchTenant_builder{Id: b.Contoso.Bytes()}.Build()
+	byAlias := app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build()
+	theirs := app.VouchTenant_builder{Id: b.Fabrikam.Bytes()}.Build()
+
+	verify := func(t *testing.T, s *vouch.Server, ctx context.Context, tenant *app.VouchTenant) *app.VouchVerifyResponse {
+		t.Helper()
+		v, err := s.Verify(ctx, app.VouchVerifyRequest_builder{
+			Who:    app.VouchWho_builder{Tenant: tenant, Alias: "someone"}.Build(),
+			Secret: []byte("correct horse battery staple"),
+		}.Build())
+		require.NoError(t, err)
+
+		return v
+	}
+
+	t.Run("by its identifier", func(t *testing.T) {
+		v := verify(t, b.vouched(), ctx, byId)
+		require.True(t, v.GetOk())
+		require.Equal(t, b.ContosoUser.Bytes(), v.GetHolder())
+	})
+	t.Run("by its alias", func(t *testing.T) {
+		v := verify(t, b.vouched(), ctx, byAlias)
+		require.True(t, v.GetOk())
+		require.Equal(t, b.ContosoUser.Bytes(), v.GetHolder())
+	})
+
+	// A front door inside contoso: one key per tenant it fronts.
+	door := b.holder(t, ctx, b.Contoso, "front-door")
+	inside := b.mayCall(t, ctx, door, "verifies", app.VouchService_Verify_FullMethodName)
+
+	t.Run("by none, from inside a tenant", func(t *testing.T) {
+		v := verify(t, b.vouchedWalled(), inside, nil)
+		require.True(t, v.GetOk())
+	})
+	t.Run("by one that is not the caller's own, which names nobody", func(t *testing.T) {
+		v := verify(t, b.vouchedWalled(), inside, theirs)
+		require.False(t, v.GetOk())
+		require.Empty(t, v.GetHolder())
+	})
 }
 
 // TestAnAliasInAnotherTenantIsAnotherPerson, which is what makes an alias a
@@ -323,7 +377,7 @@ func TestAnAliasInAnotherTenantIsAnotherPerson(t *testing.T) {
 	b.sets(t, ctx, theirs, "a different one entirely")
 
 	v, err := b.vouched().Verify(ctx, app.VouchVerifyRequest_builder{
-		Who:    app.VouchWho_builder{Tenant: "fabrikam", Alias: "someone"}.Build(),
+		Who:    app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("fabrikam")}.Build(), Alias: "someone"}.Build(),
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
@@ -341,7 +395,7 @@ func TestARequestThatNamesNobodyOrTwoBodiesIsRefused(t *testing.T) {
 		{"nobody", app.VouchWho_builder{}.Build()},
 		{"half a name", app.VouchWho_builder{Alias: "someone"}.Build()},
 		{"both ways", app.VouchWho_builder{
-			Id: b.ContosoUser.Bytes(), Tenant: "contoso", Alias: "someone",
+			Id: b.ContosoUser.Bytes(), Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "someone",
 		}.Build()},
 	} {
 		t.Run(tt.what, func(t *testing.T) {

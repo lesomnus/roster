@@ -196,7 +196,7 @@ func TestASignInFoldsWhatSomebodyTyped(t *testing.T) {
 	} {
 		t.Run("@"+typed.tenant+"/"+typed.alias, func(t *testing.T) {
 			x := require.New(t)
-			who := app.VouchWho_builder{Tenant: typed.tenant, Alias: typed.alias}.Build()
+			who := app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr(typed.tenant)}.Build(), Alias: typed.alias}.Build()
 
 			res, err := v.Verify(ctx, app.VouchVerifyRequest_builder{Who: who, Secret: []byte(password)}.Build())
 			x.NoError(err)
@@ -225,7 +225,7 @@ func TestASignInFoldsWhatSomebodyTyped(t *testing.T) {
 		door := b.as(ctx, b.ContosoUser, b.Contoso)
 
 		made, err := v.Link(door, app.VouchLinkRequest_builder{
-			Who: app.VouchWho_builder{Tenant: "Contoso", Alias: "Alice"}.Build(),
+			Who: app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("Contoso")}.Build(), Alias: "Alice"}.Build(),
 		}.Build())
 		x.NoError(err)
 

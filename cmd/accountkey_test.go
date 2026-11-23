@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -210,7 +211,7 @@ func TestAnAccountAppHoldsOneTenantsKeyAndReachesOnlyThatTenant(t *testing.T) {
 		x := require.New(t)
 
 		v, err := vouch.Verify(as, app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Tenant: "contoso", Alias: "erin"}.Build(),
+			Who:    app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "erin"}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 		x.NoError(err)
@@ -258,8 +259,8 @@ func TestAnAccountAppHoldsOneTenantsKeyAndReachesOnlyThatTenant(t *testing.T) {
 			who  *app.VouchWho
 		}{
 			{"by id", app.VouchWho_builder{Id: fab.Bytes()}.Build()},
-			{"by @tenant/alias", app.VouchWho_builder{Tenant: "fabrikam", Alias: "fab"}.Build()},
-			{"by address", app.VouchWho_builder{Tenant: "fabrikam", Address: fabAddress}.Build()},
+			{"by @tenant/alias", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("fabrikam")}.Build(), Alias: "fab"}.Build()},
+			{"by address", app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("fabrikam")}.Build(), Address: fabAddress}.Build()},
 		} {
 			t.Run(tt.name, func(t *testing.T) {
 				x := require.New(t)

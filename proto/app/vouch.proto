@@ -301,10 +301,10 @@ message VouchWho {
   // make -- or the tenant and an [VouchWho.address], which is what a form that
   // asks for an email collects.
   //
-  // The tenant's alias, and it comes from the front door rather than from the
-  // form. `FrontService.WhoseHost` turns the name a browser arrived at into
-  // the tenant's identifier, which this field does not take: the front door
-  // says the alias that identifier is.
+  // The tenant by its identifier or by its alias ([VouchTenant]), and it comes
+  // from the front door rather than from the form: `FrontService.WhoseHost`
+  // answers the identifier of the tenant a browser arrived at, and that is
+  // passed as it is.
   //
   // **Optional for a caller that is inside a tenant**, which a front door
   // holding one key per tenant is: the key already says which one, `Verify`
@@ -313,8 +313,11 @@ message VouchWho {
   // guarantee. Left out, there is one thing: pick the right key. A caller in no
   // tenant -- an `rk_`, or one with no frame at all -- must still name it, and
   // naming none is the error it was.
-  string tenant = 2;
+  VouchTenant tenant = 5;
   string alias = 3;
+
+  // The tenant is a `VouchTenant` at 5, and a number does not change its type.
+  reserved 2;
 
   // An address, within a tenant. What most sign-in forms actually collect.
   //
@@ -340,6 +343,21 @@ message VouchWho {
   // tenant is a lookup a front door that forgot to think about which one
   // compiles a wrong answer for.
   string address = 4;
+}
+
+// VouchTenant names a tenant: `TenantRef`'s `oneof key`, arm for arm, the
+// same names, numbers and types.
+//
+// Written here rather than named, for [VouchWho]'s reason: the references are
+// generated from the entities in a later step than this file, so a service
+// written by hand cannot name `TenantRef`. It is that shape and nothing else,
+// so a caller holding a `TenantRef`, or the identifier
+// `FrontService.WhoseHost` answers, fills it in as it is.
+message VouchTenant {
+  oneof key {
+    bytes id = 1;
+    string alias = 4;
+  }
 }
 
 // VouchClaim is what a front door read out of a token it verified.

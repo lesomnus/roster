@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"testing"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -94,7 +95,7 @@ func TestAnOperatorStandsUpACustomerThatCanBeUsed(t *testing.T) {
 		x.NoError(err)
 
 		v, err := app.NewVouchServiceClient(admin).Verify(as, app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Tenant: "newco", Alias: "bare"}.Build(),
+			Who:    app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("newco")}.Build(), Alias: "bare"}.Build(),
 			Secret: []byte("anything"),
 		}.Build())
 		x.NoError(err)

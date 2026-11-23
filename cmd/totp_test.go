@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -189,7 +190,7 @@ func TestAKindNobodyChecksIsRefusedBeforeAnybodyIsRead(t *testing.T) {
 
 	for _, who := range []*app.VouchWho{
 		app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
-		app.VouchWho_builder{Tenant: "contoso", Alias: "nobody-at-all"}.Build(),
+		app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "nobody-at-all"}.Build(),
 	} {
 		_, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
 			Who:    who,

@@ -195,7 +195,7 @@ func TestSigningInByAddressIsF7Closed(t *testing.T) {
 		t.Helper()
 
 		res, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
-			Who:    app.VouchWho_builder{Tenant: tenant, Address: address}.Build(),
+			Who:    app.VouchWho_builder{Tenant: app.VouchTenant_builder{Alias: z.Ptr(tenant)}.Build(), Address: address}.Build(),
 			Secret: []byte(secret),
 		}.Build())
 		require.NoError(t, err)
@@ -266,7 +266,7 @@ func TestSigningInByAddressIsF7Closed(t *testing.T) {
 
 		_, err := v.Verify(ctx, app.VouchVerifyRequest_builder{
 			Who: app.VouchWho_builder{
-				Tenant: "contoso", Alias: "someone", Address: "someone@contoso.example",
+				Tenant: app.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), Alias: "someone", Address: "someone@contoso.example",
 			}.Build(),
 			Secret: []byte("whatever"),
 		}.Build())

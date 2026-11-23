@@ -13,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -141,7 +142,9 @@ func TestABrowserSpeaksConnectToTheAppAndRosterAnswersAsThePerson(t *testing.T) 
 		Vouch:      rstr.NewVouchServiceClient(conn),
 		Delegation: rstr.NewDelegationServiceClient(conn),
 		Methods:    []string{rstr.MeService_Get_FullMethodName, rstr.HolderService_List_FullMethodName},
-		Tenant:     func(context.Context, string) (string, error) { return "contoso", nil },
+		Tenant: func(context.Context, string) (*rstr.VouchTenant, error) {
+			return rstr.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), nil
+		},
 	})
 	x.NoError(err)
 

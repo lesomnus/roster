@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 
 	"github.com/lesomnus/payday/auth/authsession"
@@ -27,7 +28,9 @@ func TestAnAppHasToSayWhatItAsksFor(t *testing.T) {
 		Vouch:      rstr.NewVouchServiceClient(nil),
 		Delegation: rstr.NewDelegationServiceClient(nil),
 		Methods:    []string{rstr.MeService_Get_FullMethodName},
-		Tenant:     func(ctx context.Context, host string) (string, error) { return "contoso", nil },
+		Tenant: func(ctx context.Context, host string) (*rstr.VouchTenant, error) {
+			return rstr.VouchTenant_builder{Alias: z.Ptr("contoso")}.Build(), nil
+		},
 	}
 
 	for _, tc := range []struct {
@@ -81,7 +84,9 @@ func TestASessionIsHeldToTheTenantOfItsHost(t *testing.T) {
 		Vouch:      rstr.NewVouchServiceClient(nil),
 		Delegation: rstr.NewDelegationServiceClient(nil),
 		Methods:    []string{rstr.MeService_Get_FullMethodName},
-		Tenant:     func(ctx context.Context, host string) (string, error) { return "unused", nil },
+		Tenant: func(ctx context.Context, host string) (*rstr.VouchTenant, error) {
+			return rstr.VouchTenant_builder{Alias: z.Ptr("unused")}.Build(), nil
+		},
 		TenantOf: func(ctx context.Context, host string) (pdid.Id, error) {
 			v, ok := hosts[host]
 			if !ok {

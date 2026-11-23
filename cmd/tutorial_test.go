@@ -157,7 +157,7 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 		x := require.New(t)
 
 		code, body := post("/roster.VouchService/Verify", app,
-			`{"who":{"tenant":"newco","alias":"alice"},"secret":"`+sec+`"}`)
+			`{"who":{"tenant":{"alias":"newco"},"alias":"alice"},"secret":"`+sec+`"}`)
 		x.Equal(http.StatusOK, code, body)
 		x.Contains(body, `"ok":true`)
 
@@ -172,7 +172,7 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 
 		wrong := base64.StdEncoding.EncodeToString([]byte("not-her-password"))
 		code, body := post("/roster.VouchService/Verify", app,
-			`{"who":{"tenant":"newco","alias":"alice"},"secret":"`+wrong+`"}`)
+			`{"who":{"tenant":{"alias":"newco"},"alias":"alice"},"secret":"`+wrong+`"}`)
 		x.Equal(http.StatusOK, code, body)
 		x.Contains(body, `"ok":false`)
 		x.NotContains(body, herId, "a refusal named who it refused")
