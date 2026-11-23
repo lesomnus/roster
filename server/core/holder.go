@@ -451,8 +451,8 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 			if u := c.GetDateRotated(); u != nil {
 				f.DateRotated = u
 			}
-			if u := c.GetDateLocked(); u != nil && u.AsTime().After(time.Now()) {
-				f.DateLocked = u
+			if u := c.GetDateUnlocked(); u != nil && u.AsTime().After(time.Now()) {
+				f.DateUnlocked = u
 			}
 
 			res.Credentials = append(res.Credentials, f.Build())

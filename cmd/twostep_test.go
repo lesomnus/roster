@@ -236,7 +236,7 @@ func TestTheCountIsOneCountAcrossTheSteps(t *testing.T) {
 		Secret: []byte("correct horse battery staple"),
 	}.Build())
 	x.NoError(err)
-	x.NotNil(shut.GetDateLocked(),
+	x.NotNil(shut.GetDateUnlocked(),
 		"guessing the second factor did not cost the first anything")
 }
 
@@ -300,15 +300,15 @@ func TestAnAttemptDoesNotOutliveTheLockItRanUp(t *testing.T) {
 		last = answer(attempt, "000000")
 		x.False(last.GetOk())
 	}
-	x.NotNil(last.GetDateLocked(), "the wrong answer that closes the account did not say so")
+	x.NotNil(last.GetDateUnlocked(), "the wrong answer that closes the account did not say so")
 
 	// One left open from before, and the right code.
 	res := answer(attempts[vouch.MaxFailures], vouch.CodeAt(seed, time.Now().Unix()/30))
 	x.False(res.GetOk(), "an attempt opened before the lock finished a sign-in after it")
-	x.NotNil(res.GetDateLocked(), "and it was not told the account is closed, as a first step is")
+	x.NotNil(res.GetDateUnlocked(), "and it was not told the account is closed, as a first step is")
 
 	// Spent, like every attempt that is answered: the same handle is nothing.
-	x.Nil(answer(attempts[vouch.MaxFailures], vouch.CodeAt(seed, time.Now().Unix()/30)).GetDateLocked())
+	x.Nil(answer(attempts[vouch.MaxFailures], vouch.CodeAt(seed, time.Now().Unix()/30)).GetDateUnlocked())
 }
 
 // TestASignInThatFinishesPaysOffWhatItsWrongAnswersRanUp: the count a wrong

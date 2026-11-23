@@ -161,7 +161,7 @@ func TestAnExitStatusSaysWhichKindOfFailure(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, b.Server.Ent.Credential.Update().
 		Where(entcredential.HolderIdEQ(bob.Uuid())).
-		SetDateLocked(time.Now().Add(time.Hour)).Exec(t.Context()))
+		SetDateUnlocked(time.Now().Add(time.Hour)).Exec(t.Context()))
 
 	// The operator's authenticator, enrolled and not yet proved.
 	_, said, err := pipedErr(t, "", cli.Cmd(&b.Local), "control", "vouch", "enrol", "@admin")

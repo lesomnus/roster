@@ -23,8 +23,8 @@ func (e *Credential) Proto() *rstr.Credential {
 	x.SetKind(e.Kind)
 	x.SetSecret(e.Secret)
 	x.SetFailures(e.Failures)
-	if e.DateLocked != nil {
-		x.SetDateLocked(timestamppb.New(*e.DateLocked))
+	if e.DateUnlocked != nil {
+		x.SetDateUnlocked(timestamppb.New(*e.DateUnlocked))
 	}
 	if e.DateRotated != nil {
 		x.SetDateRotated(timestamppb.New(*e.DateRotated))

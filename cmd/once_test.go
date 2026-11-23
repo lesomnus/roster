@@ -211,7 +211,7 @@ func TestEveryWrongAnswerIsCounted(t *testing.T) {
 	res, err := v.Verify(ctx, app.VouchVerifyRequest_builder{Who: who, Secret: []byte("correct horse battery staple")}.Build())
 	x.NoError(err)
 	x.False(res.GetOk(), "%d wrong answers at once, and the right one still signs in", guesses)
-	x.NotNil(res.GetDateLocked(), "%d wrong answers at once did not close the account", guesses)
+	x.NotNil(res.GetDateUnlocked(), "%d wrong answers at once did not close the account", guesses)
 }
 
 // TestOneCodeFinishesOneSignIn: a code is spent by one sign-in, however many

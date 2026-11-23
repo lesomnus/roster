@@ -751,8 +751,8 @@ function Ways(props: {
 						<td>{v.name === '' ? <span className="none">the only one</span> : v.name}</td>
 						<td>{v.dateRotated === undefined ? 'never changed' : when(v.dateRotated)}</td>
 						<td>
-							{v.dateLocked !== undefined && (
-								<span className="bad">closed until {when(v.dateLocked)}</span>
+							{v.dateUnlocked !== undefined && (
+								<span className="bad">closed until {when(v.dateUnlocked)}</span>
 							)}
 						</td>
 					</tr>

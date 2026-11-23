@@ -255,7 +255,7 @@ func expiresOf(cl *xli.Command) (*timestamppb.Timestamp, error) {
 // the factors still open on stderr, which also says it is not a credential.
 // No: an error, and deliberately one sentence for every reason.
 func answered(v *app.VouchVerifyResponse, token string, expires *timestamppb.Timestamp) error {
-	if w := v.GetDateLocked(); w != nil {
+	if w := v.GetDateUnlocked(); w != nil {
 		return fmt.Errorf("locked until %s. Attempts do not extend it, and `roster vouch unlock` is the operator's answer",
 			w.AsTime().Format(time.RFC3339))
 	}
@@ -272,7 +272,7 @@ func answered(v *app.VouchVerifyResponse, token string, expires *timestamppb.Tim
 			if n := f.GetName(); n != "" {
 				w += " " + fmt.Sprintf("%q", n)
 			}
-			if u := f.GetDateLocked(); u != nil {
+			if u := f.GetDateUnlocked(); u != nil {
 				w += " (locked until " + u.AsTime().Format(time.RFC3339) + ")"
 			}
 

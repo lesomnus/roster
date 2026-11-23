@@ -659,7 +659,7 @@ type VouchFactor struct {
 	state                   protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Kind         string                 `protobuf:"bytes,8,opt,name=kind"`
 	xxx_hidden_Name         string                 `protobuf:"bytes,5,opt,name=name"`
-	xxx_hidden_DateLocked   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_locked,json=dateLocked"`
+	xxx_hidden_DateUnlocked *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_unlocked,json=dateUnlocked"`
 	xxx_hidden_CredentialId string                 `protobuf:"bytes,9,opt,name=credential_id,json=credentialId"`
 	xxx_hidden_Challenge    string                 `protobuf:"bytes,10,opt,name=challenge"`
 	unknownFields           protoimpl.UnknownFields
@@ -705,9 +705,9 @@ func (x *VouchFactor) GetName() string {
 	return ""
 }
 
-func (x *VouchFactor) GetDateLocked() *timestamppb.Timestamp {
+func (x *VouchFactor) GetDateUnlocked() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateLocked
+		return x.xxx_hidden_DateUnlocked
 	}
 	return nil
 }
@@ -734,8 +734,8 @@ func (x *VouchFactor) SetName(v string) {
 	x.xxx_hidden_Name = v
 }
 
-func (x *VouchFactor) SetDateLocked(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateLocked = v
+func (x *VouchFactor) SetDateUnlocked(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUnlocked = v
 }
 
 func (x *VouchFactor) SetCredentialId(v string) {
@@ -746,15 +746,15 @@ func (x *VouchFactor) SetChallenge(v string) {
 	x.xxx_hidden_Challenge = v
 }
 
-func (x *VouchFactor) HasDateLocked() bool {
+func (x *VouchFactor) HasDateUnlocked() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateLocked != nil
+	return x.xxx_hidden_DateUnlocked != nil
 }
 
-func (x *VouchFactor) ClearDateLocked() {
-	x.xxx_hidden_DateLocked = nil
+func (x *VouchFactor) ClearDateUnlocked() {
+	x.xxx_hidden_DateUnlocked = nil
 }
 
 type VouchFactor_builder struct {
@@ -766,7 +766,7 @@ type VouchFactor_builder struct {
 	// the only one.
 	Name string
 	// When they may try this one again, and unset for one that is open.
-	DateLocked *timestamppb.Timestamp
+	DateUnlocked *timestamppb.Timestamp
 	// For `webauthn`: the credential identifier the authenticator chose, as a
 	// browser is told to look for it (`allowCredentials`), base64url. What a
 	// page needs to ask `navigator.credentials.get` for this key and not another,
@@ -794,7 +794,7 @@ func (b0 VouchFactor_builder) Build() *VouchFactor {
 	_, _ = b, x
 	x.xxx_hidden_Kind = b.Kind
 	x.xxx_hidden_Name = b.Name
-	x.xxx_hidden_DateLocked = b.DateLocked
+	x.xxx_hidden_DateUnlocked = b.DateUnlocked
 	x.xxx_hidden_CredentialId = b.CredentialId
 	x.xxx_hidden_Challenge = b.Challenge
 	return m0
@@ -805,7 +805,7 @@ type VouchVerifyResponse struct {
 	xxx_hidden_Ok           bool                   `protobuf:"varint,1,opt,name=ok"`
 	xxx_hidden_Holder       []byte                 `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Tenant       []byte                 `protobuf:"bytes,3,opt,name=tenant"`
-	xxx_hidden_DateLocked   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_locked,json=dateLocked"`
+	xxx_hidden_DateUnlocked *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=date_unlocked,json=dateUnlocked"`
 	xxx_hidden_Satisfied    []string               `protobuf:"bytes,10,rep,name=satisfied"`
 	xxx_hidden_Available    *[]*VouchFactor        `protobuf:"bytes,11,rep,name=available"`
 	xxx_hidden_Continuation string                 `protobuf:"bytes,12,opt,name=continuation"`
@@ -859,9 +859,9 @@ func (x *VouchVerifyResponse) GetTenant() []byte {
 	return nil
 }
 
-func (x *VouchVerifyResponse) GetDateLocked() *timestamppb.Timestamp {
+func (x *VouchVerifyResponse) GetDateUnlocked() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateLocked
+		return x.xxx_hidden_DateUnlocked
 	}
 	return nil
 }
@@ -907,8 +907,8 @@ func (x *VouchVerifyResponse) SetTenant(v []byte) {
 	x.xxx_hidden_Tenant = v
 }
 
-func (x *VouchVerifyResponse) SetDateLocked(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateLocked = v
+func (x *VouchVerifyResponse) SetDateUnlocked(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateUnlocked = v
 }
 
 func (x *VouchVerifyResponse) SetSatisfied(v []string) {
@@ -923,15 +923,15 @@ func (x *VouchVerifyResponse) SetContinuation(v string) {
 	x.xxx_hidden_Continuation = v
 }
 
-func (x *VouchVerifyResponse) HasDateLocked() bool {
+func (x *VouchVerifyResponse) HasDateUnlocked() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateLocked != nil
+	return x.xxx_hidden_DateUnlocked != nil
 }
 
-func (x *VouchVerifyResponse) ClearDateLocked() {
-	x.xxx_hidden_DateLocked = nil
+func (x *VouchVerifyResponse) ClearDateUnlocked() {
+	x.xxx_hidden_DateUnlocked = nil
 }
 
 type VouchVerifyResponse_builder struct {
@@ -958,7 +958,7 @@ type VouchVerifyResponse_builder struct {
 	// which every other refusal here is careful not to. The alternative is a
 	// product where somebody locked out is told nothing and tries forever, and
 	// being locked out is already something they can discover by succeeding.
-	DateLocked *timestamppb.Timestamp
+	DateUnlocked *timestamppb.Timestamp
 	// What has been proved so far, and what else this person has.
 	//
 	// Set only on an answer that carries a continuation, which is D21's first
@@ -987,7 +987,7 @@ func (b0 VouchVerifyResponse_builder) Build() *VouchVerifyResponse {
 	x.xxx_hidden_Ok = b.Ok
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Tenant = b.Tenant
-	x.xxx_hidden_DateLocked = b.DateLocked
+	x.xxx_hidden_DateUnlocked = b.DateUnlocked
 	x.xxx_hidden_Satisfied = b.Satisfied
 	x.xxx_hidden_Available = &b.Available
 	x.xxx_hidden_Continuation = b.Continuation
@@ -2286,21 +2286,19 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x16\n" +
 	"\x06secret\x18\t \x01(\fR\x06secret\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\"\xb5\x01\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\"\xb9\x01\n" +
 	"\vVouchFactor\x12\x12\n" +
 	"\x04kind\x18\b \x01(\tR\x04kind\x12\x12\n" +
-	"\x04name\x18\x05 \x01(\tR\x04name\x12;\n" +
-	"\vdate_locked\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"dateLocked\x12#\n" +
+	"\x04name\x18\x05 \x01(\tR\x04name\x12?\n" +
+	"\rdate_unlocked\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\fdateUnlocked\x12#\n" +
 	"\rcredential_id\x18\t \x01(\tR\fcredentialId\x12\x1c\n" +
 	"\tchallenge\x18\n" +
-	" \x01(\tR\tchallenge\"\x87\x02\n" +
+	" \x01(\tR\tchallenge\"\x8b\x02\n" +
 	"\x13VouchVerifyResponse\x12\x0e\n" +
 	"\x02ok\x18\x01 \x01(\bR\x02ok\x12\x16\n" +
 	"\x06holder\x18\x02 \x01(\fR\x06holder\x12\x16\n" +
-	"\x06tenant\x18\x03 \x01(\fR\x06tenant\x12;\n" +
-	"\vdate_locked\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"dateLocked\x12\x1c\n" +
+	"\x06tenant\x18\x03 \x01(\fR\x06tenant\x12?\n" +
+	"\rdate_unlocked\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\fdateUnlocked\x12\x1c\n" +
 	"\tsatisfied\x18\n" +
 	" \x03(\tR\tsatisfied\x121\n" +
 	"\tavailable\x18\v \x03(\v2\x13.roster.VouchFactorR\tavailable\x12\"\n" +
@@ -2390,8 +2388,8 @@ var file_app_vouch_proto_depIdxs = []int32{
 	1,  // 0: roster.VouchWho.tenant:type_name -> roster.VouchTenant
 	17, // 1: roster.VouchClaim.date_authenticated:type_name -> google.protobuf.Timestamp
 	0,  // 2: roster.VouchVerifyRequest.who:type_name -> roster.VouchWho
-	17, // 3: roster.VouchFactor.date_locked:type_name -> google.protobuf.Timestamp
-	17, // 4: roster.VouchVerifyResponse.date_locked:type_name -> google.protobuf.Timestamp
+	17, // 3: roster.VouchFactor.date_unlocked:type_name -> google.protobuf.Timestamp
+	17, // 4: roster.VouchVerifyResponse.date_unlocked:type_name -> google.protobuf.Timestamp
 	4,  // 5: roster.VouchVerifyResponse.available:type_name -> roster.VouchFactor
 	5,  // 6: roster.VouchContinueResponse.verified:type_name -> roster.VouchVerifyResponse
 	0,  // 7: roster.VouchDelegateRequest.who:type_name -> roster.VouchWho

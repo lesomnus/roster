@@ -76,9 +76,9 @@ func Failures(v int32) predicate.Credential {
 	return predicate.Credential(sql.FieldEQ(FieldFailures, v))
 }
 
-// DateLocked applies equality check predicate on the "date_locked" field. It's identical to DateLockedEQ.
-func DateLocked(v time.Time) predicate.Credential {
-	return predicate.Credential(sql.FieldEQ(FieldDateLocked, v))
+// DateUnlocked applies equality check predicate on the "date_unlocked" field. It's identical to DateUnlockedEQ.
+func DateUnlocked(v time.Time) predicate.Credential {
+	return predicate.Credential(sql.FieldEQ(FieldDateUnlocked, v))
 }
 
 // DateRotated applies equality check predicate on the "date_rotated" field. It's identical to DateRotatedEQ.
@@ -321,54 +321,54 @@ func FailuresLTE(v int32) predicate.Credential {
 	return predicate.Credential(sql.FieldLTE(FieldFailures, v))
 }
 
-// DateLockedEQ applies the EQ predicate on the "date_locked" field.
-func DateLockedEQ(v time.Time) predicate.Credential {
-	return predicate.Credential(sql.FieldEQ(FieldDateLocked, v))
+// DateUnlockedEQ applies the EQ predicate on the "date_unlocked" field.
+func DateUnlockedEQ(v time.Time) predicate.Credential {
+	return predicate.Credential(sql.FieldEQ(FieldDateUnlocked, v))
 }
 
-// DateLockedNEQ applies the NEQ predicate on the "date_locked" field.
-func DateLockedNEQ(v time.Time) predicate.Credential {
-	return predicate.Credential(sql.FieldNEQ(FieldDateLocked, v))
+// DateUnlockedNEQ applies the NEQ predicate on the "date_unlocked" field.
+func DateUnlockedNEQ(v time.Time) predicate.Credential {
+	return predicate.Credential(sql.FieldNEQ(FieldDateUnlocked, v))
 }
 
-// DateLockedIn applies the In predicate on the "date_locked" field.
-func DateLockedIn(vs ...time.Time) predicate.Credential {
-	return predicate.Credential(sql.FieldIn(FieldDateLocked, vs...))
+// DateUnlockedIn applies the In predicate on the "date_unlocked" field.
+func DateUnlockedIn(vs ...time.Time) predicate.Credential {
+	return predicate.Credential(sql.FieldIn(FieldDateUnlocked, vs...))
 }
 
-// DateLockedNotIn applies the NotIn predicate on the "date_locked" field.
-func DateLockedNotIn(vs ...time.Time) predicate.Credential {
-	return predicate.Credential(sql.FieldNotIn(FieldDateLocked, vs...))
+// DateUnlockedNotIn applies the NotIn predicate on the "date_unlocked" field.
+func DateUnlockedNotIn(vs ...time.Time) predicate.Credential {
+	return predicate.Credential(sql.FieldNotIn(FieldDateUnlocked, vs...))
 }
 
-// DateLockedGT applies the GT predicate on the "date_locked" field.
-func DateLockedGT(v time.Time) predicate.Credential {
-	return predicate.Credential(sql.FieldGT(FieldDateLocked, v))
+// DateUnlockedGT applies the GT predicate on the "date_unlocked" field.
+func DateUnlockedGT(v time.Time) predicate.Credential {
+	return predicate.Credential(sql.FieldGT(FieldDateUnlocked, v))
 }
 
-// DateLockedGTE applies the GTE predicate on the "date_locked" field.
-func DateLockedGTE(v time.Time) predicate.Credential {
-	return predicate.Credential(sql.FieldGTE(FieldDateLocked, v))
+// DateUnlockedGTE applies the GTE predicate on the "date_unlocked" field.
+func DateUnlockedGTE(v time.Time) predicate.Credential {
+	return predicate.Credential(sql.FieldGTE(FieldDateUnlocked, v))
 }
 
-// DateLockedLT applies the LT predicate on the "date_locked" field.
-func DateLockedLT(v time.Time) predicate.Credential {
-	return predicate.Credential(sql.FieldLT(FieldDateLocked, v))
+// DateUnlockedLT applies the LT predicate on the "date_unlocked" field.
+func DateUnlockedLT(v time.Time) predicate.Credential {
+	return predicate.Credential(sql.FieldLT(FieldDateUnlocked, v))
 }
 
-// DateLockedLTE applies the LTE predicate on the "date_locked" field.
-func DateLockedLTE(v time.Time) predicate.Credential {
-	return predicate.Credential(sql.FieldLTE(FieldDateLocked, v))
+// DateUnlockedLTE applies the LTE predicate on the "date_unlocked" field.
+func DateUnlockedLTE(v time.Time) predicate.Credential {
+	return predicate.Credential(sql.FieldLTE(FieldDateUnlocked, v))
 }
 
-// DateLockedIsNil applies the IsNil predicate on the "date_locked" field.
-func DateLockedIsNil() predicate.Credential {
-	return predicate.Credential(sql.FieldIsNull(FieldDateLocked))
+// DateUnlockedIsNil applies the IsNil predicate on the "date_unlocked" field.
+func DateUnlockedIsNil() predicate.Credential {
+	return predicate.Credential(sql.FieldIsNull(FieldDateUnlocked))
 }
 
-// DateLockedNotNil applies the NotNil predicate on the "date_locked" field.
-func DateLockedNotNil() predicate.Credential {
-	return predicate.Credential(sql.FieldNotNull(FieldDateLocked))
+// DateUnlockedNotNil applies the NotNil predicate on the "date_unlocked" field.
+func DateUnlockedNotNil() predicate.Credential {
+	return predicate.Credential(sql.FieldNotNull(FieldDateUnlocked))
 }
 
 // DateRotatedEQ applies the EQ predicate on the "date_rotated" field.

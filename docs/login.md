@@ -88,7 +88,7 @@ plane, different people, and nothing about a customer's sign-in passes through i
 | `POST /session` → **204**, no body | The cookie is the answer. What a page needs *about the person* is a request it should make, against the same server and behind the same wall |
 | `POST /session` → **401** | Wrong password, unknown person, no such tenant -- one answer for all of them |
 | `Vouch.Verify` → `{ok:false}` | Same, and it takes the same time |
-| `Vouch.Verify` → `{date_locked}` | Too many wrong answers in a row closed the account for a while -- ten and fifteen minutes unless `vouch.lockout` says otherwise |
+| `Vouch.Verify` → `{date_unlocked}` | Too many wrong answers in a row closed the account for a while -- ten and fifteen minutes unless `vouch.lockout` says otherwise |
 | `DELETE /session` → **204** | The row is deleted, so the key is dead in every browser at once |
 | any RPC → **401** | No cookie, a cookie naming nothing, an expired session, or a session naming somebody since erased |
 
@@ -277,7 +277,7 @@ sequenceDiagram
 
   B->>L: POST /session {alias, password}
   L->>R: VouchService.Delegate
-  R-->>L: {ok, holder, token: rd_…} · {satisfied, available} · {date_locked}
+  R-->>L: {ok, holder, token: rd_…} · {satisfied, available} · {date_unlocked}
   L-->>B: 204 · 200 {factors} · 401
 
   opt a second factor

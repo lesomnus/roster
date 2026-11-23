@@ -364,7 +364,7 @@ message SignInCredential {
   // Until when they may not try again, and null for an account that is open.
   // Shown because somebody locked out being told nothing is somebody who tries
   // forever -- the trade `VouchVerifyResponse` already took.
-  google.protobuf.Timestamp date_locked = 11;
+  google.protobuf.Timestamp date_unlocked = 11;
 }
 
 message MeEmail {

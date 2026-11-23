@@ -22,7 +22,7 @@ type Mutation struct {
 	secret         *[]byte
 	failures       *int32
 	addfailures    *int32
-	date_locked    *time.Time
+	date_unlocked  *time.Time
 	date_rotated   *time.Time
 	last_step      *int64
 	addlast_step   *int64
@@ -156,40 +156,40 @@ func (m *Mutation) ResetFailures() {
 	delete(m.exprs, FieldFailures)
 }
 
-// SetDateLocked sets the "date_locked" field.
-func (m *Mutation) SetDateLocked(t time.Time) {
-	m.date_locked = &t
-	delete(m.clearedFields, FieldDateLocked)
-	delete(m.exprs, FieldDateLocked)
+// SetDateUnlocked sets the "date_unlocked" field.
+func (m *Mutation) SetDateUnlocked(t time.Time) {
+	m.date_unlocked = &t
+	delete(m.clearedFields, FieldDateUnlocked)
+	delete(m.exprs, FieldDateUnlocked)
 }
 
-// DateLocked returns the value of the "date_locked" field in the mutation.
-func (m *Mutation) DateLocked() (r time.Time, exists bool) {
-	v := m.date_locked
+// DateUnlocked returns the value of the "date_unlocked" field in the mutation.
+func (m *Mutation) DateUnlocked() (r time.Time, exists bool) {
+	v := m.date_unlocked
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// ClearDateLocked clears the value of the "date_locked" field.
-func (m *Mutation) ClearDateLocked() {
-	m.date_locked = nil
-	delete(m.exprs, FieldDateLocked)
-	m.clearedFields[FieldDateLocked] = struct{}{}
+// ClearDateUnlocked clears the value of the "date_unlocked" field.
+func (m *Mutation) ClearDateUnlocked() {
+	m.date_unlocked = nil
+	delete(m.exprs, FieldDateUnlocked)
+	m.clearedFields[FieldDateUnlocked] = struct{}{}
 }
 
-// DateLockedCleared returns if the "date_locked" field was cleared in this mutation.
-func (m *Mutation) DateLockedCleared() bool {
-	_, ok := m.clearedFields[FieldDateLocked]
+// DateUnlockedCleared returns if the "date_unlocked" field was cleared in this mutation.
+func (m *Mutation) DateUnlockedCleared() bool {
+	_, ok := m.clearedFields[FieldDateUnlocked]
 	return ok
 }
 
-// ResetDateLocked resets all changes to the "date_locked" field.
-func (m *Mutation) ResetDateLocked() {
-	m.date_locked = nil
-	delete(m.clearedFields, FieldDateLocked)
-	delete(m.exprs, FieldDateLocked)
+// ResetDateUnlocked resets all changes to the "date_unlocked" field.
+func (m *Mutation) ResetDateUnlocked() {
+	m.date_unlocked = nil
+	delete(m.clearedFields, FieldDateUnlocked)
+	delete(m.exprs, FieldDateUnlocked)
 }
 
 // SetDateRotated sets the "date_rotated" field.
@@ -504,8 +504,8 @@ func (m *Mutation) Fields() []string {
 	if m.failures != nil || m.exprs[FieldFailures] != nil {
 		fields = append(fields, FieldFailures)
 	}
-	if m.date_locked != nil || m.exprs[FieldDateLocked] != nil {
-		fields = append(fields, FieldDateLocked)
+	if m.date_unlocked != nil || m.exprs[FieldDateUnlocked] != nil {
+		fields = append(fields, FieldDateUnlocked)
 	}
 	if m.date_rotated != nil || m.exprs[FieldDateRotated] != nil {
 		fields = append(fields, FieldDateRotated)
@@ -550,8 +550,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.Secret()
 	case FieldFailures:
 		return m.Failures()
-	case FieldDateLocked:
-		return m.DateLocked()
+	case FieldDateUnlocked:
+		return m.DateUnlocked()
 	case FieldDateRotated:
 		return m.DateRotated()
 	case FieldLastStep:
@@ -625,7 +625,7 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetFailures(v)
 		return nil
-	case FieldDateLocked:
+	case FieldDateUnlocked:
 		v, ok := value.(time.Time)
 		if !ok {
 			if e, ok := value.(sql.Querier); ok {
@@ -633,7 +633,7 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 			}
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetDateLocked(v)
+		m.SetDateUnlocked(v)
 		return nil
 	case FieldDateRotated:
 		v, ok := value.(time.Time)
@@ -735,8 +735,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 		m.ResetSecret()
 	case FieldFailures:
 		m.ResetFailures()
-	case FieldDateLocked:
-		m.ResetDateLocked()
+	case FieldDateUnlocked:
+		m.ResetDateUnlocked()
 	case FieldDateRotated:
 		m.ResetDateRotated()
 	case FieldLastStep:
@@ -784,8 +784,8 @@ func (m *Mutation) ExprFields() []string {
 	if _, ok := m.exprs[FieldFailures]; ok {
 		fields = append(fields, FieldFailures)
 	}
-	if _, ok := m.exprs[FieldDateLocked]; ok {
-		fields = append(fields, FieldDateLocked)
+	if _, ok := m.exprs[FieldDateUnlocked]; ok {
+		fields = append(fields, FieldDateUnlocked)
 	}
 	if _, ok := m.exprs[FieldDateRotated]; ok {
 		fields = append(fields, FieldDateRotated)
@@ -858,8 +858,8 @@ func (m *Mutation) AddField(name string, value ent.Value) error {
 // mutation.
 func (m *Mutation) ClearedFields() []string {
 	var fields []string
-	if m.FieldCleared(FieldDateLocked) {
-		fields = append(fields, FieldDateLocked)
+	if m.FieldCleared(FieldDateUnlocked) {
+		fields = append(fields, FieldDateUnlocked)
 	}
 	if m.FieldCleared(FieldDateRotated) {
 		fields = append(fields, FieldDateRotated)
@@ -887,8 +887,8 @@ func (m *Mutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *Mutation) ClearField(name string) error {
 	switch name {
-	case FieldDateLocked:
-		m.ClearDateLocked()
+	case FieldDateUnlocked:
+		m.ClearDateUnlocked()
 		return nil
 	case FieldDateRotated:
 		m.ClearDateRotated()
@@ -922,8 +922,8 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldFailures:
 		m.ResetFailures()
 		return nil
-	case FieldDateLocked:
-		m.ResetDateLocked()
+	case FieldDateUnlocked:
+		m.ResetDateUnlocked()
 		return nil
 	case FieldDateRotated:
 		m.ResetDateRotated()
