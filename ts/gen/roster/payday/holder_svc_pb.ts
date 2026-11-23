@@ -822,10 +822,10 @@ export type HolderUpdateRequest = Message<"roster.HolderUpdateRequest"> & {
   ref?: HolderRef | undefined;
 
   /**
-   * The version this caller read, and required: this replaces what they
-   * read, so one left out is refused. A write against a row that has moved is
-   * refused rather than applied to whatever it became, and the caller reads
-   * again.
+   * The version this caller read, and required: this replaces what they read,
+   * so one left out is refused. A write against a row that has moved is
+   * answered `Aborted` rather than applied to whatever it became, and the
+   * caller reads again.
    *
    * @generated from field: google.protobuf.Timestamp date_updated = 13;
    */
@@ -863,8 +863,8 @@ export type HolderRealiasRequest = Message<"roster.HolderRealiasRequest"> & {
   ref?: HolderRef | undefined;
 
   /**
-   * The version this caller read, and required: this replaces what they
-   * read, so one left out is refused. One that has moved since is refused,
+   * The version this caller read, and required: this replaces what they read,
+   * so one left out is refused. One that has moved since is answered `Aborted`,
    * and the caller reads again.
    *
    * @generated from field: google.protobuf.Timestamp date_updated = 13;
@@ -899,10 +899,10 @@ export type HolderDisableRequest = Message<"roster.HolderDisableRequest"> & {
   ref?: HolderRef | undefined;
 
   /**
-   * The version this caller read, or nothing: a suspension is a decision
-   * about somebody and not an edit of what was read, so left out, the row is
-   * taken as whatever it is now (`lock`, in `server/core`, says why). One
-   * that has moved since is refused, and the caller reads again. `Enable` and
+   * The version this caller read, or nothing: a suspension is a decision about
+   * somebody and not an edit of what was read, so left out, the row is taken as
+   * whatever it is now (`lock`, in `server/core`, says why). One that has moved
+   * since is answered `Aborted`, and the caller reads again. `Enable` and
    * `Invalidate` take theirs the same way.
    *
    * @generated from field: google.protobuf.Timestamp date_updated = 13;
@@ -1254,6 +1254,7 @@ export type HolderPortrayRequest = Message<"roster.HolderPortrayRequest"> & {
   /**
    * Optimistic locking, as `Update` takes it: this replaces their picture and
    * clears the profile's URL, so it is a write against what the caller read.
+   * One that has moved since is answered `Aborted`, and the caller reads again.
    *
    * @generated from field: google.protobuf.Timestamp date_updated = 13;
    */
@@ -1348,7 +1349,7 @@ export type HolderDeactivateRequest = Message<"roster.HolderDeactivateRequest"> 
   /**
    * The version this caller read, or nothing, as `Disable` takes it: left
    * out, the row is taken as whatever it is now. One that has moved since is
-   * refused, and the caller reads again.
+   * answered `Aborted`, and the caller reads again.
    *
    * @generated from field: google.protobuf.Timestamp date_updated = 13;
    */
@@ -1411,7 +1412,7 @@ export type HolderTellRequest = Message<"roster.HolderTellRequest"> & {
   /**
    * The version this caller read, or nothing, as `Disable` takes it: left
    * out, the row is taken as whatever it is now. One that has moved since is
-   * refused, and the caller reads again.
+   * answered `Aborted`, and the caller reads again.
    *
    * @generated from field: google.protobuf.Timestamp date_updated = 13;
    */

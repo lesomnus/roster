@@ -1952,11 +1952,11 @@ type IdentityResubjectRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref *IdentityRef
-	// The version this caller read, or nothing. Left out, the move does not
-	// wait on one and the row is taken as whatever it is now -- the rules above
-	// are what it is held to, and none of them depends on a value somebody else
-	// could have changed in between. One given that has moved since is refused,
-	// and the caller reads again.
+	// The version this caller read, or nothing. Left out, the move does not wait
+	// on one and the row is taken as whatever it is now -- the rules above are
+	// what it is held to, and none of them depends on a value somebody else could
+	// have changed in between. One given that has moved since is answered
+	// `Aborted`, and the caller reads again.
 	DateUpdated *timestamppb.Timestamp
 	// What the provider calls this person under the connection's claim.
 	Subject string
