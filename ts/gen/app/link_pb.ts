@@ -72,7 +72,7 @@ export type Link = Message<"roster.Link"> & {
 
   /**
    * The address this link is about, when it is a **verification** and not a
-   * way in: `Email.Verify` mints one for a row, `Email.Confirm` spends it and
+   * way in: `Email.Claim` mints one for a row, `Email.Confirm` spends it and
    * stamps that row's `date_verified`, and mints no delegation -- a link that
    * proves an address is worth strictly less than one that signs somebody in.
    * Unset for the recovery links `Vouch.Link` mints, which are about the

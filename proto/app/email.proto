@@ -74,19 +74,19 @@ message Email {
   //
   // F20 closed this as a **write** -- a caller could assert their own address
   // had been checked -- and its own note said *which nothing reads yet*. That
-  // stayed true through two writers (`Email.Verify`/`Confirm`, then
+  // stayed true through two writers (`Email.Claim`/`Confirm`, then
   // `Email.Attest`) and it made the field a decoration on the one road it exists
   // for: `vouch.byAddress` resolved a person by an address without reading it, so
   // a row nobody had checked named somebody.
   //
   // What that cost is #48 and it is not a takeover -- a link goes to the mailbox
   // either way. It is that the index below made the address **somebody's**, so
-  // the rightful holder was refused `Add`, could not reach `Verify`, and had no
+  // the rightful holder was refused `Add`, could not reach `Claim`, and had no
   // road to their own address. A name the real holder cannot have, refused with
   // *somebody has it*, is `host.proto` § *Why a hostname is not checked* one
   // entity along.
   //
-  // So `byAddress` reads it now, and `EmailVerifyRequest.holder` is what stops
+  // So `byAddress` reads it now, and `EmailClaimRequest.holder` is what stops
   // that turning a squat into a permanent denial: a proof may take an address
   // **nobody proved**. Which is #42's sentence said about an address -- a name
   // that resolves somebody may only be taken by proof.
@@ -231,7 +231,7 @@ message Email {
       // to one indexed read with one answer. What it costs is that a row nobody
       // proved still **holds** the address, so the road for the rightful holder
       // has to be a way to take it rather than a second row --
-      // `EmailVerifyRequest.holder`, and #48. `orm.Index` has no predicate to
+      // `EmailClaimRequest.holder`, and #48. `orm.Index` has no predicate to
       // declare a partial one with anyway; only `includes_erased`, which is a
       // different question.
       //

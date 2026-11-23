@@ -82,3 +82,16 @@ breaking:
     # their pin (CLAUDE.md). From the launch on, put it back: then it is a
     # compile error somebody else has to fix.
     - FIELD_SAME_CARDINALITY
+  # Changes on purpose and before the first app's launch (CLAUDE.md), each the
+  # owner's answer to a name put to them (#286). `EmailService/Verify` is
+  # `EmailService/Claim`, and its request and answer are named for it: `Verify`
+  # is one act, checking a secret, and `VouchService`'s.
+  #
+  # Out with the first change after this reaches `main`, which is the only
+  # baseline here, as #234 took #233's out: left in, it is a hole in the check
+  # for the next change to these files.
+  ignore_only:
+    RPC_NO_DELETE:
+      - proto/app/email_svc.g.proto
+    PACKAGE_MESSAGE_NO_DELETE:
+      - proto/app/email_svc.g.proto

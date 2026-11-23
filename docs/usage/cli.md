@@ -131,7 +131,7 @@ or under a broker every process hears.
 | --- | --- |
 | local only | `init`, `key add`, `key list`, `key revoke`, `vouch reset\|set\|unlock`, `trail`, `forget`, `restore`, `hold`, `resources`, `app install\|uninstall`, `login provision`, `account provision`, `scim provision\|adopt`, and all of `control` -- what they write is not served, which is the whole reason they are commands |
 | local only, of the entity commands | every `patch`; every verb of `access`, `session`, `link` and `continuation`; `credential get\|list\|watch\|add`; `api-key add`, `delegation add`; `consent add\|erase`; `tenant add`. No port a caller reaches serves them -- a verifier, a raw write of one, the record of who read what, a tenant put up from inside one -- and over the wire each is refused in the server's words |
-| remote only | the rest of `vouch` (`verify`, `delegate`, `continue`, `link`, `redeem`, `revoke`, `enrol`, `accept`, `leave-link`, `leave`), `issue`, `me`, `front`, `sync`, `consent agree\|withdraw\|settled`, `email verify\|confirm` -- those calls are a *caller's*, and a local run has none |
+| remote only | the rest of `vouch` (`verify`, `delegate`, `continue`, `link`, `redeem`, `revoke`, `enrol`, `accept`, `leave-link`, `leave`), `issue`, `me`, `front`, `sync`, `consent agree\|withdraw\|settled`, `email claim\|confirm` -- those calls are a *caller's*, and a local run has none |
 
 ### The control plane is `roster control`
 

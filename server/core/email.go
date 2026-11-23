@@ -179,7 +179,7 @@ func (s coreEmail) Erase(ctx context.Context, req *app.EmailRef) (*app.EmailEras
 	return s.EmailServiceServer.Erase(ctx, req)
 }
 
-// Verify mints a link that proves this address, and answers with it once.
+// Claim mints a link that proves this address, and answers with it once.
 //
 // Through the wall first (`Get`), so a caller who cannot see the row cannot
 // mint for it; then `mayReach` on the row's holder, because an address is where
@@ -204,7 +204,7 @@ func (s coreEmail) Erase(ctx context.Context, req *app.EmailRef) (*app.EmailEras
 //
 // See [coreEmail.Confirm] for where the address actually moves, and
 // `email_svc.ext.proto` for why a **proved** address does not.
-func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*app.EmailVerifyResponse, error) {
+func (s coreEmail) Claim(ctx context.Context, req *app.EmailClaimRequest) (*app.EmailClaimResponse, error) {
 	f, ok := frame.From(ctx)
 	if !ok || f.Actor.IsZero() {
 		return nil, status.Error(codes.Unauthenticated, "a link is minted by whoever asked, and nothing here said who that is")
@@ -307,14 +307,14 @@ func (s coreEmail) Verify(ctx context.Context, req *app.EmailVerifyRequest) (*ap
 		return nil, err
 	}
 
-	return app.EmailVerifyResponse_builder{Token: token, DateExpires: timestamppb.New(expires)}.Build(), nil
+	return app.EmailClaimResponse_builder{Token: token, DateExpires: timestamppb.New(expires)}.Build(), nil
 }
 
 // provable refuses a link for somebody nothing is proved for: erased or
 // suspended, or of a tenant that is closed.
 //
 // It is what [coreEmail.Confirm] asks before it spends one (#277), asked where
-// the link is minted. `Verify` asked none of it: it minted a link for somebody
+// the link is minted. `Claim` asked none of it: it minted a link for somebody
 // suspended and answered it, a front door mailed it, and whoever clicked it
 // was told there was no such link -- until they were enabled, when the same
 // link confirmed. A refusal belongs where there is somebody to tell, and a
@@ -525,14 +525,14 @@ func (s coreEmail) vouching(ctx context.Context, ref *app.IdentityRef, whose []b
 // # And it is where an address changes hands
 //
 // A link whose `holder` is not the row's holder is a **claim**, minted by
-// [coreEmail.Verify] for somebody who does not hold the address. Spending one is
+// [coreEmail.Claim] for somebody who does not hold the address. Spending one is
 // three writes in one transaction -- erase the row that held it, write the
 // address on the claimant, stamp it -- which is `coreHost.proved`'s shape for
 // `coreHost.proved`'s reason: an address that is two rows for a moment is an
 // address the unique index refuses, and one that is no rows for a moment is an
 // address somebody else can take in between.
 //
-// What may be taken is an address nobody proved. `Verify` is where that is
+// What may be taken is an address nobody proved. `Claim` is where that is
 // checked, because that is where there is somebody to tell -- and it is checked
 // again here rather than trusted, for the reason every hop in this app rechecks:
 // minutes pass between the two, and what the row said then is not what it says
@@ -689,12 +689,12 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 // A crash between them would otherwise leave an address that is nobody's with a
 // link already spent.
 //
-// # What it checks again, having been checked at `Verify`
+// # What it checks again, having been checked at `Claim`
 //
 // That the row is still unproved. Fifteen minutes pass between minting a link and
 // clicking it (`vouch.LinkFor`), and what the row said then is not what it says
 // now: somebody who proved the address in that window keeps it, and the claim is
-// the thing that expires. Answered as the refusal `Verify` would have made, rather
+// the thing that expires. Answered as the refusal `Claim` would have made, rather
 // than `NotFound`, because the caller is a front door holding a spent link and the
 // honest thing to tell it is why.
 //

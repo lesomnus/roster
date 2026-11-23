@@ -132,7 +132,7 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 			"a-persons-verb-across-the-tenant",
 			"vouchservicelink-with-redeem",
 			"vouchserviceaccept",
-			"emailserviceverify-with-confirm",
+			"emailserviceclaim-with-confirm",
 			"nominationserviceadd",
 			"bindingserviceadd",
 			"groupexposureserviceadd",
@@ -171,8 +171,8 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 		x.Contains(got["vouchservicelink-with-redeem"].GetHandsOver(), "every account of the tenant")
 		x.Contains(got["vouchservicelink-with-redeem"].GetHandsOver(), "`VouchService/Redeem`")
 
-		got = handedOver(t, ctx, b.Ungated, tenant, app.EmailService_Verify_FullMethodName)
-		x.Contains(got["emailserviceverify-with-confirm"].GetHandsOver(), "no mailbox")
+		got = handedOver(t, ctx, b.Ungated, tenant, app.EmailService_Claim_FullMethodName)
+		x.Contains(got["emailserviceclaim-with-confirm"].GetHandsOver(), "no mailbox")
 
 		// And the two a front door calls beside them, which the page did not
 		// have: an address proved on the caller's word, and a link that

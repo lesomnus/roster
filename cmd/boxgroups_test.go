@@ -64,7 +64,7 @@ func boxCommand(root *xli.Command, path ...string) *xli.Command {
 // is not offered, as `control tenant add` is not.
 //
 // `ConsentService` `Agree`, `Withdraw`, `Settled` and `EmailService`
-// `Verify`, `Confirm` ask who is calling and refuse a call made as nobody,
+// `Claim`, `Confirm` ask who is calling and refuse a call made as nobody,
 // which every call at the box is: they work over the wire alone. Under
 // `control`, which is local and nothing else, the five were offered and
 // refused when run (*this call is made as nobody*; *who is asking?*). Right
@@ -88,7 +88,7 @@ func TestNoCommandIsOfferedThatWorksNowhere(t *testing.T) {
 
 	for _, path := range [][]string{
 		{"consent", "agree"}, {"consent", "withdraw"}, {"consent", "settled"},
-		{"email", "verify"}, {"email", "confirm"},
+		{"email", "claim"}, {"email", "confirm"},
 	} {
 		x.NotNil(boxCommand(root, path...), "%v is a caller's, and offered where the wire reaches it", path)
 		x.Nil(boxCommand(root, append([]string{"control"}, path...)...), "control %v is offered, and is made as nobody", path)

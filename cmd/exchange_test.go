@@ -166,7 +166,7 @@ func TestExchangeHandsOnNothingTheCallerMayNot(t *testing.T) {
 	})
 }
 
-// TestAClaimantIsOfTheAddresssTenant is `Email.Verify` naming a claimant from
+// TestAClaimantIsOfTheAddresssTenant is `Email.Claim` naming a claimant from
 // another tenant.
 //
 // The claimant crossed the wall by identifier, unasked: a front door holding a
@@ -186,7 +186,7 @@ func TestAClaimantIsOfTheAddresssTenant(t *testing.T) {
 	bob := addHolder(t, ctx, b.Server, fabrikam, "bob")
 
 	as := frame.Into(ctx, frame.New(b.Who, b.Contoso, frame.Whole()).WithScope(frame.Only(b.Contoso)))
-	_, err = b.Server.Ungated.Email().Verify(as, app.EmailVerifyRequest_builder{
+	_, err = b.Server.Ungated.Email().Claim(as, app.EmailClaimRequest_builder{
 		Ref: app.EmailRef_builder{
 			At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: proto.String("shared@contoso.example")}.Build(),
 		}.Build(),

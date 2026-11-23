@@ -2147,7 +2147,7 @@ func (b0 EmailWatchItem_builder) Build() *EmailWatchItem {
 	return m0
 }
 
-type EmailVerifyRequest struct {
+type EmailClaimRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref         *EmailRef              `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,3,opt,name=holder"`
@@ -2156,20 +2156,20 @@ type EmailVerifyRequest struct {
 	sizeCache              protoimpl.SizeCache
 }
 
-func (x *EmailVerifyRequest) Reset() {
-	*x = EmailVerifyRequest{}
+func (x *EmailClaimRequest) Reset() {
+	*x = EmailClaimRequest{}
 	mi := &file_app_email_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EmailVerifyRequest) String() string {
+func (x *EmailClaimRequest) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EmailVerifyRequest) ProtoMessage() {}
+func (*EmailClaimRequest) ProtoMessage() {}
 
-func (x *EmailVerifyRequest) ProtoReflect() protoreflect.Message {
+func (x *EmailClaimRequest) ProtoReflect() protoreflect.Message {
 	mi := &file_app_email_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2181,73 +2181,73 @@ func (x *EmailVerifyRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *EmailVerifyRequest) GetRef() *EmailRef {
+func (x *EmailClaimRequest) GetRef() *EmailRef {
 	if x != nil {
 		return x.xxx_hidden_Ref
 	}
 	return nil
 }
 
-func (x *EmailVerifyRequest) GetHolder() *HolderRef {
+func (x *EmailClaimRequest) GetHolder() *HolderRef {
 	if x != nil {
 		return x.xxx_hidden_Holder
 	}
 	return nil
 }
 
-func (x *EmailVerifyRequest) GetDateExpires() *timestamppb.Timestamp {
+func (x *EmailClaimRequest) GetDateExpires() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateExpires
 	}
 	return nil
 }
 
-func (x *EmailVerifyRequest) SetRef(v *EmailRef) {
+func (x *EmailClaimRequest) SetRef(v *EmailRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *EmailVerifyRequest) SetHolder(v *HolderRef) {
+func (x *EmailClaimRequest) SetHolder(v *HolderRef) {
 	x.xxx_hidden_Holder = v
 }
 
-func (x *EmailVerifyRequest) SetDateExpires(v *timestamppb.Timestamp) {
+func (x *EmailClaimRequest) SetDateExpires(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpires = v
 }
 
-func (x *EmailVerifyRequest) HasRef() bool {
+func (x *EmailClaimRequest) HasRef() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *EmailVerifyRequest) HasHolder() bool {
+func (x *EmailClaimRequest) HasHolder() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_Holder != nil
 }
 
-func (x *EmailVerifyRequest) HasDateExpires() bool {
+func (x *EmailClaimRequest) HasDateExpires() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateExpires != nil
 }
 
-func (x *EmailVerifyRequest) ClearRef() {
+func (x *EmailClaimRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-func (x *EmailVerifyRequest) ClearHolder() {
+func (x *EmailClaimRequest) ClearHolder() {
 	x.xxx_hidden_Holder = nil
 }
 
-func (x *EmailVerifyRequest) ClearDateExpires() {
+func (x *EmailClaimRequest) ClearDateExpires() {
 	x.xxx_hidden_DateExpires = nil
 }
 
-type EmailVerifyRequest_builder struct {
+type EmailClaimRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Which address, by reference.
@@ -2276,8 +2276,8 @@ type EmailVerifyRequest_builder struct {
 	DateExpires *timestamppb.Timestamp
 }
 
-func (b0 EmailVerifyRequest_builder) Build() *EmailVerifyRequest {
-	m0 := &EmailVerifyRequest{}
+func (b0 EmailClaimRequest_builder) Build() *EmailClaimRequest {
+	m0 := &EmailClaimRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
@@ -2286,7 +2286,7 @@ func (b0 EmailVerifyRequest_builder) Build() *EmailVerifyRequest {
 	return m0
 }
 
-type EmailVerifyResponse struct {
+type EmailClaimResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Token       string                 `protobuf:"bytes,1,opt,name=token"`
 	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_expires,json=dateExpires"`
@@ -2294,20 +2294,20 @@ type EmailVerifyResponse struct {
 	sizeCache              protoimpl.SizeCache
 }
 
-func (x *EmailVerifyResponse) Reset() {
-	*x = EmailVerifyResponse{}
+func (x *EmailClaimResponse) Reset() {
+	*x = EmailClaimResponse{}
 	mi := &file_app_email_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *EmailVerifyResponse) String() string {
+func (x *EmailClaimResponse) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*EmailVerifyResponse) ProtoMessage() {}
+func (*EmailClaimResponse) ProtoMessage() {}
 
-func (x *EmailVerifyResponse) ProtoReflect() protoreflect.Message {
+func (x *EmailClaimResponse) ProtoReflect() protoreflect.Message {
 	mi := &file_app_email_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -2319,40 +2319,40 @@ func (x *EmailVerifyResponse) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *EmailVerifyResponse) GetToken() string {
+func (x *EmailClaimResponse) GetToken() string {
 	if x != nil {
 		return x.xxx_hidden_Token
 	}
 	return ""
 }
 
-func (x *EmailVerifyResponse) GetDateExpires() *timestamppb.Timestamp {
+func (x *EmailClaimResponse) GetDateExpires() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateExpires
 	}
 	return nil
 }
 
-func (x *EmailVerifyResponse) SetToken(v string) {
+func (x *EmailClaimResponse) SetToken(v string) {
 	x.xxx_hidden_Token = v
 }
 
-func (x *EmailVerifyResponse) SetDateExpires(v *timestamppb.Timestamp) {
+func (x *EmailClaimResponse) SetDateExpires(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpires = v
 }
 
-func (x *EmailVerifyResponse) HasDateExpires() bool {
+func (x *EmailClaimResponse) HasDateExpires() bool {
 	if x == nil {
 		return false
 	}
 	return x.xxx_hidden_DateExpires != nil
 }
 
-func (x *EmailVerifyResponse) ClearDateExpires() {
+func (x *EmailClaimResponse) ClearDateExpires() {
 	x.xxx_hidden_DateExpires = nil
 }
 
-type EmailVerifyResponse_builder struct {
+type EmailClaimResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// The link, and the only time it is readable. What is stored is a hash.
@@ -2360,8 +2360,8 @@ type EmailVerifyResponse_builder struct {
 	DateExpires *timestamppb.Timestamp
 }
 
-func (b0 EmailVerifyResponse_builder) Build() *EmailVerifyResponse {
-	m0 := &EmailVerifyResponse{}
+func (b0 EmailClaimResponse_builder) Build() *EmailClaimResponse {
+	m0 := &EmailClaimResponse{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Token = b.Token
@@ -2709,12 +2709,12 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\x0eEmailWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12#\n" +
 	"\x05value\x18\x02 \x01(\v2\r.roster.EmailR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xa2\x01\n" +
-	"\x12EmailVerifyRequest\x12\"\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xa1\x01\n" +
+	"\x11EmailClaimRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\x12)\n" +
 	"\x06holder\x18\x03 \x01(\v2\x11.roster.HolderRefR\x06holder\x12=\n" +
-	"\fdate_expires\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"q\n" +
-	"\x13EmailVerifyResponse\x12\x1b\n" +
+	"\fdate_expires\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"p\n" +
+	"\x12EmailClaimResponse\x12\x1b\n" +
 	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x12=\n" +
 	"\fdate_expires\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"2\n" +
 	"\x13EmailConfirmRequest\x12\x1b\n" +
@@ -2727,7 +2727,7 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"vouched_by\x18\n" +
 	" \x01(\v2\x13.roster.IdentityRefR\tvouchedBy\x12!\n" +
-	"\bverified\x18\t \x01(\bB\x05\xaa\x01\x02\b\x02R\bverified2\xc6\x04\n" +
+	"\bverified\x18\t \x01(\bB\x05\xaa\x01\x02\b\x02R\bverified2\xc3\x04\n" +
 	"\fEmailService\x12-\n" +
 	"\x03Add\x12\x17.roster.EmailAddRequest\x1a\r.roster.Email\x12-\n" +
 	"\x03Get\x12\x17.roster.EmailGetRequest\x1a\r.roster.Email\x121\n" +
@@ -2735,8 +2735,8 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\x05Apply\x12\x19.roster.EmailApplyRequest\x1a\r.roster.Email\x125\n" +
 	"\x05Erase\x12\x10.roster.EmailRef\x1a\x1a.roster.EmailEraseResponse\x12;\n" +
 	"\x04List\x12\x18.roster.EmailListRequest\x1a\x19.roster.EmailListResponse\x12@\n" +
-	"\x05Watch\x12\x19.roster.EmailWatchRequest\x1a\x1a.roster.EmailWatchResponse0\x01\x12A\n" +
-	"\x06Verify\x12\x1a.roster.EmailVerifyRequest\x1a\x1b.roster.EmailVerifyResponse\x12D\n" +
+	"\x05Watch\x12\x19.roster.EmailWatchRequest\x1a\x1a.roster.EmailWatchResponse0\x01\x12>\n" +
+	"\x05Claim\x12\x19.roster.EmailClaimRequest\x1a\x1a.roster.EmailClaimResponse\x12D\n" +
 	"\aConfirm\x12\x1b.roster.EmailConfirmRequest\x1a\x1c.roster.EmailConfirmResponse\x123\n" +
 	"\x06Attest\x12\x1a.roster.EmailAttestRequest\x1a\r.roster.EmailB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
@@ -2757,8 +2757,8 @@ var file_app_email_svc_g_proto_goTypes = []any{
 	(*EmailWatchRequest)(nil),     // 12: roster.EmailWatchRequest
 	(*EmailWatchResponse)(nil),    // 13: roster.EmailWatchResponse
 	(*EmailWatchItem)(nil),        // 14: roster.EmailWatchItem
-	(*EmailVerifyRequest)(nil),    // 15: roster.EmailVerifyRequest
-	(*EmailVerifyResponse)(nil),   // 16: roster.EmailVerifyResponse
+	(*EmailClaimRequest)(nil),     // 15: roster.EmailClaimRequest
+	(*EmailClaimResponse)(nil),    // 16: roster.EmailClaimResponse
 	(*EmailConfirmRequest)(nil),   // 17: roster.EmailConfirmRequest
 	(*EmailConfirmResponse)(nil),  // 18: roster.EmailConfirmResponse
 	(*EmailAttestRequest)(nil),    // 19: roster.EmailAttestRequest
@@ -2795,10 +2795,10 @@ var file_app_email_svc_g_proto_depIdxs = []int32{
 	11, // 21: roster.EmailWatchRequest.filters:type_name -> roster.EmailFilter
 	14, // 22: roster.EmailWatchResponse.items:type_name -> roster.EmailWatchItem
 	26, // 23: roster.EmailWatchItem.value:type_name -> roster.Email
-	2,  // 24: roster.EmailVerifyRequest.ref:type_name -> roster.EmailRef
-	20, // 25: roster.EmailVerifyRequest.holder:type_name -> roster.HolderRef
-	21, // 26: roster.EmailVerifyRequest.date_expires:type_name -> google.protobuf.Timestamp
-	21, // 27: roster.EmailVerifyResponse.date_expires:type_name -> google.protobuf.Timestamp
+	2,  // 24: roster.EmailClaimRequest.ref:type_name -> roster.EmailRef
+	20, // 25: roster.EmailClaimRequest.holder:type_name -> roster.HolderRef
+	21, // 26: roster.EmailClaimRequest.date_expires:type_name -> google.protobuf.Timestamp
+	21, // 27: roster.EmailClaimResponse.date_expires:type_name -> google.protobuf.Timestamp
 	26, // 28: roster.EmailConfirmResponse.email:type_name -> roster.Email
 	20, // 29: roster.EmailAttestRequest.holder:type_name -> roster.HolderRef
 	22, // 30: roster.EmailAttestRequest.vouched_by:type_name -> roster.IdentityRef
@@ -2809,7 +2809,7 @@ var file_app_email_svc_g_proto_depIdxs = []int32{
 	2,  // 35: roster.EmailService.Erase:input_type -> roster.EmailRef
 	9,  // 36: roster.EmailService.List:input_type -> roster.EmailListRequest
 	12, // 37: roster.EmailService.Watch:input_type -> roster.EmailWatchRequest
-	15, // 38: roster.EmailService.Verify:input_type -> roster.EmailVerifyRequest
+	15, // 38: roster.EmailService.Claim:input_type -> roster.EmailClaimRequest
 	17, // 39: roster.EmailService.Confirm:input_type -> roster.EmailConfirmRequest
 	19, // 40: roster.EmailService.Attest:input_type -> roster.EmailAttestRequest
 	26, // 41: roster.EmailService.Add:output_type -> roster.Email
@@ -2819,7 +2819,7 @@ var file_app_email_svc_g_proto_depIdxs = []int32{
 	8,  // 45: roster.EmailService.Erase:output_type -> roster.EmailEraseResponse
 	10, // 46: roster.EmailService.List:output_type -> roster.EmailListResponse
 	13, // 47: roster.EmailService.Watch:output_type -> roster.EmailWatchResponse
-	16, // 48: roster.EmailService.Verify:output_type -> roster.EmailVerifyResponse
+	16, // 48: roster.EmailService.Claim:output_type -> roster.EmailClaimResponse
 	18, // 49: roster.EmailService.Confirm:output_type -> roster.EmailConfirmResponse
 	26, // 50: roster.EmailService.Attest:output_type -> roster.Email
 	41, // [41:51] is the sub-list for method output_type

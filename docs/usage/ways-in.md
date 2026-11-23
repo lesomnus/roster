@@ -777,7 +777,7 @@ the same stream every app holds.
 
 The same shape holds for every other overlay verb, so there is nothing a
 console can do that a terminal cannot: `roster holder reaches`, `holder search`, `tenant update`,
-`host update`, `mail-domain update`, `connection update`, `email verify` and
+`host update`, `mail-domain update`, `connection update`, `email claim` and
 `email confirm` are one line each in `cli/entity.go`, taking the request as
 JSON the way the generated verbs do.
 

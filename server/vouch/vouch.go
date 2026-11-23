@@ -906,7 +906,7 @@ func (s *Server) byAddress(ctx context.Context, tenant *app.TenantRef, address s
 	//
 	// So the rule is the one #42 settled, said about an address: a name that
 	// resolves somebody may only be taken by proof. An unproved row now resolves
-	// nobody, and `Email.Verify`'s claim shape is what stops it blocking anybody
+	// nobody, and `Email.Claim`'s claim shape is what stops it blocking anybody
 	// either.
 	//
 	// **What it costs**, and it is real: somebody whose only address came from a

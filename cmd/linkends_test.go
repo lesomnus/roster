@@ -64,7 +64,7 @@ func TestALinkEndsWithWhatEndsASignIn(t *testing.T) {
 
 	// The account app's key, more or less: it mints and spends every kind.
 	b := keyedFor(t, func(c *cmd.Config) { c.SignIn.Enabled = true },
-		link, redeem, leaveLink, leaveByLink, accept, verifyEmail, confirmEmail, issue, set, signOut, getMe)
+		link, redeem, leaveLink, leaveByLink, accept, claimEmail, confirmEmail, issue, set, signOut, getMe)
 	ctx := t.Context()
 
 	// contoso answers at a name, has said where its people sign in, lets them
@@ -305,7 +305,7 @@ func TestALinkEndsWithWhatEndsASignIn(t *testing.T) {
 		x.NoError(err)
 
 		emails := app.NewEmailServiceClient(b.Conn)
-		v, err := emails.Verify(as, app.EmailVerifyRequest_builder{Ref: app.EmailRef_builder{Id: e.GetId()}.Build()}.Build())
+		v, err := emails.Claim(as, app.EmailClaimRequest_builder{Ref: app.EmailRef_builder{Id: e.GetId()}.Build()}.Build())
 		x.NoError(err)
 
 		signsOut(t, who)
@@ -343,7 +343,7 @@ func TestALinkEndsWithWhatEndsASignIn(t *testing.T) {
 			ref := app.EmailRef_builder{Id: e.GetId()}.Build()
 
 			emails := app.NewEmailServiceClient(b.Conn)
-			v, err := emails.Verify(as, app.EmailVerifyRequest_builder{Ref: ref}.Build())
+			v, err := emails.Claim(as, app.EmailClaimRequest_builder{Ref: ref}.Build())
 			x.NoError(err)
 
 			tc.stops(t, who)

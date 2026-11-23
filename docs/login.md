@@ -1337,7 +1337,7 @@ So two things hold together, and either alone is worse than neither:
 | | |
 | --- | --- |
 | the lookup reads the stamp | an unproved row resolves nobody |
-| a proof takes an unproved address | `EmailVerifyRequest.holder` — so a squat blocks nobody either |
+| a proof takes an unproved address | `EmailClaimRequest.holder` — so a squat blocks nobody either |
 
 A claim is a link minted for the address on somebody else's unproved row, naming
 whose claim it is. roster does not deliver it, as it does not deliver any of them:

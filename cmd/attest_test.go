@@ -172,7 +172,7 @@ func TestAClaimIsSpentInsideATransaction(t *testing.T) {
 
 	ceo := b.holder(t, b.ctx, b.Contoso, "ceo")
 	door := b.as(b.ctx, b.holder(t, b.ctx, b.Contoso, "front-door"), b.Contoso)
-	v, err := b.Walled.Email().Verify(door, app.EmailVerifyRequest_builder{
+	v, err := b.Walled.Email().Claim(door, app.EmailClaimRequest_builder{
 		Ref:    app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(theirs)}.Build()}.Build(),
 		Holder: app.HolderRef_builder{Id: ceo.Bytes()}.Build(),
 	}.Build())

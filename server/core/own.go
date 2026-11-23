@@ -60,7 +60,7 @@ const Owns = "self-service"
 // `MeService` is not here because it needs no role at all: it takes no
 // "whose". What is here takes one, and is the caller's own by the wall.
 //
-// `EmailService/Verify` is not here, though an address is confirmed from
+// `EmailService/Claim` is not here, though an address is confirmed from
 // somebody's own account page. It answers the link that proves an address
 // **to its caller**, and a link is spent by whoever minted it
 // (`coreEmail.Confirm`). So a person who may call it holds, of an address they

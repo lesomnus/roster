@@ -134,9 +134,9 @@ var handsOver = []handedOver{
 			"another issuer, or added again under a name, is where its people are asked from then on",
 	},
 	{
-		// `Verify` answers the link to its caller, as `Link` does (#309).
-		grant:   "emailserviceverify-with-confirm",
-		methods: []string{app.EmailService_Verify_FullMethodName},
+		// `Claim` answers the link to its caller, as `Link` does (#309).
+		grant:   "emailserviceclaim-with-confirm",
+		methods: []string{app.EmailService_Claim_FullMethodName},
 		readsAs: "may confirm addresses",
 		tenant: "any address, proved with no mailbox read: the link that proves one is answered to whoever " +
 			"asked for it, and `EmailService/Confirm` spends one",

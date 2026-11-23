@@ -114,7 +114,7 @@ func TestAnAddressSomebodyErasedNeverProvedIsClaimedLikeAnyOther(t *testing.T) {
 		return app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(address)}.Build()}.Build()
 	}
 
-	v, err := b.Walled.Email().Verify(door, app.EmailVerifyRequest_builder{
+	v, err := b.Walled.Email().Claim(door, app.EmailClaimRequest_builder{
 		Ref: at(typed), Holder: app.HolderRef_builder{Id: ceo.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err, "an address nobody proved was kept from its owner by somebody erased")
@@ -127,7 +127,7 @@ func TestAnAddressSomebodyErasedNeverProvedIsClaimedLikeAnyOther(t *testing.T) {
 
 	// The one they proved is theirs until they are forgotten, or an
 	// administrator erases the row.
-	_, err = b.Walled.Email().Verify(door, app.EmailVerifyRequest_builder{
+	_, err = b.Walled.Email().Claim(door, app.EmailClaimRequest_builder{
 		Ref: at(theirs), Holder: app.HolderRef_builder{Id: ceo.Bytes()}.Build(),
 	}.Build())
 	x.Equal(codes.FailedPrecondition, status.Code(err), "a proved address changed hands: %v", err)
@@ -139,7 +139,7 @@ func TestAnAddressSomebodyErasedNeverProvedIsClaimedLikeAnyOther(t *testing.T) {
 		Holder: app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "another").Bytes()}.Build(), Address: "another@contoso.example",
 	}.Build())
 	x.NoError(err)
-	_, err = b.Ungated.Email().Verify(b.as(ctx, b.holder(t, ctx, b.Contoso, "front-door"), b.Contoso), app.EmailVerifyRequest_builder{
+	_, err = b.Ungated.Email().Claim(b.as(ctx, b.holder(t, ctx, b.Contoso, "front-door"), b.Contoso), app.EmailClaimRequest_builder{
 		Ref: app.EmailRef_builder{Id: other.GetId()}.Build(), Holder: app.HolderRef_builder{Id: stranger.Bytes()}.Build(),
 	}.Build())
 	x.Equal(codes.InvalidArgument, status.Code(err), "a claimant of another tenant: %v", err)

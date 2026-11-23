@@ -31,7 +31,7 @@ import (
 const (
 	leaveLink    = "/roster.VouchService/LeaveLink"
 	leaveByLink  = "/roster.VouchService/Leave"
-	verifyEmail  = "/roster.EmailService/Verify"
+	claimEmail   = "/roster.EmailService/Claim"
 	confirmEmail = "/roster.EmailService/Confirm"
 )
 
@@ -48,7 +48,7 @@ type leavingBy struct {
 
 func leavingFor(t *testing.T, with func(*cmd.Config)) *leavingBy {
 	t.Helper()
-	b := keyedFor(t, with, leaveLink, leaveByLink, link, redeem, verifyEmail, confirmEmail, listHolders,
+	b := keyedFor(t, with, leaveLink, leaveByLink, link, redeem, claimEmail, confirmEmail, listHolders,
 		// And what hearing the sync stream takes (`syncing`).
 		watchSync, invalidate)
 	ctx := t.Context()
@@ -318,7 +318,7 @@ func TestALinkThatConfirmsLeavingAsksWhatLeavingAsks(t *testing.T) {
 			Who: app.VouchWho_builder{Id: l.Who.Bytes()}.Build(),
 		}.Build())
 		x.NoError(err)
-		verification, err := app.NewEmailServiceClient(l.Conn).Verify(l.as, app.EmailVerifyRequest_builder{
+		verification, err := app.NewEmailServiceClient(l.Conn).Claim(l.as, app.EmailClaimRequest_builder{
 			Ref: app.EmailRef_builder{Id: l.address(t, "someone@contoso.example")}.Build(),
 		}.Build())
 		x.NoError(err)

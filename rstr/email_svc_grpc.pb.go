@@ -26,7 +26,7 @@ const (
 	EmailService_Erase_FullMethodName   = "/roster.EmailService/Erase"
 	EmailService_List_FullMethodName    = "/roster.EmailService/List"
 	EmailService_Watch_FullMethodName   = "/roster.EmailService/Watch"
-	EmailService_Verify_FullMethodName  = "/roster.EmailService/Verify"
+	EmailService_Claim_FullMethodName   = "/roster.EmailService/Claim"
 	EmailService_Confirm_FullMethodName = "/roster.EmailService/Confirm"
 	EmailService_Attest_FullMethodName  = "/roster.EmailService/Attest"
 )
@@ -59,7 +59,7 @@ type EmailServiceClient interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(ctx context.Context, in *EmailWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[EmailWatchResponse], error)
-	// Verify mints a link that proves this address, and answers with it once.
+	// Claim mints a link that proves this address, and answers with it once.
 	//
 	// roster does not deliver it -- that is the point, as it is for `Vouch.Link`:
 	// a store that mailed would be a store that knows how to reach people, which
@@ -69,7 +69,7 @@ type EmailServiceClient interface {
 	//
 	// # It also mints a link for an address that is somebody else's
 	//
-	// Which is [EmailVerifyRequest.holder], and it exists because the shape
+	// Which is [EmailClaimRequest.holder], and it exists because the shape
 	// without it left an address **squattable**. `Email` is unique on
 	// `(tenant, address)` and `vouch.byAddress` resolves a person by one, so a row
 	// nobody proved still named somebody -- and `Add` answering `AlreadyExists`
@@ -83,7 +83,7 @@ type EmailServiceClient interface {
 	// whoever wants the address, the proof is a round trip to the mailbox, and
 	// [EmailService.Confirm] is where the address moves. What is deliberately not
 	// here is a proved address moving; see `Confirm`.
-	Verify(ctx context.Context, in *EmailVerifyRequest, opts ...grpc.CallOption) (*EmailVerifyResponse, error)
+	Claim(ctx context.Context, in *EmailClaimRequest, opts ...grpc.CallOption) (*EmailClaimResponse, error)
 	// Confirm spends a link and stamps the row it was minted for.
 	//
 	// Everything wrong answers the same `NotFound`: a token never minted, one
@@ -104,7 +104,7 @@ type EmailServiceClient interface {
 	//
 	// # And it is where an address changes hands
 	//
-	// A link minted with [EmailVerifyRequest.holder] is a claim by somebody who
+	// A link minted with [EmailClaimRequest.holder] is a claim by somebody who
 	// does not hold the address. Spending one **moves** it: the row that held it
 	// unproved is erased and the address is written on the claimant, stamped, in
 	// one transaction. `host.proto`'s `proved()` is the same three writes for the
@@ -124,7 +124,7 @@ type EmailServiceClient interface {
 	//
 	// # Why a link cannot answer this
 	//
-	// `Verify` and `Confirm` are for an address nobody has vouched for: somebody
+	// `Claim` and `Confirm` are for an address nobody has vouched for: somebody
 	// typed it, and the way to find out whether they hold that mailbox is to send
 	// a nonce there and see it come back. An address that arrived inside a token
 	// a directory signed is not that. The check has been done, by whoever the
@@ -238,10 +238,10 @@ func (c *emailServiceClient) Watch(ctx context.Context, in *EmailWatchRequest, o
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type EmailService_WatchClient = grpc.ServerStreamingClient[EmailWatchResponse]
 
-func (c *emailServiceClient) Verify(ctx context.Context, in *EmailVerifyRequest, opts ...grpc.CallOption) (*EmailVerifyResponse, error) {
+func (c *emailServiceClient) Claim(ctx context.Context, in *EmailClaimRequest, opts ...grpc.CallOption) (*EmailClaimResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(EmailVerifyResponse)
-	err := c.cc.Invoke(ctx, EmailService_Verify_FullMethodName, in, out, cOpts...)
+	out := new(EmailClaimResponse)
+	err := c.cc.Invoke(ctx, EmailService_Claim_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -296,7 +296,7 @@ type EmailServiceServer interface {
 	// once in that first message and once as a change that happened while it was
 	// being read -- and that is harmless for the same reason.
 	Watch(*EmailWatchRequest, grpc.ServerStreamingServer[EmailWatchResponse]) error
-	// Verify mints a link that proves this address, and answers with it once.
+	// Claim mints a link that proves this address, and answers with it once.
 	//
 	// roster does not deliver it -- that is the point, as it is for `Vouch.Link`:
 	// a store that mailed would be a store that knows how to reach people, which
@@ -306,7 +306,7 @@ type EmailServiceServer interface {
 	//
 	// # It also mints a link for an address that is somebody else's
 	//
-	// Which is [EmailVerifyRequest.holder], and it exists because the shape
+	// Which is [EmailClaimRequest.holder], and it exists because the shape
 	// without it left an address **squattable**. `Email` is unique on
 	// `(tenant, address)` and `vouch.byAddress` resolves a person by one, so a row
 	// nobody proved still named somebody -- and `Add` answering `AlreadyExists`
@@ -320,7 +320,7 @@ type EmailServiceServer interface {
 	// whoever wants the address, the proof is a round trip to the mailbox, and
 	// [EmailService.Confirm] is where the address moves. What is deliberately not
 	// here is a proved address moving; see `Confirm`.
-	Verify(context.Context, *EmailVerifyRequest) (*EmailVerifyResponse, error)
+	Claim(context.Context, *EmailClaimRequest) (*EmailClaimResponse, error)
 	// Confirm spends a link and stamps the row it was minted for.
 	//
 	// Everything wrong answers the same `NotFound`: a token never minted, one
@@ -341,7 +341,7 @@ type EmailServiceServer interface {
 	//
 	// # And it is where an address changes hands
 	//
-	// A link minted with [EmailVerifyRequest.holder] is a claim by somebody who
+	// A link minted with [EmailClaimRequest.holder] is a claim by somebody who
 	// does not hold the address. Spending one **moves** it: the row that held it
 	// unproved is erased and the address is written on the claimant, stamped, in
 	// one transaction. `host.proto`'s `proved()` is the same three writes for the
@@ -361,7 +361,7 @@ type EmailServiceServer interface {
 	//
 	// # Why a link cannot answer this
 	//
-	// `Verify` and `Confirm` are for an address nobody has vouched for: somebody
+	// `Claim` and `Confirm` are for an address nobody has vouched for: somebody
 	// typed it, and the way to find out whether they hold that mailbox is to send
 	// a nonce there and see it come back. An address that arrived inside a token
 	// a directory signed is not that. The check has been done, by whoever the
@@ -417,8 +417,8 @@ func (UnimplementedEmailServiceServer) List(context.Context, *EmailListRequest) 
 func (UnimplementedEmailServiceServer) Watch(*EmailWatchRequest, grpc.ServerStreamingServer[EmailWatchResponse]) error {
 	return status.Error(codes.Unimplemented, "method Watch not implemented")
 }
-func (UnimplementedEmailServiceServer) Verify(context.Context, *EmailVerifyRequest) (*EmailVerifyResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Verify not implemented")
+func (UnimplementedEmailServiceServer) Claim(context.Context, *EmailClaimRequest) (*EmailClaimResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Claim not implemented")
 }
 func (UnimplementedEmailServiceServer) Confirm(context.Context, *EmailConfirmRequest) (*EmailConfirmResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Confirm not implemented")
@@ -566,20 +566,20 @@ func _EmailService_Watch_Handler(srv interface{}, stream grpc.ServerStream) erro
 // This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
 type EmailService_WatchServer = grpc.ServerStreamingServer[EmailWatchResponse]
 
-func _EmailService_Verify_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EmailVerifyRequest)
+func _EmailService_Claim_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EmailClaimRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(EmailServiceServer).Verify(ctx, in)
+		return srv.(EmailServiceServer).Claim(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: EmailService_Verify_FullMethodName,
+		FullMethod: EmailService_Claim_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EmailServiceServer).Verify(ctx, req.(*EmailVerifyRequest))
+		return srv.(EmailServiceServer).Claim(ctx, req.(*EmailClaimRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -652,8 +652,8 @@ var EmailService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _EmailService_List_Handler,
 		},
 		{
-			MethodName: "Verify",
-			Handler:    _EmailService_Verify_Handler,
+			MethodName: "Claim",
+			Handler:    _EmailService_Claim_Handler,
 		},
 		{
 			MethodName: "Confirm",

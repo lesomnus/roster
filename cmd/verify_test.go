@@ -12,7 +12,7 @@ import (
 	"github.com/lesomnus/roster/server/vouch"
 )
 
-// TestAnAddressIsVerifiedByALinkThatSignsNobodyIn is `Email.Verify` and
+// TestAnAddressIsVerifiedByALinkThatSignsNobodyIn is `Email.Claim` and
 // `Email.Confirm` is on the resource, because unlike recovery
 // there is a row to reference; and worth strictly less than a recovery link,
 // because a mailbox read once must not be an account held.
@@ -29,14 +29,14 @@ import (
 // so the `email` edge is the only thing that can tell them apart.
 func TestAnAddressIsVerifiedByALinkThatSignsNobodyIn(t *testing.T) {
 	const (
-		verify      = "/roster.EmailService/Verify"
+		claim       = "/roster.EmailService/Claim"
 		confirm     = "/roster.EmailService/Confirm"
 		redeem      = "/roster.VouchService/Redeem"
 		listHolders = "/roster.HolderService/List"
 	)
 
 	x := require.New(t)
-	b := keyFor(t, verify, confirm, redeem, listHolders)
+	b := keyFor(t, claim, confirm, redeem, listHolders)
 	ctx := t.Context()
 
 	own := app.HolderRef_builder{Id: b.Who.Bytes()}.Build()
@@ -48,9 +48,9 @@ func TestAnAddressIsVerifiedByALinkThatSignsNobodyIn(t *testing.T) {
 	cl := app.NewEmailServiceClient(b.Conn)
 	as := bearing(ctx, b.Token)
 
-	v, err := cl.Verify(as, app.EmailVerifyRequest_builder{Ref: ref}.Build())
+	v, err := cl.Claim(as, app.EmailClaimRequest_builder{Ref: ref}.Build())
 	x.NoError(err)
-	x.True(strings.HasPrefix(v.GetToken(), vouch.PrefixLink), "a verify link does not look like a link")
+	x.True(strings.HasPrefix(v.GetToken(), vouch.PrefixLink), "a claim's link does not look like a link")
 
 	t.Run("nothing is checked until the link comes back", func(t *testing.T) {
 		x := require.New(t)
@@ -92,7 +92,7 @@ func TestAnAddressIsVerifiedByALinkThatSignsNobodyIn(t *testing.T) {
 		// A fresh one, since the link above was spent. Handed to the door that
 		// mints, by the caller that minted it -- so the issuer check passes and
 		// the `email` edge is what has to refuse.
-		w, err := cl.Verify(as, app.EmailVerifyRequest_builder{Ref: ref}.Build())
+		w, err := cl.Claim(as, app.EmailClaimRequest_builder{Ref: ref}.Build())
 		x.NoError(err)
 
 		res, err := app.NewVouchServiceClient(b.Conn).Redeem(as, app.VouchRedeemRequest_builder{

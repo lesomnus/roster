@@ -210,7 +210,7 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 		Tenant: rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build(), Alias: "self",
 		Methods: []string{
 			"/roster.IdentityService/Add", "/roster.EmailService/List", "/roster.EmailService/Get",
-			"/roster.EmailService/Add", "/roster.EmailService/Verify",
+			"/roster.EmailService/Add", "/roster.EmailService/Claim",
 			"/roster.CredentialService/Set", "/roster.CredentialService/Enrol",
 		},
 	}.Build())
