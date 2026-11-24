@@ -366,6 +366,11 @@ type Role_builder struct {
 	// anything, only what each holds. Set when the role is made and never
 	// after, so `Widen`, `Narrow` and an erase keep it.
 	//
+	// A role of an app's reaches somebody by a binding to them, across the
+	// tenant or in a site, or by a binding to a group of that app, and is held
+	// in no team: so the app's own lists are everybody who holds anything at
+	// it.
+	//
 	// Its alias is still one within the tenant, whichever app's it is:
 	// `@acme/viewer` names one role.
 	App         *Holder

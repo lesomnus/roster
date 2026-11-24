@@ -111,6 +111,9 @@ func (s coreTeamMembership) Add(ctx context.Context, req *app.TeamMembershipAddR
 	if err != nil {
 		return nil, err
 	}
+	if err := s.heldInATeam(ctx, of); err != nil {
+		return nil, err
+	}
 	at, err := s.siteOfTeam(ctx, req.GetTeam())
 	if err != nil {
 		return nil, err
@@ -120,6 +123,30 @@ func (s coreTeamMembership) Add(ctx context.Context, req *app.TeamMembershipAddR
 	}
 
 	return s.TeamMembershipServiceServer.Add(ctx, req)
+}
+
+// heldInATeam refuses a role of an app's (`of`, [pdid.Nil] for roster's) held
+// in a team: a place on a team carries a role of roster's and no other.
+//
+// # An app's role reaches somebody by a binding
+//
+// To them, across the tenant or in a site, or to a group of that app
+// ([Core.boundInItsApp]), and by nothing else. A place on a team was in
+// nobody's list at the app: an app's administrator, who reads the app's
+// roles, the bindings of them and its groups, could neither see it nor take
+// it away without taking the person off the team, and only somebody who
+// administered the team and held the role at the app could have made it.
+// What it gave, a site, a binding to the person already gives. So an app's
+// own lists are everybody who holds anything at it. Refused in the words a
+// role of an app's bound to another's group is.
+func (s Core) heldInATeam(ctx context.Context, of pdid.Id) error {
+	if of == pdid.Nil {
+		return nil
+	}
+	named := s.appNamed(ctx, of)
+
+	return status.Errorf(codes.PermissionDenied,
+		"role: a role of %s's is bound to a person or to a group of %s's, and a place on a team carries a role of roster's and no other", named, named)
 }
 
 // Patch is `Add`'s two questions asked again, and it has to be.
@@ -165,6 +192,9 @@ func (s coreTeamMembership) Patch(ctx context.Context, req *app.TeamMembershipPa
 
 	ms, of, err := s.methodsOf(ctx, req.GetRole())
 	if err != nil {
+		return nil, err
+	}
+	if err := s.heldInATeam(ctx, of); err != nil {
 		return nil, err
 	}
 

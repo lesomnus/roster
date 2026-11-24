@@ -44,15 +44,15 @@ func TestASelectReadsAnEdgeByItsOwnRule(t *testing.T) {
 	b.binds(t, nora, mustId(t, everything.GetId()), &north)
 	as := b.asNobody(ctx, nora, b.Contoso)
 
-	// South's own: a team, a role that names what south's payroll runs, and
-	// saul holding it in the team.
+	// South's own: a team, a role of roster's held in south, and saul holding
+	// it in the team -- a place on a team carries a role of roster's and no
+	// other (`TestAnAppsRoleIsNotHeldInATeam`).
 	team := b.team(t, ctx, south, "south-team")
 	secret, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Site:    app.SiteRef_builder{Id: south.Bytes()}.Build(),
 		Alias:   "south-secret",
-		Methods: []string{"/ext.payroll.Admin/Run"},
-		App:     app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "payroll").Bytes()}.Build(),
+		Methods: []string{"/roster.TeamService/Erase"},
 	}.Build())
 	x.NoError(err)
 	saul := b.holder(t, ctx, b.Contoso, "saul")
@@ -106,5 +106,5 @@ func TestASelectReadsAnEdgeByItsOwnRule(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 	x.Equal("south-team", got.GetTeam().GetAlias())
-	x.Equal([]string{"/ext.payroll.Admin/Run"}, got.GetRole().GetMethods())
+	x.Equal([]string{"/roster.TeamService/Erase"}, got.GetRole().GetMethods())
 }

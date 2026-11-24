@@ -77,7 +77,8 @@ func (b *built) putsIn(t *testing.T, ctx context.Context, who, group pdid.Id) pd
 // could not take them out. And a group of Loft's takes Loft's roles and no
 // other: a role of roster's bound to one is refused in the same shape. A role
 // of roster's bound to the tenant's own group is as it was, and a role of an
-// app's bound to a person or held in a team too.
+// app's bound to a person too; held in a team it is refused
+// (`TestAnAppsRoleIsNotHeldInATeam`).
 func TestARoleOfAnAppIsBoundToAPersonOrToAGroupOfThatApp(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
@@ -122,11 +123,9 @@ func TestARoleOfAnAppIsBoundToAPersonOrToAGroupOfThatApp(t *testing.T) {
 		status.Convert(err).Message())
 
 	// And the rest is as it was: a role of roster's to the tenant's own group,
-	// and a role of an app's to a person, or held in a team.
+	// and a role of an app's to a person.
 	x.NoError(b.bindsGroup(ctx, reader, employees))
 	b.binds(t, b.holder(t, ctx, b.Contoso, "frank"), role, nil)
-	seoul := b.site(t, ctx, b.Contoso, "seoul")
-	b.inTeam(t, ctx, b.holder(t, ctx, b.Contoso, "grace"), b.team(t, ctx, seoul, "front-desk"), role)
 }
 
 // TestSomebodyTakenOutOfAnAppsGroupHoldsNothingOfIt.
