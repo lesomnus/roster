@@ -74,8 +74,8 @@ func TestAFlagIsTheSettingItSays(t *testing.T) {
 		x := require.New(t)
 
 		named := "  tls:\n" +
-			"    cert: /nowhere/cert.pem\n" +
-			"    key: /nowhere/key.pem\n"
+			"    cert: ${file:/nowhere/cert.pem}\n" +
+			"    key: ${file:/nowhere/key.pem}\n"
 		x.ErrorContains(serve(t, named), "/nowhere/cert.pem")
 		x.ErrorContains(serve(t, named, "--tls="), through)
 		x.ErrorContains(serve(t, "", "--tls", "cert.pem"), "cert.pem,key.pem",

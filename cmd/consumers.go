@@ -558,11 +558,16 @@ func (c LoginConfig) Meant() error {
 	return dirThere("login.page.dir (--static)", c.Page.Dir)
 }
 
-// TlsConfig is a certificate and the key that goes with it, as paths.
+// TlsConfig is a certificate and the key that goes with it, each a value of
+// the file as a listener's `tls:` is: `${file:/path}`, `${env:NAME}` or the
+// PEM itself. `roster config` prints `cert` and leaves `key` out, by its name.
+//
+// They are read when the listener is built, so a certificate that is
+// replaced takes a restart.
 type TlsConfig struct {
-	Cert string `yaml:"cert"`
-	Key  string `yaml:"key"`
+	Cert ref.String `yaml:"cert"`
+	Key  ref.String `yaml:"key"`
 }
 
 // IsSet is whether a certificate was named.
-func (c TlsConfig) IsSet() bool { return c.Cert != "" || c.Key != "" }
+func (c TlsConfig) IsSet() bool { return !c.Cert.IsZero() || !c.Key.IsZero() }
