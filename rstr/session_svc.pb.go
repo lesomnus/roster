@@ -284,20 +284,21 @@ func (*sessionRef_Id) isSessionRef_Key() {}
 func (*sessionRef_Secret) isSessionRef_Key() {}
 
 type SessionSelect struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_All         bool                   `protobuf:"varint,1,opt,name=all"`
-	xxx_hidden_Holder      *HolderSelect          `protobuf:"bytes,2,opt,name=holder"`
-	xxx_hidden_Grant       bool                   `protobuf:"varint,8,opt,name=grant"`
-	xxx_hidden_Secret      bool                   `protobuf:"varint,9,opt,name=secret"`
-	xxx_hidden_DateExpired bool                   `protobuf:"varint,11,opt,name=date_expired,json=dateExpired"`
-	xxx_hidden_DateIdle    bool                   `protobuf:"varint,12,opt,name=date_idle,json=dateIdle"`
-	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
-	XXX_raceDetectHookData protoimpl.RaceDetectHookData
-	XXX_presence           [1]uint32
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                        protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_All               bool                   `protobuf:"varint,1,opt,name=all"`
+	xxx_hidden_Holder            *HolderSelect          `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Grant             bool                   `protobuf:"varint,8,opt,name=grant"`
+	xxx_hidden_Secret            bool                   `protobuf:"varint,9,opt,name=secret"`
+	xxx_hidden_DateAuthenticated bool                   `protobuf:"varint,10,opt,name=date_authenticated,json=dateAuthenticated"`
+	xxx_hidden_DateExpired       bool                   `protobuf:"varint,11,opt,name=date_expired,json=dateExpired"`
+	xxx_hidden_DateIdle          bool                   `protobuf:"varint,12,opt,name=date_idle,json=dateIdle"`
+	xxx_hidden_DateUpdated       bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased        bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated       bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
+	XXX_raceDetectHookData       protoimpl.RaceDetectHookData
+	XXX_presence                 [1]uint32
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *SessionSelect) Reset() {
@@ -353,6 +354,13 @@ func (x *SessionSelect) GetSecret() bool {
 	return false
 }
 
+func (x *SessionSelect) GetDateAuthenticated() bool {
+	if x != nil {
+		return x.xxx_hidden_DateAuthenticated
+	}
+	return false
+}
+
 func (x *SessionSelect) GetDateExpired() bool {
 	if x != nil {
 		return x.xxx_hidden_DateExpired
@@ -390,7 +398,7 @@ func (x *SessionSelect) GetDateCreated() bool {
 
 func (x *SessionSelect) SetAll(v bool) {
 	x.xxx_hidden_All = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 0, 10)
 }
 
 func (x *SessionSelect) SetHolder(v *HolderSelect) {
@@ -399,37 +407,42 @@ func (x *SessionSelect) SetHolder(v *HolderSelect) {
 
 func (x *SessionSelect) SetGrant(v bool) {
 	x.xxx_hidden_Grant = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 10)
 }
 
 func (x *SessionSelect) SetSecret(v bool) {
 	x.xxx_hidden_Secret = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 10)
+}
+
+func (x *SessionSelect) SetDateAuthenticated(v bool) {
+	x.xxx_hidden_DateAuthenticated = v
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 10)
 }
 
 func (x *SessionSelect) SetDateExpired(v bool) {
 	x.xxx_hidden_DateExpired = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 10)
 }
 
 func (x *SessionSelect) SetDateIdle(v bool) {
 	x.xxx_hidden_DateIdle = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 10)
 }
 
 func (x *SessionSelect) SetDateUpdated(v bool) {
 	x.xxx_hidden_DateUpdated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 10)
 }
 
 func (x *SessionSelect) SetDateErased(v bool) {
 	x.xxx_hidden_DateErased = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 10)
 }
 
 func (x *SessionSelect) SetDateCreated(v bool) {
 	x.xxx_hidden_DateCreated = v
-	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 8, 9)
+	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 9, 10)
 }
 
 func (x *SessionSelect) HasAll() bool {
@@ -460,39 +473,46 @@ func (x *SessionSelect) HasSecret() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
-func (x *SessionSelect) HasDateExpired() bool {
+func (x *SessionSelect) HasDateAuthenticated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
-func (x *SessionSelect) HasDateIdle() bool {
+func (x *SessionSelect) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *SessionSelect) HasDateUpdated() bool {
+func (x *SessionSelect) HasDateIdle() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *SessionSelect) HasDateErased() bool {
+func (x *SessionSelect) HasDateUpdated() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 7)
 }
 
-func (x *SessionSelect) HasDateCreated() bool {
+func (x *SessionSelect) HasDateErased() bool {
 	if x == nil {
 		return false
 	}
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 8)
+}
+
+func (x *SessionSelect) HasDateCreated() bool {
+	if x == nil {
+		return false
+	}
+	return protoimpl.X.Present(&(x.XXX_presence[0]), 9)
 }
 
 func (x *SessionSelect) ClearAll() {
@@ -514,43 +534,49 @@ func (x *SessionSelect) ClearSecret() {
 	x.xxx_hidden_Secret = false
 }
 
-func (x *SessionSelect) ClearDateExpired() {
+func (x *SessionSelect) ClearDateAuthenticated() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
+	x.xxx_hidden_DateAuthenticated = false
+}
+
+func (x *SessionSelect) ClearDateExpired() {
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
 	x.xxx_hidden_DateExpired = false
 }
 
 func (x *SessionSelect) ClearDateIdle() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 5)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
 	x.xxx_hidden_DateIdle = false
 }
 
 func (x *SessionSelect) ClearDateUpdated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
 	x.xxx_hidden_DateUpdated = false
 }
 
 func (x *SessionSelect) ClearDateErased() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
 	x.xxx_hidden_DateErased = false
 }
 
 func (x *SessionSelect) ClearDateCreated() {
-	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 8)
+	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 9)
 	x.xxx_hidden_DateCreated = false
 }
 
 type SessionSelect_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	All         *bool
-	Holder      *HolderSelect
-	Grant       *bool
-	Secret      *bool
-	DateExpired *bool
-	DateIdle    *bool
-	DateUpdated *bool
-	DateErased  *bool
-	DateCreated *bool
+	All               *bool
+	Holder            *HolderSelect
+	Grant             *bool
+	Secret            *bool
+	DateAuthenticated *bool
+	DateExpired       *bool
+	DateIdle          *bool
+	DateUpdated       *bool
+	DateErased        *bool
+	DateCreated       *bool
 }
 
 func (b0 SessionSelect_builder) Build() *SessionSelect {
@@ -558,36 +584,40 @@ func (b0 SessionSelect_builder) Build() *SessionSelect {
 	b, x := &b0, m0
 	_, _ = b, x
 	if b.All != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 0, 10)
 		x.xxx_hidden_All = *b.All
 	}
 	x.xxx_hidden_Holder = b.Holder
 	if b.Grant != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 10)
 		x.xxx_hidden_Grant = *b.Grant
 	}
 	if b.Secret != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 10)
 		x.xxx_hidden_Secret = *b.Secret
 	}
+	if b.DateAuthenticated != nil {
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 10)
+		x.xxx_hidden_DateAuthenticated = *b.DateAuthenticated
+	}
 	if b.DateExpired != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
 		x.xxx_hidden_DateExpired = *b.DateExpired
 	}
 	if b.DateIdle != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 10)
 		x.xxx_hidden_DateIdle = *b.DateIdle
 	}
 	if b.DateUpdated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 10)
 		x.xxx_hidden_DateUpdated = *b.DateUpdated
 	}
 	if b.DateErased != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 10)
 		x.xxx_hidden_DateErased = *b.DateErased
 	}
 	if b.DateCreated != nil {
-		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 9)
+		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 9, 10)
 		x.xxx_hidden_DateCreated = *b.DateCreated
 	}
 	return m0
@@ -867,12 +897,14 @@ const file_app_session_svc_g_proto_rawDesc = "" +
 	"SessionRef\x12\x18\n" +
 	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12\x18\n" +
 	"\x06secret\x18\t \x01(\fH\x00R\x06secretB\x05\n" +
-	"\x03key\"\xa4\x02\n" +
+	"\x03key\"\xd3\x02\n" +
 	"\rSessionSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
 	"\x06holder\x18\x02 \x01(\v2\x14.roster.HolderSelectR\x06holder\x12\x14\n" +
 	"\x05grant\x18\b \x01(\bR\x05grant\x12\x16\n" +
-	"\x06secret\x18\t \x01(\bR\x06secret\x12!\n" +
+	"\x06secret\x18\t \x01(\bR\x06secret\x12-\n" +
+	"\x12date_authenticated\x18\n" +
+	" \x01(\bR\x11dateAuthenticated\x12!\n" +
 	"\fdate_expired\x18\v \x01(\bR\vdateExpired\x12\x1b\n" +
 	"\tdate_idle\x18\f \x01(\bR\bdateIdle\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +

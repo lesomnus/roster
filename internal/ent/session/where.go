@@ -66,6 +66,11 @@ func Secret(v []byte) predicate.Session {
 	return predicate.Session(sql.FieldEQ(FieldSecret, v))
 }
 
+// DateAuthenticated applies equality check predicate on the "date_authenticated" field. It's identical to DateAuthenticatedEQ.
+func DateAuthenticated(v time.Time) predicate.Session {
+	return predicate.Session(sql.FieldEQ(FieldDateAuthenticated, v))
+}
+
 // DateExpired applies equality check predicate on the "date_expired" field. It's identical to DateExpiredEQ.
 func DateExpired(v time.Time) predicate.Session {
 	return predicate.Session(sql.FieldEQ(FieldDateExpired, v))
@@ -174,6 +179,56 @@ func SecretLT(v []byte) predicate.Session {
 // SecretLTE applies the LTE predicate on the "secret" field.
 func SecretLTE(v []byte) predicate.Session {
 	return predicate.Session(sql.FieldLTE(FieldSecret, v))
+}
+
+// DateAuthenticatedEQ applies the EQ predicate on the "date_authenticated" field.
+func DateAuthenticatedEQ(v time.Time) predicate.Session {
+	return predicate.Session(sql.FieldEQ(FieldDateAuthenticated, v))
+}
+
+// DateAuthenticatedNEQ applies the NEQ predicate on the "date_authenticated" field.
+func DateAuthenticatedNEQ(v time.Time) predicate.Session {
+	return predicate.Session(sql.FieldNEQ(FieldDateAuthenticated, v))
+}
+
+// DateAuthenticatedIn applies the In predicate on the "date_authenticated" field.
+func DateAuthenticatedIn(vs ...time.Time) predicate.Session {
+	return predicate.Session(sql.FieldIn(FieldDateAuthenticated, vs...))
+}
+
+// DateAuthenticatedNotIn applies the NotIn predicate on the "date_authenticated" field.
+func DateAuthenticatedNotIn(vs ...time.Time) predicate.Session {
+	return predicate.Session(sql.FieldNotIn(FieldDateAuthenticated, vs...))
+}
+
+// DateAuthenticatedGT applies the GT predicate on the "date_authenticated" field.
+func DateAuthenticatedGT(v time.Time) predicate.Session {
+	return predicate.Session(sql.FieldGT(FieldDateAuthenticated, v))
+}
+
+// DateAuthenticatedGTE applies the GTE predicate on the "date_authenticated" field.
+func DateAuthenticatedGTE(v time.Time) predicate.Session {
+	return predicate.Session(sql.FieldGTE(FieldDateAuthenticated, v))
+}
+
+// DateAuthenticatedLT applies the LT predicate on the "date_authenticated" field.
+func DateAuthenticatedLT(v time.Time) predicate.Session {
+	return predicate.Session(sql.FieldLT(FieldDateAuthenticated, v))
+}
+
+// DateAuthenticatedLTE applies the LTE predicate on the "date_authenticated" field.
+func DateAuthenticatedLTE(v time.Time) predicate.Session {
+	return predicate.Session(sql.FieldLTE(FieldDateAuthenticated, v))
+}
+
+// DateAuthenticatedIsNil applies the IsNil predicate on the "date_authenticated" field.
+func DateAuthenticatedIsNil() predicate.Session {
+	return predicate.Session(sql.FieldIsNull(FieldDateAuthenticated))
+}
+
+// DateAuthenticatedNotNil applies the NotNil predicate on the "date_authenticated" field.
+func DateAuthenticatedNotNil() predicate.Session {
+	return predicate.Session(sql.FieldNotNull(FieldDateAuthenticated))
 }
 
 // DateExpiredEQ applies the EQ predicate on the "date_expired" field.

@@ -73,18 +73,19 @@ const (
 // `crypto/rand`, so there is no dictionary and a salt would defend against
 // nothing while making the lookup a scan.
 type Session struct {
-	state                  protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
-	xxx_hidden_Holder      *Holder                `protobuf:"bytes,2,opt,name=holder"`
-	xxx_hidden_Grant       []byte                 `protobuf:"bytes,8,opt,name=grant"`
-	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
-	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
-	xxx_hidden_DateIdle    *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_idle,json=dateIdle"`
-	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
-	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
-	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
-	unknownFields          protoimpl.UnknownFields
-	sizeCache              protoimpl.SizeCache
+	state                        protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Id                []byte                 `protobuf:"bytes,1,opt,name=id"`
+	xxx_hidden_Holder            *Holder                `protobuf:"bytes,2,opt,name=holder"`
+	xxx_hidden_Grant             []byte                 `protobuf:"bytes,8,opt,name=grant"`
+	xxx_hidden_Secret            []byte                 `protobuf:"bytes,9,opt,name=secret"`
+	xxx_hidden_DateAuthenticated *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_authenticated,json=dateAuthenticated"`
+	xxx_hidden_DateExpired       *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
+	xxx_hidden_DateIdle          *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_idle,json=dateIdle"`
+	xxx_hidden_DateUpdated       *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
+	xxx_hidden_DateErased        *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
+	xxx_hidden_DateCreated       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
+	unknownFields                protoimpl.UnknownFields
+	sizeCache                    protoimpl.SizeCache
 }
 
 func (x *Session) Reset() {
@@ -136,6 +137,13 @@ func (x *Session) GetGrant() []byte {
 func (x *Session) GetSecret() []byte {
 	if x != nil {
 		return x.xxx_hidden_Secret
+	}
+	return nil
+}
+
+func (x *Session) GetDateAuthenticated() *timestamppb.Timestamp {
+	if x != nil {
+		return x.xxx_hidden_DateAuthenticated
 	}
 	return nil
 }
@@ -200,6 +208,10 @@ func (x *Session) SetSecret(v []byte) {
 	x.xxx_hidden_Secret = v
 }
 
+func (x *Session) SetDateAuthenticated(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateAuthenticated = v
+}
+
 func (x *Session) SetDateExpired(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateExpired = v
 }
@@ -225,6 +237,13 @@ func (x *Session) HasHolder() bool {
 		return false
 	}
 	return x.xxx_hidden_Holder != nil
+}
+
+func (x *Session) HasDateAuthenticated() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_DateAuthenticated != nil
 }
 
 func (x *Session) HasDateExpired() bool {
@@ -264,6 +283,10 @@ func (x *Session) HasDateCreated() bool {
 
 func (x *Session) ClearHolder() {
 	x.xxx_hidden_Holder = nil
+}
+
+func (x *Session) ClearDateAuthenticated() {
+	x.xxx_hidden_DateAuthenticated = nil
 }
 
 func (x *Session) ClearDateExpired() {
@@ -309,6 +332,20 @@ type Session_builder struct {
 	Grant []byte
 	// The digest of the cookie value, and how the row is found. Never the value.
 	Secret []byte
+	// When its person proved who they are: the moment roster's own sign-in
+	// was finished, at its last step -- the second factor, where one was
+	// asked, and not the password before it. payday's
+	// `authsession.Session.DateAuthenticated`, which a store is to keep
+	// (payday#265, its guide *fresh-authentication*), so that whatever asks
+	// how recent a sign-in is reads it from the session's frame. Unset is a
+	// session minted by something that could not say, which payday reads as
+	// unknown.
+	//
+	// Written when the session is made and never after: a session used, its
+	// idle clock moved, or rechecked under an open stream, is nobody proving
+	// anything. **Stamped**, as `Delegation.date_authenticated` is: no request
+	// says it.
+	DateAuthenticated *timestamppb.Timestamp
 	// When it stops working whatever happens, counted from the sign-in.
 	DateExpired *timestamppb.Timestamp
 	// When it stops working if it is not used.
@@ -333,6 +370,7 @@ func (b0 Session_builder) Build() *Session {
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Grant = b.Grant
 	x.xxx_hidden_Secret = b.Secret
+	x.xxx_hidden_DateAuthenticated = b.DateAuthenticated
 	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_DateIdle = b.DateIdle
 	x.xxx_hidden_DateUpdated = b.DateUpdated
@@ -345,12 +383,14 @@ var File_app_session_proto protoreflect.FileDescriptor
 
 const file_app_session_proto_rawDesc = "" +
 	"\n" +
-	"\x11app/session.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xf3\x04\n" +
+	"\x11app/session.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xce\x05\n" +
 	"\aSession\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\"\n" +
 	"\x05grant\x18\b \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x05grant\x12&\n" +
-	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12G\n" +
+	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12Y\n" +
+	"\x12date_authenticated\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampB\x0e\xea\x82\x16\x048\x01@\x01\xaa\xc1\x16\x02\x10\x01R\x11dateAuthenticated\x12G\n" +
 	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpired\x12?\n" +
 	"\tdate_idle\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateIdle\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
@@ -377,16 +417,17 @@ var file_app_session_proto_goTypes = []any{
 }
 var file_app_session_proto_depIdxs = []int32{
 	1, // 0: roster.Session.holder:type_name -> roster.Holder
-	2, // 1: roster.Session.date_expired:type_name -> google.protobuf.Timestamp
-	2, // 2: roster.Session.date_idle:type_name -> google.protobuf.Timestamp
-	2, // 3: roster.Session.date_updated:type_name -> google.protobuf.Timestamp
-	2, // 4: roster.Session.date_erased:type_name -> google.protobuf.Timestamp
-	2, // 5: roster.Session.date_created:type_name -> google.protobuf.Timestamp
-	6, // [6:6] is the sub-list for method output_type
-	6, // [6:6] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	2, // 1: roster.Session.date_authenticated:type_name -> google.protobuf.Timestamp
+	2, // 2: roster.Session.date_expired:type_name -> google.protobuf.Timestamp
+	2, // 3: roster.Session.date_idle:type_name -> google.protobuf.Timestamp
+	2, // 4: roster.Session.date_updated:type_name -> google.protobuf.Timestamp
+	2, // 5: roster.Session.date_erased:type_name -> google.protobuf.Timestamp
+	2, // 6: roster.Session.date_created:type_name -> google.protobuf.Timestamp
+	7, // [7:7] is the sub-list for method output_type
+	7, // [7:7] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_app_session_proto_init() }

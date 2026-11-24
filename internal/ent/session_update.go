@@ -141,6 +141,9 @@ func (_u *SessionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if _u.mutation.DateAuthenticatedCleared() {
+		_spec.ClearField(session.FieldDateAuthenticated, field.TypeTime)
+	}
 	if _u.mutation.DateExpiredCleared() {
 		_spec.ClearField(session.FieldDateExpired, field.TypeTime)
 	}
@@ -334,6 +337,9 @@ func (_u *SessionUpdateOne) sqlSave(ctx context.Context) (_node *Session, err er
 				ps[i](selector)
 			}
 		}
+	}
+	if _u.mutation.DateAuthenticatedCleared() {
+		_spec.ClearField(session.FieldDateAuthenticated, field.TypeTime)
 	}
 	if _u.mutation.DateExpiredCleared() {
 		_spec.ClearField(session.FieldDateExpired, field.TypeTime)

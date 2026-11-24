@@ -1248,6 +1248,7 @@ var (
 		{Name: "id", Type: field.TypeUuid, Unique: true},
 		{Name: "grant", Type: field.TypeBytes},
 		{Name: "secret", Type: field.TypeBytes},
+		{Name: "date_authenticated", Type: field.TypeTime, Nullable: true},
 		{Name: "date_expired", Type: field.TypeTime, Nullable: true},
 		{Name: "date_idle", Type: field.TypeTime, Nullable: true},
 		{Name: "date_updated", Type: field.TypeTime},
@@ -1263,7 +1264,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "session_holder_holder",
-				Columns:    []*schema.Column{SessionColumns[8]},
+				Columns:    []*schema.Column{SessionColumns[9]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1272,7 +1273,7 @@ var (
 			{
 				Name:    "session_page",
 				Unique:  false,
-				Columns: []*schema.Column{SessionColumns[7], SessionColumns[0]},
+				Columns: []*schema.Column{SessionColumns[8], SessionColumns[0]},
 			},
 			{
 				Name:    "session_secret",

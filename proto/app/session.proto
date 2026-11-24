@@ -100,6 +100,27 @@ message Session {
     (payday.field) = {secret: true}
   ];
 
+  // When its person proved who they are: the moment roster's own sign-in
+  // was finished, at its last step -- the second factor, where one was
+  // asked, and not the password before it. payday's
+  // `authsession.Session.DateAuthenticated`, which a store is to keep
+  // (payday#265, its guide *fresh-authentication*), so that whatever asks
+  // how recent a sign-in is reads it from the session's frame. Unset is a
+  // session minted by something that could not say, which payday reads as
+  // unknown.
+  //
+  // Written when the session is made and never after: a session used, its
+  // idle clock moved, or rechecked under an open stream, is nobody proving
+  // anything. **Stamped**, as `Delegation.date_authenticated` is: no request
+  // says it.
+  google.protobuf.Timestamp date_authenticated = 10 [
+    (orm.field) = {
+      nullable: true
+      immutable: true
+    },
+    (payday.field) = {stamped: true}
+  ];
+
   // When it stops working whatever happens, counted from the sign-in.
   google.protobuf.Timestamp date_expired = 11 [(orm.field) = {
     nullable: true

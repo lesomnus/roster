@@ -24,6 +24,7 @@ package console
 import (
 	"context"
 	"errors"
+	"time"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -317,6 +318,13 @@ func (a authed) admit(ctx context.Context, res *app.VouchVerifyResponse) (*app.A
 		// a second answer to a question the policy already answers, frozen at
 		// the moment somebody signed in.
 		Grant: frame.Whole(),
+
+		// When they proved who they are, which is now: this is the last step
+		// of the sign-in, the second factor's where one was asked, and the
+		// session keeps it as payday says a store does (`Session.
+		// date_authenticated`). Whatever asks how recent a sign-in is reads
+		// it from the frame.
+		DateAuthenticated: time.Now().UTC(),
 	})
 	if err != nil {
 		return nil, err

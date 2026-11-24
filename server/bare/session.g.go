@@ -120,6 +120,9 @@ func SessionSelectedFields(m *rstr.SessionSelect) []string {
 	if m.GetSecret() {
 		vs = append(vs, session.FieldSecret)
 	}
+	if m.GetDateAuthenticated() {
+		vs = append(vs, session.FieldDateAuthenticated)
+	}
 	if m.GetDateExpired() {
 		vs = append(vs, session.FieldDateExpired)
 	}

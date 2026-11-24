@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/session.proto.
  */
 export const file_app_session: GenFile = /*@__PURE__*/
-  fileDesc("ChFhcHAvc2Vzc2lvbi5wcm90bxIGcm9zdGVyIpsECgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESGwoFZ3JhbnQYCCABKAxCDOqCFgJAAarBFgIYABIeCgZzZWNyZXQYCSABKAxCDuqCFgQwAUABqsEWAggBEjoKDGRhdGVfZXhwaXJlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCOqCFgQ4AUABEjUKCWRhdGVfaWRsZRgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6bcr8FScSA4oBABogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY+CBgyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGRSAgoAIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChFhcHAvc2Vzc2lvbi5wcm90bxIGcm9zdGVyIuMECgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESGwoFZ3JhbnQYCCABKAxCDOqCFgJAAarBFgIYABIeCgZzZWNyZXQYCSABKAxCDuqCFgQwAUABqsEWAggBEkYKEmRhdGVfYXV0aGVudGljYXRlZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDuqCFgQ4AUABqsEWAhABEjoKDGRhdGVfZXhwaXJlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCOqCFgQ4AUABEjUKCWRhdGVfaWRsZRgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6bcr8FScSA4oBABogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY+CBgyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGRSAgoAIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Session is a console's cookie, in a table.
@@ -111,6 +111,25 @@ export type Session = Message<"roster.Session"> & {
    * @generated from field: bytes secret = 9;
    */
   secret: Uint8Array;
+
+  /**
+   * When its person proved who they are: the moment roster's own sign-in
+   * was finished, at its last step -- the second factor, where one was
+   * asked, and not the password before it. payday's
+   * `authsession.Session.DateAuthenticated`, which a store is to keep
+   * (payday#265, its guide *fresh-authentication*), so that whatever asks
+   * how recent a sign-in is reads it from the session's frame. Unset is a
+   * session minted by something that could not say, which payday reads as
+   * unknown.
+   *
+   * Written when the session is made and never after: a session used, its
+   * idle clock moved, or rechecked under an open stream, is nobody proving
+   * anything. **Stamped**, as `Delegation.date_authenticated` is: no request
+   * says it.
+   *
+   * @generated from field: google.protobuf.Timestamp date_authenticated = 10;
+   */
+  dateAuthenticated?: Timestamp | undefined;
 
   /**
    * When it stops working whatever happens, counted from the sign-in.
