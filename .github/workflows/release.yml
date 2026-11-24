@@ -36,9 +36,11 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-26.04
-    # Five minutes, a hundred times what it takes: a run still going then is
-    # waiting on a registry that will not answer.
-    timeout-minutes: 5
+    # Five minutes for each step that asks a registry, a hundred times what it
+    # takes: a run still going then is waiting on a registry that will not
+    # answer. The checkout has a limit of its own and spends none of theirs,
+    # as `ci.yml`'s fetches do, and the job's limit is the sum of its steps'.
+    timeout-minutes: 21
 
     permissions:
       contents: read
@@ -50,6 +52,7 @@ jobs:
       # under is that file's `REPO`, and is read from there rather than spelt
       # here a second time.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 5
 
       # The image of this commit is a `:r<run>` of one of its `ci` runs on
       # `main` -- pushed, or started there by hand -- newest first, and the
@@ -59,6 +62,7 @@ jobs:
       # hand tries what a tag's run does.
       - name: the image main pushed for this commit
         id: find
+        timeout-minutes: 5
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
@@ -113,6 +117,7 @@ jobs:
 
       - if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        timeout-minutes: 5
         with:
           registry: ${{ steps.find.outputs.registry }}
           username: ${{ github.actor }}
@@ -131,6 +136,7 @@ jobs:
       # refusal GHCR answers right after a login (`ci.yml`, `Build` in `push`).
       - name: the tag's name, for that image
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+        timeout-minutes: 5
         env:
           IMAGE: ${{ steps.find.outputs.image }}
           DIGEST: ${{ steps.find.outputs.digest }}
@@ -175,6 +181,7 @@ jobs:
       # What was named, said once, as `push`'s `Summarise` says what it
       # pushed. Started by hand, what a tag of this commit would name.
       - name: Summarise
+        timeout-minutes: 1
         env:
           EVENT: ${{ github.event_name }}
           REF: ${{ github.ref }}
