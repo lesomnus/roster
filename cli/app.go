@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -20,7 +21,6 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/core"
 )
 
 // NewCmdApp is a roster-hosted app, put into a tenant and taken out of one.
@@ -30,17 +30,19 @@ import (
 // An app a roster operator runs for many tenants holds one deployment key and
 // acts in each tenant as a holder of that tenant's own, nominated for the key
 // (`proto/app/nomination.proto`, `docs/apps.md`). So putting it into a tenant
-// is four rows there -- the holder, a role, the binding, the nomination -- and,
-// once, giving the tenant's administrators the app's methods to hand on.
+// is four rows there -- the holder, a role of roster's naming what the app asks
+// of roster, the binding, the nomination -- and the app's first grant at
+// itself: a role of the app's naming what it serves (`Role.app`), held by the
+// app and by the people who are to administer it there.
 //
 // # Why it is a roster operator's, and a command rather than an RPC
 //
-// The last of those is the reason. A tenant's first administrator is bound
-// `/roster.*/*`, which covers none of an app's own methods, and nobody hands
-// out what they do not hold -- so nobody inside a tenant could give the app's
-// holder its role, or themselves the right to manage it. Somebody outside the
-// wall has to start it, and that is a roster operator. Which methods a tenant
-// gets is what was sold to it, which is the app's to know rather than roster's.
+// The last of those is the reason. What somebody holds is held at an app, and
+// nobody hands out what they do not hold there -- so nobody inside a tenant
+// holds anything at an app that has just arrived, and nobody could give the
+// app, or themselves, the first of it. Somebody outside the wall has to start
+// it, and that is a roster operator. What the app serves is the app's to know
+// rather than roster's, and who administers it there is the tenant's.
 //
 // So this is the deployment's own work, through the unwalled server, as `roster
 // login provision` and `roster tenant add` are. A tenant administrator does not
@@ -77,7 +79,7 @@ func NewCmdApp(c *cmd.Config) *xli.Command {
 func newCmdAppInstall(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "install",
-		Brief: "make an app's holder, role and nomination in a tenant, and let its administrators manage it",
+		Brief: "make an app's holder, roles and nomination in a tenant, and name who administers it there",
 
 		Args: arg.Args{
 			&arg.String{Name: "APP", Brief: "the app, as the control-plane holder its deployment key hangs off; made if new"},
@@ -85,8 +87,9 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 
 		Flags: flg.Flags{
 			&flg.String{Name: "tenant", Brief: "the tenant, by alias"},
-			&flg.Strings{Name: "allow", Brief: "what the app may do there, as methods; repeat it, or comma separate"},
-			&flg.Strings{Name: "administer", Brief: "the methods the tenant's administrators may hand on; added to their role, once"},
+			&flg.Strings{Name: "allow", Brief: "what the app may do there, as methods of roster's; repeat it, or comma separate"},
+			&flg.Strings{Name: "serves", Brief: "the app's own methods, as patterns: a role of the app's, held by it and by whoever --administer names"},
+			&flg.Strings{Name: "administer", Brief: "people of the tenant, by alias, who hold what --serves names there and hand it on; repeat it, or comma separate"},
 			&flg.Switch{Name: "adopt", Brief: "use a holder of the app's name that already holds roles, keys or a way to sign in, with all of it"},
 		},
 
@@ -94,6 +97,7 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 			name, _ := arg.Get[string](cl, "APP")
 			tenant, _ := flg.Find[string](cl, "tenant")
 			allow, _ := flg.Find[[]string](cl, "allow")
+			serves, _ := flg.Find[[]string](cl, "serves")
 			administer, _ := flg.Find[[]string](cl, "administer")
 			adopt, _ := flg.Find[bool](cl, "adopt")
 
@@ -109,9 +113,15 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 				// which is an installation that silently does not work.
 				return invocation(errors.New("--allow: what the app may do in the tenant; a role that allows nothing installs nothing"))
 			}
-			handed, err := cmd.MethodsOf("--administer", administer)
+			own, err := cmd.MethodsOf("--serves", serves)
 			if err != nil {
 				return invocation(err)
+			}
+			people := aliasesOf(administer)
+			if len(people) > 0 && len(own) == 0 {
+				// Who administers an app there holds what it serves there,
+				// and with nothing served there is nothing to hold.
+				return invocation(errors.New("--administer: people hold the app's own methods, which --serves names; say what it serves"))
 			}
 
 			s, err := controlled(ctx, c)
@@ -120,7 +130,7 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 			}
 			defer s.Close()
 
-			got, err := installApp(ctx, s, name, tenant, methods, handed, adopt)
+			got, err := installApp(ctx, s, name, tenant, methods, own, people, adopt)
 			if err != nil {
 				return err
 			}
@@ -139,21 +149,33 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 //
 // # What it looks at before it writes
 //
-// The tenant, and the role its administrators hold when `--administer` names
-// one, are read first, and so is whether a holder of the app's name is
-// somebody's: an install that failed half way on one of those left a holder, a
-// role and a nomination behind for a command that said it failed. What is
-// refused by a write itself is not read first: the holder is made before the
-// role, so a role the server refused leaves the holder, which a second run
-// finds holding nothing and takes.
+// The tenant, and each person `--administer` names, are read first, and so is
+// whether a holder of the app's name is somebody's: an install that failed half
+// way on one of those left a holder, a role and a nomination behind for a
+// command that said it failed. What is refused by a write itself is not read
+// first: the holder is made before the roles, so a role the server refused --
+// one of roster's naming what roster does not serve -- leaves the holder,
+// which a second run finds holding nothing and takes.
 //
 // A holder of the app's name that is already there is somebody's, and is used
-// only if it holds nothing but the app's own role -- which is what a second run
-// finds -- or when `--adopt` says to. Taking it silently was answering the
+// only if it holds nothing but the app's own roles -- which is what a second
+// run finds -- or when `--adopt` says to. Taking it silently was answering the
 // app's key with whatever that holder held, and handing whoever signs in as it
 // the app's methods: `roster app install admin` was a key answered as the
 // tenant's administrator.
-func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods, administer []string, adopt bool) ([]string, error) {
+//
+// # The app's first grant at itself
+//
+// `own` is a role of the app's ([EveryRole]), bound to the app's holder, so
+// that it may write, widen and bind the roles it ships, and to each of
+// `people`, who may then hand the app's methods on there as anybody hands on
+// what they hold. One called so that is already there is left as the tenant
+// has it, when it is the app's, and refused before anything is written when it
+// is roster's or another app's. Nothing of roster's is given by it: binding a role is
+// `BindingService/Add`, which a tenant's administrator holds and the app holds
+// only if `--allow` names it. The tenant's administrators' own role is not
+// written to.
+func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods, own, people []string, adopt bool) ([]string, error) {
 	at := rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()
 	tn, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
 		Ref:    at,
@@ -164,19 +186,36 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 	}
 	at = rstr.TenantRef_builder{Id: tn.GetId()}.Build()
 
-	if len(administer) > 0 {
-		r, err := roleNamed(ctx, s, at, core.Everyverb)
+	// Each of the people first: one who is nobody of the tenant is refused
+	// before anything is written.
+	admins := make([][]byte, 0, len(people))
+	for _, alias := range people {
+		v, err := holderFound(ctx, s, at, alias)
 		if err != nil {
 			return nil, err
 		}
-		if r == nil {
-			return nil, fmt.Errorf("--administer: %s has no role %q to add the app's methods to", tenant, core.Everyverb)
+		if v == nil {
+			return nil, fmt.Errorf("--administer %s: nobody of %s is called that", alias, tenant)
 		}
+		admins = append(admins, v)
 	}
 
 	existing, err := roleNamed(ctx, s, at, AppRole(name))
 	if err != nil {
 		return nil, err
+	}
+	everything, err := roleNamed(ctx, s, at, EveryRole(name))
+	if err != nil {
+		return nil, err
+	}
+	if everything != nil && len(own) > 0 {
+		// One that is there is left as the tenant has it -- when it is the
+		// app's. One of roster's, or of another app's, bound to the app and
+		// to the people named would hand them whatever it names, there.
+		// Asked before anything is written.
+		if err := everyRoleIsTheApps(ctx, s, at, everything, tenant, name); err != nil {
+			return nil, err
+		}
 	}
 	said := []string{}
 
@@ -185,7 +224,7 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 		return nil, err
 	}
 	if !made {
-		h, err := holdingOf(ctx, s, who, existing)
+		h, err := holdingOf(ctx, s, who, existing, everything)
 		if err != nil {
 			return nil, err
 		}
@@ -204,7 +243,7 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 		return nil, err
 	}
 
-	role, made, err := roleOnce(ctx, s, at, AppRole(name), methods)
+	role, made, err := roleOnce(ctx, s, at, AppRole(name), methods, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -215,6 +254,27 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 	}
 	if err := ensureBinding(ctx, s, role, who, nil); err != nil {
 		return nil, err
+	}
+
+	if len(own) > 0 {
+		role, made, err := roleOnce(ctx, s, at, EveryRole(name), own, who)
+		if err != nil {
+			return nil, err
+		}
+		if made {
+			said = append(said, fmt.Sprintf("@%s/%s holds %d method(s) of its own at itself through role %s.", tenant, name, len(own), EveryRole(name)))
+		} else {
+			said = append(said, fmt.Sprintf("%s already has role %s; left as the tenant has it.", tenant, EveryRole(name)))
+		}
+		if err := ensureBinding(ctx, s, role, who, nil); err != nil {
+			return nil, err
+		}
+		for i, v := range admins {
+			if err := ensureBinding(ctx, s, role, v, nil); err != nil {
+				return nil, err
+			}
+			said = append(said, fmt.Sprintf("@%s/%s may hand on %s's methods at @%s/%s through role %s.", tenant, people[i], name, tenant, name, EveryRole(name)))
+		}
 	}
 
 	switch n, err := nominationOf(ctx, s, at, borrower); {
@@ -264,16 +324,6 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 		said = append(said, fmt.Sprintf("%s has no key yet: roster control key add --narrowed %s.", name, name))
 	}
 
-	if len(administer) > 0 {
-		added, err := administered(ctx, s, at, administer)
-		if err != nil {
-			return nil, err
-		}
-		if added > 0 {
-			said = append(said, fmt.Sprintf("%s's administrators may hand on %d more method(s).", tenant, added))
-		}
-	}
-
 	return said, nil
 }
 
@@ -294,14 +344,59 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 // name an operator has to choose is a name two operators choose differently.
 func AppRole(app string) string { return app + "-app" }
 
+// EveryRole is the alias of the role of the app's own that `roster app
+// install --serves` writes: the app's name and `-everything`. A suffix for
+// [AppRole]'s reason, and a different one, since the two are one role of
+// roster's and one of the app's and a role's alias is one within its tenant.
+func EveryRole(app string) string { return app + "-everything" }
+
+// everyRoleIsTheApps refuses a role called [EveryRole] that is not a role of
+// the app's own: of roster's, or of another app's, or of an app whose holder
+// is not the one of the app's name.
+func everyRoleIsTheApps(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, role []byte, tenant, name string) error {
+	v, err := s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
+		Ref:    rstr.RoleRef_builder{Id: role}.Build(),
+		Select: rstr.RoleSelect_builder{App: rstr.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return err
+	}
+	who, err := holderFound(ctx, s, at, name)
+	if err != nil {
+		return err
+	}
+	if who == nil || !bytes.Equal(v.GetApp().GetId(), who) {
+		return fmt.Errorf("%s already has a role %s, and it is not @%s/%s's", tenant, EveryRole(name), tenant, name)
+	}
+
+	return nil
+}
+
+// aliasesOf is a flag's people, each once: repeated, or comma separated.
+func aliasesOf(vs []string) []string {
+	out := []string{}
+	for _, v := range vs {
+		for _, a := range strings.Split(v, ",") {
+			if a = strings.TrimSpace(a); a != "" && !slices.Contains(out, a) {
+				out = append(out, a)
+			}
+		}
+	}
+
+	return out
+}
+
 // roleOnce is the role called `alias` in this tenant, made with `methods` if
 // there is none and **left alone** if there is -- the difference from
 // [ensureRoleNamed], which the Login App's provisioning keeps level with what
-// this binary calls. It says whether it made one.
-func roleOnce(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string, methods []string) ([]byte, bool, error) {
-	v, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
-		Tenant: at, Alias: alias, Methods: methods,
-	}.Build())
+// this binary calls. It says whether it made one. `of` is the app whose
+// methods it names (`Role.app`), and nil is roster's.
+func roleOnce(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias string, methods []string, of []byte) ([]byte, bool, error) {
+	req := rstr.RoleAddRequest_builder{Tenant: at, Alias: alias, Methods: methods}
+	if of != nil {
+		req.App = rstr.HolderRef_builder{Id: of}.Build()
+	}
+	v, err := s.Ungated.Role().Add(ctx, req.Build())
 	if err == nil {
 		return v.GetId(), true, nil
 	}
@@ -332,57 +427,13 @@ func nominationOf(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, borrow
 	}.Build())
 }
 
-// administered adds `methods` to the role a tenant was made with, so whoever
-// administers the tenant may hand them on, and answers how many were new.
-//
-// That role (`server/core`'s [core.Everyverb]) is `/roster.*/*` from the day the
-// tenant is made, which covers no app's methods; this is what a tenant
-// administrator needs before the app's holder's role, or anybody else's, is
-// theirs to change. Added to and never rewritten: what is already there stays,
-// and a method already there, spelled the same, is not added twice. Spelled
-// the same and not covered: `/loft.*/*` beside `/loft.AssetService/*` is two
-// rows, which is untidy and grants nothing more.
-func administered(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, methods []string) (int, error) {
-	got, err := s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
-		Ref: rstr.RoleRef_builder{
-			Slug: rstr.RoleRefBySlug_builder{Alias: z.Ptr(core.Everyverb), Tenant: at}.Build(),
-		}.Build(),
-		Select: rstr.RoleSelect_builder{Methods: z.Ptr(true), DateUpdated: z.Ptr(true)}.Build(),
-	}.Build())
-	if err != nil {
-		return 0, fmt.Errorf("the tenant's administrators' role (%q): %w", core.Everyverb, err)
-	}
-
-	have := got.GetMethods()
-	next := slices.Clone(have)
-	for _, m := range methods {
-		if slices.Contains(next, m) {
-			continue
-		}
-		next = append(next, m)
-	}
-	added := len(next) - len(have)
-	if added == 0 {
-		return 0, nil
-	}
-
-	if _, err := s.Ungated.Role().Patch(ctx, rstr.RolePatchRequest_builder{
-		Ref:         rstr.RoleRef_builder{Id: got.GetId()}.Build(),
-		Methods:     next,
-		DateUpdated: got.GetDateUpdated(),
-	}.Build()); err != nil {
-		return 0, err
-	}
-
-	return added, nil
-}
-
 // newCmdAppUninstall ends an app's nomination in a tenant, which is the whole of
 // taking it out: its narrowed key is answered as nobody there from the next
 // request. A key of the app's that lists methods of its own is the
 // deployment's in every tenant, asks no nomination, and is ended by name.
 //
-// The holder, its role and its binding stay. The trail names the holder, so it
+// The holder, its roles and their bindings stay -- the role of roster's, and
+// the app's own and whoever it was bound to. The trail names the holder, so it
 // stays as every holder does, and a role the tenant may have shaped is theirs to
 // erase. A tenant administrator ends the same nomination themselves with
 // `Nomination.Erase`, and needs nothing from a roster operator to do it.

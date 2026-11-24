@@ -35,7 +35,8 @@ import (
 // app is the alias of the holder the app acts as in its tenant, and its
 // methods are what `docs/apps.md` says to install it with for this package:
 // [reach.Methods] at roster, and the app's own package in a role of the app's
-// (`Role.app`) its tenant's administrator holds, to hand on there.
+// (`Role.app`, `--serves`) its tenant's administrator holds, to hand on there
+// (`--administer`).
 const app = "relying"
 
 const (
@@ -105,17 +106,13 @@ func newExternal(t *testing.T) *external {
 
 	e.key = stdoutOf(t, cli.NewCmdControl(&box), "key", "add", "--narrowed", app)
 	x.NoError(cli.NewCmdApp(&box).Run(ctx, []string{"install", "--tenant", "acme",
-		"--allow", strings.Join(reach.Methods, ","), app}))
+		"--allow", strings.Join(reach.Methods, ","), "--serves", ownMethods, "--administer", "admin", app}))
 	e.admin = stdoutOf(t, cli.NewCmdKey(&box), "add", "--tenant", "acme", "--holder", "admin", "--name", "admin", "--allow", "/roster.*/*")
 
 	e.s, err = cmd.Build(ctx, c)
 	x.NoError(err)
 	t.Cleanup(func() { e.s.Close() })
-
-	// And acme's administrator holds the app's own package at the app, so
-	// that the roles of the app's they write and bind are theirs to.
 	e.app = holderOf(t, e.s, e.acme, app)
-	holdsAtApp(t, e.s, e.acme, e.app, holderOf(t, e.s, e.acme, "admin"), app+"-everything", ownMethods)
 	g, err := e.s.Grpc(ctx, cmd.Config{})
 	x.NoError(err)
 	l, err := net.Listen("tcp", "127.0.0.1:0")
@@ -408,21 +405,6 @@ func holderOf(t *testing.T, s *cmd.Server, tenant pdid.Id, alias string) pdid.Id
 	require.NoError(t, err)
 
 	return id
-}
-
-// holdsAtApp binds `who` a role of the app `of` naming `methods`, at the box.
-func holdsAtApp(t *testing.T, s *cmd.Server, tenant, of, who pdid.Id, alias string, methods ...string) {
-	t.Helper()
-	ctx := t.Context()
-	r, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
-		Tenant: rstr.TenantRef_builder{Id: tenant.Bytes()}.Build(), Alias: alias, Methods: methods,
-		App: rstr.HolderRef_builder{Id: of.Bytes()}.Build(),
-	}.Build())
-	require.NoError(t, err)
-	_, err = s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
-		Role: rstr.RoleRef_builder{Id: r.GetId()}.Build(), Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
-	}.Build())
-	require.NoError(t, err)
 }
 
 func holders(t *testing.T, c reach.Config) *reach.Holders {
