@@ -101,7 +101,7 @@ func TestAnOperatorSeesWhatSomebodyReaches(t *testing.T) {
 	t.Run("the union, by every path, as patterns", func(t *testing.T) {
 		x := require.New(t)
 
-		v, err := holders.Reaches(as, app.HolderReachesRequest_builder{Ref: her}.Build())
+		v, err := holders.Reaches(as, app.HolderReachesRequest_builder{Ref: her, Roster: ptrTo(true)}.Build())
 		x.NoError(err)
 		x.ElementsMatch([]string{listPeople, erasePeople, listSites}, v.GetMethods())
 
@@ -118,7 +118,7 @@ func TestAnOperatorSeesWhatSomebodyReaches(t *testing.T) {
 		x.NoError(err)
 
 		v, err := holders.Reaches(as, app.HolderReachesRequest_builder{
-			Ref: app.HolderRef_builder{Id: bob.GetId()}.Build(),
+			Ref: app.HolderRef_builder{Id: bob.GetId()}.Build(), Roster: ptrTo(true),
 		}.Build())
 		x.NoError(err)
 		x.Empty(v.GetMethods())

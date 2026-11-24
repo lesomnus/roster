@@ -500,7 +500,7 @@ export function Person(props: {
 }
 
 /**
- * Reaches is what this person may call, as the gate decides it.
+ * Reaches is what this person may call at roster, as the gate decides it.
  *
  * `Holder.Reaches` answers the same union `MeService.Get` answers about the
  * caller -- bindings, groups, teams, added up by the policy's own function --
@@ -509,8 +509,10 @@ export function Person(props: {
  */
 function Reaches(props: { holder: Uint8Array; may: (method: string) => boolean }): React.ReactNode {
 	const allowed = props.may('/roster.HolderService/Reaches')
+	// At roster: what this page draws is roster's, of roster's roles.
 	const vs = useQuery(HolderService.method.reaches, {
 		ref: allowed ? { key: { case: 'id', value: props.holder } } : undefined,
+		at: { case: 'roster', value: true },
 	})
 
 	if (!allowed) {

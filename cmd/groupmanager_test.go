@@ -265,7 +265,7 @@ func TestAManagerReachesTheirGroupsWritesAndNotEverywhere(t *testing.T) {
 	require.NoError(t, err)
 
 	v, err := b.Walled.Holder().Reaches(g.admin, app.HolderReachesRequest_builder{
-		Ref: app.HolderRef_builder{Id: a.Bytes()}.Build(),
+		Ref: app.HolderRef_builder{Id: a.Bytes()}.Build(), Roster: ptrTo(true),
 	}.Build())
 	require.NoError(t, err)
 	require.Contains(t, v.GetMethods(), app.GroupMembershipService_Add_FullMethodName)

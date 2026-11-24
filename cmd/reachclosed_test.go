@@ -35,7 +35,7 @@ func TestSomebodyInAClosedTenantReachesNothing(t *testing.T) {
 
 	as := bearing(ctx, b.Token)
 	h := app.NewHolderServiceClient(b.Conn)
-	req := app.HolderReachesRequest_builder{Ref: app.HolderRef_builder{Id: b.Who.Bytes()}.Build()}.Build()
+	req := app.HolderReachesRequest_builder{Ref: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(), Roster: ptrTo(true)}.Build()
 	tenant := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
 
 	open, err := h.Reaches(as, req)

@@ -60,7 +60,9 @@ restrictions still narrow the resulting permission. Methods follow roster's
 usual patterns, including `/roster.HolderService/*` and `/*.*/*`.
 
 The gate, scope calculation, delegation checks, credential-target checks and
-`Holder.Reaches` all consult the same sources. Directory users still need their
+`Holder.Reaches` at roster all consult the same sources. What a file grants is
+roster's: a role of the file names no app, so an app asking `Holder.Reaches`
+about itself is not answered it. Directory users still need their
 rows and credentials; this file supplies authorization, not authentication.
 `TokenService.Introspect` continues to describe credential restrictions;
 consumers that need role-derived permissions read `Holder.Reaches.everywhere`.

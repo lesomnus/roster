@@ -26,12 +26,13 @@ func TestTheTerminalReachesEveryOverlayVerb(t *testing.T) {
 		domainUpdate     = "/roster.MailDomainService/Update"
 		connectionUpdate = "/roster.ConnectionService/Update"
 		reaches          = "/roster.HolderService/Reaches"
+		listBindings     = "/roster.BindingService/List"
 		search           = "/roster.HolderService/Search"
 		claim            = "/roster.EmailService/Claim"
 		confirm          = "/roster.EmailService/Confirm"
 	)
 
-	b := cliUp(t, tenantUpdate, hostUpdate, domainUpdate, connectionUpdate, reaches, search, claim, confirm)
+	b := cliUp(t, tenantUpdate, hostUpdate, domainUpdate, connectionUpdate, reaches, listBindings, search, claim, confirm)
 	ctx := t.Context()
 	at := app.TenantRef_builder{Id: b.Tenant.GetId()}.Build()
 	id := func(v []byte) string {
@@ -105,7 +106,7 @@ func TestTheTerminalReachesEveryOverlayVerb(t *testing.T) {
 
 	t.Run("holder reaches", func(t *testing.T) {
 		x := require.New(t)
-		out, err := cliRun(t, &b.Hers, "holder", "reaches", "@newco/alice")
+		out, err := cliRun(t, &b.Hers, "holder", "reaches", "@newco/alice", `{"roster": true}`)
 		x.NoError(err, out)
 		x.Contains(out, reaches, "what alice reaches did not list the method she called this with")
 	})

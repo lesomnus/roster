@@ -185,8 +185,20 @@ type HolderServiceClient interface {
 	// `DelegationService`): the same fact about the same person, so one
 	// permission.
 	SignsIn(ctx context.Context, in *HolderSignsInRequest, opts ...grpc.CallOption) (*HolderSignsInResponse, error)
-	// Reaches is what somebody may call, as the gate would decide it -- the same
-	// answer `MeService.Get` gives about the caller, about somebody else.
+	// Reaches is what somebody may call at an app, as the gate would decide it
+	// there -- at roster, the same answer `MeService.Get` gives about the
+	// caller, about somebody else.
+	//
+	// # At an app
+	//
+	// A role says whose methods it names (`Role.app`), so what somebody may
+	// call is held at an app, and the answer is of the roles of one: the app
+	// asking, which is the caller itself, unless the request says `app` or
+	// `roster`. An app asks about itself and is answered as it was. About
+	// another app, or about roster, only a caller who holds
+	// `/roster.BindingService/List` across the tenant is answered: this adds up
+	// what the lists already answer that caller, and an app installed with
+	// `reach.Methods` holds no list.
 	//
 	// # Why it is the policy's function and not a read of the parts
 	//
@@ -713,8 +725,20 @@ type HolderServiceServer interface {
 	// `DelegationService`): the same fact about the same person, so one
 	// permission.
 	SignsIn(context.Context, *HolderSignsInRequest) (*HolderSignsInResponse, error)
-	// Reaches is what somebody may call, as the gate would decide it -- the same
-	// answer `MeService.Get` gives about the caller, about somebody else.
+	// Reaches is what somebody may call at an app, as the gate would decide it
+	// there -- at roster, the same answer `MeService.Get` gives about the
+	// caller, about somebody else.
+	//
+	// # At an app
+	//
+	// A role says whose methods it names (`Role.app`), so what somebody may
+	// call is held at an app, and the answer is of the roles of one: the app
+	// asking, which is the caller itself, unless the request says `app` or
+	// `roster`. An app asks about itself and is answered as it was. About
+	// another app, or about roster, only a caller who holds
+	// `/roster.BindingService/List` across the tenant is answered: this adds up
+	// what the lists already answer that caller, and an app installed with
+	// `reach.Methods` holds no list.
 	//
 	// # Why it is the policy's function and not a read of the parts
 	//

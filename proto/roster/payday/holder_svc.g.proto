@@ -151,8 +151,20 @@ service HolderService {
   // `DelegationService`): the same fact about the same person, so one
   // permission.
   rpc SignsIn(HolderSignsInRequest) returns (HolderSignsInResponse);
-  // Reaches is what somebody may call, as the gate would decide it -- the same
-  // answer `MeService.Get` gives about the caller, about somebody else.
+  // Reaches is what somebody may call at an app, as the gate would decide it
+  // there -- at roster, the same answer `MeService.Get` gives about the
+  // caller, about somebody else.
+  //
+  // # At an app
+  //
+  // A role says whose methods it names (`Role.app`), so what somebody may
+  // call is held at an app, and the answer is of the roles of one: the app
+  // asking, which is the caller itself, unless the request says `app` or
+  // `roster`. An app asks about itself and is answered as it was. About
+  // another app, or about roster, only a caller who holds
+  // `/roster.BindingService/List` across the tenant is answered: this adds up
+  // what the lists already answer that caller, and an app installed with
+  // `reach.Methods` holds no list.
   //
   // # Why it is the policy's function and not a read of the parts
   //
@@ -636,9 +648,22 @@ message HolderSignsInResponse {
 
 message HolderReachesRequest {
   HolderRef ref = 1;
+
+  // Which app's roles to answer of, and neither is the caller itself: an app
+  // asking what somebody may call at it. A caller asking about another app,
+  // or about roster, holds `/roster.BindingService/List` across the tenant.
+  oneof at {
+    // One app, as the holder it is answered as in the tenant.
+    HolderRef app = 2;
+
+    // roster's own API, of roster's roles: what the consoles draw.
+    bool roster = 3;
+  }
 }
 
 message HolderReachesResponse {
+  // Each of these is of the roles of the app asked about, and of no other's.
+  //
   // The patterns, as the roles wrote them, in the shape `frame.Covers` reads
   // and `covers()` reads in the browser. Not expanded.
   repeated string methods = 10;
