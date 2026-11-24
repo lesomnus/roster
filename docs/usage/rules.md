@@ -537,6 +537,7 @@ that names the key as the file writes it (`cmd.Config.Meant`).
 | A lease of several processes over a plane whose database is SQLite is refused, naming the plane's `db.driver` and `spin.lease`. A control plane's broker refusing its database says where it was taken from, where `control.watch.broker` is unsaid | `cmd/config.go` · `cmd/serve.go` | `TestALeaseOfSeveralOverSqliteIsRefused` · `TestTheControlPlanesTakenBrokerIsSaidWhereItIsRefused` |
 | A listener block's certificate is read before anything is opened, by its key: `cert` and `key` both or neither, and each, and `client_ca`, a value that can be read | `cmd/config.go` | `TestACertificateThatCannotBeReadIsRefusedBeforeAnythingIsOpened` |
 | A value kept somewhere else is written as the loader writes it, `${file:/path}` or `${env:NAME}`, a tenant key in the map and a seal in the list as well: an app's keys and seals, and `account.mail`'s username and password. Written `file:/path` or `env:NAME`, it is refused at start, saying how to write one; a key written as itself is taken, and `roster config` prints it as `<redacted>` | `cmd/consumers.go` | `TestAValueKeptSomewhereElseIsWrittenAsTheLoaderWritesIt` |
+| A command's credential is one key, `client.auth.credential`, the key itself or where it is kept, `${file:/path}` for a mounted secret, and one named and not there is refused rather than a call as nobody; `client.auth.credential_file` is a key nothing reads | `cmd/config.go` | `TestACommandsCredentialFromAFileIsAReference` |
 
 ### Of a release
 

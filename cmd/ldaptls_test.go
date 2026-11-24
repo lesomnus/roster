@@ -35,7 +35,7 @@ import (
 func TestLdapServeSaysStartTlsWhereItWasGivenACertificate(t *testing.T) {
 	b := cliUp(t, directoryReads...)
 	ctx := t.Context()
-	t.Setenv(cli.LdapKeyPrefix+"NEWCO", b.Hers.Client.Auth.Credential)
+	t.Setenv(cli.LdapKeyPrefix+"NEWCO", b.Token)
 
 	// A certificate for this machine, in two files as `--tls` reads them.
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)

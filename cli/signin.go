@@ -116,7 +116,7 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 				// stdout, so `$(roster sign-in …)` is the key and nothing else --
 				// the shape `roster key add` answers in, and for its reason.
 				fmt.Fprintf(os.Stdout, "%s\n", key)
-				say("this is the only time it is shown. `client.auth.credential_file` is where a configuration reads one.\n")
+				say("this is the only time it is shown. `client.auth.credential` is where a configuration reads one, as ${file:/path} where it is kept in a file.\n")
 
 				return nil
 			}
@@ -124,7 +124,7 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 			if err := keep(out, key); err != nil {
 				return err
 			}
-			say("written to %s. point `client.auth.credential_file` at it.\n", out)
+			say("written to %[1]s. `client.auth.credential: ${file:%[1]s}` reads it.\n", out)
 
 			return nil
 		}),

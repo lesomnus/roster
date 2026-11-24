@@ -30,6 +30,9 @@ type cliServed struct {
 	Local  cmd.Config
 	Hers   cmd.Config
 
+	// Token is alice's key, the credential `Hers` presents.
+	Token string
+
 	Tenant *app.Tenant
 	Alice  *app.Holder
 	Bob    *app.Holder
@@ -120,9 +123,10 @@ func cliUp(t *testing.T, methods ...string) *cliServed {
 			Client: cmd.ClientConfig{
 				Addr:     l.Addr().String(),
 				Insecure: true,
-				Auth:     cmd.ClientAuthConfig{Scheme: "bearer", Credential: token},
+				Auth:     cmd.ClientAuthConfig{Scheme: "bearer", Credential: credentialOf(token)},
 			},
 		},
+		Token:  token,
 		Tenant: tn,
 		Alice:  alice,
 		Bob:    bob,
@@ -258,7 +262,7 @@ func TestTheTerminalOperatesOnSomebody(t *testing.T) {
 
 		// And the token it reached is over, which is what the command is for.
 		dead := b.Hers
-		dead.Client.Auth.Credential = doomed
+		dead.Client.Auth.Credential = credentialOf(doomed)
 		_, err = cliRun(t, &dead, "holder", "get", "@newco/alice")
 		x.Equal(codes.Unauthenticated, status.Code(err))
 	})
@@ -270,7 +274,7 @@ func TestTheTerminalOperatesOnSomebody(t *testing.T) {
 			"--name", "narrow", "--allow", holderGet)
 
 		hers := b.Hers
-		hers.Client.Auth.Credential = narrow
+		hers.Client.Auth.Credential = credentialOf(narrow)
 		_, err := cliRun(t, &hers, "holder", "disable", "@newco/bob")
 		x.Equal(codes.PermissionDenied, status.Code(err),
 			"a command is not a grant; the gate answers as it would for any caller")

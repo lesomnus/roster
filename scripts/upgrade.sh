@@ -195,7 +195,7 @@ client:
   insecure: true
   auth:
     scheme: bearer
-    credential_file: ${work}/run/kept.key
+    credential: \${file:${work}/run/kept.key}
 EOF
 	"${bin}" --config "${work}/client.yaml" "$@"
 }

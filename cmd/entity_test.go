@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"github.com/lesomnus/roster/cli"
 	"net"
-	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -262,7 +260,7 @@ func TestClientAddrChoosesTheWire(t *testing.T) {
 	c.Client = cmd.ClientConfig{
 		Addr:     lis.Addr().String(),
 		Insecure: true,
-		Auth:     cmd.ClientAuthConfig{Scheme: "bearer", Credential: token},
+		Auth:     cmd.ClientAuthConfig{Scheme: "bearer", Credential: credentialOf(token)},
 	}
 
 	out, err = entities(t, &c, "tenant", "list")
@@ -302,7 +300,7 @@ func TestPlainReachesADeploymentWithNoControlPlane(t *testing.T) {
 	c.Client = cmd.ClientConfig{
 		Addr:     lis.Addr().String(),
 		Insecure: true,
-		Auth:     cmd.ClientAuthConfig{Scheme: "plain", Credential: "@contoso/admin"},
+		Auth:     cmd.ClientAuthConfig{Scheme: "plain", Credential: credentialOf("@contoso/admin")},
 	}
 
 	out, err := entities(t, c, "holder", "list")
@@ -311,50 +309,21 @@ func TestPlainReachesADeploymentWithNoControlPlane(t *testing.T) {
 
 	// And `bearer` against the same server does not, which is the half of the
 	// claim that says the setting is doing something.
-	c.Client.Auth = cmd.ClientAuthConfig{Scheme: "bearer", Credential: "@contoso/admin"}
+	c.Client.Auth = cmd.ClientAuthConfig{Scheme: "bearer", Credential: credentialOf("@contoso/admin")}
 
 	_, err = entities(t, c, "holder", "list")
 	x.Error(err)
 }
 
-// TestACredentialFileThatIsNotThereIsRefused.
-//
-// A deployment that mounted a secret and got the path wrong must not fall
-// through to calling as nobody: that arrives as a permission problem three
-// layers away, about a credential nobody meant to omit.
-func TestACredentialFileThatIsNotThereIsRefused(t *testing.T) {
-	x := require.New(t)
-
-	c := seeded(t)
-	c.Client = cmd.ClientConfig{
-		Addr:     "127.0.0.1:1",
-		Insecure: true,
-		Auth:     cmd.ClientAuthConfig{Scheme: "bearer", CredentialFile: "/nowhere/at/all"},
+// credentialOf is `client.auth.credential` as a variable gives it: `v`
+// itself, or the one reference it is.
+func credentialOf(v string) cmd.Token {
+	var c cmd.Token
+	if err := c.UnmarshalText([]byte(v)); err != nil {
+		panic(err)
 	}
 
-	_, err := entities(t, c, "tenant", "list")
-	x.ErrorContains(err, "client.auth.credential_file")
-}
-
-// TestTheCredentialFileWinsOverTheLiteral, so that a development default in a
-// checked-in file is overridden by the mount rather than competing with it.
-func TestTheCredentialFileWinsOverTheLiteral(t *testing.T) {
-	x := require.New(t)
-
-	at := filepath.Join(t.TempDir(), "credential")
-	x.NoError(os.WriteFile(at, []byte("  a-key\n"), 0o600))
-
-	c := cmd.ClientAuthConfig{Scheme: "bearer", Credential: "another-key", CredentialFile: at}
-
-	p, err := c.Provider()
-	x.NoError(err)
-
-	// What it actually puts on the wire, since that is the only thing that
-	// settles which of the two won -- and it is trimmed, because a file ends in
-	// a newline.
-	md, ok := metadata.FromOutgoingContext(p.Provide(t.Context()))
-	x.True(ok)
-	x.Equal([]string{"Bearer a-key"}, md.Get("authorization"))
+	return c
 }
 
 // TestTheSchemeSaysHowTheCredentialIsSent.
@@ -383,13 +352,13 @@ func TestTheSchemeSaysHowTheCredentialIsSent(t *testing.T) {
 	t.Run("bearer is an api key", func(t *testing.T) {
 		x := require.New(t)
 		x.Equal([]string{"Bearer a-key"},
-			sent(t, cmd.ClientAuthConfig{Scheme: "bearer", Credential: "a-key"}))
+			sent(t, cmd.ClientAuthConfig{Scheme: "bearer", Credential: credentialOf("a-key")}))
 	})
 
 	t.Run("plain is a slug, and the server believes it", func(t *testing.T) {
 		x := require.New(t)
 		x.Equal([]string{"Plain @contoso/admin"},
-			sent(t, cmd.ClientAuthConfig{Scheme: "plain", Credential: "@contoso/admin"}))
+			sent(t, cmd.ClientAuthConfig{Scheme: "plain", Credential: credentialOf("@contoso/admin")}))
 	})
 
 	t.Run("none sends nothing", func(t *testing.T) {
@@ -400,7 +369,7 @@ func TestTheSchemeSaysHowTheCredentialIsSent(t *testing.T) {
 	t.Run("a credential with no scheme is bearer", func(t *testing.T) {
 		x := require.New(t)
 		x.Equal([]string{"Bearer a-key"},
-			sent(t, cmd.ClientAuthConfig{Credential: "a-key"}))
+			sent(t, cmd.ClientAuthConfig{Credential: credentialOf("a-key")}))
 	})
 
 	t.Run("nothing at all sends nothing", func(t *testing.T) {
@@ -415,7 +384,7 @@ func TestTheSchemeSaysHowTheCredentialIsSent(t *testing.T) {
 func TestASchemeThatIsNotOneIsRefused(t *testing.T) {
 	x := require.New(t)
 
-	_, err := (cmd.ClientAuthConfig{Scheme: "basic", Credential: "x"}).Provider()
+	_, err := (cmd.ClientAuthConfig{Scheme: "basic", Credential: credentialOf("x")}).Provider()
 	x.ErrorContains(err, "not one of bearer, plain, none")
 
 	// And the two halves of one that says nothing to send, or nothing to send
@@ -423,7 +392,7 @@ func TestASchemeThatIsNotOneIsRefused(t *testing.T) {
 	_, err = (cmd.ClientAuthConfig{Scheme: "bearer"}).Provider()
 	x.ErrorContains(err, "no credential to send")
 
-	_, err = (cmd.ClientAuthConfig{Scheme: "none", Credential: "x"}).Provider()
+	_, err = (cmd.ClientAuthConfig{Scheme: "none", Credential: credentialOf("x")}).Provider()
 	x.ErrorContains(err, "sends none")
 }
 
@@ -438,7 +407,7 @@ func TestACredentialWithNowhereToSendItIsRefused(t *testing.T) {
 
 	c := seeded(t)
 	c.Client = cmd.ClientConfig{
-		Auth: cmd.ClientAuthConfig{Scheme: "bearer", Credential: "a-key"},
+		Auth: cmd.ClientAuthConfig{Scheme: "bearer", Credential: credentialOf("a-key")},
 	}
 
 	_, err := entities(t, c, "tenant", "list")
@@ -468,7 +437,7 @@ func TestHalReadsTheDatabaseWhateverTheFileSays(t *testing.T) {
 	c.Client = cmd.ClientConfig{
 		Addr:     "127.0.0.1:1",
 		Insecure: true,
-		Auth:     cmd.ClientAuthConfig{Scheme: "bearer", Credential: "a-key"},
+		Auth:     cmd.ClientAuthConfig{Scheme: "bearer", Credential: credentialOf("a-key")},
 	}
 
 	// Without it: the wire, and nothing is listening there.

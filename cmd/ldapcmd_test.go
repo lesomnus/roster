@@ -86,7 +86,7 @@ func TestLdapServeIsToldEverything(t *testing.T) {
 		return cli.Cmd(&cmd.Config{}).Run(ctx, append([]string{"--config=", "ldap", "serve"}, args...))
 	}
 	roster := b.Hers.Client.Addr
-	key := "newco=" + b.Hers.Client.Auth.Credential
+	key := "newco=" + b.Token
 
 	x.ErrorContains(serve("--insecure", "--key", key), "--roster")
 	x.ErrorContains(serve("--roster", roster, "--insecure"), "--key")
@@ -96,7 +96,7 @@ func TestLdapServeIsToldEverything(t *testing.T) {
 	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", key, "--listen-tls", ":0"), "--tls")
 	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", key, "--require-tls"), "--tls")
 	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", key, "--base", "other=o=other"), "no key or nomination for it")
-	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", "other="+b.Hers.Client.Auth.Credential), "cannot see",
+	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", "other="+b.Token), "cannot see",
 		"a key for one tenant was taken as another's")
 
 	// bob's app password: a key on his own row, `Me.Get` and nothing else.
@@ -110,7 +110,7 @@ func TestLdapServeIsToldEverything(t *testing.T) {
 
 	// Told everything, from the environment for the key the way a service
 	// file would, on a port this test picked.
-	t.Setenv(cli.LdapKeyPrefix+"NEWCO", b.Hers.Client.Auth.Credential)
+	t.Setenv(cli.LdapKeyPrefix+"NEWCO", b.Token)
 	l, addr := listening(t)
 	run, cancel := context.WithCancel(cmd.Held(ctx, l))
 	done := make(chan error, 1)
