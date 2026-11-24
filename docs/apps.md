@@ -615,7 +615,7 @@ What Loft's page **writes at roster** because somebody pressed a button --
 erin, Loft's administrator, putting fred into `loft-users` -- Loft writes **as
 erin**, through a delegation she approved at roster, and not as itself. So it is
 held to what erin holds there, as if she had made the call, and the trail names
-her. What Loft does for itself -- its setup, the roles it ships, a key ended
+her as who did it, Loft as the caller, and the delegation. What Loft does for itself -- its setup, the roles it ships, a key ended
 from its page -- it still does as itself.
 
 ```
@@ -627,7 +627,7 @@ loft   ─ POST /device/poll {device_code} ─▶ account app
        ◀─ {token: rd_…}  (once; erin's, issued to @acme/loft, a day at most: `delegation.life`)
 loft   ─ Bearer <Loft's own key> + roster-as: rd_… ─▶ GroupMembershipService/Add{loft-users, fred}
        ◀─ answered as erin, held to what erin holds for Loft
-trail  ─ actor erin
+trail  ─ actor erin, caller @acme/loft, presence roster-as:<the delegation>
 ```
 
 - **One approval, for as long as it lives.** Loft keeps the token on its server,

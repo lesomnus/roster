@@ -271,14 +271,13 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 		}
 		id.Id = p.String()
 
-		if t := h.GetTenant().GetId(); len(t) > 0 {
-			q, err := pdid.From(t)
-			if err != nil {
-				return auth.Identity{}, err
-			}
-
-			id.TenantId = q.String()
-		}
+		// No tenant is claimed. `TenantId` is a claim payday holds to the
+		// caller of a represented call (`frame.Frame.Caller`), and the
+		// resolver puts on the frame the holder or key that presented this
+		// (`cmd.Resolver`): the person's tenant claimed here is compared with
+		// the caller's, and a front door on a deployment key has none. The
+		// person's own is read from the row by the resolver, which refuses a
+		// delegation of anybody other than whom it resolved.
 
 		return id, nil
 	})
