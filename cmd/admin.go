@@ -333,11 +333,13 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 	rate := c.Admin.Limiter()
 
 	// An operator's stream is asked again who opened it, as a customer's is
-	// ([AskedAgain]): a session ended is a console that stops being told.
+	// ([AskedAgain]): a session ended is a console that stops being told. Asked
+	// through `Recheck`, which is no use of the session, so a console left open
+	// on a stream idles out as one left on a page does (#275).
 	policy := Policy(s.Control.Ent)
 
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Admin.CallTimeout())).
-		WithStream(AskedAgain(s.recheck, s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), Public, policy)).
+		WithStream(AskedAgain(s.recheck, s.Sessions.Recheck(), Resolver(s.Control.Ungated, nil), Public, policy)).
 		WithUnary(auth.InterceptorUnary(s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), Public)).
 		WithStream(auth.InterceptorStream(s.Sessions.Handler(), Resolver(s.Control.Ungated, nil), Public)).
 

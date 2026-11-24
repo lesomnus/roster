@@ -171,6 +171,15 @@ type Server struct {
 	// is asked again who opened it ([AskedAgain]).
 	recheck time.Duration
 
+	// again is [Server.Auth] as an open stream's caller is asked again: the
+	// same handlers in the same order, but a session read through
+	// `Sessions.Recheck`, which checks the cookie and what it is bound to and
+	// is no use of the session (#275). Through `Handler` the asking was use,
+	// and past half its idle window it moved the deadline, so a page left open
+	// on a stream and calling nothing never idled out. Every other credential
+	// is asked as a call asks it. Nil is [Server.Auth].
+	again auth.Handler
+
 	// owners is who answers which control-plane holder a deployment key hangs
 	// off, for this plane's rules ([keyOwners]).
 	owners *keyOwners
@@ -740,6 +749,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// reads to know which it is.
 		if !c.Control.Serves() {
 			s.Auth = auth.Seq(s.People.Handler(), auth.Plain())
+			s.again = auth.Seq(s.People.Recheck(), auth.Plain())
 		}
 	}
 
@@ -883,11 +893,14 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// says nothing of when, was fresh by a delegation nothing had checked
 		// (#276). A header is a caller saying who is asking, so it is what
 		// answers, and a wrong one refuses; a browser sends neither.
+		again := slices.Clone(chain)
 		if s.People != nil {
 			chain = append(chain, s.People.Handler())
+			again = append(again, s.People.Recheck())
 		}
 
 		s.Auth = auth.Seq(chain...)
+		s.again = auth.Seq(again...)
 
 		// What it serves with, said once as `Plain` says itself where it is
 		// what serves: so that the log says which of the two this is.
@@ -959,10 +972,9 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		// request carries at most one and the order decides nothing but which
 		// answers a request carrying both. A cookie naming **nobody** does not
 		// fall through: it is a credential that is there and wrong.
-		control.Auth = auth.Seq(
-			s.Sessions.Handler(),
-			auth.Bearer(keys.Store(control.Ungated, nil)),
-		)
+		bearer := auth.Bearer(keys.Store(control.Ungated, nil))
+		control.Auth = auth.Seq(s.Sessions.Handler(), bearer)
+		control.again = auth.Seq(s.Sessions.Recheck(), bearer)
 	}
 
 	// Collecting expired delegations, attempts and links.
@@ -1193,6 +1205,10 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 	if h == nil {
 		h = auth.Plain()
 	}
+	again := s.again
+	if again == nil {
+		again = h
+	}
 
 	// The rows an api-key identifier is checked against, which is what makes it
 	// a row rather than a shape: see `keyed`.
@@ -1246,7 +1262,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 
 	chain := grpcx.Serving(ctx, grpcx.WithDeadline(c.Server.CallTimeout())).
 		With(s.policyInterceptors()).
-		WithStream(AskedAgain(s.recheck, h, r, Public, policy)).
+		WithStream(AskedAgain(s.recheck, again, r, Public, policy)).
 		WithUnary(auth.InterceptorUnary(h, r, Public)).
 		WithStream(auth.InterceptorStream(h, r, Public)).
 		WithUnary(grpcx.LimitUnary(rate, gate.ByTenant(), pd.Cost)).
