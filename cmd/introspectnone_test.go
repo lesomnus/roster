@@ -33,6 +33,10 @@ func TestIntrospectSaysOneThingOfATokenThatIsNone(t *testing.T) {
 	b := keyFor(t, introspect)
 	ctx := t.Context()
 
+	// Each a key for the app that asks, which is the one it would be answered
+	// to were it something (`TestAKeyIsAnsweredToTheAppItIsFor`).
+	foo := spenderFor(t, ctx, b)
+
 	for name, token := range map[string]func(t *testing.T) string{
 		"a key nobody minted": func(*testing.T) string {
 			return keys.PrefixTenant + strings.Repeat("A", 43)
@@ -41,18 +45,18 @@ func TestIntrospectSaysOneThingOfATokenThatIsNone(t *testing.T) {
 			return keys.PrefixDelegation + strings.Repeat("A", 43)
 		},
 		"a key revoked": func(t *testing.T) string {
-			token := mintFor(t, ctx, b, b.Who, "revoked", []string{get}, time.Time{})
+			token := mintSpent(t, ctx, b, b.Who, foo.id, "revoked", []string{get}, time.Time{})
 			_, err := b.Ungated.ApiKey().Erase(ctx, app.ApiKeyRef_builder{Secret: keys.Sum(token)}.Build())
 			require.NoError(t, err)
 
 			return token
 		},
 		"a key expired": func(t *testing.T) string {
-			return mintFor(t, ctx, b, b.Who, "expired", []string{get}, time.Now().Add(-time.Hour))
+			return mintSpent(t, ctx, b, b.Who, foo.id, "expired", []string{get}, time.Now().Add(-time.Hour))
 		},
 		"a key whose holder is suspended": func(t *testing.T) string {
 			who := addHolder(t, ctx, b.Server, b.Contoso, "suspended")
-			token := mintFor(t, ctx, b, who, "suspended", []string{get}, time.Time{})
+			token := mintSpent(t, ctx, b, who, foo.id, "suspended", []string{get}, time.Time{})
 			_, err := b.Ungated.Holder().Disable(ctx, app.HolderDisableRequest_builder{
 				Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			}.Build())
@@ -62,7 +66,7 @@ func TestIntrospectSaysOneThingOfATokenThatIsNone(t *testing.T) {
 		},
 	} {
 		t.Run(name, func(t *testing.T) {
-			_, err := pdpb.NewTokenServiceClient(b.Conn).Introspect(bearing(ctx, b.Token),
+			_, err := pdpb.NewTokenServiceClient(b.Conn).Introspect(foo.as,
 				pdpb.TokenIntrospectRequest_builder{Token: token(t)}.Build())
 			require.Equal(t, codes.NotFound, status.Code(err), "%v", err)
 			require.Equal(t, "no such token", status.Convert(err).Message())

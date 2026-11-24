@@ -61,11 +61,14 @@ func TestATokenSaysWhoItIs(t *testing.T) {
 	b := keyFor(t, introspect)
 	ctx := t.Context()
 
-	const get = "/roster.HolderService/Get"
-	token := mintFor(t, ctx, b, b.Who, "reader", []string{get}, time.Time{})
+	// Asked by the app the key is for, which is who it is answered to
+	// (`TestAKeyIsAnsweredToTheAppItIsFor`).
+	const get = "/foo.AssetService/Get"
+	foo := spenderFor(t, ctx, b)
+	token := mintSpent(t, ctx, b, b.Who, foo.id, "reader", []string{get}, time.Time{})
 
 	c := pdpb.NewTokenServiceClient(b.Conn)
-	res, err := c.Introspect(bearing(ctx, b.Token),
+	res, err := c.Introspect(foo.as,
 		pdpb.TokenIntrospectRequest_builder{Token: token}.Build())
 	x.NoError(err)
 
@@ -78,7 +81,7 @@ func TestATokenSaysWhoItIs(t *testing.T) {
 	x.Equal(b.Who.String(), id.Id)
 	x.False(id.Grant.IsWhole())
 	x.True(id.Grant.Allows(get))
-	x.False(id.Grant.Allows("/roster.HolderService/Erase"))
+	x.False(id.Grant.Allows("/foo.AssetService/Erase"))
 }
 
 // TestATokenNarrowedToNothingStaysThatWay is the shape an empty list cannot
@@ -93,15 +96,16 @@ func TestATokenNarrowedToNothingStaysThatWay(t *testing.T) {
 	b := keyFor(t, introspect)
 	ctx := t.Context()
 
-	token := mintFor(t, ctx, b, b.Who, "narrow", nil, time.Time{})
+	foo := spenderFor(t, ctx, b)
+	token := mintSpent(t, ctx, b, b.Who, foo.id, "narrow", nil, time.Time{})
 
-	res, err := pdpb.NewTokenServiceClient(b.Conn).Introspect(bearing(ctx, b.Token),
+	res, err := pdpb.NewTokenServiceClient(b.Conn).Introspect(foo.as,
 		pdpb.TokenIntrospectRequest_builder{Token: token}.Build())
 	x.NoError(err)
 
 	id, err := auth.IdentityFrom(res)
 	x.NoError(err)
-	x.False(id.Grant.Allows("/roster.HolderService/Get"))
+	x.False(id.Grant.Allows("/foo.AssetService/Get"))
 	x.False(id.Grant.IsWhole())
 }
 
@@ -115,8 +119,9 @@ func TestIntrospectSaysNoMoreThanNo(t *testing.T) {
 	b := keyFor(t, introspect)
 	ctx := t.Context()
 
-	live := mintFor(t, ctx, b, b.Who, "live", []string{"/roster.HolderService/Get"}, time.Time{})
-	stale := mintFor(t, ctx, b, b.Who, "stale", []string{"/roster.HolderService/Get"},
+	foo := spenderFor(t, ctx, b)
+	live := mintSpent(t, ctx, b, b.Who, foo.id, "live", []string{"/foo.AssetService/Get"}, time.Time{})
+	stale := mintSpent(t, ctx, b, b.Who, foo.id, "stale", []string{"/foo.AssetService/Get"},
 		time.Now().Add(-time.Minute))
 
 	c := pdpb.NewTokenServiceClient(b.Conn)
@@ -136,7 +141,7 @@ func TestIntrospectSaysNoMoreThanNo(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			x := require.New(t)
 
-			_, err := c.Introspect(bearing(ctx, b.Token),
+			_, err := c.Introspect(foo.as,
 				pdpb.TokenIntrospectRequest_builder{Token: tc.token}.Build())
 			x.Error(err)
 			x.Equal(codes.NotFound, status.Code(err),
@@ -149,7 +154,7 @@ func TestIntrospectSaysNoMoreThanNo(t *testing.T) {
 	t.Run("a live one is answered", func(t *testing.T) {
 		x := require.New(t)
 
-		res, err := c.Introspect(bearing(ctx, b.Token),
+		res, err := c.Introspect(foo.as,
 			pdpb.TokenIntrospectRequest_builder{Token: live}.Build())
 		x.NoError(err)
 		x.Equal(b.Who.Bytes(), res.GetId())

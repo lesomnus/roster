@@ -203,7 +203,7 @@ Whatever the shape, a request from a person arrives with one of:
 | credential | how the app checks it |
 | --- | --- |
 | an access token from the issuer, `aud` = this app | the issuer's keys (`/.well-known/jwks.json`, JWT access tokens); `aud` must name **this** API; `sub` is a `Holder.id`. See *People's tokens* below |
-| an `rt_` of the person's (a script, an app password) | `payday.TokenService/Introspect`; answers the holder, tenant and the key's methods |
+| an `rt_` of the person's **for this app** (`ApiKey.app`; a script) | `payday.TokenService/Introspect`, which answers a key to the app it is for and to no other: the holder, tenant and the key's methods. A key of roster's, or another app's, is answered as a token that is none |
 | an `rd_` this app was given | `Introspect`, which answers only the app it was issued to |
 
 and then asks roster what that person may call **at the app**, with
@@ -233,7 +233,8 @@ noticing. Nor about which group or team somebody is in: a membership nothing is
 bound to is guarded by nothing ([usage/permissions.md](usage/permissions.md) §
 *Membership is not a permission*).
 
-A key's own `methods` are not part of that: `Reaches` answers for the person,
+A key's own `methods` -- this app's, since the key is for it -- are not part
+of that: `Reaches` answers for the person,
 so a call that came with a key whose list is narrower than its holder's is the
 app's to hold to that list, as `Introspect` answers it, and `reach` says yes
 wherever the holder may.

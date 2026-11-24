@@ -159,6 +159,9 @@ message ApiKey {
   // key roster does not have is (`server/keys`), whatever its methods are
   // called -- a name it shares with one of roster's opens nothing here.
   //
+  // `TokenService.Introspect` answers a key for an app to that app alone,
+  // and a key of roster's to no app: it is spent by presenting it to roster.
+  //
   // One of the key's holder's tenant and not erased, and nothing more is
   // asked of it. Set when the key is minted and never after. A key of the
   // control plane's (`rk_`) is the deployment's own and is for no app.
