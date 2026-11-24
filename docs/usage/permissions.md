@@ -89,7 +89,7 @@ so it is worth reading once:
 | --- | --- | --- |
 | **Binding** → holder | a role written to one person | widens |
 | **Binding** → group | a role written to a **group**, so everybody in it | widens |
-| **TeamMembership** | a role held inside one team | widens, at the team's site |
+| **TeamMembership** | a role of roster's held inside one team | widens, at the team's site |
 | **GroupMembership** with a role | a manager's, for one group: its maker's, or somebody appointed | widens, to that group's membership writes and its name |
 | **Binding.site** | the same role, but only within one site | narrows |
 
@@ -529,8 +529,15 @@ nothing at roster or at levyan. The refusal names the app:
 role.methods: you do not hold "/loft.BookingService/Cancel" at @acme/loft, so you may not grant it
 ```
 
-A role of an app's is bound to a person, to a group of that app (§ *A group*),
-or held in a team. It takes no alias roster
+A role of an app's is bound to a person or to a group of that app (§ *A group*),
+and held in no team: a place on a team carries a role of roster's, and one of
+an app's is refused, naming the app --
+
+```
+role: a role of @acme/loft's is bound to a person or to a group of @acme/loft's, and a place on a team carries a role of roster's and no other
+```
+
+-- so the app's own lists are everybody who holds anything at it. It takes no alias roster
 finds a role of its own by -- `self-service`, `group-manager`, `everything`,
 `app-administrator`, `login-app`, `account`, `scim` -- and it ends with the app: erasing the holder
 the app is answered as erases the roles of it in the same act, and a restore of

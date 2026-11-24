@@ -368,8 +368,8 @@ Somebody has to be bound to the first of them. An administrator of the tenant
 does it, or an app's administrator (§ *An app's administrators*), who holds
 `BindingService/Add` for the app and the app's methods at it; an app's setup
 that names its first owner does it itself, with `BindingService/Add` in its
-role of roster's -- a grant like any other, and one the app holds at itself. A role of the app's is bound to a person,
-to a group of the app's, or held in a team (§ *An app's groups*). An app running roster in its own process writes the same
+role of roster's -- a grant like any other, and one the app holds at itself. A role of the app's is bound to a person
+or to a group of the app's (§ *An app's groups*), and held in no team. An app running roster in its own process writes the same
 rows through that roster's own door, and calls `Holders.Recheck` after.
 
 ### An app's groups

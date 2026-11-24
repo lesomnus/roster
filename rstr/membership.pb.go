@@ -467,6 +467,10 @@ type TeamMembership_builder struct {
 	//
 	// Said when the place is made, and not changed over the wire on a place
 	// that is there: see the message's own comment.
+	//
+	// A role of roster's. One of an app's is refused (`server/core`,
+	// `heldInATeam`): an app's role reaches somebody by a binding to them or to
+	// a group of that app, which the app's administrator can see and end.
 	Role        *Role
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp

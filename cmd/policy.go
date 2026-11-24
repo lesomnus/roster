@@ -643,9 +643,11 @@ func (p policy) of(ctx context.Context, who uuid.UUID, app uuid.UUID) (held, err
 		return held{}, err
 	}
 	for _, v := range ts {
-		if v.Edges.Role != nil && v.Edges.Role.AppId != app {
-			// Another app's, which reaches them there and is nothing here --
-			// not even the sight of the team's site.
+		if v.Edges.Role != nil && (v.Edges.Role.AppId != uuid.Nil() || app != roster) {
+			// Of an app's, which a place on a team does not carry
+			// (`core.heldInATeam`) and which reaches nobody anywhere by one;
+			// or roster's, asked at an app, where it is nothing -- not even
+			// the sight of the team's site.
 			continue
 		}
 		if v.Edges.Role != nil {
