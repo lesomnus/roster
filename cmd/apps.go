@@ -54,11 +54,18 @@ import (
 // # And it fails closed
 //
 // What is held across the tenant, by a binding of no app and no site, is not
-// narrowed: the rule is about a grant for an app. What is held in a site is
-// narrowed by the site as before ([Sets] answers the sites a grant of no app
-// reaches), and a row of the app's is seen through this whatever site it is
-// in; a caller who holds the read both for an app and in a site sees the
-// rows of that site that are the app's.
+// narrowed: the rule is about a grant for an app. What is held in a site and
+// for no app is narrowed by the site as before ([Sets] answers the sites a
+// grant of no app reaches), and a row of the app's is seen through this
+// whatever site it is in.
+//
+// # Two grants are two grants
+//
+// A caller who holds the read both for an app and in a site is answered the
+// rows of that site and the rows of that app, each once: [Sets] narrows such
+// a call by no site ([held.sitesFor]), and this answers the rows either
+// grant reaches. Met, the two answered what both narrow to, which was less
+// than either.
 func Apps(db *ent.Client, sources ...rbac.Source) bare.Scope {
 	return apps{p: policy{db: db, sources: sources}}
 }
@@ -205,7 +212,16 @@ func (x apps) GroupMembershipScope(ctx context.Context) (predicate.GroupMembersh
 		return nil, err
 	}
 
-	return groupmembership.HasGroupWith(groupsOf(of, sites)), nil
+	p := groupmembership.HasGroupWith(groupsOf(of, sites))
+	if len(sites) == 0 {
+		return p, nil
+	}
+
+	// And the caller's own place, which the grant in a site reads wherever it
+	// is ([People]).
+	f, _ := frame.From(ctx)
+
+	return groupmembership.Or(p, groupmembership.HasHolderWith(holder.IdEQ(f.Actor.Uuid()))), nil
 }
 
 // ApiKeyScope is a key of one of the apps the caller holds the read for, or

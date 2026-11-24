@@ -450,11 +450,16 @@ type reach struct {
 // sitesFor is where this caller holds `method`: the sites, or everywhere.
 //
 // What is held for an app is narrowed by its app ([Apps]) and the layer, and
-// not by a site: held for one app alone, a method is everywhere here and
-// that app's there. Held besides by a grant of no app in a site, it is that
-// site here, and the app narrows within it.
+// not by a site: held for an app, a method is everywhere here. Held besides
+// by a grant of no app in a site, it is still everywhere here, and [Apps]
+// answers the app's rows and the site's, each once: two grants are two
+// grants, and narrowed by a site here and by an app there a call was
+// answered what both narrow to, the rows of the site that were the app's,
+// which is less than either. A write is held to what either reaches by the
+// layer (`server/core`, `mayWriteOfApp`), which reads what a row of the
+// site's names as the grant in the site alone reads it.
 func (h held) sitesFor(method string) (sites []uuid.UUID, all bool) {
-	forApp, other := false, false
+	forApp := false
 	for _, r := range h.reaches {
 		if !slices.ContainsFunc(r.methods, func(m string) bool { return frame.Covers(m, method) }) {
 			continue
@@ -464,7 +469,6 @@ func (h held) sitesFor(method string) (sites []uuid.UUID, all bool) {
 
 			continue
 		}
-		other = true
 		if r.all {
 			return nil, true
 		}
@@ -472,7 +476,7 @@ func (h held) sitesFor(method string) (sites []uuid.UUID, all bool) {
 			sites = append(sites, r.site)
 		}
 	}
-	if forApp && !other {
+	if forApp {
 		return nil, true
 	}
 
@@ -720,7 +724,10 @@ func (p policy) of(ctx context.Context, who uuid.UUID, app uuid.UUID) (held, err
 			// a site, nor anything `everywhere` says, which is the tenant's
 			// whole. A binding that says a site as well, or of a role of an
 			// app's, was refused where it was written, and gives nothing.
-			if app != roster || v.Edges.Site != nil {
+			//
+			// And not at all where the layer reads a write as the caller's
+			// grants of no app alone read it (`core.OfNoApp`).
+			if app != roster || v.Edges.Site != nil || core.OfNoApp(ctx) {
 				continue
 			}
 			ms := core.HeldForAnApp(v.Edges.Role.Methods)

@@ -167,8 +167,9 @@ func (s Core) heldForApp(ctx context.Context, method string, of pdid.Id) (bool, 
 //
 // Somebody who holds the method for no app is not asked: the gate, the wall
 // and the rules of the write are what hold them. One who also holds it in the
-// site the row is in passes there, as they would have.
-func (s Core) mayWriteOfApp(ctx context.Context, field, method, what string, row, site pdid.Id) error {
+// site the row is in passes there, as they would have, and what else the
+// write names is read as that grant alone reads it ([Core.byASiteAlone]).
+func (s Core) mayWriteOfApp(ctx context.Context, field, method, what string, row, site pdid.Id, seen ...func(context.Context) error) error {
 	apps, sites, whole, err := s.heldFor(ctx, method)
 	if err != nil || whole || len(apps) == 0 {
 		return err
@@ -177,11 +178,65 @@ func (s Core) mayWriteOfApp(ctx context.Context, field, method, what string, row
 		return nil
 	}
 	if site != pdid.Nil && slices.Contains(sites, site) {
-		return nil
+		return s.byASiteAlone(ctx, seen...)
 	}
 
 	return status.Errorf(codes.PermissionDenied, "%s: you hold %s for %s, and this %s is not %s",
 		field, method, s.appsNamed(ctx, apps), what, s.whoseOf(ctx, apps))
+}
+
+// byASiteAlone reads what a write names as the caller's grants of no app
+// read it: each of `seen`, asked with a context that says so ([OfNoApp]).
+//
+// # Two grants are two grants
+//
+// Somebody who holds a method for an app and in a site holds two grants, and
+// a row either reaches is theirs to write. The wall cannot ask which a write
+// is made under -- it sees a query, not the request -- so it narrows such a
+// call by neither (`cmd`, `held.sitesFor`), and the layer asks: a row of the
+// app's is written by the grant for the app, which reaches anybody of the
+// tenant; a row of the site's by the grant in the site, which reaches only
+// what is in it. Read as both, a binding of Seoul's role to somebody of Busan
+// would be let through by Seoul's grant for the binding and Foo's for the
+// person, which neither alone reaches. So what a row of the site's names --
+// the role, the person, the group -- is read again as the grant in the site
+// alone would read it, and what it does not reach is `NotFound`, as it was
+// to that grant alone.
+func (s Core) byASiteAlone(ctx context.Context, seen ...func(context.Context) error) error {
+	ctx = context.WithValue(ctx, ofNoAppKey{}, true)
+	for _, read := range seen {
+		if err := read(ctx); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// reachedInASite is [Core.byASiteAlone] where another rule let the write
+// through: asked of somebody who holds `method` for an app and in a site and
+// not across the tenant, of a row that is not the app's (`row`).
+func (s Core) reachedInASite(ctx context.Context, method string, row pdid.Id, seen ...func(context.Context) error) error {
+	apps, sites, whole, err := s.heldFor(ctx, method)
+	if err != nil || whole || len(apps) == 0 || len(sites) == 0 {
+		return err
+	}
+	if row != pdid.Nil && slices.Contains(apps, row) {
+		return nil
+	}
+
+	return s.byASiteAlone(ctx, seen...)
+}
+
+type ofNoAppKey struct{}
+
+// OfNoApp is whether a read is to be narrowed by the caller's grants of no
+// app alone ([Core.byASiteAlone]): what `cmd`'s wall reads, and drops a
+// binding for an app from, where this says so.
+func OfNoApp(ctx context.Context) bool {
+	v, _ := ctx.Value(ofNoAppKey{}).(bool)
+
+	return v
 }
 
 // appsNamed is the apps a refusal names, `@acme/foo` or `@acme/foo, @acme/bar`.
