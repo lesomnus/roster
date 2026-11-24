@@ -96,22 +96,35 @@ operator does it, once per tenant (#75):
 ```sh
 roster app install --tenant acme \
   --allow '/roster.HolderService/Reaches,/roster.SyncService/Watch' \
-  --administer '/loft.*/*' \
+  --serves '/loft.*/*' \
+  --administer admin \
   loft
 ```
 
-It is the roster operator's because of the last flag. A tenant's first
-administrator is bound `/roster.*/*`, which covers none of an app's methods, and
-nobody hands out what they do not hold -- so nobody in the tenant could give the
-app's holder its role, or themselves the right to manage it. `--administer` adds
-the app's methods to that administrator's role; from then on the holder's
-bindings, and the nomination, are the tenant's. Installing again leaves a role
-the tenant reshaped as they have it, and puts back a nomination or binding that
-is gone -- it is how an operator puts an app back after a tenant ended it, which
-the tenant usually cannot do itself: nominating the app's holder needs the
-app's methods. `roster app uninstall --tenant acme loft` ends the nomination,
-and the tenant administrator can do the same from the user console's *apps*
-tab. The Login App and the account app do this for themselves at start, in
+`--allow` is what the app asks of roster, in `loft-app`, a role of roster's
+bound to the app's holder: methods roster serves, and nothing else. `--serves`
+is the app's own methods, as patterns, in `loft-everything`, **a role of the
+app's** (`Role.app`) bound to the app's holder -- so that it may write, widen
+and bind the roles it ships -- and to each person `--administer` names, by alias,
+who then hold the app's methods at the app and hand them on there. With no
+`--serves` there is no such role, and `--administer` without it is refused; a
+name that is nobody of the tenant is refused before anything is written, and so
+is a `loft-everything` already there that is roster's or another app's.
+
+It is the roster operator's because of the last two flags. What somebody holds is
+held at an app, and nobody hands out what they do not hold there -- so nobody in
+the tenant holds anything at an app that has just arrived, and nobody could give
+the app's holder its first role there, or themselves the right to manage it. The
+tenant's administrators' own role is not written to: binding a role of the
+app's is `BindingService/Add`, which they hold, and what they bind is held to
+what they hold at the app. From then on the holder's bindings, both roles and
+the nomination are the tenant's. Installing again leaves a role the tenant
+reshaped as they have it, and puts back a nomination or binding that is gone --
+it is how an operator puts an app back after a tenant ended it, which the tenant
+usually cannot do itself: nominating the app's holder needs what it holds.
+`roster app uninstall --tenant acme loft` ends the nomination, and leaves the
+holder, both roles and their bindings, as it always left the first; the tenant
+administrator can end the nomination from the user console's *apps* tab. The Login App and the account app do this for themselves at start, in
 every tenant with a name that is not being destroyed -- so for them ending it
 lasts until the next start.
 
@@ -222,9 +235,10 @@ wherever the holder may.
 Nobody hands out what they do not hold, and it is asked at the app the role
 names: what somebody holds at roster hands out nothing at an app, and the other
 way round. A tenant's first administrator is bound `/roster.*/*`, which is
-nothing at Loft. So a roster operator, at the box, starts it: binds a tenant
-administrator a role of the app's naming its methods, and from there it is the
-tenant's to hand on, at that app.
+nothing at Loft. So a roster operator, at the box, starts it: `roster app
+install --serves … --administer …` binds the people it names a role of the
+app's naming its methods, and from there it is the tenant's to hand on, at that
+app.
 
 Every shape asks the same questions in the same order, so this half of an app is
 written once, here: `reach`, below.
@@ -301,14 +315,16 @@ erased. Nothing here is a privilege only an app has; it is three ordinary facts
 lined up.
 
 1. **The app holds what it writes.** A role is a grant when it is written, and
-   nobody hands out what they do not hold (`server/core/escalate.go`). So the
-   role an app is installed with names its own package beside what it asks of
-   roster, and the role writes:
+   nobody hands out what they do not hold at the app it names
+   (`server/core/escalate.go`). So an app is installed with its own package in
+   a role of its own (`--serves`), and with the verbs that write roles in the
+   role of roster's it asks for (`--allow`):
 
    ```sh
    roster app install --tenant acme \
-     --allow '/roster.HolderService/Reaches,/roster.SyncService/Watch,…,/roster.RoleService/Add,/roster.RoleService/Get,/roster.RoleService/Widen,/loft.*/*' \
-     --administer '/loft.*/*' \
+     --allow '/roster.HolderService/Reaches,/roster.SyncService/Watch,…,/roster.RoleService/Add,/roster.RoleService/Get,/roster.RoleService/Widen' \
+     --serves '/loft.*/*' \
+     --administer admin \
      loft
    ```
 
@@ -316,12 +332,13 @@ lined up.
    methods it has not written yet, and holding the pattern is what lets it.
    It gives nobody anything at the app, which asks roster about whoever calls
    it and is never called as itself.
-2. **The tenant's administrators hold them too** (`--administer`), or nobody in
-   the tenant could bind the roles the app writes: binding one is a grant, and
-   the first administrator holds `/roster.*/*` alone.
+2. **The people it is to be administered by hold them too** (`--administer`),
+   or nobody in the tenant could bind the roles the app writes: binding one is
+   a grant at the app, and a tenant's first administrator holds nothing there.
 3. **The app writes with `Role.Add`, and widens with `Role.Widen`.** At its
-   own setup -- `loft init` -- each role it ships is added under its alias, and
-   one already there is the tenant's and left as it is. At an upgrade that
+   own setup -- `loft init` -- each role it ships is added under its alias, as a
+   role of its own (`app` is the holder it is), and one already there is the
+   tenant's and left as it is. At an upgrade that
    brings a method -- an RPC a member may call, a permission method -- each
    role is widened by it with `RoleService/Widen`, which adds and never takes
    away: a method the role already holds or covers is not added, nothing new
@@ -333,14 +350,15 @@ lined up.
 What the app widens by is its own to keep: the methods each role gains with a
 release, and not each role's whole list, or an upgrade puts back what a tenant
 took out -- with `Role.Narrow`, in the user console, one method at a time. A
-role the tenant made wider than the app -- a method of another app's in it -- is
-refused a widen, as a patch of it would be, and is the tenant administrator's
-to change, who holds what is in it.
+role the tenant made wider than the app holds -- a method the app does not hold
+at itself -- is refused a widen, as a patch of it would be, and is the tenant
+administrator's to change, who holds what is in it.
 
-Somebody has to be bound to the first of them. The tenant's administrator does
+Somebody has to be bound to the first of them. Whoever `--administer` named does
 it in the user console; an app's setup that names its first owner does it
-itself, with `BindingService/Add` in its role -- a grant like any other, and
-one the app holds. An app running roster in its own process writes the same
+itself, with `BindingService/Add` in its role of roster's -- a grant like any
+other, and one the app holds at itself. A role of the app's is bound to a person
+or held in a team, and to no group until a group says whose it is. An app running roster in its own process writes the same
 rows through that roster's own door, and calls `Holders.Recheck` after.
 
 ### People's tokens

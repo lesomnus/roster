@@ -68,7 +68,7 @@ func TestAWordThatIsNoMethodIsRefused(t *testing.T) {
 			{"key", "add", "--tenant", "newco", "--holder", "admin", "--allow", "HolderService/Get"},
 			{"control", "key", "add", "--allow", "/roster.MeService/Get,roster.HolderService/Get", "loft"},
 			{"app", "install", "--tenant", "newco", "--allow", "not-a-method", "loft"},
-			{"app", "install", "--tenant", "newco", "--allow", "/roster.MeService/Get", "--administer", "/roster.Holder*/Get", "loft"},
+			{"app", "install", "--tenant", "newco", "--allow", "/roster.MeService/Get", "--serves", "/roster.Holder*/Get", "loft"},
 			{"sign-in", "--at", "http://127.0.0.1:1", "--allow", "MeService/Get"},
 		} {
 			out, _, err := boxRun(t, at(b.c, "admin"), "", args...)

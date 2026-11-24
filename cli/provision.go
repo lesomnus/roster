@@ -303,9 +303,10 @@ func (h holding) String() string {
 	return strings.Join(out, "; ")
 }
 
-// holdingOf reads what `who` holds, leaving out bindings to `except`: the role
-// being given, which a second run finds already bound and which is not news.
-func holdingOf(ctx context.Context, s *cmd.Server, who []byte, except []byte) (holding, error) {
+// holdingOf reads what `who` holds, leaving out bindings to `except`: the
+// roles being given, which a second run finds already bound and which are not
+// news.
+func holdingOf(ctx context.Context, s *cmd.Server, who []byte, except ...[]byte) (holding, error) {
 	ref := rstr.HolderRef_builder{Id: who}.Build()
 	out := holding{}
 
@@ -322,7 +323,7 @@ func holdingOf(ctx context.Context, s *cmd.Server, who []byte, except []byte) (h
 		}
 		for _, v := range vs.GetItems() {
 			r := v.GetRole().GetId()
-			if bytes.Equal(r, except) || seen[string(r)] {
+			if slices.ContainsFunc(except, func(e []byte) bool { return bytes.Equal(r, e) }) || seen[string(r)] {
 				continue
 			}
 			seen[string(r)] = true
