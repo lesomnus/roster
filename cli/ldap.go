@@ -57,7 +57,7 @@ func newCmdLdapServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			cfg.Bind(l, &c.Ldap.Roster, &flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"}),
 			cfg.Bind(l, &c.Ldap.Insecure, &flg.Switch{Name: "insecure", Brief: "dial roster without TLS"}),
 			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per tenant fronted. Or " + LdapKeyPrefix + "<ALIAS> in the environment"},
-			cfg.Bind(l, &c.Ldap.Key, &flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it, as rk_…, env:NAME or file:PATH; instead of --key"}),
+			cfg.BindText(l, &c.Ldap.Key, &flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it: rk_…, or one reference as the whole value, '${file:/run/key}' or '${env:NAME}' in single quotes; instead of --key"}),
 			&flg.Strings{Name: "base", Brief: "a tenant's suffix, as alias=dc=…; o=<alias> if not given"},
 			cfg.Bind(l, &c.Ldap.Bind, &flg.String{Name: "bind", Brief: "what a bind's password may be: key (an app password the person minted; the default), password (their own), either"}),
 			cfg.BindFunc(l, &c.Ldap.Tls, &flg.String{Name: "tls", Brief: "this server's certificate and key, as cert.pem,key.pem; offers StartTLS and enables --listen-tls"}, certPair),
@@ -89,21 +89,22 @@ func newCmdLdapServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				}
 			}
 
-			if lc.Key != "" {
-				key, err := tokenOrRef(lc.Key)
-				if err != nil {
+			var f appKeys
+			if !lc.Key.IsZero() {
+				if f.key, err = lc.Key.Value(); err != nil {
 					return fmt.Errorf("--deployment-key (ldap.key): %w", err)
 				}
-				lc.Key = key
+				// Handed on beside it, for the directory to refuse the two.
+				if f.keys, err = blockKeys(lc.Keys); err != nil {
+					return err
+				}
 			} else {
 				// `--key` is merged with the block and the environment by
 				// [keysOf], so it is read here and not bound either.
 				given, _ := flg.Find[[]string](cl, "key")
-				keys, err := keysOf(lc.Keys, LdapKeyPrefix, given)
-				if err != nil {
+				if f.keys, err = keysOf(lc.Keys, LdapKeyPrefix, given); err != nil {
 					return err
 				}
-				lc.Keys = keys
 			}
 
 			if lc.Roster == "" {
@@ -115,7 +116,7 @@ func newCmdLdapServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				lc.Addr = ":389"
 			}
 
-			return serveLdap(ctx, lc)
+			return serveLdap(ctx, lc, f)
 		}),
 	}
 }
@@ -138,11 +139,12 @@ func certPair(v string) (cmd.TlsConfig, error) {
 
 // serveLdap answers LDAP until ctx is done.
 //
-// Told a [cmd.LdapConfig] and nothing else, for the reason `serveAccount` is:
+// Told a [cmd.LdapConfig] and the keys read from it, for the reason
+// `serveAccount` is:
 // it is called from the command above and from `roster serve` when `ldap:`
 // names an address, and both have to build the same thing. It builds no
 // telemetry; both callers already have.
-func serveLdap(ctx context.Context, lc cmd.LdapConfig) error {
+func serveLdap(ctx context.Context, lc cmd.LdapConfig, f appKeys) error {
 	// Both names, in every refusal below. The value reached here from a block
 	// or from a flag and this cannot tell which, so naming one would be right
 	// half the time -- and a reader who has only ever used the other would be
@@ -177,8 +179,8 @@ func serveLdap(ctx context.Context, lc cmd.LdapConfig) error {
 
 	cfg := ldap.Config{
 		Roster:   lc.Roster,
-		Keys:     lc.Keys,
-		Key:      lc.Key,
+		Keys:     f.keys,
+		Key:      f.key,
 		Bases:    lc.Bases,
 		Bind:     mode,
 		Insecure: lc.Insecure,

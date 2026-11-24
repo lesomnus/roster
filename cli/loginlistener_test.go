@@ -43,9 +43,8 @@ func TestTheLoginAppsListenerHasClocks(t *testing.T) {
 			Roster:         "127.0.0.1:1",
 			Insecure:       true,
 			Hydra:          cmd.HydraConfig{Admin: "http://127.0.0.1:1"},
-			Key:            "rk_nobody",
 			InsecureCookie: true,
-		})
+		}, "rk_nobody")
 	}()
 	t.Cleanup(func() {
 		stop()

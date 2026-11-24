@@ -190,7 +190,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 			// answers over HTTP is counted (`Front`), so that the data plane
 			// it calls is not stopped under a request it is still answering.
 			if c.Account.Serves() {
-				ac, err := frontDoor(ctx, c, l, s)
+				ac, keys, err := frontDoor(ctx, c, l, s)
 				if err != nil {
 					return err
 				}
@@ -200,26 +200,26 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 				// made here, on the control plane, and a deployment with no
 				// control plane has nowhere to make one (`frontDoor`); no start
 				// will. `roster account serve` still refuses with none.
-				if len(ac.Keys) == 0 && ac.Key == "" {
+				if keys.none() {
 					slog.Warn("account: no key is named -- account.key, account.keys or ROSTER_ACCOUNT_KEY_<ALIAS> -- and there is " +
 						"no control plane to make one on, so the app is not serving; name a tenant key, or a control plane")
 				} else {
-					g.Go(s.Front(func() error { return serveAccount(ctx, ac) }))
+					g.Go(s.Front(func() error { return serveAccount(ctx, ac, keys) }))
 				}
 			}
 			if c.Ldap.Serves() {
-				lc, err := directory(c, l)
+				lc, keys, err := directory(c, l)
 				if err != nil {
 					return err
 				}
-				g.Go(func() error { return serveLdap(ctx, lc) })
+				g.Go(func() error { return serveLdap(ctx, lc, keys) })
 			}
 			if c.Scim.Serves() {
 				sc := scimOf(c, l)
 				g.Go(s.Front(func() error { return serveScim(ctx, sc) }))
 			}
 			if c.Login.Serves() {
-				gc, err := loginApp(ctx, c, l, s)
+				gc, key, err := loginApp(ctx, c, l, s)
 				if err != nil {
 					return err
 				}
@@ -240,11 +240,11 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 				// `roster login serve` still refuses: somebody typed that, and
 				// a process whose only job is the Login App has nothing to do
 				// without one.
-				if gc.Key == "" {
+				if key == "" {
 					slog.Warn("login: this deployment has no Login App key yet, so the app is not serving; " +
 						"`roster login provision` writes one and a restart picks it up")
 				} else {
-					g.Go(s.Front(func() error { return serveLogin(ctx, gc) }))
+					g.Go(s.Front(func() error { return serveLogin(ctx, gc, key) }))
 				}
 			}
 
@@ -356,14 +356,14 @@ func migrate(ctx context.Context, s *cmd.Server) error {
 //
 // `l` rather than `c.Server.ListenAddr()` because a configuration may name port
 // 0 and a listener knows what it got.
-func frontDoor(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server) (cmd.AccountConfig, error) {
+func frontDoor(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server) (cmd.AccountConfig, appKeys, error) {
 	ac := c.Account
 	if ac.Roster == "" {
 		ac.Roster = l.Addr().String()
 	}
 	if ac.Connect == "" {
 		if c.Server.Http.Addr == "" {
-			return ac, errors.New("account.connect: the page's calls go out over HTTP and this deployment serves none; name server.http.addr, or account.connect")
+			return ac, appKeys{}, errors.New("account.connect: the page's calls go out over HTTP and this deployment serves none; name server.http.addr, or account.connect")
 		}
 
 		// http rather than https: this is a dial to a listener of this same
@@ -372,37 +372,40 @@ func frontDoor(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server
 		ac.Connect = "http://" + c.Server.Http.Addr
 	}
 
-	if c.Account.Key != "" {
-		key, err := tokenOrRef(c.Account.Key)
+	if !c.Account.Key.IsZero() {
+		key, err := c.Account.Key.Value()
 		if err != nil {
-			return ac, fmt.Errorf("account.key: %w", err)
+			return ac, appKeys{}, fmt.Errorf("account.key: %w", err)
 		}
-		ac.Key = key
+		// Handed on beside it, for the app to refuse the two.
+		keys, err := blockKeys(c.Account.Keys)
+		if err != nil {
+			return ac, appKeys{}, err
+		}
 
-		return ac, nil
+		return ac, appKeys{key: key, keys: keys}, nil
 	}
 
 	keys, err := keysOf(c.Account.Keys, AccountKeyPrefix, nil)
 	switch {
 	case err == nil:
-		ac.Keys = keys
+		return ac, appKeys{keys: keys}, nil
 
 	case errors.Is(err, errNoKeys):
 		if s == nil || s.Control == nil {
-			return ac, nil
+			return ac, appKeys{}, nil
 		}
 		token, n, err := provisionAccount(ctx, s, ac.Enrol, "")
 		if err != nil {
-			return ac, fmt.Errorf("account.key: none named, and making one here: %w", err)
+			return ac, appKeys{}, fmt.Errorf("account.key: none named, and making one here: %w", err)
 		}
-		ac.Key = token
 		slog.Warn(fmt.Sprintf("account: key made at start, fronting %d tenant(s), which is one replica; account.key names one to share", n))
 
-	default:
-		return ac, err
-	}
+		return ac, appKeys{key: token}, nil
 
-	return ac, nil
+	default:
+		return ac, appKeys{}, err
+	}
 }
 
 // loginApp is `login:` with the same default, for the same reason.
@@ -415,73 +418,73 @@ func frontDoor(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server
 //
 // Nothing named is a key made here at start, with the nominations that go with
 // it -- what `roster login provision` writes, without the file -- which is one
-// replica, and needs the control plane an `rk_` lives in. A `file:` that is not
+// replica, and needs the control plane an `rk_` lives in. A `${file:}` that is not
 // there yet is still **not** a refusal, for the reason the caller gives: this is
 // `roster serve`, where the Login App is one of four things in the process, and
 // the one that refuses is `roster login serve`.
-func loginApp(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server) (cmd.LoginConfig, error) {
+func loginApp(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server) (cmd.LoginConfig, string, error) {
 	gc := c.Login
 	if gc.Roster == "" {
 		gc.Roster = l.Addr().String()
 	}
-	if gc.Key == "" {
+	if gc.Key.IsZero() {
 		if s == nil || s.Control == nil {
-			return gc, nil
+			return gc, "", nil
 		}
 
 		token, borrower, err := provisionKey(ctx, s, "")
 		if err != nil {
-			return gc, fmt.Errorf("login.key: none named, and making one here: %w", err)
+			return gc, "", fmt.Errorf("login.key: none named, and making one here: %w", err)
 		}
 		if _, err := nominate(ctx, s, loginMethodsFor(gc.Enrol), borrower); err != nil {
-			return gc, fmt.Errorf("login.key: none named, and making one here: %w", err)
+			return gc, "", fmt.Errorf("login.key: none named, and making one here: %w", err)
 		}
-		gc.Key = token
 		slog.Warn("login: key made at start, which is one replica; login.key names one to share")
 
-		return gc, nil
+		return gc, token, nil
 	}
 
-	key, err := tokenOrRef(gc.Key)
+	key, err := gc.Key.Value()
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			// `file:` naming a path that is not there, which is a first start:
-			// the init container writes it and this process is what makes the
-			// tenant it is for. Left empty so the caller says so and carries on.
-			gc.Key = ""
-
-			return gc, nil
+			// `${file:}` naming a path that is not there, which is a first
+			// start: the init container writes it and this process is what
+			// makes the tenant it is for. No key, so the caller says so and
+			// carries on.
+			return gc, "", nil
 		}
 
-		return gc, fmt.Errorf("login.key: %w", err)
+		return gc, "", fmt.Errorf("login.key: %w", err)
 	}
-	gc.Key = key
 
-	return gc, nil
+	return gc, key, nil
 }
 
 // directory is `ldap:` with the same default, for the same reason.
-func directory(c *cmd.Config, l net.Listener) (cmd.LdapConfig, error) {
+func directory(c *cmd.Config, l net.Listener) (cmd.LdapConfig, appKeys, error) {
 	lc := c.Ldap
 	if lc.Roster == "" {
 		lc.Roster = l.Addr().String()
 	}
 
-	if c.Ldap.Key != "" {
-		key, err := tokenOrRef(c.Ldap.Key)
+	if !c.Ldap.Key.IsZero() {
+		key, err := c.Ldap.Key.Value()
 		if err != nil {
-			return lc, fmt.Errorf("ldap.key: %w", err)
+			return lc, appKeys{}, fmt.Errorf("ldap.key: %w", err)
 		}
-		lc.Key = key
+		// Handed on beside it, for the directory to refuse the two.
+		keys, err := blockKeys(c.Ldap.Keys)
+		if err != nil {
+			return lc, appKeys{}, err
+		}
 
-		return lc, nil
+		return lc, appKeys{key: key, keys: keys}, nil
 	}
 
 	keys, err := keysOf(c.Ldap.Keys, LdapKeyPrefix, nil)
 	if err != nil {
-		return lc, err
+		return lc, appKeys{}, err
 	}
-	lc.Keys = keys
 
-	return lc, nil
+	return lc, appKeys{keys: keys}, nil
 }

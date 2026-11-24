@@ -66,11 +66,11 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			cfg.Bind(l, &c.Login.Roster, &flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"}),
 			cfg.Bind(l, &c.Login.Insecure, &flg.Switch{Name: "insecure", Brief: "dial roster without TLS"}),
 			cfg.Bind(l, &c.Login.Hydra.Admin, &flg.String{Name: "hydra", Brief: "Hydra's admin API, e.g. http://hydra:4445. Private: anybody who reaches it can sign anybody in as anybody"}),
-			cfg.Bind(l, &c.Login.Key, &flg.String{Name: "deployment-key", Brief: "this app's one deployment key (rk_…), or a reference to it: env:NAME, file:PATH"}),
+			cfg.BindText(l, &c.Login.Key, &flg.String{Name: "deployment-key", Brief: "this app's one deployment key: rk_…, or one reference as the whole value, '${file:/run/key}' or '${env:NAME}' in single quotes"}),
 			cfg.Bind(l, &c.Login.Consent, &flg.String{Name: "consent", Brief: "what the consent hop does: skip (grant what the client asked for; the default) or ask (draw a screen)"}),
 			cfg.Bind(l, &c.Login.Base, &flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect. One for the whole app"}),
 			cfg.Bind(l, &c.Login.Enrol, &flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"}),
-			cfg.Bind(l, &c.Login.Seal, &flg.Strings{Name: "seal", Brief: "the key sessions are sealed under, as env:NAME; repeat to rotate"}),
+			cfg.BindFunc(l, &c.Login.Seal, &flg.Strings{Name: "seal", Brief: "the key sessions are sealed under, 32 bytes base64, or one reference to it as the whole value, '${env:NAME}' or '${file:/path}' in single quotes; repeat to rotate"}, tokensOf),
 			cfg.Bind(l, &c.Login.InsecureCookie, &flg.Switch{Name: "insecure-cookie", Brief: "drop Secure from the cookies, for plain http in development"}),
 			cfg.Bind(l, &c.Login.Page.Dir, &flg.String{Name: "static", Brief: "the built sign-in page (ts/dist/login)"}),
 		},
@@ -85,10 +85,6 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			// The block, with the flags bound above already in it.
 			lc := c.Login
 
-			// A reference or the token itself, which is what `secretRef` decides:
-			// a configuration file is committed and a key is a secret, so the
-			// file says `env:NAME` and a flag may say the thing.
-			//
 			// One key rather than one per tenant, and that removes the whole of
 			// `minted`: the file a per-tenant key lived in could be absent on a
 			// first start -- a fresh volume has no customers, so
@@ -96,10 +92,11 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			// come up, so the customer could never be made. An `rk_` is the
 			// **control plane's** and needs no customer to exist, so it can be
 			// minted on an empty deployment and there is no cycle to break.
-			if lc.Key == "" {
+			if lc.Key.IsZero() {
 				return errors.New("--deployment-key (or login.key): this app's one deployment key")
 			}
-			if lc.Key, err = tokenOrRef(lc.Key); err != nil {
+			key, err := lc.Key.Value()
+			if err != nil {
 				return fmt.Errorf("login.key: %w", err)
 			}
 			// A **deployment** key, and an `rt_` is refused at start rather
@@ -112,7 +109,7 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			// key it is. Here rather than in `login.New`, because the prefix is a
 			// fact `server/keys` owns and that app may import no server package
 			// but `server/front`.
-			if !strings.HasPrefix(lc.Key, keys.PrefixDeployment) {
+			if !strings.HasPrefix(key, keys.PrefixDeployment) {
 				return fmt.Errorf("login.key (--deployment-key): a deployment key (%s…), and this is not one",
 					keys.PrefixDeployment)
 			}
@@ -124,7 +121,7 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				lc.Addr = ":8091"
 			}
 
-			return serveLogin(ctx, lc)
+			return serveLogin(ctx, lc, key)
 		}),
 	}
 }
@@ -170,7 +167,7 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "provision",
-		Brief: "mint this deployment's own Login App key into a file, for `login.key: file:…`",
+		Brief: "mint this deployment's own Login App key into a file, for `login.key: ${file:…}`",
 
 		Flags: flg.Flags{
 			&flg.String{Name: "out", Brief: "the directory to write login-app.key into; /run/roster-login if empty"},
@@ -792,10 +789,11 @@ func mustFind[T any](cl *xli.Command, name string) T {
 
 // serveLogin answers login and consent challenges until ctx is done.
 //
-// Told a [cmd.LoginConfig] and nothing else, for the reason `serveAccount` is:
+// Told a [cmd.LoginConfig] and the key read from it, for the reason
+// `serveAccount` is:
 // it is called from the command above and from `roster serve` when `login:`
 // names an address, and both have to build the same thing.
-func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
+func serveLogin(ctx context.Context, lc cmd.LoginConfig, key string) error {
 	// Both names in every refusal, for the reason `serveLdap` gives: the value
 	// reached here from a block or from a flag and this cannot tell which.
 	if lc.Hydra.Admin == "" {
@@ -915,15 +913,16 @@ func serveLogin(ctx context.Context, lc cmd.LoginConfig) error {
 		Enrol:          enrol,
 		PrivateHosts:   private,
 
-		// `env:NAME`, roster's one vocabulary for a reference to a secret. The
-		// same function the account app and the directory resolve theirs with,
-		// and its refusals name no app for that reason.
+		// `env:NAME`, a `Connection` row's word for where its secret is kept,
+		// which is the row's own and not the file's. The same function the
+		// account app resolves a row's with, and its refusals name no app for
+		// that reason.
 		Secret: account.EnvSecret,
 
 		// One credential, and the app narrows it per request. It was one `rt_`
 		// per tenant in a map, with a second map saying which OAuth client was
 		// whose so the right key could be picked; both are gone (#36).
-		Key: lc.Key,
+		Key: key,
 	}
 	if len(lc.Hydra.Header) > 0 {
 		cfg.HydraHeader = http.Header{}

@@ -17,7 +17,7 @@ import (
 // Three tests used to be here and all three were about the two maps `login`
 // was configured with: that a tenant's clients are one comma list rather than
 // a repeated flag, that a tenant whose key file is not written yet is dropped
-// rather than fatal, and that only a missing `file:` is forgiven.
+// rather than fatal, and that only a missing file is forgiven.
 //
 // All three are gone with the maps (#36). This app holds **one** key -- an
 // `rk_`, which is the control plane's and so needs no customer to exist -- and
@@ -46,10 +46,10 @@ func TestAFirstStartWithNoKeyYetStillComesUp(t *testing.T) {
 	t.Run("a file that is not there yet leaves the app off", func(t *testing.T) {
 		x := require.New(t)
 
-		c := &cmd.Config{Login: cmd.LoginConfig{Key: "file:" + there}}
-		got, err := loginApp(t.Context(), c, listening(t), nil)
+		c := &cmd.Config{Login: cmd.LoginConfig{Key: keyAt(t, "${file:"+there+"}")}}
+		_, got, err := loginApp(t.Context(), c, listening(t), nil)
 		x.NoError(err)
-		x.Empty(got.Key, "a key that is not written yet is not a deployment that fails to start")
+		x.Empty(got, "a key that is not written yet is not a deployment that fails to start")
 	})
 
 	t.Run("and the next start finds it", func(t *testing.T) {
@@ -57,19 +57,19 @@ func TestAFirstStartWithNoKeyYetStillComesUp(t *testing.T) {
 
 		x.NoError(os.WriteFile(there, []byte("rk_written\n"), 0o600))
 
-		c := &cmd.Config{Login: cmd.LoginConfig{Key: "file:" + there}}
-		got, err := loginApp(t.Context(), c, listening(t), nil)
+		c := &cmd.Config{Login: cmd.LoginConfig{Key: keyAt(t, "${file:"+there+"}")}}
+		_, got, err := loginApp(t.Context(), c, listening(t), nil)
 		x.NoError(err)
-		x.Equal("rk_written", got.Key, "the token and not the reference: the app is handed the thing")
+		x.Equal("rk_written", got, "the token and not the reference: the app is handed the thing")
 	})
 
 	// Everything else is a deployment configured wrong, and those still stop it:
 	// only *not there* is forgiven, for the reason the comment above gives.
-	t.Run("an env reference naming nothing still refuses", func(t *testing.T) {
+	t.Run("a file that cannot be read still refuses", func(t *testing.T) {
 		x := require.New(t)
 
-		c := &cmd.Config{Login: cmd.LoginConfig{Key: "env:NOTHING_SET_HERE"}}
-		_, err := loginApp(t.Context(), c, listening(t), nil)
+		c := &cmd.Config{Login: cmd.LoginConfig{Key: keyAt(t, "${file:"+dir+"}")}}
+		_, _, err := loginApp(t.Context(), c, listening(t), nil)
 		x.Error(err)
 		x.ErrorContains(err, "login.key")
 	})
@@ -85,9 +85,9 @@ func TestAFirstStartWithNoKeyYetStillComesUp(t *testing.T) {
 		answersAt(t, s, contoso, "contoso.example")
 
 		c := &cmd.Config{Login: cmd.LoginConfig{Addr: ":0"}}
-		got, err := loginApp(ctx, c, listening(t), s)
+		_, got, err := loginApp(ctx, c, listening(t), s)
 		x.NoError(err)
-		x.True(strings.HasPrefix(got.Key, keys.PrefixDeployment), "not a deployment key: %q", got.Key)
+		x.True(strings.HasPrefix(got, keys.PrefixDeployment), "not a deployment key: %q", got)
 
 		// The per-customer half too: the tenant behind the name nominated a
 		// holder for this app's key.
@@ -105,10 +105,21 @@ func TestAFirstStartWithNoKeyYetStillComesUp(t *testing.T) {
 
 		// And without the plane an `rk_` lives in, nothing is made and nothing
 		// refuses: the app stays off, as a missing file leaves it.
-		got, err = loginApp(ctx, c, listening(t), nil)
+		_, got, err = loginApp(ctx, c, listening(t), nil)
 		x.NoError(err)
-		x.Empty(got.Key)
+		x.Empty(got)
 	})
+}
+
+// keyAt is a key as a variable or a flag gives one: `v` itself, or the one
+// reference it is.
+func keyAt(t *testing.T, v string) cmd.Token {
+	t.Helper()
+
+	var k cmd.Token
+	require.NoError(t, k.UnmarshalText([]byte(v)))
+
+	return k
 }
 
 // listening is a listener whose address the default `login.roster` is taken

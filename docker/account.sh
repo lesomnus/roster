@@ -20,11 +20,11 @@ done
 
 
 # One replica, so no `--seal`: the key is made at start. A second replica
-# needs `--seal env:NAME` here with the same 32 bytes, base64, in both.
+# needs `--seal '${env:NAME}'` here with the same 32 bytes, base64, in both.
 exec roster account serve \
 	--listen ":${ACCOUNT_PORT}" \
 	--roster roster:50051 --connect http://roster:8080 --insecure \
 	--base "http://${PUBLIC_HOST}:${ACCOUNT_PORT}" \
 	--static /usr/share/roster/account \
-	--deployment-key "file:${key}" \
+	--deployment-key "\${file:${key}}" \
 	--insecure-cookie "$@"

@@ -96,14 +96,14 @@ func NewCmdAccount(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 // A process of its own reads what this writes:
 //
 //	account:
-//	  keys: { contoso: file:/run/roster-account/contoso.key }
+//	  key: ${file:/run/roster-account/account.key}
 //
 // Inside `roster serve` nothing runs this. `account.keys` left empty is the
 // same rows and a key made at start, in memory, which is one replica.
 func newCmdAccountProvision(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "provision",
-		Brief: "mint the account app's deployment key into a directory, and nominate it in every tenant with a name, for `account.key: file:…`",
+		Brief: "mint the account app's deployment key into a directory, and nominate it in every tenant with a name, for `account.key: ${file:…}`",
 
 		Flags: flg.Flags{
 			&flg.String{Name: "out", Brief: "the directory to write account.key into; /run/roster-account if empty"},
@@ -163,10 +163,10 @@ func newCmdAccountServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			cfg.Bind(l, &c.Account.Page.Dir, &flg.String{Name: "static", Brief: "a directory to serve as the page; empty serves none"}),
 			cfg.Bind(l, &c.Account.Enrol, &flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"}),
 			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per tenant fronted. Or ROSTER_ACCOUNT_KEY_<ALIAS> in the environment"},
-			cfg.Bind(l, &c.Account.Key, &flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it, as rk_…, env:NAME or file:PATH; instead of --key"}),
+			cfg.BindText(l, &c.Account.Key, &flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it: rk_…, or one reference as the whole value, '${file:/run/key}' or '${env:NAME}' in single quotes; instead of --key"}),
 			cfg.Bind(l, &c.Account.InsecureCookie, &flg.Switch{Name: "insecure-cookie", Brief: "a cookie without Secure, for a page served over plain http in development"}),
 			cfg.Bind(l, &c.Account.Terminal, &flg.Switch{Name: "terminal", Brief: "let a machine with no browser ask for a key here (`roster sign-in`)"}),
-			cfg.Bind(l, &c.Account.Seal, &flg.Strings{Name: "seal", Brief: "the key sessions are sealed into the cookie under, as env:NAME holding 32 bytes base64; repeat to rotate, the first seals. Empty is a key made at start, which is one replica"}),
+			cfg.BindFunc(l, &c.Account.Seal, &flg.Strings{Name: "seal", Brief: "the key sessions are sealed into the cookie under, 32 bytes base64, or one reference to it as the whole value, '${env:NAME}' or '${file:/path}' in single quotes; repeat to rotate, the first seals. Empty is a key made at start, which is one replica"}, tokensOf),
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -185,29 +185,30 @@ func newCmdAccountServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				ac.Addr = ":8090"
 			}
 
-			if ac.Key != "" {
-				key, err := tokenOrRef(ac.Key)
-				if err != nil {
+			var f appKeys
+			if !ac.Key.IsZero() {
+				if f.key, err = ac.Key.Value(); err != nil {
 					return fmt.Errorf("--deployment-key (account.key): %w", err)
 				}
-				ac.Key = key
-			} else {
-				// `--key` is literal and the block's values are references, so
-				// the two are merged rather than one replacing the other, and it
-				// is read here rather than bound. See [keysOf].
-				given, _ := flg.Find[[]string](cl, "key")
-				keys, err := keysOf(ac.Keys, AccountKeyPrefix, given)
-				if err != nil {
+				// Handed on beside it, for the app to refuse the two.
+				if f.keys, err = blockKeys(ac.Keys); err != nil {
 					return err
 				}
-				ac.Keys = keys
+			} else {
+				// `--key` is one per tenant and merged with the block's rather
+				// than replacing them, so it is read here rather than bound.
+				// See [keysOf].
+				given, _ := flg.Find[[]string](cl, "key")
+				if f.keys, err = keysOf(ac.Keys, AccountKeyPrefix, given); err != nil {
+					return err
+				}
 			}
 
 			if ac.Roster == "" || ac.Connect == "" {
 				return errors.New("--roster and --connect (or account.roster and account.connect): where roster speaks gRPC, and where the same server speaks HTTP")
 			}
 
-			return serveAccount(ctx, ac)
+			return serveAccount(ctx, ac, f)
 		}),
 	}
 }
@@ -216,16 +217,27 @@ func newCmdAccountServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 // `ROSTER_ACCOUNT_KEY_<ALIAS>`.
 const AccountKeyPrefix = "ROSTER_ACCOUNT_KEY_"
 
+// appKeys is the key an app fronts its tenants with, read: one deployment
+// key, or one tenant key per tenant by alias. The tokens, and not where they
+// are kept, because they are read once, where the app is built.
+type appKeys struct {
+	key  string
+	keys map[string]string
+}
+
+// none is whether there is no key to front with.
+func (f appKeys) none() bool { return f.key == "" && len(f.keys) == 0 }
+
 // serveAccount stands the front door up and answers on it until ctx is done.
 //
-// Told a [cmd.AccountConfig] and nothing else, because it is called from two
-// places -- the command above, and `roster serve` when `account:` names an
-// address -- and the whole point of the block is that both build the same
-// thing from the same values.
+// Told a [cmd.AccountConfig] and the keys read from it, and nothing else,
+// because it is called from two places -- the command above, and `roster
+// serve` when `account:` names an address -- and the whole point of the block
+// is that both build the same thing from the same values.
 //
 // It does not build telemetry. Both callers already have; there is one process
 // either way and two would be two providers.
-func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
+func serveAccount(ctx context.Context, ac cmd.AccountConfig, f appKeys) error {
 	// What has a form, held to it before anything is dialled; `roster
 	// serve` asks the same in `cmd.Build`.
 	if err := ac.Meant(); err != nil {
@@ -243,8 +255,8 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 		Roster:   ac.Roster,
 		Connect:  target,
 		Insecure: ac.Insecure,
-		Keys:     ac.Keys,
-		Key:      ac.Key,
+		Keys:     f.keys,
+		Key:      f.key,
 
 		// The same setting the session store is built with below, because this
 		// app sets one cookie the store does not: a provider flow's state.
@@ -337,9 +349,9 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig) error {
 //
 // roster mints the links and this sends them: the front door's process, never
 // a server of roster's, which is D19's line. Refused at start rather than at
-// the first message, so that a deployment learns it when it starts: a password
-// written as itself rather than a reference, a sender that is not an address,
-// the clear to a host nobody named.
+// the first message, so that a deployment learns it when it starts: a
+// reference that names nothing, a sender that is not an address, the clear to
+// a host nobody named.
 func mailOf(c cmd.MailConfig) (func(ctx context.Context, to, subject, link string) error, error) {
 	if !c.On() {
 		return nil, nil
@@ -360,27 +372,14 @@ func mailOf(c cmd.MailConfig) (func(ctx context.Context, to, subject, link strin
 }
 
 // mailConfigOf is the block with its references read.
-//
-// The password is a reference and nothing else. The username may be either
-// ([tokenOrRef]): a fixed word such as `apikey` is no secret, and some
-// providers' usernames are credentials -- SES's is derived from an access key
-// -- which belong where the password is kept.
 func mailConfigOf(c cmd.MailConfig) (mail.Config, error) {
-	username, err := tokenOrRef(c.Username)
+	username, err := c.Username.Value()
 	if err != nil {
 		return mail.Config{}, fmt.Errorf("account.mail.username: %w", err)
 	}
-
-	password := ""
-	if c.Password != "" {
-		if !strings.HasPrefix(c.Password, "env:") && !strings.HasPrefix(c.Password, "file:") {
-			return mail.Config{}, errors.New("account.mail.password: a reference, env:NAME or file:PATH, and never the password itself")
-		}
-		v, err := secretRef(c.Password)
-		if err != nil {
-			return mail.Config{}, fmt.Errorf("account.mail.password: %w", err)
-		}
-		password = v
+	password, err := c.Password.Value()
+	if err != nil {
+		return mail.Config{}, fmt.Errorf("account.mail.password: %w", err)
 	}
 
 	return mail.Config{
@@ -394,100 +393,52 @@ func mailConfigOf(c cmd.MailConfig) (mail.Config, error) {
 	}, nil
 }
 
-// secretRef is how this binary reads a secret somebody wrote down: `env:NAME`,
-// or `file:PATH`.
-//
-// `account.EnvSecret` knows the first and says the second is *a deployment's to
-// add* -- and `cli` is the deployment. `cmd` is what both entry points share;
-// this is a process reading a file, which is what belongs here and nowhere
-// else.
-//
-// # What `file:` is for
-//
-// A credential that never becomes a Secret. The Login App's key cannot exist
-// before this deployment has run once -- minting it takes a tenant, and a
-// tenant is made afterwards -- so a deployment either does it by hand and keeps
-// the answer somewhere, or lets `roster login provision` mint one into a path
-// beside the process and reads it from there. The second leaves nothing to
-// rotate, nothing in etcd, and nothing to leak: the key lives exactly as long
-// as the pod.
-//
-// Trailing whitespace goes, because the thing that wrote the file almost
-// certainly ended it with a newline and a key with one is not that key.
-// tokenOrRef is a credential that may be the thing or a reference to it.
-//
-// One setting rather than a map is what makes this necessary. `keysOf` could
-// tell them apart by **where** the value came from -- a block's values are
-// references, because a configuration file is committed and a key is a secret;
-// a flag's and an environment variable's are tokens -- and one field arriving
-// from any of the three cannot. So the prefix decides, which is the same
-// vocabulary `secret_ref` already uses everywhere else.
-//
-// A value that is neither is the token, and that is the right way round: a
-// deployment that mistyped `env:` gets a key roster refuses on the first call,
-// which is loud, where the other reading would refuse every deployment that
-// passed `--key rk_…` as the flag's brief says to.
-func tokenOrRef(v string) (string, error) {
-	switch {
-	case strings.HasPrefix(v, "env:"), strings.HasPrefix(v, "file:"):
-		return secretRef(v)
-	default:
-		return v, nil
-	}
-}
-
-func secretRef(ref string) (string, error) {
-	if path, ok := strings.CutPrefix(ref, "file:"); ok {
-		if path == "" {
-			return "", fmt.Errorf("secret_ref %q: file: names no path", ref)
-		}
-		b, err := os.ReadFile(path)
-		if err != nil {
-			return "", fmt.Errorf("secret_ref %q: %w", ref, err)
-		}
-		v := strings.TrimSpace(string(b))
-		if v == "" {
-			return "", fmt.Errorf("secret_ref %q: the file is empty", ref)
-		}
-
-		return v, nil
+// tokensOf is `--seal`, repeated, as the field it sets: each value the key
+// itself or one reference as the whole value, read as the environment gives
+// one. `--seal=` is none, whatever the file named.
+func tokensOf(vs []string) ([]cmd.Token, error) {
+	if len(vs) == 1 && vs[0] == "" {
+		return nil, nil
 	}
 
-	return account.EnvSecret(ref)
+	out := make([]cmd.Token, len(vs))
+	for i, v := range vs {
+		if err := out[i].UnmarshalText([]byte(v)); err != nil {
+			return nil, err
+		}
+	}
+
+	return out, nil
 }
 
-// sealOf is the key sessions are sealed under, from `env:NAME` or `file:PATH`
-// references, or one made now.
-//
-// A reference rather than the key itself, for the reason `--key` has an
-// environment form: a key is a secret, a flag is in the process list and a
-// configuration file is a file. Through [secretRef].
+// sealOf is the key sessions are sealed under, from `seal`, or one made now.
 //
 // `who` is the block that names it, because two apps call this and an operator
 // reading *account.seal* about the Login App has been told the wrong setting to
 // go and change.
-func sealOf(who string, refs []string) (*authsession.Sealed, error) {
-	if len(refs) == 0 {
+func sealOf(who string, seals []cmd.Token) (*authsession.Sealed, error) {
+	if len(seals) == 0 {
 		k := make([]byte, authsession.KeySize)
 		if _, err := rand.Read(k); err != nil {
 			return nil, err
 		}
 		log.From(context.Background()).Warn(fmt.Sprintf(
-			"%s: sessions sealed under a key made at start; a second replica cannot open them, and a restart signs everybody out. --seal env:NAME (or %s.seal) names one to share",
+			"%s: sessions sealed under a key made at start; a second replica cannot open them, and a restart signs everybody out. %s.seal (or --seal) names one to share",
 			who, who))
 
 		return authsession.NewSealed(k)
 	}
 
-	keys := make([][]byte, 0, len(refs))
-	for _, ref := range refs {
-		v, err := secretRef(ref)
+	keys := make([][]byte, 0, len(seals))
+	for i, seal := range seals {
+		v, err := seal.Value()
 		if err != nil {
-			return nil, fmt.Errorf("seal: %w", err)
+			return nil, fmt.Errorf("%s.seal[%d]: %w", who, i, err)
 		}
-		k, err := base64.StdEncoding.DecodeString(strings.TrimSpace(v))
+		// Not said back, nor what of it failed to decode: it is the key.
+		k, err := base64.StdEncoding.DecodeString(v)
 		if err != nil {
-			return nil, fmt.Errorf("seal %s: not base64: %w", ref, err)
+			return nil, fmt.Errorf("%s.seal[%d]: not base64; it is not repeated, since it is the key", who, i)
 		}
 		keys = append(keys, k)
 	}
@@ -495,18 +446,35 @@ func sealOf(who string, refs []string) (*authsession.Sealed, error) {
 	return authsession.NewSealed(keys...)
 }
 
+// blockKeys is the block's tenant keys, read, by alias; nil for none.
+func blockKeys(block map[string]cmd.Token) (map[string]string, error) {
+	if len(block) == 0 {
+		return nil, nil
+	}
+
+	out := map[string]string{}
+	for alias, t := range block {
+		v, err := t.Value()
+		if err != nil {
+			return nil, fmt.Errorf("keys.%s: %w", alias, err)
+		}
+		out[strings.ToLower(alias)] = v
+	}
+
+	return out, nil
+}
+
 // errNoKeys is [keysOf] finding nothing in any of the three places: a refusal
 // for a process of its own, and for `roster serve` the cue to make them.
 var errNoKeys = errors.New("no tenant key")
 
-// keysOf is one tenant key per tenant, from three places that are three
-// different kinds of thing.
+// keysOf is one tenant key per tenant, from three places.
 //
-//   - the block, whose values are **references** (`env:NAME`), because a
-//     configuration file is committed and a key is a secret;
-//   - `<PREFIX><ALIAS>` in the environment, which is a token, and is the shape
-//     a container or a compose file already has;
-//   - `--key alias=token`, which is a token in the process list and is
+//   - the block, each a [cmd.Token] the loader has read, written where it is
+//     kept because a configuration file is committed and a key is a secret;
+//   - `<PREFIX><ALIAS>` in the environment, which is the key, and is the
+//     shape a container or a compose file already has;
+//   - `--key alias=token`, which is the key in the process list and is
 //     documented as such.
 //
 // Merged in that order, so the more specific wins. Not one replacing another:
@@ -516,14 +484,13 @@ var errNoKeys = errors.New("no tenant key")
 // The prefix is read here rather than by the loader because the loader maps one
 // variable to one field and this is a variable per alias -- which is why
 // `cfg.Reads` has to be told the prefix is not a typo (`cli.go`).
-func keysOf(refs map[string]string, prefix string, given []string) (map[string]string, error) {
-	out := map[string]string{}
-	for alias, ref := range refs {
-		v, err := secretRef(ref)
-		if err != nil {
-			return nil, fmt.Errorf("keys.%s: %w", alias, err)
-		}
-		out[strings.ToLower(alias)] = v
+func keysOf(block map[string]cmd.Token, prefix string, given []string) (map[string]string, error) {
+	out, err := blockKeys(block)
+	if err != nil {
+		return nil, err
+	}
+	if out == nil {
+		out = map[string]string{}
 	}
 	for _, kv := range os.Environ() {
 		name, value, ok := strings.Cut(kv, "=")

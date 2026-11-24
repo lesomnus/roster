@@ -26,6 +26,20 @@ that line where a setting seems not to take. The file may also name a variable
 itself, `${env:NAME}`, in any key. `server.addr` unsaid is `:50051`, on every
 interface; the other listeners open nowhere unless named.
 
+**A value kept somewhere else** -- an app's keys and seals, the front door's
+mail credentials, a client's credential, a certificate -- is written where it
+is kept: `${file:/run/secrets/x}` or `${env:NAME}`, as the whole value, or the
+value itself, which a file is no place for where it is a key. `roster config`
+prints a reference as it is written and a key written as itself as
+`<redacted>`. A variable or a flag takes the value itself, or one reference as
+the whole of it: a shell is handed one in single quotes,
+`--deployment-key '${file:/run/key}'`. The words written without `${}`,
+`file:/path` and `env:NAME`, are refused at start, saying how to write one. In
+a file Docker Compose reads, `${` is Compose's own, and a reference for roster
+is written `$${env:NAME}`; a Kubernetes manifest hands `${…}` on as it is
+written. A value is read where the process starts or the app is built, and one
+that is replaced takes a restart.
+
 **A list or a map in a variable** is written in YAML's flow form, as the file
 would write it on one line: `ROSTER_VOUCH_KEYS='["one:…", "two:…"]'`,
 `ROSTER_LDAP_BASES='{acme: "dc=acme,dc=example"}'`. A map may also be written as
@@ -778,13 +792,13 @@ account:
   terminal: true                          # `roster sign-in`; off unless said
   # private_hosts: [idp.corp.example]     # a provider off the internet, or in plain http; none unless named
   # key: left out -- one rk_ made at start, narrowed per request to the holder
-  # each tenant nominated. A process of its own names it: file:… from
+  # each tenant nominated. A process of its own names it: ${file:…} from
   # `roster account provision`. (`keys:` is a tenant running its own copy.)
 
 ldap:
   addr: :389
   bind: key
-  key: file:/run/roster/directory.key     # `roster --as admin control key add --allow … directory`,
+  key: ${file:/run/roster/directory.key}  # `roster --as admin control key add --allow … directory`,
                                           # and `roster app install … directory` per tenant
 
 login:                                    # only with Hydra in front; see login.md
@@ -792,8 +806,8 @@ login:                                    # only with Hydra in front; see login.
   hydra: { admin: http://hydra:4445 }      # an address and no credential; a proxy's goes in hydra.header,
                                           # whose values are never printed
   # key: left out -- one rk_ made at start, narrowed per request. A process of
-  # its own names it: file:… from `roster login provision`, or the key itself
-  # in ROSTER_LOGIN_KEY, which is this key and not a reference to follow
+  # its own names it: ${file:…} from `roster login provision`, or the key
+  # itself in ROSTER_LOGIN_KEY
 
   consent: skip                           # ask draws a screen instead; a device's flow is always drawn one
   base: https://login.contoso.example     # the origin every connection's redirect is under
@@ -801,7 +815,7 @@ login:                                    # only with Hydra in front; see login.
   # private_hosts: [idp.corp.example]     # as account's: where a provider may be asked
   page: { dir: /usr/share/roster/login }
   remember: 1h
-  seal: [env:LOGIN_SEAL]
+  seal: ["${env:LOGIN_SEAL}"]
 
 scim:                                     # where a directory provisions people; see scim.md
   addr: :8092                             # a listener of its own, and /scim/v2 is all it serves
@@ -876,18 +890,19 @@ and in the account app `roster serve` runs alike.
 account:
   mail:
     addr: smtp.postmarkapp.com:587          # host:port; empty sends nothing
-    username: env:SMTP_USER                 # or as itself: apikey
-    password: env:SMTP_PASSWORD             # env:NAME or file:PATH, never the password
+    username: ${env:SMTP_USER}              # or as itself: apikey
+    password: ${env:SMTP_PASSWORD}          # or ${file:/run/secrets/smtp}; this file is no place for it
     from: "Contoso <no-reply@mail.contoso.example>"
     tls: starttls                           # starttls (default) | implicit (465) | none
     timeout: 30s                            # one message, dial to last answer
 ```
 
 `username` is written as itself -- a provider's is often a fixed word like
-`apikey` -- or as a reference in the same words as the password, for a provider
-whose username is a credential too (SES's is derived from an access key);
-`password` is a **reference** and nothing else, and a value written as the
-password itself is refused at start. `tls: starttls` refuses a server that
+`apikey` -- or as a reference, for a provider whose username is a credential
+too (SES's is derived from an access key), and `roster config` prints it as it
+is written. `password` is a secret: written where it is kept, since a file is
+no place for one, and printed as `<redacted>` where it is written as itself.
+`tls: starttls` refuses a server that
 does not offer STARTTLS rather than speaking to it in the clear; `implicit` is TLS
 from the first byte, which is port 465; `none` is the clear, and reaches only this
 machine or a host named in `plaintext_hosts` -- a sink in development, never a
@@ -1009,7 +1024,7 @@ the key is a row like any other whichever way it was made. A tenant that registe
 a name later is nominated in at the next start, and the account app finds it on
 the first request for that name without one. In four processes nothing is made
 for you: each `provision` writes its keys into a directory the app's own process
-reads with `file:`, and a key that was written down is left exactly as written --
+reads with `${file:}`, and a key that was written down is left exactly as written --
 a reference that resolves to nothing is a refusal, never a fresh key made quietly
 over it. The role is written as exactly the app's list on every run, so a release
 whose app calls something more -- the account app's `EmailService/Attest`, which
@@ -1040,7 +1055,7 @@ account page asks everybody to sign in again; the Login App asks each browser
 Hydra still remembers for the form once more, at the next product it opens. It
 used to wave that browser through and hand back a token carrying `sub` alone, for
 as long as Hydra remembered ([login.md](login.md) § *The app's own session, and
-why it is not shorter*). Name one -- 32 base64 bytes, as `env:` or `file:` --
+why it is not shorter*). Name one -- 32 base64 bytes, as `${env:}` or `${file:}` --
 where either of those matters.
 
 Each of the three is a **consumer**: it reaches roster over the wire with its own
@@ -1085,15 +1100,16 @@ the flags elsewhere that say a setting: `--hydra` of `roster login doctor` is
 not a setting is read as it was: `--key alias=rt_…` and the `--base` of
 `roster ldap serve` add to the block's map rather than replace it.
 
-**The keys are references, not tokens.** `env:NAME` and `file:PATH` are both
-understood. A tenant's own copy of the account app or the directory is given its
-`rt_` in one of two forms, merged: by reference in the block's `keys`, by alias,
-or in the environment, one variable per tenant -- `ROSTER_ACCOUNT_KEY_<ALIAS>`,
-`ROSTER_LDAP_KEY_<ALIAS>`. `--key alias=rt_…` takes a literal that is in the
+**A key is written where it is kept**, `${file:/path}` or `${env:NAME}`, as
+every value kept somewhere else is (the top of this page). A tenant's
+own copy of the account app or the directory is given its `rt_` in one of two
+forms, merged: in the block's `keys`, by alias, or in the environment, one
+variable per tenant holding the key -- `ROSTER_ACCOUNT_KEY_<ALIAS>`,
+`ROSTER_LDAP_KEY_<ALIAS>`. `--key alias=rt_…` takes the key, which is in the
 process list and says so. Do **not** name a `ROSTER_` variable in a reference:
-the configuration loader claims those for the fields of the same name, so
-`env:ROSTER_LOGIN_SEAL` is read as `login.seal` itself -- a key where a list was
-expected, and a process that refuses to start.
+the configuration loader reads those as the settings of the same name, so
+`${env:ROSTER_LOGIN_SEAL}` is read as `login.seal` itself as well, and one that
+names no setting is said on standard error as a misspelt one is.
 
 ### The key cannot exist before this has run once
 
@@ -1107,7 +1123,7 @@ roster login provision --out /run/roster-login
 Two halves, and neither takes a list of tenants.
 
 **Once:** one deployment key (`rk_`), on a control-plane holder, written to
-`<out>/login-app.key` -- so `login.key` is `file:/run/roster-login/login-app.key`
+`<out>/login-app.key` -- so `login.key` is `${file:/run/roster-login/login-app.key}`
 and there is no Secret at all. What it allows is what the app calls before a
 flow names a tenant, and nothing else: which tenant a name is
 (`FrontService/WhoseHost`), and the one stream that hears every tenant's
