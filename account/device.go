@@ -103,6 +103,7 @@ const (
 type device struct {
 	tenant  string   // whose front door began it, by alias
 	name    string   // what the terminal calls itself, for the key's own name
+	app     string   // the app the key is for, by alias in the tenant; empty is roster's
 	methods []string // what it asked to be allowed
 
 	// token is the key, once somebody approved it, and is handed over once.
@@ -203,17 +204,17 @@ func (d *devices) row(user, tenant string) (*device, bool) {
 }
 
 // waiting is what the terminal a `user_code` names asked for: its name, the
-// methods, and when the code runs out.
-func (d *devices) waiting(user, tenant string) (string, []string, time.Time, bool) {
+// app, the methods, and when the code runs out.
+func (d *devices) waiting(user, tenant string) (string, string, []string, time.Time, bool) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	v, ok := d.row(user, tenant)
 	if !ok {
-		return "", nil, time.Time{}, false
+		return "", "", nil, time.Time{}, false
 	}
 
-	return v.name, v.methods, v.expires, true
+	return v.name, v.app, v.methods, v.expires, true
 }
 
 // claim takes the row a `user_code` names for one answer, so that a second
@@ -366,9 +367,19 @@ func (a *App) offered(w http.ResponseWriter) bool {
 // which is the whole of the flow.
 //
 // The request is this app's own shape rather than RFC 8628's form encoding --
-// nothing but `roster sign-in` speaks to it, and there is no `client_id` to send
-// -- and the **answer** is the RFC's, so a client written against the standard
-// reads what it expects.
+// there is no `client_id` to send -- and the **answer** is the RFC's, so a
+// client written against the standard reads what it expects. It is what a
+// client of another app's writes against, `roster sign-in` beside it: an app's
+// page beginning one for the person in front of it, `foo auth login`. Its
+// fields and its refusals are a table in `docs/usage/ways-in.md`, held to this
+// function by `TestTheTerminalsBeginningIsWhatTheManualSays`.
+//
+// # It names the app
+//
+// `app` is the alias, in the tenant the request arrived at, of the app the
+// key is for (`ApiKey.app`); none is a key of roster's own, as every key
+// was. Anybody may begin one, as before: nothing is minted without the
+// person's approval, which is held to what they hold at that app.
 func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 	if !a.offered(w) {
 		return
@@ -382,6 +393,7 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 
 	var in struct {
 		Name  string   `json:"name"`
+		App   string   `json:"app"`
 		Allow []string `json:"allow"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<10)).Decode(&in); err != nil {
@@ -421,7 +433,14 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 			// and roster refuses a name written otherwise than it is read
 			// rather than folding it unsaid. So the page that asks somebody
 			// to approve it shows the name they will then find.
-			name:    front.Alias(in.Name),
+			name: front.Alias(in.Name),
+
+			// Taken as it is written, and not looked up: a request nobody
+			// signed would be told whether a name is somebody of the tenant,
+			// and roster does not tell an app's holder from a person's. The
+			// person approving is shown the name that was asked for, and one
+			// that is nobody is refused there ([App.deviceApprove]).
+			app:     strings.TrimSpace(in.App),
 			methods: in.Allow,
 			expires: time.Now().Add(deviceFor),
 		})
@@ -539,7 +558,7 @@ func (a *App) devicePending(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name, methods, expires, ok := a.devices.waiting(r.URL.Query().Get("user_code"), t.alias)
+	name, of, methods, expires, ok := a.devices.waiting(r.URL.Query().Get("user_code"), t.alias)
 	if !ok {
 		// A code of another operator's is *no such code* here, which is the same
 		// answer as one that never existed: this front door serves several, and
@@ -552,8 +571,11 @@ func (a *App) devicePending(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("content-type", "application/json")
 	w.Header().Set("cache-control", "no-store")
+	// And the app the key is for, which is part of what they approve: empty
+	// is a key of roster's.
 	_ = json.NewEncoder(w).Encode(map[string]any{
 		"name":    name,
+		"app":     of,
 		"methods": methods,
 		"expires": expires.UTC().Format(time.RFC3339),
 	})
@@ -649,11 +671,21 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 		name = "terminal"
 	}
 
-	res, err := a.roster.ApiKey().Issue(t.on(as), rstr.ApiKeyIssueRequest_builder{
+	req := rstr.ApiKeyIssueRequest_builder{
 		Holder:  rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Alias:   name,
 		Methods: v.methods,
-	}.Build())
+	}
+	if v.app != "" {
+		// For the app the terminal named, by its alias in this tenant: the
+		// methods are held to what she holds there (`ApiKey.app`).
+		req.App = rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{
+			Alias:  &v.app,
+			Tenant: rstr.TenantRef_builder{Id: t.id.Bytes()}.Build(),
+		}.Build()}.Build()
+	}
+
+	res, err := a.roster.ApiKey().Issue(t.on(as), req.Build())
 	if err != nil {
 		// Not answered: the code waits for another try, or for its clock.
 		a.devices.settle(v, "", false)
@@ -667,6 +699,10 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "a terminal cannot be allowed more than you hold", http.StatusForbidden)
 		case codes.AlreadyExists:
 			http.Error(w, "you already have a key called that", http.StatusConflict)
+		case codes.NotFound:
+			// The app the terminal named is nobody here: the words a name
+			// nobody serves is refused in.
+			http.Error(w, "no operator here serves this name", http.StatusNotFound)
 		default:
 			http.Error(w, "the key could not be made", http.StatusInternalServerError)
 		}
