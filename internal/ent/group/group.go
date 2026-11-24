@@ -30,10 +30,14 @@ const (
 	FieldTenantId = "tenant_id"
 	// FieldSiteId holds the string denoting the site_id field in the database.
 	FieldSiteId = "site_id"
+	// FieldAppId holds the string denoting the app_id field in the database.
+	FieldAppId = "app_id"
 	// EdgeTenant holds the string denoting the tenant edge name in mutations.
 	EdgeTenant = "tenant"
 	// EdgeSite holds the string denoting the site edge name in mutations.
 	EdgeSite = "site"
+	// EdgeApp holds the string denoting the app edge name in mutations.
+	EdgeApp = "app"
 	// Table holds the table name of the group in the database.
 	Table = "group"
 	// TenantTable is the table that holds the tenant relation/edge.
@@ -50,6 +54,13 @@ const (
 	SiteInverseTable = "site"
 	// SiteColumn is the table column denoting the site relation/edge.
 	SiteColumn = "site_id"
+	// AppTable is the table that holds the app relation/edge.
+	AppTable = "group"
+	// AppInverseTable is the table name for the Holder entity.
+	// It exists in this package in order to avoid circular dependency with the "holder" package.
+	AppInverseTable = "holder"
+	// AppColumn is the table column denoting the app relation/edge.
+	AppColumn = "app_id"
 )
 
 // Columns holds all SQL columns for group fields.
@@ -64,6 +75,7 @@ var Columns = []string{
 	FieldDateCreated,
 	FieldTenantId,
 	FieldSiteId,
+	FieldAppId,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -124,6 +136,11 @@ func BySiteId(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSiteId, opts...).ToFunc()
 }
 
+// ByAppId orders the results by the app_id field.
+func ByAppId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAppId, opts...).ToFunc()
+}
+
 // ByTenantField orders the results by tenant field.
 func ByTenantField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -135,6 +152,13 @@ func ByTenantField(field string, opts ...sql.OrderTermOption) OrderOption {
 func BySiteField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newSiteStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByAppField orders the results by app field.
+func ByAppField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAppStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newTenantStep() *sqlgraph.Step {
@@ -149,5 +173,12 @@ func newSiteStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldId),
 		sqlgraph.To(SiteInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, SiteTable, SiteColumn),
+	)
+}
+func newAppStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(AppInverseTable, FieldId),
+		sqlgraph.Edge(sqlgraph.M2O, false, AppTable, AppColumn),
 	)
 }

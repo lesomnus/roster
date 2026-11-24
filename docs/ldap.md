@@ -443,9 +443,9 @@ can see.
 So: **map a client's permission to a group, and give the group managers**, so
 that whoever may put somebody in it is somebody chosen
 ([usage/permissions.md](usage/permissions.md) § *Membership is not a permission,
-outside roster either*). A role naming the permission is no guard on the group
-for now: a role of roster's names only what roster serves, and an app's role is
-bound to no group until a group says whose it is. Teams are published here,
+outside roster either*). A role naming the permission guards a group only when
+both are an app's (`Group.app`): a role of roster's names only what roster
+serves, and an app's role is bound to a person or to a group of that app. Teams are published here,
 `memberOf` included, because a directory is also an address book and an
 organisation chart; they carry no binding, so nothing maps a permission to one
 safely. That is a decision about what this tree shows, taken knowing it, and

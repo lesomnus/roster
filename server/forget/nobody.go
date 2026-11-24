@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/credential"
 	"github.com/lesomnus/roster/internal/ent/delegation"
 	"github.com/lesomnus/roster/internal/ent/email"
+	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/identity"
@@ -173,6 +174,7 @@ var naming = map[string]names{
 	app.CredentialService_Add_FullMethodName:      {credential.Table, []string{credential.HolderColumn}},
 	app.DelegationService_Add_FullMethodName:      {delegation.Table, []string{delegation.HolderColumn}},
 	app.EmailService_Add_FullMethodName:           {email.Table, []string{email.HolderColumn}},
+	app.GroupService_Add_FullMethodName:           {group.Table, []string{group.AppColumn}},
 	app.GroupMembershipService_Add_FullMethodName: {groupmembership.Table, []string{groupmembership.HolderColumn}},
 	app.IdentityService_Add_FullMethodName:        {identity.Table, []string{identity.HolderColumn}},
 	app.LinkService_Add_FullMethodName:            {link.Table, []string{link.HolderColumn}},

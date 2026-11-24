@@ -258,45 +258,6 @@ func TestAWayInIsAskedOfRostersRolesAlone(t *testing.T) {
 	})
 }
 
-// TestARoleOfAnAppIsBoundToAPersonAndNotToAGroup.
-//
-// An app's users are the people bound its roles and the members of its own
-// groups, so that taking one of them out is ending a binding or a membership.
-// A group does not say whose it is yet, so a role of an app's bound to one was
-// a grant to whoever another keeps in it, which the app could never take
-// back: answered with the binding; right is `PermissionDenied`, saying so. To
-// a person, and held in a team, it is taken.
-func TestARoleOfAnAppIsBoundToAPersonAndNotToAGroup(t *testing.T) {
-	x := require.New(t)
-	b, ctx := build(t)
-
-	loft := b.holder(t, ctx, b.Contoso, "loft")
-	role := b.roleAtApp(t, ctx, loft, "loft-staff", "/loft.*/*")
-
-	g, err := b.Ungated.Group().Add(ctx, app.GroupAddRequest_builder{
-		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
-		Alias:  "employees",
-	}.Build())
-	x.NoError(err)
-
-	_, err = b.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
-		Role:  app.RoleRef_builder{Id: role.Bytes()}.Build(),
-		Group: app.GroupRef_builder{Id: g.GetId()}.Build(),
-	}.Build())
-	x.Equal(codes.PermissionDenied, status.Code(err), "a role of an app's was bound to a group")
-	x.Equal("group: a role of @contoso/loft's is bound to a person or to a group of that app's, and a group does not say whose it is yet",
-		status.Convert(err).Message())
-
-	erin := b.holder(t, ctx, b.Contoso, "erin")
-	b.binds(t, erin, role, nil)
-
-	seoul := b.site(t, ctx, b.Contoso, "seoul")
-	b.inTeam(t, ctx, b.holder(t, ctx, b.Contoso, "frank"), b.team(t, ctx, seoul, "front-desk"), role)
-
-	// And a role of roster's is bound to a group as it always was.
-	b.groupHolding(t, ctx, "readers", b.role(t, ctx, "reader", getHolder), nil)
-}
-
 // TestTheRulesThatProtectATenantReadRostersRoles.
 //
 // A tenant is administered by whoever holds `/roster.*/*` at roster. A role

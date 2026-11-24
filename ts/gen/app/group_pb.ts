@@ -7,6 +7,8 @@ import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
 import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Tenant } from "../roster/payday/tenant_pb.js";
 import { file_roster_payday_tenant } from "../roster/payday/tenant_pb.js";
+import type { Holder } from "../roster/payday/holder_pb.js";
+import { file_roster_payday_holder } from "../roster/payday/holder_pb.js";
 import type { Site } from "./site_pb.js";
 import { file_app_site } from "./site_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
@@ -19,7 +21,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/group.proto.
  */
 export const file_app_group: GenFile = /*@__PURE__*/
-  fileDesc("Cg9hcHAvZ3JvdXAucHJvdG8SBnJvc3RlciLiBAoFR3JvdXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEhUKBWFsaWFzGAQgASgJQgaqwRYCGAASFAoEbmFtZRgFIAEoCUIGqsEWAhgAEhQKBGRlc2MYBiABKAlCBqrBFgIYABIxCgZsYWJlbHMYByADKAsyGS5yb3N0ZXIuR3JvdXAuTGFiZWxzRW50cnlCBqrBFgIYABI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqaAcr8FVMSAhABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7Fj8IEDI7ChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZ0ZW5hbnQaBgoEc2l0ZSAUKGQiuQMKDUdyb3VwRXhwb3N1cmUSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiQKBWdyb3VwGAIgASgLMg0ucm9zdGVyLkdyb3VwQgbyghYCQAESHAoGY2xpZW50GAggASgJQgzqghYCQAGqwRYCGAASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOpgByvwVShICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGiISB2NhcnJpZWQaCQoFZ3JvdXAQAhoKCgZjbGllbnQQCDABirsWRggcMjIKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGgcKBWdyb3VwIBQoZCIOCgxncm91cC50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_tenant, file_app_site, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg9hcHAvZ3JvdXAucHJvdG8SBnJvc3RlciKJBQoFR3JvdXASFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiYKBnRlbmFudBgCIAEoCzIOLnJvc3Rlci5UZW5hbnRCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEhUKBWFsaWFzGAQgASgJQgaqwRYCGAASFAoEbmFtZRgFIAEoCUIGqsEWAhgAEhQKBGRlc2MYBiABKAlCBqrBFgIYABIxCgZsYWJlbHMYByADKAsyGS5yb3N0ZXIuR3JvdXAuTGFiZWxzRW50cnlCBqrBFgIYABIlCgNhcHAYCCABKAsyDi5yb3N0ZXIuSG9sZGVyQgjyghYEOAFAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ATqaAcr8FVMSAhABGiwSBHBhZ2UaCgoGdGVuYW50EAIaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGdGVuYW50EAIwAYq7Fj8IEDI7ChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZ0ZW5hbnQaBgoEc2l0ZSAUKGQiuQMKDUdyb3VwRXhwb3N1cmUSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEiQKBWdyb3VwGAIgASgLMg0ucm9zdGVyLkdyb3VwQgbyghYCQAESHAoGY2xpZW50GAggASgJQgzqghYCQAGqwRYCGAASOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOpgByvwVShICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGiISB2NhcnJpZWQaCQoFZ3JvdXAQAhoKCgZjbGllbnQQCDABirsWRggcMjIKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGgcKBWdyb3VwIBQoZCIOCgxncm91cC50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_tenant, file_roster_payday_holder, file_app_site, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Group is a named set of people, and nothing else.
@@ -118,6 +120,32 @@ export type Group = Message<"roster.Group"> & {
    * @generated from field: map<string, string> labels = 7;
    */
   labels: { [key: string]: string };
+
+  /**
+   * The app whose group this is, as the holder that app is answered as in
+   * this tenant; empty is the tenant's own.
+   *
+   * # An app's users are the people in its groups
+   *
+   * And the people bound its roles: an app's role is bound to a person, or to
+   * a group of that same app, and a group of an app's takes that app's roles
+   * and no other (`server/core`, `coreBinding.Add`). So taking somebody out of
+   * an app is ending a membership or a binding, and there is no exclusion and
+   * no denial. Bound to a group somebody else keeps -- the directory's
+   * `employees` -- a person would hold the app's role for as long as they were
+   * in it, and the app could not take them out.
+   *
+   * One of the group's own tenant and not erased, and that is all that is
+   * asked of it, as of a role's `app`. Set when the group is made and never
+   * after. Whoever makes a group manages it, whichever app's it is; and what
+   * ends the app's holder ends the groups that are of it, in the act that ends
+   * its roles.
+   *
+   * Its alias is still one within the tenant, whichever app's it is.
+   *
+   * @generated from field: roster.Holder app = 8;
+   */
+  app?: Holder | undefined;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

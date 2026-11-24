@@ -10,6 +10,7 @@ import (
 	"uuid"
 
 	"github.com/lesomnus/roster/internal/ent/group"
+	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/tenant"
 	"github.com/protobuf-orm/ent/dialect/sql"
@@ -103,6 +104,20 @@ func (_c *GroupCreate) SetNillableSiteId(v *uuid.UUID) *GroupCreate {
 	return _c
 }
 
+// SetAppId sets the "app_id" field.
+func (_c *GroupCreate) SetAppId(v uuid.UUID) *GroupCreate {
+	_c.mutation.SetAppId(v)
+	return _c
+}
+
+// SetNillableAppId sets the "app_id" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableAppId(v *uuid.UUID) *GroupCreate {
+	if v != nil {
+		_c.SetAppId(*v)
+	}
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *GroupCreate) SetId(v uuid.UUID) *GroupCreate {
 	_c.mutation.SetId(v)
@@ -117,6 +132,11 @@ func (_c *GroupCreate) SetTenant(v *Tenant) *GroupCreate {
 // SetSite sets the "site" edge to the Site entity.
 func (_c *GroupCreate) SetSite(v *Site) *GroupCreate {
 	return _c.SetSiteId(v.Id)
+}
+
+// SetApp sets the "app" edge to the Holder entity.
+func (_c *GroupCreate) SetApp(v *Holder) *GroupCreate {
+	return _c.SetAppId(v.Id)
 }
 
 // Mutation returns the GroupMutation object of the builder.
@@ -285,6 +305,23 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.SiteId = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AppIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   group.AppTable,
+			Columns: []string{group.AppColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.AppId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

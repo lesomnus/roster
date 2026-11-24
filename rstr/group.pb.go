@@ -50,6 +50,7 @@ type Group struct {
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	xxx_hidden_App         *Holder                `protobuf:"bytes,8,opt,name=app"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -131,6 +132,13 @@ func (x *Group) GetLabels() map[string]string {
 	return nil
 }
 
+func (x *Group) GetApp() *Holder {
+	if x != nil {
+		return x.xxx_hidden_App
+	}
+	return nil
+}
+
 func (x *Group) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -183,6 +191,10 @@ func (x *Group) SetLabels(v map[string]string) {
 	x.xxx_hidden_Labels = v
 }
 
+func (x *Group) SetApp(v *Holder) {
+	x.xxx_hidden_App = v
+}
+
 func (x *Group) SetDateUpdated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateUpdated = v
 }
@@ -207,6 +219,13 @@ func (x *Group) HasSite() bool {
 		return false
 	}
 	return x.xxx_hidden_Site != nil
+}
+
+func (x *Group) HasApp() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_App != nil
 }
 
 func (x *Group) HasDateUpdated() bool {
@@ -236,6 +255,10 @@ func (x *Group) ClearTenant() {
 
 func (x *Group) ClearSite() {
 	x.xxx_hidden_Site = nil
+}
+
+func (x *Group) ClearApp() {
+	x.xxx_hidden_App = nil
 }
 
 func (x *Group) ClearDateUpdated() {
@@ -296,7 +319,28 @@ type Group_builder struct {
 	// manages them like anybody who makes one ([GroupMembership]), marks the
 	// ones it made with what it calls them (`roster.directory`, `docs/scim.md`),
 	// and that mark is how it finds them again -- not what lets it change them.
-	Labels      map[string]string
+	Labels map[string]string
+	// The app whose group this is, as the holder that app is answered as in
+	// this tenant; empty is the tenant's own.
+	//
+	// # An app's users are the people in its groups
+	//
+	// And the people bound its roles: an app's role is bound to a person, or to
+	// a group of that same app, and a group of an app's takes that app's roles
+	// and no other (`server/core`, `coreBinding.Add`). So taking somebody out of
+	// an app is ending a membership or a binding, and there is no exclusion and
+	// no denial. Bound to a group somebody else keeps -- the directory's
+	// `employees` -- a person would hold the app's role for as long as they were
+	// in it, and the app could not take them out.
+	//
+	// One of the group's own tenant and not erased, and that is all that is
+	// asked of it, as of a role's `app`. Set when the group is made and never
+	// after. Whoever makes a group manages it, whichever app's it is; and what
+	// ends the app's holder ends the groups that are of it, in the act that ends
+	// its roles.
+	//
+	// Its alias is still one within the tenant, whichever app's it is.
+	App         *Holder
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -313,6 +357,7 @@ func (b0 Group_builder) Build() *Group {
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Labels = b.Labels
+	x.xxx_hidden_App = b.App
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -525,7 +570,7 @@ var File_app_group_proto protoreflect.FileDescriptor
 
 const file_app_group_proto_rawDesc = "" +
 	"\n" +
-	"\x0fapp/group.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x0eapp/site.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xc1\x05\n" +
+	"\x0fapp/group.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1aroster/payday/holder.proto\x1a\x0eapp/site.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xed\x05\n" +
 	"\x05Group\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12*\n" +
@@ -533,7 +578,8 @@ const file_app_group_proto_rawDesc = "" +
 	"\x05alias\x18\x04 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x05alias\x12\x1a\n" +
 	"\x04name\x18\x05 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04name\x12\x1a\n" +
 	"\x04desc\x18\x06 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04desc\x129\n" +
-	"\x06labels\x18\a \x03(\v2\x19.roster.Group.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x00R\x06labels\x12F\n" +
+	"\x06labels\x18\a \x03(\v2\x19.roster.Group.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x00R\x06labels\x12*\n" +
+	"\x03app\x18\b \x01(\v2\x0e.roster.HolderB\b\xf2\x82\x16\x048\x01@\x01R\x03app\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -587,24 +633,26 @@ var file_app_group_proto_goTypes = []any{
 	nil,                           // 2: roster.Group.LabelsEntry
 	(*Tenant)(nil),                // 3: roster.Tenant
 	(*Site)(nil),                  // 4: roster.Site
-	(*timestamppb.Timestamp)(nil), // 5: google.protobuf.Timestamp
+	(*Holder)(nil),                // 5: roster.Holder
+	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
 }
 var file_app_group_proto_depIdxs = []int32{
 	3,  // 0: roster.Group.tenant:type_name -> roster.Tenant
 	4,  // 1: roster.Group.site:type_name -> roster.Site
 	2,  // 2: roster.Group.labels:type_name -> roster.Group.LabelsEntry
-	5,  // 3: roster.Group.date_updated:type_name -> google.protobuf.Timestamp
-	5,  // 4: roster.Group.date_erased:type_name -> google.protobuf.Timestamp
-	5,  // 5: roster.Group.date_created:type_name -> google.protobuf.Timestamp
-	0,  // 6: roster.GroupExposure.group:type_name -> roster.Group
-	5,  // 7: roster.GroupExposure.date_updated:type_name -> google.protobuf.Timestamp
-	5,  // 8: roster.GroupExposure.date_erased:type_name -> google.protobuf.Timestamp
-	5,  // 9: roster.GroupExposure.date_created:type_name -> google.protobuf.Timestamp
-	10, // [10:10] is the sub-list for method output_type
-	10, // [10:10] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	5,  // 3: roster.Group.app:type_name -> roster.Holder
+	6,  // 4: roster.Group.date_updated:type_name -> google.protobuf.Timestamp
+	6,  // 5: roster.Group.date_erased:type_name -> google.protobuf.Timestamp
+	6,  // 6: roster.Group.date_created:type_name -> google.protobuf.Timestamp
+	0,  // 7: roster.GroupExposure.group:type_name -> roster.Group
+	6,  // 8: roster.GroupExposure.date_updated:type_name -> google.protobuf.Timestamp
+	6,  // 9: roster.GroupExposure.date_erased:type_name -> google.protobuf.Timestamp
+	6,  // 10: roster.GroupExposure.date_created:type_name -> google.protobuf.Timestamp
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	11, // [11:11] is the sub-list for extension type_name
+	11, // [11:11] is the sub-list for extension extendee
+	0,  // [0:11] is the sub-list for field type_name
 }
 
 func init() { file_app_group_proto_init() }
@@ -613,6 +661,7 @@ func file_app_group_proto_init() {
 		return
 	}
 	file_roster_payday_tenant_proto_init()
+	file_roster_payday_holder_proto_init()
 	file_app_site_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{

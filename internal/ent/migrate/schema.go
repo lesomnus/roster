@@ -557,6 +557,7 @@ var (
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "app_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// GroupTable holds the schema information for the "group" table.
 	GroupTable = &schema.Table{
@@ -574,6 +575,12 @@ var (
 				Symbol:     "group_site_site",
 				Columns:    []*schema.Column{GroupColumns[9]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "group_holder_app",
+				Columns:    []*schema.Column{GroupColumns[10]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -1570,6 +1577,7 @@ func init() {
 	}
 	GroupTable.ForeignKeys[0].RefTable = TenantTable
 	GroupTable.ForeignKeys[1].RefTable = SiteTable
+	GroupTable.ForeignKeys[2].RefTable = HolderTable
 	GroupTable.Annotation = &entsql.Annotation{
 		Table: "group",
 	}

@@ -3,6 +3,7 @@ edition = "2023";
 package roster;
 
 import "roster/payday/tenant.proto";
+import "roster/payday/holder.proto";
 import "app/site.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
@@ -82,6 +83,28 @@ message Group {
   // ones it made with what it calls them (`roster.directory`, `docs/scim.md`),
   // and that mark is how it finds them again -- not what lets it change them.
   map<string, string> labels = 7 [(payday.field) = {personal: false}];
+
+  // The app whose group this is, as the holder that app is answered as in
+  // this tenant; empty is the tenant's own.
+  //
+  // # An app's users are the people in its groups
+  //
+  // And the people bound its roles: an app's role is bound to a person, or to
+  // a group of that same app, and a group of an app's takes that app's roles
+  // and no other (`server/core`, `coreBinding.Add`). So taking somebody out of
+  // an app is ending a membership or a binding, and there is no exclusion and
+  // no denial. Bound to a group somebody else keeps -- the directory's
+  // `employees` -- a person would hold the app's role for as long as they were
+  // in it, and the app could not take them out.
+  //
+  // One of the group's own tenant and not erased, and that is all that is
+  // asked of it, as of a role's `app`. Set when the group is made and never
+  // after. Whoever makes a group manages it, whichever app's it is; and what
+  // ends the app's holder ends the groups that are of it, in the act that ends
+  // its roles.
+  //
+  // Its alias is still one within the tenant, whichever app's it is.
+  Holder app = 8 [(orm.edge) = {immutable: true, nullable: true}];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

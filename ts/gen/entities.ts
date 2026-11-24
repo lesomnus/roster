@@ -206,7 +206,7 @@ export const Group = {
 	schema: GroupSchema,
 	domain: 16,
 	version: "dateUpdated",
-	refs: [{ field: "tenant", to: "roster.Tenant" }, { field: "site", to: "roster.Site" }],
+	refs: [{ field: "tenant", to: "roster.Tenant" }, { field: "site", to: "roster.Site" }, { field: "app", to: "roster.Holder" }],
 	alias: "alias",
 	key: "id",
 	ids: ["id"],

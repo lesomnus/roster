@@ -357,9 +357,34 @@ administrator's to change, who holds what is in it.
 Somebody has to be bound to the first of them. Whoever `--administer` named does
 it in the user console; an app's setup that names its first owner does it
 itself, with `BindingService/Add` in its role of roster's -- a grant like any
-other, and one the app holds at itself. A role of the app's is bound to a person
-or held in a team, and to no group until a group says whose it is. An app running roster in its own process writes the same
+other, and one the app holds at itself. A role of the app's is bound to a person,
+to a group of the app's, or held in a team (§ *An app's groups*). An app running roster in its own process writes the same
 rows through that roster's own door, and calls `Holders.Recheck` after.
+
+### An app's groups
+
+**An app's users are the people in its groups and the people bound its
+roles.** A group says whose it is (`Group.app`, the holder the app is answered
+as; none is the tenant's own), fixed when it is made, and the two are kept to
+each other where a binding is written: a role of Loft's is bound to a person or
+to a group of Loft's, and a group of Loft's takes Loft's roles and no other
+([usage/permissions.md](usage/permissions.md) § *A group*). So Loft's list of
+who uses it is the members of its groups beside the people bound its roles,
+and `Reaches` at Loft answers each of them what the group's roles give.
+
+Taking somebody out of Loft is ending their place in its group, or their
+binding: there is no exclusion and no denial, and nothing for a reader to
+subtract. *Everybody of the company may use Loft* is then not one binding to
+the directory's `employees`, which somebody else keeps -- a person in it would
+hold Loft's role for as long as they were in it. Somebody puts them in Loft's
+group: an administrator, or the app at a first sign-in by a rule of its own,
+and an app that enrols people itself is the one that remembers whom it took
+out.
+
+Whoever makes a group manages it, whichever app's it is, and a group's
+managers are as they are for every group: a finer hand than the app's whole.
+What ends the app's holder ends its groups, in the act that ends its roles,
+and a restore of the holder brings back neither.
 
 ### People's tokens
 
