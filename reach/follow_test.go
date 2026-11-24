@@ -121,8 +121,8 @@ func (m *marker) settled(t *testing.T) {
 
 // TestAChangeAtRosterArrivesAsItIsMade: what roster says of what somebody may
 // call reaches a call here as it is said -- a role of theirs widened and
-// narrowed, their binding taken away, another bound to them, their suspension --
-// and not once HeldTtl is over: the clock here does not move.
+// narrowed, their binding taken away, a group of the app's they joined, their
+// suspension -- and not once HeldTtl is over: the clock here does not move.
 func TestAChangeAtRosterArrivesAsItIsMade(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -151,11 +151,22 @@ func TestAChangeAtRosterArrivesAsItIsMade(t *testing.T) {
 	x.NoError(err)
 	until(t, func() error { return h.May(ctx, e.kim, get) }, reach.ErrDenied, "their binding taken away")
 
-	// A role of the app's is bound to a person, and to no group until a group
-	// says whose it is: a second one bound to them.
-	x.ErrorIs(h.May(ctx, e.kim, forOthers), reach.ErrDenied, "a role not bound to them yet")
-	d.bind(t, d.role(t, "booker", forOthers), e.kim, nil)
-	until(t, func() error { return h.May(ctx, e.kim, forOthers) }, nil, "a second role bound to them")
+	// A group of the app's (`Group.app`), which a role of the app's is bound
+	// to: joining it is being given the role.
+	g, err := d.addGroup(d.ctx, rstr.GroupAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: e.acme.Bytes()}.Build(), Alias: "bookers",
+		App: rstr.HolderRef_builder{Id: d.app.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+	group := rstr.GroupRef_builder{Id: g.GetId()}.Build()
+	_, err = d.addBinding(d.ctx, rstr.BindingAddRequest_builder{Role: d.role(t, "booker", forOthers), Group: group}.Build())
+	x.NoError(err)
+	x.ErrorIs(h.May(ctx, e.kim, forOthers), reach.ErrDenied, "a group they are not in yet")
+	_, err = d.addMember(d.ctx, rstr.GroupMembershipAddRequest_builder{
+		Group: group, Holder: rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+	until(t, func() error { return h.May(ctx, e.kim, forOthers) }, nil, "a group of the app's they joined")
 
 	_, err = d.disable(d.ctx, rstr.HolderDisableRequest_builder{Ref: rstr.HolderRef_builder{Id: e.kim.Bytes()}.Build()}.Build())
 	x.NoError(err)

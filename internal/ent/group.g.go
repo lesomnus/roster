@@ -30,6 +30,13 @@ func (e *Group) Proto() *rstr.Group {
 	x.SetName(e.Name)
 	x.SetDesc(e.Desc)
 	x.SetLabels(e.Labels)
+	if v := e.Edges.App; v != nil {
+		x.SetApp(v.Proto())
+	} else if v := e.AppId; v != *new(uuid.UUID) {
+		r := &rstr.Holder{}
+		r.SetId(v[:])
+		x.SetApp(r)
+	}
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

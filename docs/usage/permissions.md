@@ -126,6 +126,24 @@ echo '{"role": {"slug":{"alias":"support","tenant":{"alias":"newco"}}},
 A group is a **tenant-wide** set. Its members may sit in different sites, which
 is the difference from a team.
 
+**A group says whose it is** (`app`, the holder an app is answered as; none is
+the tenant's own), fixed when it is made. An app's users are the people in its
+groups and the people bound its roles, so a role of an app's is bound to a
+person or to a group of **that** app, and a group of an app's takes that app's
+roles and no other:
+
+```
+binding.group: a role of @newco/loft's is bound to a person or to a group of @newco/loft's, and @newco/oncall is the tenant's own
+binding.group: @newco/loft-users is a group of @newco/loft's, which is bound a role of @newco/loft's and no other, and @newco/support is roster's
+```
+
+So taking somebody out of an app is ending their place in its group, or their
+binding, and there is no exclusion to write. Bound to a group somebody else
+keeps -- the directory's `employees` -- a person would hold the app's role for
+as long as they were in it. A role of roster's bound to a group of the tenant's
+is as it always was. What ends the app's holder ends its groups, with its roles,
+and a restore of the holder brings back neither.
+
 ### Its managers
 
 **Whoever makes a group manages it**: `group add` by somebody of the tenant
@@ -404,12 +422,13 @@ token carries the group only to a client a `GroupExposure` shows it to. The
 membership is then guarded by who may change it, and what it grants is the
 relying party's mapping.
 
-A role naming what the group grants is not a second guard, for now. A role of
-roster's names what roster serves, so `/ext.jenkins.Admin/*` is refused in one
-(§ *A role of roster's names what roster serves*); a role of an app's names
-what it likes, and is bound to a person or held in a team, and to no group
-until a group says whose it is. A team carries no guard at all, so map an
-external permission to a group and never to a team.
+A role naming what the group grants is a second guard only in a group of an
+app's. A role of roster's names what roster serves, so `/ext.jenkins.Admin/*` is
+refused in one (§ *A role of roster's names what roster serves*); a role of an
+app's names what it likes, and is bound to a person or to a group of that app
+(§ *A group*), so joining such a group is refused to anybody who does not hold
+the role at the app. A team carries no guard at all, so map an external
+permission to a group and never to a team.
 
 ## You cannot hand out what you do not hold
 
@@ -438,8 +457,8 @@ nothing at roster or at levyan. The refusal names the app:
 role.methods: you do not hold "/loft.BookingService/Cancel" at @acme/loft, so you may not grant it
 ```
 
-A role of an app's is bound to a person, or held in a team; bound to a group it
-is refused, since a group does not say whose it is yet. It takes no alias roster
+A role of an app's is bound to a person, to a group of that app (§ *A group*),
+or held in a team. It takes no alias roster
 finds a role of its own by -- `self-service`, `group-manager`, `everything`,
 `login-app`, `account`, `scim` -- and it ends with the app: erasing the holder
 the app is answered as erases the roles of it in the same act, and a restore of

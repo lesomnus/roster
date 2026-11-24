@@ -130,6 +130,20 @@ func (s GroupServiceServer) image(v *rstr.Group) *rstr.Group {
 			trim(m.Get(f).Message())
 		}
 	}
+	{
+		f := m.Descriptor().Fields().ByNumber(8)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
 	return out
 }
 
@@ -137,7 +151,7 @@ func (s GroupServiceServer) image(v *rstr.Group) *rstr.Group {
 // and what the answer says about its edges. Add and AddMany both write
 // with it, so that an item of an AddMany is the row an Add of it would be.
 func (st GroupServiceServer) create(ctx context.Context, req *rstr.GroupAddRequest) (*ent.GroupCreate, []func(v *rstr.Group), error) {
-	ds := make([]func(v *rstr.Group), 0, 2)
+	ds := make([]func(v *rstr.Group), 0, 3)
 	q := st.Db.Group.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -175,6 +189,16 @@ func (st GroupServiceServer) create(ctx context.Context, req *rstr.GroupAddReque
 	q.SetDesc(req.GetDesc())
 	if u := req.GetLabels(); len(u) > 0 {
 		q.SetLabels(u)
+	}
+	if req.HasApp() {
+		if k, err := HolderGetKey(ctx, st.Db, req.GetApp()); err != nil {
+			return nil, nil, err
+		} else {
+			q.SetAppId(k)
+			ds = append(ds, func(v *rstr.Group) {
+				v.SetApp(rstr.Holder_builder{Id: k[:]}.Build())
+			})
+		}
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
@@ -379,6 +403,21 @@ func GroupSelect(ctx context.Context, scope Scope, q *ent.GroupQuery, m *rstr.Gr
 			return err
 		}
 	}
+	if m.HasApp() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
+		q.WithApp(func(q *ent.HolderQuery) {
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetApp())
+		})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -441,7 +480,7 @@ func GroupGetKey(ctx context.Context, db *ent.Client, ref *rstr.GroupRef) (uuid.
 var groupOrmEntity = ormpatch.MustEntityOf(rstr.File_app_group_proto, "Group")
 
 var groupPatchColumns = entpatch.Columns{
-	1: group.FieldId, 2: group.TenantColumn, 3: group.SiteColumn, 4: group.FieldAlias, 5: group.FieldName, 6: group.FieldDesc, 7: group.FieldLabels, 13: group.FieldDateUpdated, 14: group.FieldDateErased, 15: group.FieldDateCreated}
+	1: group.FieldId, 2: group.TenantColumn, 3: group.SiteColumn, 4: group.FieldAlias, 5: group.FieldName, 6: group.FieldDesc, 7: group.FieldLabels, 8: group.AppColumn, 13: group.FieldDateUpdated, 14: group.FieldDateErased, 15: group.FieldDateCreated}
 
 func (s GroupServiceServer) Apply(ctx context.Context, req *rstr.GroupApplyRequest) (*rstr.Group, error) {
 	if s.admission != nil {

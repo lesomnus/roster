@@ -781,6 +781,17 @@ func (s coreGroup) Add(ctx context.Context, req *app.GroupAddRequest) (*app.Grou
 		return nil, err
 	}
 
+	// The app whose group it is, a holder of its own tenant read as the
+	// caller reads one -- and that is all that is asked of it (`Group.app`),
+	// as of a role's.
+	whose, err := s.tenantOfHolder(ctx, req.GetApp())
+	if err != nil {
+		return nil, err
+	}
+	if err := tenantsAgree("app", of, whose); err != nil {
+		return nil, err
+	}
+
 	// And whoever makes a group manages it, when they are somebody of its
 	// tenant: the row, and their place in it carrying the manager's role, in
 	// one write or none. See `group.go`.
@@ -874,16 +885,11 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 		return nil, err
 	}
 
-	// A role of an app's is bound to a person, for now, and to no group: the
-	// app's users are the people bound its roles and the members of the app's
-	// own groups, so taking one of them out is ending a binding or a
-	// membership -- and a group does not say whose it is yet. Bound to a group
-	// somebody else keeps, a person would be held the app's role for as long
-	// as they were in it, and the app could not take them out.
-	if of != pdid.Nil && group != nil {
-		return nil, status.Errorf(codes.PermissionDenied,
-			"group: a role of %s's is bound to a person or to a group of that app's, and a group does not say whose it is yet",
-			s.appNamed(ctx, of))
+	// And a group is bound the roles of its own app: see [Core.boundInItsApp].
+	if group != nil {
+		if err := s.boundInItsApp(ctx, req.GetRole(), of, group); err != nil {
+			return nil, err
+		}
 	}
 
 	at, err := s.siteOf(ctx, req.GetSite())
@@ -1004,6 +1010,77 @@ func (s Core) keptBy(ctx context.Context, of pdid.Id, alias string) error {
 	}
 
 	return pderr.Invalidf("alias", "%q is roster's own: roster finds a role of its own by it, and this is a role of %s's", name, s.appNamed(ctx, of))
+}
+
+// boundInItsApp refuses a role bound to a group of another app's (`Group.app`):
+// a role of an app's to the tenant's own group or to another app's, and a role
+// of roster's to a group of an app's. `of` is the role's app, [pdid.Nil] for
+// roster's.
+//
+// # An app's users are the people in its groups
+//
+// And the people bound its roles, so that taking one of them out is ending a
+// membership or a binding: there is no exclusion and no denial. Bound to a
+// group somebody else keeps -- the directory's `employees` -- a person held
+// the app's role for as long as they were in that group, and the app could
+// not take them out. And a group of an app's is that app's list of its users,
+// which a role of roster's or of another app's bound to it would make
+// something else: a grant at roster to whoever the app enrols.
+//
+// A role of roster's bound to a group of the tenant's is as it always was.
+func (s Core) boundInItsApp(ctx context.Context, role *app.RoleRef, of pdid.Id, group *app.GroupRef) error {
+	v, err := s.Next().Group().Get(ctx, app.GroupGetRequest_builder{
+		Ref: group,
+		Select: app.GroupSelect_builder{
+			Alias:  z.Ptr(true),
+			Tenant: app.TenantSelect_builder{Alias: z.Ptr(true)}.Build(),
+			App:    app.HolderSelect_builder{}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil {
+		return err
+	}
+	theirs, err := idOr(v.GetApp().GetId())
+	if err != nil {
+		return err
+	}
+	if theirs == of {
+		return nil
+	}
+
+	g := "@" + v.GetTenant().GetAlias() + "/" + v.GetAlias()
+	if of != pdid.Nil {
+		whose := "the tenant's own"
+		if theirs != pdid.Nil {
+			whose = s.appNamed(ctx, theirs) + "'s"
+		}
+		named := s.appNamed(ctx, of)
+
+		return status.Errorf(codes.PermissionDenied,
+			"group: a role of %s's is bound to a person or to a group of %s's, and %s is %s", named, named, g, whose)
+	}
+
+	named := s.appNamed(ctx, theirs)
+
+	return status.Errorf(codes.PermissionDenied,
+		"group: %s is a group of %s's, which is bound a role of %s's and no other, and %s is roster's", g, named, named, s.roleNamed(ctx, role))
+}
+
+// roleNamed is how a refusal names a role: `@tenant/alias`, read through this
+// stack, and its reference as it was sent where the caller cannot read it.
+func (s Core) roleNamed(ctx context.Context, ref *app.RoleRef) string {
+	v, err := s.Next().Role().Get(ctx, app.RoleGetRequest_builder{
+		Ref: ref,
+		Select: app.RoleSelect_builder{
+			Alias:  z.Ptr(true),
+			Tenant: app.TenantSelect_builder{Alias: z.Ptr(true)}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil || v.GetAlias() == "" || v.GetTenant().GetAlias() == "" {
+		return "the role"
+	}
+
+	return "@" + v.GetTenant().GetAlias() + "/" + v.GetAlias()
 }
 
 // appOf is the identifier a role's `app` names, [pdid.Nil] for none -- a

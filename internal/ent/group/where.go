@@ -96,6 +96,11 @@ func SiteId(v uuid.UUID) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldSiteId, v))
 }
 
+// AppId applies equality check predicate on the "app_id" field. It's identical to AppIdEQ.
+func AppId(v uuid.UUID) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldAppId, v))
+}
+
 // AliasEQ applies the EQ predicate on the "alias" field.
 func AliasEQ(v string) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldAlias, v))
@@ -491,6 +496,36 @@ func SiteIdNotNil() predicate.Group {
 	return predicate.Group(sql.FieldNotNull(FieldSiteId))
 }
 
+// AppIdEQ applies the EQ predicate on the "app_id" field.
+func AppIdEQ(v uuid.UUID) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldAppId, v))
+}
+
+// AppIdNEQ applies the NEQ predicate on the "app_id" field.
+func AppIdNEQ(v uuid.UUID) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldAppId, v))
+}
+
+// AppIdIn applies the In predicate on the "app_id" field.
+func AppIdIn(vs ...uuid.UUID) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldAppId, vs...))
+}
+
+// AppIdNotIn applies the NotIn predicate on the "app_id" field.
+func AppIdNotIn(vs ...uuid.UUID) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldAppId, vs...))
+}
+
+// AppIdIsNil applies the IsNil predicate on the "app_id" field.
+func AppIdIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldAppId))
+}
+
+// AppIdNotNil applies the NotNil predicate on the "app_id" field.
+func AppIdNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldAppId))
+}
+
 // HasTenant applies the HasEdge predicate on the "tenant" edge.
 func HasTenant() predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
@@ -529,6 +564,29 @@ func HasSite() predicate.Group {
 func HasSiteWith(preds ...predicate.Site) predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {
 		step := newSiteStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasApp applies the HasEdge predicate on the "app" edge.
+func HasApp() predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, AppTable, AppColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAppWith applies the HasEdge predicate on the "app" edge with a given conditions (other predicates).
+func HasAppWith(preds ...predicate.Holder) predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := newAppStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

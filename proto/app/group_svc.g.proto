@@ -6,6 +6,7 @@ import "app/site_svc.g.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
 import "patch/patch.proto";
+import "roster/payday/holder_svc.g.proto";
 import "roster/payday/tenant_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -50,6 +51,7 @@ message GroupAddRequest {
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
   map<string, string> labels = 7;
+  HolderRef app = 8;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -78,6 +80,7 @@ message GroupSelect {
   bool name = 5;
   bool desc = 6;
   bool labels = 7;
+  HolderSelect app = 8;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;

@@ -292,11 +292,12 @@ func (s coreHolder) Erase(ctx context.Context, req *app.HolderRef) (*app.HolderE
 		return nil, err
 	}
 
-	// And the roles that are theirs as an app (`Role.app`), in the same act:
-	// a role of an app that has ended names the methods of nobody, and what
-	// it handed out is gone as an erased role's is. One transaction, on the
-	// person's row, so the erase and theirs are both made or neither; a
-	// restore of the person brings the row back and not these.
+	// And the roles and the groups that are theirs as an app (`Role.app`,
+	// `Group.app`), in the same act: a role of an app that has ended names
+	// the methods of nobody, a group of one is the users of nothing, and what
+	// either handed out is gone as an erased role's or group's is. One
+	// transaction, on the person's row, so the erase and theirs are all made
+	// or none; a restore of the person brings the row back and not these.
 	var out *app.HolderEraseResponse
 	err = s.only(ctx, who.Bytes(), func(next app.Server, tx dialect.Driver) error {
 		in := coreHolder{s.over(next, tx), next.Holder()}
@@ -326,13 +327,13 @@ func (s coreHolder) Erase(ctx context.Context, req *app.HolderRef) (*app.HolderE
 	return out, err
 }
 
-// erasedWithTheir erases every role of the app `who` is, of its tenant and
-// still there: what [coreHolder.Erase] ends with them. Through `next`, the
-// server under this layer, so each is the erase a role's is, on the trail and
-// on the stream; and asked nothing of what they gave, which the person's
-// erase already was.
+// erasedWithTheir erases every role and every group of the app `who` is, of
+// its tenant and still there: what [coreHolder.Erase] ends with them. Through
+// `next`, the server under this layer, so each is the erase a role's or a
+// group's is, on the trail and on the stream; and asked nothing of what they
+// gave, which the person's erase already was.
 func erasedWithTheir(ctx context.Context, next app.Server, tenant []byte, who pdid.Id) error {
-	var theirs [][]byte
+	var roles [][]byte
 	for after := ""; ; {
 		page, err := next.Role().List(ctx, app.RoleListRequest_builder{
 			Filters: []*app.RoleFilter{app.RoleFilter_builder{Tenant: app.TenantRef_builder{Id: tenant}.Build()}.Build()},
@@ -344,15 +345,41 @@ func erasedWithTheir(ctx context.Context, next app.Server, tenant []byte, who pd
 		}
 		for _, r := range page.GetItems() {
 			if bytes.Equal(r.GetApp().GetId(), who.Bytes()) {
-				theirs = append(theirs, r.GetId())
+				roles = append(roles, r.GetId())
 			}
 		}
 		if after = page.GetNext(); after == "" {
 			break
 		}
 	}
-	for _, id := range theirs {
+
+	var groups [][]byte
+	for after := ""; ; {
+		page, err := next.Group().List(ctx, app.GroupListRequest_builder{
+			Filters: []*app.GroupFilter{app.GroupFilter_builder{Tenant: app.TenantRef_builder{Id: tenant}.Build()}.Build()},
+			Size:    100,
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+		for _, g := range page.GetItems() {
+			if bytes.Equal(g.GetApp().GetId(), who.Bytes()) {
+				groups = append(groups, g.GetId())
+			}
+		}
+		if after = page.GetNext(); after == "" {
+			break
+		}
+	}
+
+	for _, id := range roles {
 		if _, err := next.Role().Erase(ctx, app.RoleRef_builder{Id: id}.Build()); err != nil {
+			return err
+		}
+	}
+	for _, id := range groups {
+		if _, err := next.Group().Erase(ctx, app.GroupRef_builder{Id: id}.Build()); err != nil {
 			return err
 		}
 	}

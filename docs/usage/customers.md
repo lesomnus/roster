@@ -207,8 +207,9 @@ identities and the whole trail still there. `forget` is *destroy what you hold
 about them*, which is a different request with a legal clock on it, and
 `holder.forget_after` is the window between them. `restore` gives back the
 account and not how they were signed in: everything issued to them before it is
-void, and they sign in again. Nor the roles that were of them as an app
-(`Role.app`): those are erased with the holder, and stay erased. Their keys are the exception, and their alias may
+void, and they sign in again. Nor the roles and the groups that were of them
+as an app (`Role.app`, `Group.app`): those are erased with the holder, and stay
+erased. Their keys are the exception, and their alias may
 have been taken meanwhile; [operating.md](../operating.md) § "Destroying
 somebody, which an erase does not" says what to do about each.
 

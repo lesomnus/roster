@@ -67,7 +67,7 @@ flowchart TB
 it: there is no binding that makes somebody see another customer.
 
 **👤 `Holder` is who.** A credential resolves to one, the trail names one on
-every line, and eighteen foreign keys point at one.
+every line, and nineteen foreign keys point at one.
 
 **📍 `Site` is the second axis.** A tenant is the wall between customers and a
 site is the wall inside one -- a factory, a region, an environment. An entity
@@ -393,6 +393,13 @@ and in Frankfurt, bound to a role within Seoul, gives all of them that role in
 Seoul -- `cmd/policy.go` unions the sites off the bindings that reach somebody
 and never reads their 🚩 `SiteMembership`. Read *a group in a site* as **whose
 group this is**, never as *whose people these are*.
+
+**It says whose it is**: `app`, the holder an app is answered as, fixed when
+the group is made, and none is the tenant's own. An app's users are the people
+in its groups and the people bound its roles, so a role of an app's is bound to
+a person or to a group of that app, and a group of an app's takes that app's
+roles and no other: taking somebody out of an app is ending their place in its
+group. What ends the app's holder ends its groups, with its roles.
 
 **Its `labels` are whatever its maker keeps of it, and no rule reads one.** A
 tenant's directory marks the groups it made with what it calls them
