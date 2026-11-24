@@ -22,8 +22,8 @@ func (e *Delegation) Proto() *rstr.Delegation {
 	x.SetMethods(e.Methods)
 	x.SetSecret(e.Secret)
 	x.SetIssuedTo(e.IssuedTo)
-	if e.DateExpires != nil {
-		x.SetDateExpires(timestamppb.New(*e.DateExpires))
+	if e.DateExpired != nil {
+		x.SetDateExpired(timestamppb.New(*e.DateExpired))
 	}
 	if e.DateAuthenticated != nil {
 		x.SetDateAuthenticated(timestamppb.New(*e.DateAuthenticated))

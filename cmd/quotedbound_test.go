@@ -133,7 +133,7 @@ func TestARefusalQuotesWhatItWasSentToABound(t *testing.T) {
 			_, err := app.NewVouchServiceClient(conn).Delegate(ctx, app.VouchDelegateRequest_builder{
 				Who:  app.VouchWho_builder{Id: b.ContosoUser.Bytes()}.Build(),
 				Kind: long, Secret: []byte("secret"),
-				Methods: []string{app.HolderService_Get_FullMethodName}, DateExpires: timestamppb.New(time.Now().Add(time.Hour)),
+				Methods: []string{app.HolderService_Get_FullMethodName}, DateExpired: timestamppb.New(time.Now().Add(time.Hour)),
 			}.Build())
 			return err
 		},

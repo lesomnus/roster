@@ -84,7 +84,7 @@ func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error
 		// line that says it went is filed under the tenant that made the claim
 		// (`expire.Rows`).
 		func(ctx context.Context, db *ent.Client) ([]expire.Row, error) {
-			vs, err := db.HostProof.Query().Where(hostproof.DateExpiresLT(now)).Limit(audit.RowsPage).All(ctx)
+			vs, err := db.HostProof.Query().Where(hostproof.DateExpiredLT(now)).Limit(audit.RowsPage).All(ctx)
 			if err != nil {
 				return nil, err
 			}

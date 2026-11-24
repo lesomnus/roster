@@ -90,7 +90,7 @@ func TestALinkIsAWayInThatSomebodyElseDelivers(t *testing.T) {
 			Holder:      app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 			Secret:      sum,
 			IssuedTo:    issuerOf(t, ctx, b),
-			DateExpires: timestamppb.New(time.Now().Add(-time.Minute)),
+			DateExpired: timestamppb.New(time.Now().Add(-time.Minute)),
 		}.Build())
 		x.NoError(err)
 

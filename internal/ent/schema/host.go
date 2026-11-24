@@ -132,7 +132,7 @@ func (HostProof) Fields() []ent.Field {
 			Immutable(),
 		field.String("token").
 			Immutable(),
-		field.Time("date_expires").
+		field.Time("date_expired").
 			Nillable().
 			Optional(),
 		field.String("desc"),

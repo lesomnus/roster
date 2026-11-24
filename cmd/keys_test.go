@@ -300,7 +300,7 @@ func TestAnExpiredKeyIsRefused(t *testing.T) {
 
 	_, err = b.Control.Ungated.ApiKey().Patch(ctx, app.ApiKeyPatchRequest_builder{
 		Ref:              app.ApiKeyRef_builder{Id: v.Id[:]}.Build(),
-		DateExpires:      timestamppb.New(time.Now().Add(-time.Minute)),
+		DateExpired:      timestamppb.New(time.Now().Add(-time.Minute)),
 		DateUpdatedForce: z.Ptr(true),
 	}.Build())
 	x.NoError(err)

@@ -323,7 +323,7 @@ message HostProofAddRequest {
   TenantRef tenant = 2;
   string name = 5 [features.field_presence = IMPLICIT];
   string token = 9 [features.field_presence = IMPLICIT];
-  google.protobuf.Timestamp date_expires = 10;
+  google.protobuf.Timestamp date_expired = 10;
   string desc = 6 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
 }
@@ -350,7 +350,7 @@ message HostProofSelect {
   TenantSelect tenant = 2;
   bool name = 5;
   bool token = 9;
-  bool date_expires = 10;
+  bool date_expired = 10;
   bool desc = 6;
   bool date_updated = 13;
   bool date_erased = 14;
@@ -359,12 +359,12 @@ message HostProofSelect {
 
 message HostProofPatchRequest {
   HostProofRef ref = 1;
-  google.protobuf.Timestamp date_expires = 20;
-  // Clear date_expires instead of writing it.
+  google.protobuf.Timestamp date_expired = 20;
+  // Clear date_expired instead of writing it.
   // It takes a field of its own because an unset value already means
   // "leave it alone", so no value could have meant NULL. It wins
-  // outright: setting both this and date_expires clears.
-  bool date_expires_null = 21;
+  // outright: setting both this and date_expired clears.
+  bool date_expired_null = 21;
   string desc = 12;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row

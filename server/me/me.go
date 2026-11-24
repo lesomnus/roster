@@ -541,8 +541,8 @@ func (s *Server) keys(ctx context.Context, who pdid.Id) ([]*app.SignInKey, error
 			Alias:   v.Alias,
 			Methods: v.Methods,
 		}
-		if v.DateExpires != nil {
-			k.DateExpires = timestamppb.New(*v.DateExpires)
+		if v.DateExpired != nil {
+			k.DateExpired = timestamppb.New(*v.DateExpired)
 		}
 		if v.DateUsed != nil {
 			k.DateUsed = timestamppb.New(*v.DateUsed)

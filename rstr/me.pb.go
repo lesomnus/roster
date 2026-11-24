@@ -717,7 +717,7 @@ type SignInKey struct {
 	xxx_hidden_Id          []byte                 `protobuf:"bytes,1,opt,name=id"`
 	xxx_hidden_Alias       string                 `protobuf:"bytes,4,opt,name=alias"`
 	xxx_hidden_Methods     []string               `protobuf:"bytes,8,rep,name=methods"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_DateUsed    *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_used,json=dateUsed"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -769,9 +769,9 @@ func (x *SignInKey) GetMethods() []string {
 	return nil
 }
 
-func (x *SignInKey) GetDateExpires() *timestamppb.Timestamp {
+func (x *SignInKey) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -798,19 +798,19 @@ func (x *SignInKey) SetMethods(v []string) {
 	x.xxx_hidden_Methods = v
 }
 
-func (x *SignInKey) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *SignInKey) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *SignInKey) SetDateUsed(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateUsed = v
 }
 
-func (x *SignInKey) HasDateExpires() bool {
+func (x *SignInKey) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
 func (x *SignInKey) HasDateUsed() bool {
@@ -820,8 +820,8 @@ func (x *SignInKey) HasDateUsed() bool {
 	return x.xxx_hidden_DateUsed != nil
 }
 
-func (x *SignInKey) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *SignInKey) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 func (x *SignInKey) ClearDateUsed() {
@@ -840,7 +840,7 @@ type SignInKey_builder struct {
 	// how much narrower it was made.
 	Methods []string
 	// When it stops working, unset for one that does not.
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 	// When it was last used, unset for never -- which is the field that answers
 	// *is anything still calling with this* before somebody revokes it.
 	DateUsed *timestamppb.Timestamp
@@ -853,7 +853,7 @@ func (b0 SignInKey_builder) Build() *SignInKey {
 	x.xxx_hidden_Id = b.Id
 	x.xxx_hidden_Alias = b.Alias
 	x.xxx_hidden_Methods = b.Methods
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_DateUsed = b.DateUsed
 	return m0
 }
@@ -1494,7 +1494,7 @@ const file_app_me_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x18\n" +
 	"\amethods\x18\b \x03(\tR\amethods\x12=\n" +
-	"\fdate_expires\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x127\n" +
+	"\fdate_expired\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\x127\n" +
 	"\tdate_used\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\bdateUsed\"\x95\x01\n" +
 	"\x0eSignInIdentity\x12\x0e\n" +
@@ -1556,7 +1556,7 @@ var file_app_me_proto_depIdxs = []int32{
 	8,  // 6: roster.MeGetResponse.credentials:type_name -> roster.SignInCredential
 	6,  // 7: roster.MeGetResponse.keys:type_name -> roster.SignInKey
 	10, // 8: roster.MeGetResponse.groups:type_name -> roster.MeGroup
-	12, // 9: roster.SignInKey.date_expires:type_name -> google.protobuf.Timestamp
+	12, // 9: roster.SignInKey.date_expired:type_name -> google.protobuf.Timestamp
 	12, // 10: roster.SignInKey.date_used:type_name -> google.protobuf.Timestamp
 	12, // 11: roster.SignInIdentity.date_created:type_name -> google.protobuf.Timestamp
 	12, // 12: roster.SignInCredential.date_rotated:type_name -> google.protobuf.Timestamp

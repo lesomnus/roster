@@ -132,7 +132,7 @@ func newCmdIssueKey(c *cmd.Config) *xli.Command {
 			if err != nil {
 				return err
 			}
-			req.DateExpires = expires
+			req.DateExpired = expires
 
 			// `default` where none is said, as `key add` and `me issue-key`
 			// call theirs: this sent none, and the server answered that a key

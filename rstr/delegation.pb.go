@@ -87,7 +87,7 @@ type Delegation struct {
 	xxx_hidden_Methods           []string               `protobuf:"bytes,8,rep,name=methods"`
 	xxx_hidden_Secret            []byte                 `protobuf:"bytes,9,opt,name=secret"`
 	xxx_hidden_IssuedTo          []byte                 `protobuf:"bytes,10,opt,name=issued_to,json=issuedTo"`
-	xxx_hidden_DateExpires       *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired       *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_DateAuthenticated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_authenticated,json=dateAuthenticated"`
 	xxx_hidden_DateUpdated       *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased        *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
@@ -156,9 +156,9 @@ func (x *Delegation) GetIssuedTo() []byte {
 	return nil
 }
 
-func (x *Delegation) GetDateExpires() *timestamppb.Timestamp {
+func (x *Delegation) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -220,8 +220,8 @@ func (x *Delegation) SetIssuedTo(v []byte) {
 	x.xxx_hidden_IssuedTo = v
 }
 
-func (x *Delegation) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *Delegation) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *Delegation) SetDateAuthenticated(v *timestamppb.Timestamp) {
@@ -247,11 +247,11 @@ func (x *Delegation) HasHolder() bool {
 	return x.xxx_hidden_Holder != nil
 }
 
-func (x *Delegation) HasDateExpires() bool {
+func (x *Delegation) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
 func (x *Delegation) HasDateAuthenticated() bool {
@@ -286,8 +286,8 @@ func (x *Delegation) ClearHolder() {
 	x.xxx_hidden_Holder = nil
 }
 
-func (x *Delegation) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *Delegation) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 func (x *Delegation) ClearDateAuthenticated() {
@@ -356,7 +356,7 @@ type Delegation_builder struct {
 	//
 	// Nullable because the generator has no way to say required -- a singular
 	// message field with neither `nullable` nor a default generates a NOT NULL
-	// column while the API still answers `HasDateExpires`, which is the thing D6
+	// column while the API still answers `HasDateExpired`, which is the thing D6
 	// is about and F3 has open. So "always set" is the minting path's rule, and
 	// the read refuses an absent one rather than treating it as forever.
 	//
@@ -367,7 +367,7 @@ type Delegation_builder struct {
 	// -- and that is the declaration. This row is minted once and erased; a
 	// delegation is never extended, because extending one is how a credential
 	// that was meant to live for minutes comes to live for a day.
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 	// When the person it is for proved who they are, by the sign-in that minted
 	// it: a password and whatever second factor was asked, a recovery link
 	// spent, a provider's word about when it authenticated them (its
@@ -403,7 +403,7 @@ func (b0 Delegation_builder) Build() *Delegation {
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_Secret = b.Secret
 	x.xxx_hidden_IssuedTo = b.IssuedTo
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_DateAuthenticated = b.DateAuthenticated
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
@@ -424,7 +424,7 @@ const file_app_delegation_proto_rawDesc = "" +
 	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12)\n" +
 	"\tissued_to\x18\n" +
 	" \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\bissuedTo\x12G\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpires\x12Y\n" +
+	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpired\x12Y\n" +
 	"\x12date_authenticated\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x0e\xea\x82\x16\x048\x01@\x01\xaa\xc1\x16\x02\x10\x01R\x11dateAuthenticated\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
@@ -450,7 +450,7 @@ var file_app_delegation_proto_goTypes = []any{
 }
 var file_app_delegation_proto_depIdxs = []int32{
 	1, // 0: roster.Delegation.holder:type_name -> roster.Holder
-	2, // 1: roster.Delegation.date_expires:type_name -> google.protobuf.Timestamp
+	2, // 1: roster.Delegation.date_expired:type_name -> google.protobuf.Timestamp
 	2, // 2: roster.Delegation.date_authenticated:type_name -> google.protobuf.Timestamp
 	2, // 3: roster.Delegation.date_updated:type_name -> google.protobuf.Timestamp
 	2, // 4: roster.Delegation.date_erased:type_name -> google.protobuf.Timestamp

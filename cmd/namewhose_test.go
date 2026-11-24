@@ -89,7 +89,7 @@ func TestAGeneralWriteDoesNotWriteANamePastItsProof(t *testing.T) {
 	proofs := app.NewHostProofServiceClient(conn)
 	_, err = proofs.Patch(wire, app.HostProofPatchRequest_builder{
 		Ref:         app.HostProofRef_builder{Id: later.GetId()}.Build(),
-		DateExpires: timestamppb.New(time.Now().Add(100 * 365 * 24 * time.Hour)),
+		DateExpired: timestamppb.New(time.Now().Add(100 * 365 * 24 * time.Hour)),
 		DateUpdated: later.GetDateUpdated(),
 	}.Build())
 	notServed("HostProof.Patch", err)

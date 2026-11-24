@@ -300,7 +300,7 @@ function Claims(props: { tenant: Uint8Array; may: (m: string) => boolean }): Rea
 							</tr>
 							<tr>
 								<td>good until</td>
-								<td>{when(v.dateExpires)}</td>
+								<td>{when(v.dateExpired)}</td>
 							</tr>
 						</tbody>
 					</table>

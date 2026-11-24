@@ -28,8 +28,8 @@ type Link struct {
 	Secret []byte `json:"secret,omitempty"`
 	// IssuedTo holds the value of the "issued_to" field.
 	IssuedTo []byte `json:"issued_to,omitempty"`
-	// DateExpires holds the value of the "date_expires" field.
-	DateExpires *time.Time `json:"date_expires,omitempty"`
+	// DateExpired holds the value of the "date_expired" field.
+	DateExpired *time.Time `json:"date_expired,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -90,7 +90,7 @@ func (*Link) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case link.FieldAt:
 			values[i] = new(sql.NullString)
-		case link.FieldDateExpires, link.FieldDateUpdated, link.FieldDateErased, link.FieldDateCreated:
+		case link.FieldDateExpired, link.FieldDateUpdated, link.FieldDateErased, link.FieldDateCreated:
 			values[i] = new(sql.NullTime)
 		case link.FieldEmailId:
 			values[i] = new(sql.Null[uuid.UUID])
@@ -147,12 +147,12 @@ func (_m *Link) assignValues(columns []string, values []any) error {
 					_m.IssuedTo = []byte{}
 				}
 			}
-		case link.FieldDateExpires:
+		case link.FieldDateExpired:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field date_expires", values[i])
+				return fmt.Errorf("unexpected type %T for field date_expired", values[i])
 			} else if value.Valid {
-				_m.DateExpires = new(time.Time)
-				*_m.DateExpires = value.Time
+				_m.DateExpired = new(time.Time)
+				*_m.DateExpired = value.Time
 			}
 		case link.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -243,8 +243,8 @@ func (_m *Link) String() string {
 	builder.WriteString("issued_to=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IssuedTo))
 	builder.WriteString(", ")
-	if v := _m.DateExpires; v != nil {
-		builder.WriteString("date_expires=")
+	if v := _m.DateExpired; v != nil {
+		builder.WriteString("date_expired=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")

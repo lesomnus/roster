@@ -457,7 +457,7 @@ func (s *Server) begin(ctx context.Context, who pdid.Id, satisfied []string, met
 		Secret:      sum[:],
 		IssuedTo:    issuer.Bytes(),
 		MeteredBy:   metered,
-		DateExpires: timestamppb.New(time.Now().Add(ContinueFor)),
+		DateExpired: timestamppb.New(time.Now().Add(ContinueFor)),
 	}.Build())
 	if err != nil {
 		return "", err
@@ -487,7 +487,7 @@ func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*
 			Satisfied:   z.Ptr(true),
 			IssuedTo:    z.Ptr(true),
 			MeteredBy:   z.Ptr(true),
-			DateExpires: z.Ptr(true),
+			DateExpired: z.Ptr(true),
 			DateUpdated: z.Ptr(true),
 			// When it was begun, to read against when everything of its
 			// holder's was last ended (`date_invalidated`, below).
@@ -512,7 +512,7 @@ func (s *Server) continuation(ctx context.Context, handle string, by pdid.Id) (*
 		return nil, status.Error(codes.NotFound, "no such continuation")
 	}
 
-	u := v.GetDateExpires()
+	u := v.GetDateExpired()
 	if u == nil || !time.Now().Before(u.AsTime()) {
 		return nil, status.Error(codes.NotFound, "no such continuation")
 	}

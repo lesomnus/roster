@@ -79,7 +79,7 @@ type Continuation struct {
 	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
 	xxx_hidden_IssuedTo    []byte                 `protobuf:"bytes,10,opt,name=issued_to,json=issuedTo"`
 	xxx_hidden_MeteredBy   []byte                 `protobuf:"bytes,12,opt,name=metered_by,json=meteredBy"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -154,9 +154,9 @@ func (x *Continuation) GetMeteredBy() []byte {
 	return nil
 }
 
-func (x *Continuation) GetDateExpires() *timestamppb.Timestamp {
+func (x *Continuation) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -218,8 +218,8 @@ func (x *Continuation) SetMeteredBy(v []byte) {
 	x.xxx_hidden_MeteredBy = v
 }
 
-func (x *Continuation) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *Continuation) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *Continuation) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -241,11 +241,11 @@ func (x *Continuation) HasHolder() bool {
 	return x.xxx_hidden_Holder != nil
 }
 
-func (x *Continuation) HasDateExpires() bool {
+func (x *Continuation) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
 func (x *Continuation) HasDateUpdated() bool {
@@ -273,8 +273,8 @@ func (x *Continuation) ClearHolder() {
 	x.xxx_hidden_Holder = nil
 }
 
-func (x *Continuation) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *Continuation) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 func (x *Continuation) ClearDateUpdated() {
@@ -341,7 +341,7 @@ type Continuation_builder struct {
 	// Nullable because the generator has no way to say required -- D6, and F3 is
 	// open -- so an absent one is refused on read rather than read as forever.
 	// Nobody may name it: see the note above about whose lifetime this is.
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	// When the attempt was begun, which is what its holder's epoch is read
@@ -367,7 +367,7 @@ func (b0 Continuation_builder) Build() *Continuation {
 	x.xxx_hidden_Secret = b.Secret
 	x.xxx_hidden_IssuedTo = b.IssuedTo
 	x.xxx_hidden_MeteredBy = b.MeteredBy
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -389,7 +389,7 @@ const file_app_continuation_proto_rawDesc = "" +
 	"\n" +
 	"metered_by\x18\f \x01(\fB\n" +
 	"\xea\x82\x16\x06\x10@8\x01@\x01R\tmeteredBy\x12G\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpires\x12F\n" +
+	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpired\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -413,7 +413,7 @@ var file_app_continuation_proto_goTypes = []any{
 }
 var file_app_continuation_proto_depIdxs = []int32{
 	1, // 0: roster.Continuation.holder:type_name -> roster.Holder
-	2, // 1: roster.Continuation.date_expires:type_name -> google.protobuf.Timestamp
+	2, // 1: roster.Continuation.date_expired:type_name -> google.protobuf.Timestamp
 	2, // 2: roster.Continuation.date_updated:type_name -> google.protobuf.Timestamp
 	2, // 3: roster.Continuation.date_erased:type_name -> google.protobuf.Timestamp
 	2, // 4: roster.Continuation.date_created:type_name -> google.protobuf.Timestamp

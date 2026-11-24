@@ -101,7 +101,7 @@ message Session {
   ];
 
   // When it stops working whatever happens, counted from the sign-in.
-  google.protobuf.Timestamp date_expires = 11 [(orm.field) = {
+  google.protobuf.Timestamp date_expired = 11 [(orm.field) = {
     nullable: true
     immutable: true
   }];

@@ -16,8 +16,8 @@ const (
 	FieldName = "name"
 	// FieldToken holds the string denoting the token field in the database.
 	FieldToken = "token"
-	// FieldDateExpires holds the string denoting the date_expires field in the database.
-	FieldDateExpires = "date_expires"
+	// FieldDateExpired holds the string denoting the date_expired field in the database.
+	FieldDateExpired = "date_expired"
 	// FieldDesc holds the string denoting the desc field in the database.
 	FieldDesc = "desc"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
@@ -46,7 +46,7 @@ var Columns = []string{
 	FieldId,
 	FieldName,
 	FieldToken,
-	FieldDateExpires,
+	FieldDateExpired,
 	FieldDesc,
 	FieldDateUpdated,
 	FieldDateErased,
@@ -82,9 +82,9 @@ func ByToken(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldToken, opts...).ToFunc()
 }
 
-// ByDateExpires orders the results by the date_expires field.
-func ByDateExpires(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDateExpires, opts...).ToFunc()
+// ByDateExpired orders the results by the date_expired field.
+func ByDateExpired(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateExpired, opts...).ToFunc()
 }
 
 // ByDesc orders the results by the desc field.

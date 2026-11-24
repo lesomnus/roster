@@ -23,8 +23,8 @@ type Session struct {
 	Grant []byte `json:"grant,omitempty"`
 	// Secret holds the value of the "secret" field.
 	Secret []byte `json:"secret,omitempty"`
-	// DateExpires holds the value of the "date_expires" field.
-	DateExpires *time.Time `json:"date_expires,omitempty"`
+	// DateExpired holds the value of the "date_expired" field.
+	DateExpired *time.Time `json:"date_expired,omitempty"`
 	// DateIdle holds the value of the "date_idle" field.
 	DateIdle *time.Time `json:"date_idle,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
@@ -68,7 +68,7 @@ func (*Session) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case session.FieldGrant, session.FieldSecret:
 			values[i] = new([]byte)
-		case session.FieldDateExpires, session.FieldDateIdle, session.FieldDateUpdated, session.FieldDateErased, session.FieldDateCreated:
+		case session.FieldDateExpired, session.FieldDateIdle, session.FieldDateUpdated, session.FieldDateErased, session.FieldDateCreated:
 			values[i] = new(sql.NullTime)
 		case session.FieldId, session.FieldHolderId:
 			values[i] = new(uuid.UUID)
@@ -111,12 +111,12 @@ func (_m *Session) assignValues(columns []string, values []any) error {
 					_m.Secret = []byte{}
 				}
 			}
-		case session.FieldDateExpires:
+		case session.FieldDateExpired:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field date_expires", values[i])
+				return fmt.Errorf("unexpected type %T for field date_expired", values[i])
 			} else if value.Valid {
-				_m.DateExpires = new(time.Time)
-				*_m.DateExpires = value.Time
+				_m.DateExpired = new(time.Time)
+				*_m.DateExpired = value.Time
 			}
 		case session.FieldDateIdle:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -197,8 +197,8 @@ func (_m *Session) String() string {
 	builder.WriteString("secret=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Secret))
 	builder.WriteString(", ")
-	if v := _m.DateExpires; v != nil {
-		builder.WriteString("date_expires=")
+	if v := _m.DateExpired; v != nil {
+		builder.WriteString("date_expired=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")

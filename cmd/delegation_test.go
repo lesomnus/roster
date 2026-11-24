@@ -89,7 +89,7 @@ func wrote(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, method
 		Methods:  methods,
 	}
 	if expires != nil {
-		req.DateExpires = expires
+		req.DateExpired = expires
 	}
 
 	_, err = b.Ungated.Delegation().Add(ctx, req.Build())
@@ -545,7 +545,7 @@ func TestDelegateIsVerifyAndOneMoreThing(t *testing.T) {
 		x.True(res.GetVerified().GetOk())
 		x.Equal(b.Who.Bytes(), res.GetVerified().GetHolder())
 		x.NotEmpty(res.GetToken())
-		x.NotNil(res.GetDateExpires(), "a delegation that never expires is not one")
+		x.NotNil(res.GetDateExpired(), "a delegation that never expires is not one")
 
 		_, err := app.NewHolderServiceClient(b.Conn).List(
 			acting(ctx, b.Token, res.GetToken()), app.HolderListRequest_builder{}.Build())
@@ -723,7 +723,7 @@ func TestExpiredDelegationsAreCollected(t *testing.T) {
 	// And it is the live one that is left, rather than one of two.
 	left, err := b.Ent.Delegation.Query().Only(ctx)
 	x.NoError(err)
-	x.True(left.DateExpires.After(time.Now()))
+	x.True(left.DateExpired.After(time.Now()))
 
 	_, _ = dead, live
 }

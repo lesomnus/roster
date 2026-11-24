@@ -47,7 +47,7 @@ func TestAnExpiredClaimOfANameIsReplacedByMakingAnother(t *testing.T) {
 		t.Helper()
 		_, err := b.Ungated.HostProof().Patch(ctx, app.HostProofPatchRequest_builder{
 			Ref:              app.HostProofRef_builder{Id: v.GetId()}.Build(),
-			DateExpires:      timestamppb.New(time.Now().Add(-time.Minute)),
+			DateExpired:      timestamppb.New(time.Now().Add(-time.Minute)),
 			DateUpdatedForce: z.Ptr(true),
 		}.Build())
 		x.NoError(err)
@@ -92,7 +92,7 @@ func TestAnExpiredClaimOfANameIsReplacedByMakingAnother(t *testing.T) {
 	second, err := again()
 	x.NoError(err, "making another, as the refusal said to, was refused")
 	x.NotEqual(first.GetToken(), second.GetToken(), "the claim that ran out was handed back")
-	x.True(second.GetDateExpires().AsTime().After(time.Now()), "the new claim has run out already")
+	x.True(second.GetDateExpired().AsTime().After(time.Now()), "the new claim has run out already")
 	x.Equal([]string{second.GetToken()}, claims(b.Contoso), "the tenant has two claims of one name, or the old one still")
 	x.Equal([]string{theirs.GetToken()}, claims(b.Fabrikam), "another tenant's claim went with this one's")
 

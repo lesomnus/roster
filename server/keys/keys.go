@@ -331,7 +331,7 @@ func lookup(ctx context.Context, s app.Server, token string) (*app.ApiKey, error
 			Secret:      z.Ptr(true),
 			Methods:     z.Ptr(true),
 			DateUsed:    z.Ptr(true),
-			DateExpires: z.Ptr(true),
+			DateExpired: z.Ptr(true),
 			DateUpdated: z.Ptr(true),
 
 			// The holder and its tenant, which [Service] answers with and
@@ -359,7 +359,7 @@ func lookup(ctx context.Context, s app.Server, token string) (*app.ApiKey, error
 		return nil, status.Error(codes.NotFound, "no such token")
 	}
 
-	if u := v.GetDateExpires(); u != nil && !time.Now().Before(u.AsTime()) {
+	if u := v.GetDateExpired(); u != nil && !time.Now().Before(u.AsTime()) {
 		return nil, status.Error(codes.NotFound, "no such token")
 	}
 
@@ -409,7 +409,7 @@ func touch(ctx context.Context, s app.Server, v *app.ApiKey) {
 }
 
 func expiryOf(v *app.ApiKey) time.Time {
-	if u := v.GetDateExpires(); u != nil {
+	if u := v.GetDateExpired(); u != nil {
 		return u.AsTime()
 	}
 

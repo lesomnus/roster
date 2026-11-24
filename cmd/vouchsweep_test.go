@@ -31,7 +31,7 @@ import (
 // afterwards and no row left to look at.
 //
 // Which is why what these pin is the *predicate*, both halves of it, on both
-// tables: `date_expires < now`, and nothing else.
+// tables: `date_expired < now`, and nothing else.
 
 // TestExpiredAttemptsAndLinksAreCollectedAndLiveOnesAreNot is one pass over
 // both tables, and the two directions it has to get right.
@@ -68,7 +68,7 @@ func TestExpiredAttemptsAndLinksAreCollectedAndLiveOnesAreNot(t *testing.T) {
 			Holder:      who,
 			Secret:      tc.secret,
 			IssuedTo:    by,
-			DateExpires: timestamppb.New(tc.expires),
+			DateExpired: timestamppb.New(tc.expires),
 		}.Build())
 		x.NoError(err)
 	}
@@ -89,7 +89,7 @@ func TestExpiredAttemptsAndLinksAreCollectedAndLiveOnesAreNot(t *testing.T) {
 		Holder:      who,
 		Secret:      deadL,
 		IssuedTo:    by,
-		DateExpires: timestamppb.New(time.Now().Add(-time.Minute)),
+		DateExpired: timestamppb.New(time.Now().Add(-time.Minute)),
 	}.Build())
 	x.NoError(err)
 
@@ -124,7 +124,7 @@ func TestExpiredAttemptsAndLinksAreCollectedAndLiveOnesAreNot(t *testing.T) {
 }
 
 // TestASpentAttemptIsCollectedOnItsOwnClockAndNotBefore is what makes the
-// predicate `date_expires` alone, on the table where spending is an erase.
+// predicate `date_expired` alone, on the table where spending is an erase.
 //
 // `spend` erases softly, so a continuation that has been used is out of reach
 // and still present -- the same shape a signed-out session has, and the reason
@@ -144,7 +144,7 @@ func TestASpentAttemptIsCollectedOnItsOwnClockAndNotBefore(t *testing.T) {
 		Holder:      app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
 		Secret:      secret,
 		IssuedTo:    issuerOf(t, ctx, b),
-		DateExpires: timestamppb.New(time.Now().Add(time.Hour)),
+		DateExpired: timestamppb.New(time.Now().Add(time.Hour)),
 	}.Build())
 	x.NoError(err)
 

@@ -95,7 +95,7 @@ func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error
 		// for (`expire.Rows`).
 		func(ctx context.Context, db *ent.Client) ([]expire.Row, error) {
 			vs, err := db.Delegation.Query().
-				Where(delegation.DateExpiresLT(now)).
+				Where(delegation.DateExpiredLT(now)).
 				WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldTenantId) }).
 				Limit(audit.RowsPage).
 				All(ctx)

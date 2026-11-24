@@ -282,7 +282,7 @@ func (s coreEmail) Claim(ctx context.Context, req *app.EmailClaimRequest) (*app.
 	}
 
 	expires := time.Now().Add(vouch.LinkFor)
-	if u := req.GetDateExpires(); u != nil {
+	if u := req.GetDateExpired(); u != nil {
 		if at := u.AsTime(); at.After(time.Now()) && at.Before(expires) {
 			expires = at
 		}
@@ -302,12 +302,12 @@ func (s coreEmail) Claim(ctx context.Context, req *app.EmailClaimRequest) (*app.
 		Email:       app.EmailRef_builder{Id: v.GetId()}.Build(),
 		Secret:      sum,
 		IssuedTo:    f.Actor.Bytes(),
-		DateExpires: timestamppb.New(expires),
+		DateExpired: timestamppb.New(expires),
 	}.Build()); err != nil {
 		return nil, err
 	}
 
-	return app.EmailClaimResponse_builder{Token: token, DateExpires: timestamppb.New(expires)}.Build(), nil
+	return app.EmailClaimResponse_builder{Token: token, DateExpired: timestamppb.New(expires)}.Build(), nil
 }
 
 // provable refuses a link for somebody nothing is proved for: erased or
@@ -569,7 +569,7 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 		Select: app.LinkSelect_builder{
 			Secret:      z.Ptr(true),
 			IssuedTo:    z.Ptr(true),
-			DateExpires: z.Ptr(true),
+			DateExpired: z.Ptr(true),
 			Leave:       z.Ptr(true),
 			Email:       app.EmailSelect_builder{}.Build(),
 			// Whose claim it is, which for an ordinary verification is the row's
@@ -592,7 +592,7 @@ func (s coreEmail) Confirm(ctx context.Context, req *app.EmailConfirmRequest) (*
 	}
 	switch {
 	case subtle.ConstantTimeCompare(l.GetSecret(), sum[:]) != 1,
-		l.GetDateExpires() == nil || !time.Now().Before(l.GetDateExpires().AsTime()),
+		l.GetDateExpired() == nil || !time.Now().Before(l.GetDateExpired().AsTime()),
 		subtle.ConstantTimeCompare(l.GetIssuedTo(), f.Actor.Bytes()) != 1,
 		len(l.GetEmail().GetId()) == 0,
 		// A link that confirms somebody leaving names the address it was

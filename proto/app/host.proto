@@ -441,7 +441,7 @@ message HostProof {
   // what the window is for is that a token lying in DNS forever is a name
   // provable by whoever finds it. Abandoned claims are collected by
   // `prove.Sweep`; the expiry is what makes them refused before then.
-  google.protobuf.Timestamp date_expires = 10 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_expired = 10 [(orm.field) = {nullable: true}];
 
   string desc = 6 [(payday.field) = {personal: false}];
 

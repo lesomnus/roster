@@ -36,16 +36,16 @@ func (_c *SessionCreate) SetSecret(v []byte) *SessionCreate {
 	return _c
 }
 
-// SetDateExpires sets the "date_expires" field.
-func (_c *SessionCreate) SetDateExpires(v time.Time) *SessionCreate {
-	_c.mutation.SetDateExpires(v)
+// SetDateExpired sets the "date_expired" field.
+func (_c *SessionCreate) SetDateExpired(v time.Time) *SessionCreate {
+	_c.mutation.SetDateExpired(v)
 	return _c
 }
 
-// SetNillableDateExpires sets the "date_expires" field if the given value is not nil.
-func (_c *SessionCreate) SetNillableDateExpires(v *time.Time) *SessionCreate {
+// SetNillableDateExpired sets the "date_expired" field if the given value is not nil.
+func (_c *SessionCreate) SetNillableDateExpired(v *time.Time) *SessionCreate {
 	if v != nil {
-		_c.SetDateExpires(*v)
+		_c.SetDateExpired(*v)
 	}
 	return _c
 }
@@ -226,9 +226,9 @@ func (_c *SessionCreate) createSpec() (*Session, *sqlgraph.CreateSpec) {
 		_spec.SetField(session.FieldSecret, field.TypeBytes, value)
 		_node.Secret = value
 	}
-	if value, ok := _c.mutation.DateExpires(); ok {
-		_spec.SetField(session.FieldDateExpires, field.TypeTime, value)
-		_node.DateExpires = &value
+	if value, ok := _c.mutation.DateExpired(); ok {
+		_spec.SetField(session.FieldDateExpired, field.TypeTime, value)
+		_node.DateExpired = &value
 	}
 	if value, ok := _c.mutation.DateIdle(); ok {
 		_spec.SetField(session.FieldDateIdle, field.TypeTime, value)

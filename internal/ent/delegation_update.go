@@ -124,8 +124,8 @@ func (_u *DelegationUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if _u.mutation.MethodsCleared() {
 		_spec.ClearField(delegation.FieldMethods, field.TypeJson)
 	}
-	if _u.mutation.DateExpiresCleared() {
-		_spec.ClearField(delegation.FieldDateExpires, field.TypeTime)
+	if _u.mutation.DateExpiredCleared() {
+		_spec.ClearField(delegation.FieldDateExpired, field.TypeTime)
 	}
 	if _u.mutation.DateAuthenticatedCleared() {
 		_spec.ClearField(delegation.FieldDateAuthenticated, field.TypeTime)
@@ -295,8 +295,8 @@ func (_u *DelegationUpdateOne) sqlSave(ctx context.Context) (_node *Delegation, 
 	if _u.mutation.MethodsCleared() {
 		_spec.ClearField(delegation.FieldMethods, field.TypeJson)
 	}
-	if _u.mutation.DateExpiresCleared() {
-		_spec.ClearField(delegation.FieldDateExpires, field.TypeTime)
+	if _u.mutation.DateExpiredCleared() {
+		_spec.ClearField(delegation.FieldDateExpired, field.TypeTime)
 	}
 	if _u.mutation.DateAuthenticatedCleared() {
 		_spec.ClearField(delegation.FieldDateAuthenticated, field.TypeTime)

@@ -368,9 +368,10 @@ type Credential_builder struct {
 	// The moment they may try again: when the lockout ends, and null for an
 	// account that is open. Not when it was locked.
 	//
-	// Every `date_*` names its event in the past tense, so that the name is
-	// still true once the moment has passed: this is when the account is, or
-	// was, unlocked.
+	// Every `date_*`, roster's and payday's alike, names its event in the past
+	// tense, so that the name is still true once the moment has passed: this is
+	// when the account is, or was, unlocked, as `date_expired` is when a row is,
+	// or was, past its use.
 	DateUnlocked *timestamppb.Timestamp
 	// When it was last changed, for a policy that expires them and for showing
 	// somebody why they are being asked.

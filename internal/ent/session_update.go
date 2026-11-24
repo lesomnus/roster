@@ -141,8 +141,8 @@ func (_u *SessionUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
-	if _u.mutation.DateExpiresCleared() {
-		_spec.ClearField(session.FieldDateExpires, field.TypeTime)
+	if _u.mutation.DateExpiredCleared() {
+		_spec.ClearField(session.FieldDateExpired, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateIdle(); ok {
 		_spec.SetField(session.FieldDateIdle, field.TypeTime, value)
@@ -335,8 +335,8 @@ func (_u *SessionUpdateOne) sqlSave(ctx context.Context) (_node *Session, err er
 			}
 		}
 	}
-	if _u.mutation.DateExpiresCleared() {
-		_spec.ClearField(session.FieldDateExpires, field.TypeTime)
+	if _u.mutation.DateExpiredCleared() {
+		_spec.ClearField(session.FieldDateExpired, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateIdle(); ok {
 		_spec.SetField(session.FieldDateIdle, field.TypeTime, value)

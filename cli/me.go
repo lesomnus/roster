@@ -191,7 +191,7 @@ func newCmdMeIssueKey(c *cmd.Config) *xli.Command {
 				return err
 			}
 			if expires != nil {
-				req.DateExpires = expires
+				req.DateExpired = expires
 			}
 
 			v, err := app.NewApiKeyServiceClient(conn).Issue(ctx, req.Build())

@@ -133,7 +133,7 @@ func keyIssued(v *rstr.ApiKey) keyOf {
 		Alias:   v.GetAlias(),
 		Methods: v.GetMethods(),
 	}
-	if u := v.GetDateExpires(); u != nil {
+	if u := v.GetDateExpired(); u != nil {
 		k.Expires = u.AsTime().Format("2006-01-02")
 	}
 
@@ -149,7 +149,7 @@ func key(v *rstr.SignInKey) keyOf {
 	if u := v.GetDateUsed(); u != nil {
 		k.Used = u.AsTime().Format("2006-01-02")
 	}
-	if u := v.GetDateExpires(); u != nil {
+	if u := v.GetDateExpired(); u != nil {
 		k.Expires = u.AsTime().Format("2006-01-02")
 	}
 

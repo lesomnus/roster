@@ -198,7 +198,7 @@ func (s coreHost) proved(ctx context.Context, req *app.HostAddRequest) (*app.Hos
 
 		return nil, err
 	}
-	if e := c.GetDateExpires(); e != nil && e.AsTime().Before(time.Now()) {
+	if e := c.GetDateExpired(); e != nil && e.AsTime().Before(time.Now()) {
 		return nil, status.Errorf(codes.FailedPrecondition,
 			"%s: that claim expired; make another and publish what it answers with", name)
 	}

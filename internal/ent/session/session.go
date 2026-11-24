@@ -16,8 +16,8 @@ const (
 	FieldGrant = "grant"
 	// FieldSecret holds the string denoting the secret field in the database.
 	FieldSecret = "secret"
-	// FieldDateExpires holds the string denoting the date_expires field in the database.
-	FieldDateExpires = "date_expires"
+	// FieldDateExpired holds the string denoting the date_expired field in the database.
+	FieldDateExpired = "date_expired"
 	// FieldDateIdle holds the string denoting the date_idle field in the database.
 	FieldDateIdle = "date_idle"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
@@ -46,7 +46,7 @@ var Columns = []string{
 	FieldId,
 	FieldGrant,
 	FieldSecret,
-	FieldDateExpires,
+	FieldDateExpired,
 	FieldDateIdle,
 	FieldDateUpdated,
 	FieldDateErased,
@@ -72,9 +72,9 @@ func ById(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldId, opts...).ToFunc()
 }
 
-// ByDateExpires orders the results by the date_expires field.
-func ByDateExpires(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDateExpires, opts...).ToFunc()
+// ByDateExpired orders the results by the date_expired field.
+func ByDateExpired(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateExpired, opts...).ToFunc()
 }
 
 // ByDateIdle orders the results by the date_idle field.

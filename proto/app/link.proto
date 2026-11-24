@@ -155,7 +155,7 @@ message Link {
   //
   // Nullable because the generator has no way to say required -- D6, and F3 is
   // open -- so an absent one is refused on read rather than read as forever.
-  google.protobuf.Timestamp date_expires = 11 [(orm.field) = {
+  google.protobuf.Timestamp date_expired = 11 [(orm.field) = {
     nullable: true
     immutable: true
   }];

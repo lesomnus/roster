@@ -25,8 +25,8 @@ func (e *Continuation) Proto() *rstr.Continuation {
 	if e.MeteredBy != nil {
 		x.SetMeteredBy(e.MeteredBy[:])
 	}
-	if e.DateExpires != nil {
-		x.SetDateExpires(timestamppb.New(*e.DateExpires))
+	if e.DateExpired != nil {
+		x.SetDateExpired(timestamppb.New(*e.DateExpired))
 	}
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {

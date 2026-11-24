@@ -32,7 +32,7 @@ func (Continuation) Fields() []ent.Field {
 			Nillable().
 			Immutable().
 			Optional(),
-		field.Time("date_expires").
+		field.Time("date_expired").
 			Nillable().
 			Immutable().
 			Optional(),

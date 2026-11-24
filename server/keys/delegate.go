@@ -104,7 +104,7 @@ func Delegate(ctx context.Context, s app.Server, req Delegated) (string, *app.De
 		Secret:      sum,
 		IssuedTo:    req.Issuer,
 		Methods:     req.Methods,
-		DateExpires: timestamppb.New(time.Now().Add(d)),
+		DateExpired: timestamppb.New(time.Now().Add(d)),
 	}
 	if at := req.Authenticated; !at.IsZero() {
 		if now := time.Now(); at.After(now) {
@@ -220,7 +220,7 @@ func signable(v *app.Holder) error {
 // findDelegation is [lookup] over the other table, and differs in three things.
 //
 // **An absent expiry is refused rather than meaning forever.** A key with none
-// is a service running unattended, which is what `ApiKey.date_expires` is
+// is a service running unattended, which is what `ApiKey.date_expired` is
 // nullable for; a delegation with none is a row nothing should have written,
 // and treating it as endless would turn a minting bug into a credential that
 // outlives everybody. The schema cannot say required -- D6 and F3 -- so this
@@ -251,7 +251,7 @@ func findDelegation(ctx context.Context, s app.Server, token string) (*bearer, e
 			Secret:      z.Ptr(true),
 			Methods:     z.Ptr(true),
 			IssuedTo:    z.Ptr(true),
-			DateExpires: z.Ptr(true),
+			DateExpired: z.Ptr(true),
 			DateCreated: z.Ptr(true),
 
 			Holder: app.HolderSelect_builder{
@@ -272,7 +272,7 @@ func findDelegation(ctx context.Context, s app.Server, token string) (*bearer, e
 		return nil, status.Error(codes.NotFound, "no such token")
 	}
 
-	u := v.GetDateExpires()
+	u := v.GetDateExpired()
 	if u == nil || !time.Now().Before(u.AsTime()) {
 		return nil, status.Error(codes.NotFound, "no such token")
 	}

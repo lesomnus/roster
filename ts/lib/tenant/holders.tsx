@@ -77,7 +77,7 @@ function keyOf(v: ApiKey): SignInKey {
 		id: v.id,
 		alias: v.alias,
 		methods: v.methods,
-		dateExpires: v.dateExpires,
+		dateExpired: v.dateExpired,
 		dateUsed: v.dateUsed,
 	})
 }
@@ -628,7 +628,7 @@ function Keys(props: {
 								    much narrower it was made -- which is the only
 								    thing worth reading before revoking one. */}
 								<td className="mono">{v.methods.join(', ')}</td>
-								<td className={v.dateExpires === undefined ? 'none' : ''}>{until(v.dateExpires)}</td>
+								<td className={v.dateExpired === undefined ? 'none' : ''}>{until(v.dateExpired)}</td>
 								<td>
 									{v.dateUsed === undefined ? (
 										<span className="none">never</span>
@@ -696,7 +696,7 @@ function Keys(props: {
 									.split(',')
 									.map((v) => v.trim())
 									.filter((v) => v !== ''),
-								dateExpires: expiresAt(expires),
+								dateExpired: expiresAt(expires),
 							})
 							.then((r) => {
 								props.say({ kind: 'secret', text: r.token })

@@ -71,9 +71,9 @@ func (s coreHostProof) Add(ctx context.Context, req *app.HostProofAddRequest) (*
 		return nil, status.Error(codes.InvalidArgument,
 			"token: roster generates what you are to publish, so this is not yours to write")
 	}
-	if req.GetDateExpires() != nil {
+	if req.GetDateExpired() != nil {
 		return nil, status.Error(codes.InvalidArgument,
-			"date_expires: how long a claim is good for is roster's, so this is not yours to write")
+			"date_expired: how long a claim is good for is roster's, so this is not yours to write")
 	}
 
 	token, err := prove.Token()
@@ -85,7 +85,7 @@ func (s coreHostProof) Add(ctx context.Context, req *app.HostProofAddRequest) (*
 	// it was handed is a layer whose effects outlive its own call.
 	v := proto.Clone(req).(*app.HostProofAddRequest)
 	v.SetToken(token)
-	v.SetDateExpires(timestamppb.New(time.Now().Add(prove.For)))
+	v.SetDateExpired(timestamppb.New(time.Now().Add(prove.For)))
 
 	if err := s.lapsed(ctx, req); err != nil {
 		return nil, err
@@ -112,12 +112,12 @@ func (s coreHostProof) lapsed(ctx context.Context, req *app.HostProofAddRequest)
 		Ref: app.HostProofRef_builder{
 			At: app.HostProofRefByAt_builder{Tenant: req.GetTenant(), Name: z.Ptr(req.GetName())}.Build(),
 		}.Build(),
-		Select: app.HostProofSelect_builder{DateExpires: z.Ptr(true)}.Build(),
+		Select: app.HostProofSelect_builder{DateExpired: z.Ptr(true)}.Build(),
 	}.Build())
 	if err != nil {
 		return nil
 	}
-	if e := was.GetDateExpires(); e == nil || !e.AsTime().Before(time.Now()) {
+	if e := was.GetDateExpired(); e == nil || !e.AsTime().Before(time.Now()) {
 		return nil
 	}
 
@@ -129,7 +129,7 @@ func (s coreHostProof) lapsed(ctx context.Context, req *app.HostProofAddRequest)
 // Patch is the normalisation and nothing else, which the name being immutable
 // makes almost empty: what is left that a patch may write is `desc`.
 //
-// `token` and `date_expires` are immutable and nullable-with-a-flag
+// `token` and `date_expired` are immutable and nullable-with-a-flag
 // respectively, so a patch could clear the window a claim is bounded by. It is
 // closed at the transport with every other general write (`closed`,
 // `cmd/serve.go`: no port serves one, whatever a configuration says), which is
@@ -138,9 +138,9 @@ func (s coreHostProof) Patch(ctx context.Context, req *app.HostProofPatchRequest
 	if err := s.acrossTheTenant(ctx, app.HostProofService_Patch_FullMethodName); err != nil {
 		return nil, err
 	}
-	if req.GetDateExpiresNull() {
+	if req.GetDateExpiredNull() {
 		return nil, status.Error(codes.InvalidArgument,
-			"date_expires: a claim that never expires is a name provable by whoever finds the record")
+			"date_expired: a claim that never expires is a name provable by whoever finds the record")
 	}
 
 	return s.HostProofServiceServer.Patch(ctx, req)

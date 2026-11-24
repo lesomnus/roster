@@ -26,8 +26,8 @@ type Delegation struct {
 	Secret []byte `json:"secret,omitempty"`
 	// IssuedTo holds the value of the "issued_to" field.
 	IssuedTo []byte `json:"issued_to,omitempty"`
-	// DateExpires holds the value of the "date_expires" field.
-	DateExpires *time.Time `json:"date_expires,omitempty"`
+	// DateExpired holds the value of the "date_expired" field.
+	DateExpired *time.Time `json:"date_expired,omitempty"`
 	// DateAuthenticated holds the value of the "date_authenticated" field.
 	DateAuthenticated *time.Time `json:"date_authenticated,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
@@ -71,7 +71,7 @@ func (*Delegation) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case delegation.FieldMethods, delegation.FieldSecret, delegation.FieldIssuedTo:
 			values[i] = new([]byte)
-		case delegation.FieldDateExpires, delegation.FieldDateAuthenticated, delegation.FieldDateUpdated, delegation.FieldDateErased, delegation.FieldDateCreated:
+		case delegation.FieldDateExpired, delegation.FieldDateAuthenticated, delegation.FieldDateUpdated, delegation.FieldDateErased, delegation.FieldDateCreated:
 			values[i] = new(sql.NullTime)
 		case delegation.FieldId, delegation.FieldHolderId:
 			values[i] = new(uuid.UUID)
@@ -122,12 +122,12 @@ func (_m *Delegation) assignValues(columns []string, values []any) error {
 					_m.IssuedTo = []byte{}
 				}
 			}
-		case delegation.FieldDateExpires:
+		case delegation.FieldDateExpired:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field date_expires", values[i])
+				return fmt.Errorf("unexpected type %T for field date_expired", values[i])
 			} else if value.Valid {
-				_m.DateExpires = new(time.Time)
-				*_m.DateExpires = value.Time
+				_m.DateExpired = new(time.Time)
+				*_m.DateExpired = value.Time
 			}
 		case delegation.FieldDateAuthenticated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -211,8 +211,8 @@ func (_m *Delegation) String() string {
 	builder.WriteString("issued_to=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IssuedTo))
 	builder.WriteString(", ")
-	if v := _m.DateExpires; v != nil {
-		builder.WriteString("date_expires=")
+	if v := _m.DateExpired; v != nil {
+		builder.WriteString("date_expired=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")

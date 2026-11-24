@@ -57,16 +57,16 @@ func (_c *LinkCreate) SetIssuedTo(v []byte) *LinkCreate {
 	return _c
 }
 
-// SetDateExpires sets the "date_expires" field.
-func (_c *LinkCreate) SetDateExpires(v time.Time) *LinkCreate {
-	_c.mutation.SetDateExpires(v)
+// SetDateExpired sets the "date_expired" field.
+func (_c *LinkCreate) SetDateExpired(v time.Time) *LinkCreate {
+	_c.mutation.SetDateExpired(v)
 	return _c
 }
 
-// SetNillableDateExpires sets the "date_expires" field if the given value is not nil.
-func (_c *LinkCreate) SetNillableDateExpires(v *time.Time) *LinkCreate {
+// SetNillableDateExpired sets the "date_expired" field if the given value is not nil.
+func (_c *LinkCreate) SetNillableDateExpired(v *time.Time) *LinkCreate {
 	if v != nil {
-		_c.SetDateExpires(*v)
+		_c.SetDateExpired(*v)
 	}
 	return _c
 }
@@ -272,9 +272,9 @@ func (_c *LinkCreate) createSpec() (*Link, *sqlgraph.CreateSpec) {
 		_spec.SetField(link.FieldIssuedTo, field.TypeBytes, value)
 		_node.IssuedTo = value
 	}
-	if value, ok := _c.mutation.DateExpires(); ok {
-		_spec.SetField(link.FieldDateExpires, field.TypeTime, value)
-		_node.DateExpires = &value
+	if value, ok := _c.mutation.DateExpired(); ok {
+		_spec.SetField(link.FieldDateExpired, field.TypeTime, value)
+		_node.DateExpired = &value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(link.FieldDateUpdated, field.TypeTime, value)

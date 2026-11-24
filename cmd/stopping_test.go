@@ -127,7 +127,7 @@ func TestInvalidateEndsTheConsolesOwnSessions(t *testing.T) {
 				SetHolderId(was.HolderId).
 				SetSecret(session.Sum(key)).
 				SetGrant(was.Grant).
-				SetDateExpires(time.Now().Add(time.Hour)).
+				SetDateExpired(time.Now().Add(time.Hour)).
 				SetDateUpdated(at).
 				SetDateCreated(at).
 				Exec(ctx))

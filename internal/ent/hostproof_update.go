@@ -29,23 +29,23 @@ func (_u *HostProofUpdate) Where(ps ...predicate.HostProof) *HostProofUpdate {
 	return _u
 }
 
-// SetDateExpires sets the "date_expires" field.
-func (_u *HostProofUpdate) SetDateExpires(v time.Time) *HostProofUpdate {
-	_u.mutation.SetDateExpires(v)
+// SetDateExpired sets the "date_expired" field.
+func (_u *HostProofUpdate) SetDateExpired(v time.Time) *HostProofUpdate {
+	_u.mutation.SetDateExpired(v)
 	return _u
 }
 
-// SetNillableDateExpires sets the "date_expires" field if the given value is not nil.
-func (_u *HostProofUpdate) SetNillableDateExpires(v *time.Time) *HostProofUpdate {
+// SetNillableDateExpired sets the "date_expired" field if the given value is not nil.
+func (_u *HostProofUpdate) SetNillableDateExpired(v *time.Time) *HostProofUpdate {
 	if v != nil {
-		_u.SetDateExpires(*v)
+		_u.SetDateExpired(*v)
 	}
 	return _u
 }
 
-// ClearDateExpires clears the value of the "date_expires" field.
-func (_u *HostProofUpdate) ClearDateExpires() *HostProofUpdate {
-	_u.mutation.ClearDateExpires()
+// ClearDateExpired clears the value of the "date_expired" field.
+func (_u *HostProofUpdate) ClearDateExpired() *HostProofUpdate {
+	_u.mutation.ClearDateExpired()
 	return _u
 }
 
@@ -155,14 +155,14 @@ func (_u *HostProofUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
-	if value, ok := _u.mutation.DateExpires(); ok {
-		_spec.SetField(hostproof.FieldDateExpires, field.TypeTime, value)
+	if value, ok := _u.mutation.DateExpired(); ok {
+		_spec.SetField(hostproof.FieldDateExpired, field.TypeTime, value)
 	}
-	if e, ok := _u.mutation.FieldExpr(hostproof.FieldDateExpires); ok {
-		_spec.SetField(hostproof.FieldDateExpires, field.TypeTime, e)
+	if e, ok := _u.mutation.FieldExpr(hostproof.FieldDateExpired); ok {
+		_spec.SetField(hostproof.FieldDateExpired, field.TypeTime, e)
 	}
-	if _u.mutation.DateExpiresCleared() {
-		_spec.ClearField(hostproof.FieldDateExpires, field.TypeTime)
+	if _u.mutation.DateExpiredCleared() {
+		_spec.ClearField(hostproof.FieldDateExpired, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(hostproof.FieldDesc, field.TypeString, value)
@@ -210,23 +210,23 @@ type HostProofUpdateOne struct {
 	modifiers []func(*sql.UpdateBuilder)
 }
 
-// SetDateExpires sets the "date_expires" field.
-func (_u *HostProofUpdateOne) SetDateExpires(v time.Time) *HostProofUpdateOne {
-	_u.mutation.SetDateExpires(v)
+// SetDateExpired sets the "date_expired" field.
+func (_u *HostProofUpdateOne) SetDateExpired(v time.Time) *HostProofUpdateOne {
+	_u.mutation.SetDateExpired(v)
 	return _u
 }
 
-// SetNillableDateExpires sets the "date_expires" field if the given value is not nil.
-func (_u *HostProofUpdateOne) SetNillableDateExpires(v *time.Time) *HostProofUpdateOne {
+// SetNillableDateExpired sets the "date_expired" field if the given value is not nil.
+func (_u *HostProofUpdateOne) SetNillableDateExpired(v *time.Time) *HostProofUpdateOne {
 	if v != nil {
-		_u.SetDateExpires(*v)
+		_u.SetDateExpired(*v)
 	}
 	return _u
 }
 
-// ClearDateExpires clears the value of the "date_expires" field.
-func (_u *HostProofUpdateOne) ClearDateExpires() *HostProofUpdateOne {
-	_u.mutation.ClearDateExpires()
+// ClearDateExpired clears the value of the "date_expired" field.
+func (_u *HostProofUpdateOne) ClearDateExpired() *HostProofUpdateOne {
+	_u.mutation.ClearDateExpired()
 	return _u
 }
 
@@ -366,14 +366,14 @@ func (_u *HostProofUpdateOne) sqlSave(ctx context.Context) (_node *HostProof, er
 			}
 		}
 	}
-	if value, ok := _u.mutation.DateExpires(); ok {
-		_spec.SetField(hostproof.FieldDateExpires, field.TypeTime, value)
+	if value, ok := _u.mutation.DateExpired(); ok {
+		_spec.SetField(hostproof.FieldDateExpired, field.TypeTime, value)
 	}
-	if e, ok := _u.mutation.FieldExpr(hostproof.FieldDateExpires); ok {
-		_spec.SetField(hostproof.FieldDateExpires, field.TypeTime, e)
+	if e, ok := _u.mutation.FieldExpr(hostproof.FieldDateExpired); ok {
+		_spec.SetField(hostproof.FieldDateExpired, field.TypeTime, e)
 	}
-	if _u.mutation.DateExpiresCleared() {
-		_spec.ClearField(hostproof.FieldDateExpires, field.TypeTime)
+	if _u.mutation.DateExpiredCleared() {
+		_spec.ClearField(hostproof.FieldDateExpired, field.TypeTime)
 	}
 	if value, ok := _u.mutation.Desc(); ok {
 		_spec.SetField(hostproof.FieldDesc, field.TypeString, value)

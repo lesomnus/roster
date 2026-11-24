@@ -65,8 +65,8 @@ func (e *HostProof) Proto() *rstr.HostProof {
 	}
 	x.SetName(e.Name)
 	x.SetToken(e.Token)
-	if e.DateExpires != nil {
-		x.SetDateExpires(timestamppb.New(*e.DateExpires))
+	if e.DateExpired != nil {
+		x.SetDateExpired(timestamppb.New(*e.DateExpired))
 	}
 	x.SetDesc(e.Desc)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))

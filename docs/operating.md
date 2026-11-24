@@ -2361,15 +2361,15 @@ name is. These are all of them, and the row each line is about is the one its
 | `roster.alias.free` | `roster forget`, and the sweep once `tenant.alias_hold` is past: a destroyed tenant's alias freed, or ahead of the hold with `roster forget --reuse` | the tenant |
 | `roster.apikey.use` | a call made with a key, at most once an hour a key | the API key: its last use, by nobody |
 | `roster.consent.destroy` | the consents' sweep: a consent of somebody erased, once `consent.keep` is past | the consent |
-| `roster.continuation.expire` | the sweep of a sign-in's attempts, of one past `date_expires` | the continuation |
-| `roster.delegation.expire` | the delegations' sweep, of one past `date_expires` | the delegation |
+| `roster.continuation.expire` | the sweep of a sign-in's attempts, of one past `date_expired` | the continuation |
+| `roster.delegation.expire` | the delegations' sweep, of one past `date_expired` | the delegation |
 | `roster.hold.lift` | `roster hold lift` | the tenant |
 | `roster.hold.place` | `roster hold place` | the tenant |
 | `roster.holder.forget` | `roster forget`, and the sweep once `holder.forget_after` is past: somebody erased, forgotten | the person, and a line for each row that went with them |
 | `roster.holder.restore` | `roster restore`: somebody erased, brought back | the person |
 | `roster.host.release` | a proof of a name another tenant holds (`HostService/Add`), which takes it from them | the host that held it, on its own tenant's trail |
-| `roster.hostproof.expire` | the claims' sweep, of a claim to a name past `date_expires` | the host proof (`HostProof`) |
-| `roster.link.expire` | the sweep of links, of one past `date_expires` | the link |
+| `roster.hostproof.expire` | the claims' sweep, of a claim to a name past `date_expired` | the host proof (`HostProof`) |
+| `roster.link.expire` | the sweep of links, of one past `date_expired` | the link |
 | `roster.session.end` | a sign-out at roster's own door | the session |
 | `roster.session.expire` | the sessions' sweep | the session |
 | `roster.session.mint` | a sign-in at roster's own door | the session |

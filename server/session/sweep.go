@@ -43,7 +43,7 @@ const Swept = time.Hour
 // And `Del` is not a delete. It is the soft erase every entity here has, so
 // even signing out leaves the row.
 //
-// # `date_expires` and nothing else
+// # `date_expired` and nothing else
 //
 // Not `date_idle`, and the difference is worth writing down because it looks
 // arbitrary.
@@ -51,7 +51,7 @@ const Swept = time.Hour
 // `Store.Put` makes a row for a secret that has never been one, which is a
 // cookie being minted -- and a row this sweep **deleted** has never been one
 // as far as the table can say. So a request in flight with that cookie, whose
-// idle clock is due, writes it back. A row past `date_expires` comes back
+// idle clock is due, writes it back. A row past `date_expired` comes back
 // **already expired**, so the next read refuses it and the next pass collects
 // it; a row past `date_idle` would come back with a fresh half-window, which
 // turns "collected" into "live" and is a thing not worth having to reason
@@ -108,7 +108,7 @@ func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error
 		// of (`expire.Rows`).
 		func(ctx context.Context, db *ent.Client) ([]expire.Row, error) {
 			vs, err := db.Session.Query().
-				Where(session.DateExpiresLT(now)).
+				Where(session.DateExpiredLT(now)).
 				WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldTenantId) }).
 				Limit(audit.RowsPage).
 				All(ctx)

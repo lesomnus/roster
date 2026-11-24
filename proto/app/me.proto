@@ -312,7 +312,7 @@ message SignInKey {
   repeated string methods = 8;
 
   // When it stops working, unset for one that does not.
-  google.protobuf.Timestamp date_expires = 9;
+  google.protobuf.Timestamp date_expired = 9;
 
   // When it was last used, unset for never -- which is the field that answers
   // *is anything still calling with this* before somebody revokes it.

@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/session.proto.
  */
 export const file_app_session: GenFile = /*@__PURE__*/
-  fileDesc("ChFhcHAvc2Vzc2lvbi5wcm90bxIGcm9zdGVyIpsECgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESGwoFZ3JhbnQYCCABKAxCDOqCFgJAAarBFgIYABIeCgZzZWNyZXQYCSABKAxCDuqCFgQwAUABqsEWAggBEjoKDGRhdGVfZXhwaXJlcxgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCOqCFgQ4AUABEjUKCWRhdGVfaWRsZRgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6bcr8FScSA4oBABogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY+CBgyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGRSAgoAIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChFhcHAvc2Vzc2lvbi5wcm90bxIGcm9zdGVyIpsECgdTZXNzaW9uEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESGwoFZ3JhbnQYCCABKAxCDOqCFgJAAarBFgIYABIeCgZzZWNyZXQYCSABKAxCDuqCFgQwAUABqsEWAggBEjoKDGRhdGVfZXhwaXJlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCOqCFgQ4AUABEjUKCWRhdGVfaWRsZRgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCBuqCFgI4ARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6bcr8FScSA4oBABogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY+CBgyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGRSAgoAIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Session is a console's cookie, in a table.
@@ -115,9 +115,9 @@ export type Session = Message<"roster.Session"> & {
   /**
    * When it stops working whatever happens, counted from the sign-in.
    *
-   * @generated from field: google.protobuf.Timestamp date_expires = 11;
+   * @generated from field: google.protobuf.Timestamp date_expired = 11;
    */
-  dateExpires?: Timestamp | undefined;
+  dateExpired?: Timestamp | undefined;
 
   /**
    * When it stops working if it is not used.

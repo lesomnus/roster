@@ -79,7 +79,7 @@ message ApiKeyIssueRequest {
   repeated string methods = 3;
 
   // When it stops working, unset for one that does not.
-  google.protobuf.Timestamp date_expires = 4;
+  google.protobuf.Timestamp date_expired = 4;
 }
 
 message ApiKeyIssueResponse {
