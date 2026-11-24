@@ -21,8 +21,9 @@ import (
 //
 // A binding of a role of roster's that names an app: *this role, over what is
 // that app's and nothing else*. It reaches that app's roles, the bindings of
-// them, its groups and their memberships, and nothing else of the tenant's, as
-// a role held in a group is narrowed back to the group. It is what an app's
+// them, its groups and their memberships, and the keys that are for it, and
+// nothing else of the tenant's, as a role held in a group is narrowed back to
+// the group. It is what an app's
 // administrator holds: they put people into the app's groups and bind them the
 // app's roles, and make a second administrator, and do none of it to another
 // app or to the tenant's own.
@@ -30,8 +31,8 @@ import (
 // # What is an app's
 //
 // A role whose `app` it is; a binding of such a role, and a binding of a role
-// of roster's that is for that app; a group whose `app` it is; and a place in
-// such a group.
+// of roster's that is for that app; a group whose `app` it is; a place in
+// such a group; and a key whose `app` it is.
 //
 // # And it fails closed, twice
 //
@@ -83,6 +84,13 @@ var ForAnApp = []string{
 	app.GroupMembershipService_Get_FullMethodName,
 	app.GroupMembershipService_List_FullMethodName,
 	app.GroupMembershipService_Erase_FullMethodName,
+
+	// The keys that are for it (`ApiKey.app`): read and ended, and not minted,
+	// which is the person's own ([coreApiKey.Get], [coreApiKey.List],
+	// [coreApiKey.Erase]).
+	app.ApiKeyService_Get_FullMethodName,
+	app.ApiKeyService_List_FullMethodName,
+	app.ApiKeyService_Erase_FullMethodName,
 
 	// And what somebody holds there, which this adds up: answered at that
 	// app, and refused at roster and at every other (`coreHolder.reachedAt`).

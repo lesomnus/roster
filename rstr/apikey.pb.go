@@ -435,6 +435,10 @@ type ApiKey_builder struct {
 	//
 	// `TokenService.Introspect` answers a key for an app to that app alone,
 	// and a key of roster's to no app: it is spent by presenting it to roster.
+	// And a key for an app is that app's row: whoever holds roster's verbs for
+	// it (`Binding.app`) -- the app itself, and its administrators -- lists the
+	// keys that are for it and ends one, whoever's it is. Minting one is still
+	// the person's.
 	//
 	// One of the key's holder's tenant and not erased, and nothing more is
 	// asked of it. Set when the key is minted and never after. A key of the

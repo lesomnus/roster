@@ -348,7 +348,9 @@ is that app's and nothing else of the tenant's:
 
 - a role whose `app` it is, and a binding of such a role;
 - a binding of a role of roster's that is for that app;
-- a group whose `app` it is (§ *A group*), and a place in such a group.
+- a group whose `app` it is (§ *A group*), and a place in such a group;
+- a key whose `app` it is ([ways-in.md](ways-in.md) § *A key for an app*),
+  whoever's key it is.
 
 ```sh
 echo '{"role":  {"slug":{"alias":"app-administrator","tenant":{"alias":"newco"}}},
@@ -372,8 +374,9 @@ What it takes:
   `RoleService`'s `Add`, `Get`, `List`, `Widen`, `Narrow` and `Erase`,
   `BindingService`'s `Add`, `Get`, `List` and `Erase`, `GroupService`'s `Add`,
   `Get`, `List`, `Update` and `Erase`, `GroupMembershipService`'s `Add`,
-  `Get`, `List` and `Erase`, and `HolderService/Reaches`, each by its whole
-  name. One naming anything else is
+  `Get`, `List` and `Erase`, `ApiKeyService`'s `Get`, `List` and `Erase`, and
+  `HolderService/Reaches`, each by its whole name -- and not
+  `ApiKeyService/Issue`: minting a key is the person's own. One naming anything else is
   refused a binding for an app, as a manager's role naming anything else is.
   roster makes `app-administrator`, naming these, the first time it is needed
   (`roster app install`), and a tenant's own of that name naming fewer is used
@@ -781,6 +784,7 @@ and by whoever holds **`HolderService/SignsIn` across the tenant**.
 | --- | --- |
 | `ApiKeyService/List`, however it reaches them | their own keys; a list that names nobody is their own |
 | and `HolderService/SignsIn`, by a binding with no site | everybody's, an administrator's among them |
+| `ApiKeyService/List` or `/Get` **for an app** (§ *Held for one app*) | and the keys that are for that app, of anybody: a list that names nobody is their own and those |
 
 `SignsIn` answers **all** of somebody's accounts, credentials and keys, and not
 a page of them: it has no cursor, and it is what is read to end the keys of an
@@ -790,7 +794,11 @@ So a role that lets people mint and end their own keys can be bound to everybody
 without showing anybody anybody else's, and an auditor is the reads and
 `SignsIn` and nothing that writes. `DelegationService`'s reads and
 `HolderService/SignsIn` itself go by the same rule. Ending somebody else's key is
-a write, and is held to the rule above.
+a write, and is held to the rule above -- but for a key for an app, ended by
+whoever holds `ApiKeyService/Erase` for that app, whoever's key it is: what it
+takes away is a way in at that app and nowhere else. Held for an app alone,
+`Erase` ends nobody's key of roster's or of another app's, refused naming the
+app.
 
 ## Seeing what somebody holds
 

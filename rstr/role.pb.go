@@ -682,7 +682,8 @@ type Binding_builder struct {
 	// # roster's verbs, held for one app
 	//
 	// *This role of roster's, over what is that app's and nothing else*: its
-	// roles, the bindings of them, its groups and their memberships. It is what
+	// roles, the bindings of them, its groups and their memberships, and the
+	// keys that are for it (`ApiKey.app`). It is what
 	// an app's administrator holds -- they put people into the app's groups and
 	// bind them the app's roles, and make a second administrator -- and it
 	// narrows as `site` narrows, so the two are not said together.

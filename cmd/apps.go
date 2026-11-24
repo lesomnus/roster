@@ -11,9 +11,11 @@ import (
 	"github.com/lesomnus/payday/rbac"
 
 	"github.com/lesomnus/roster/internal/ent"
+	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/groupmembership"
+	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	entrole "github.com/lesomnus/roster/internal/ent/role"
 	app "github.com/lesomnus/roster/rstr"
@@ -79,6 +81,8 @@ var readsForAnApp = []string{
 	app.GroupService_List_FullMethodName,
 	app.GroupMembershipService_Get_FullMethodName,
 	app.GroupMembershipService_List_FullMethodName,
+	app.ApiKeyService_Get_FullMethodName,
+	app.ApiKeyService_List_FullMethodName,
 }
 
 // held is the apps a caller holds the read the call is for, and the sites a
@@ -198,6 +202,78 @@ func (x apps) GroupMembershipScope(ctx context.Context) (predicate.GroupMembersh
 	}
 
 	return groupmembership.HasGroupWith(groupsOf(of, sites)), nil
+}
+
+// ApiKeyScope is a key of one of the apps the caller holds the read for, or
+// one of their own.
+//
+// # Not as the other four
+//
+// What is held across the tenant of a key's read is not everybody's keys:
+// that is `HolderService/SignsIn` (`server/core`, `mayReadOf`), and the read
+// itself, held however widely, answers somebody their own. So the apps the
+// read is held for are read whatever else the caller holds of it, and
+// nothing is narrowed here only for whoever is told how everybody signs in,
+// or holds the read for no app. A site is not asked: a key is in none, and
+// [People] narrows it by its holder. The caller's own are theirs as ever.
+func (x apps) ApiKeyScope(ctx context.Context) (predicate.ApiKey, error) {
+	f, ok := frame.From(ctx)
+	if !ok || f.AsAccount() {
+		return nil, nil
+	}
+
+	m, said := calling(ctx)
+	if said && !slices.Contains(readsForAnApp, m) {
+		return nil, nil
+	}
+
+	of, narrow, err := x.keysHeldBy(ctx, f.Actor, m, said)
+	if err != nil || !narrow {
+		return nil, err
+	}
+	if f.Caller != nil {
+		// A call made for somebody by a device or an agent is narrowed by
+		// both, as [apps.held] narrows it.
+		theirs, by, err := x.keysHeldBy(ctx, f.Caller.Actor, m, said)
+		if err != nil {
+			return nil, err
+		}
+		if by {
+			of = slices.DeleteFunc(of, func(v uuid.UUID) bool { return !slices.Contains(theirs, v) })
+		}
+	}
+
+	return apikey.Or(apikey.AppIdIn(of...), apikey.HasHolderWith(holder.IdEQ(f.Actor.Uuid()))), nil
+}
+
+// keysHeldBy is the apps `who` holds the read `m` of keys for, and `narrow`
+// false where they are told how everybody signs in or hold it for no app.
+func (x apps) keysHeldBy(ctx context.Context, who pdid.Id, m string, said bool) (of []uuid.UUID, narrow bool, err error) {
+	if who.Domain() == pd.ApiKeyDomain {
+		return nil, false, nil
+	}
+
+	h, err := x.p.of(ctx, who.Uuid(), roster)
+	if err != nil {
+		return nil, false, err
+	}
+	for _, r := range h.reaches {
+		if r.of == uuid.Nil() {
+			if r.all && slices.ContainsFunc(r.methods, func(p string) bool { return frame.Covers(p, app.HolderService_SignsIn_FullMethodName) }) {
+				return nil, false, nil
+			}
+
+			continue
+		}
+		if said && !slices.ContainsFunc(r.methods, func(p string) bool { return frame.Covers(p, m) }) {
+			continue
+		}
+		if !slices.Contains(of, r.of) {
+			of = append(of, r.of)
+		}
+	}
+
+	return of, len(of) > 0, nil
 }
 
 // groupsOf is a group of one of these apps, or of one of these sites.
