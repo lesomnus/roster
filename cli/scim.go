@@ -539,7 +539,10 @@ func listDigest(tenant []byte, provider string, found []adopted) string {
 // A holder a `Nomination` of the tenant names as the one an app acts as
 // (`roster app install` writes it) is nobody who signs in, and an account at
 // the connection would be a way in as the app. So it is not on the list,
-// whatever the directory said of it, and is answered apart, to be said.
+// whatever the directory said of it, and is answered apart, to be said. So is
+// a holder whose row says it is a machine ([rstr.Holder.NoPerson]), the test
+// the directory and the SCIM endpoint ask: an app's holder is one still once
+// the tenant has ended its nomination, and was listed then (#451).
 func matched(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, provider string) ([]adopted, []adopted, error) {
 	acts := map[string]bool{}
 	for after := ""; ; {
@@ -571,7 +574,7 @@ func matched(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, provider st
 			if h.GetDirectorySubject() == "" {
 				continue
 			}
-			if acts[string(h.GetId())] {
+			if acts[string(h.GetId())] || h.NoPerson() {
 				apps = append(apps, adopted{id: h.GetId(), alias: h.GetAlias(), subject: h.GetDirectorySubject()})
 
 				continue

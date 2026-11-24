@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/lesomnus/z"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -103,4 +104,78 @@ func TestNobodyAtAPortSaysAFileDeclaredARow(t *testing.T) {
 		x.NoError(err)
 		x.Equal("nowhere.yaml", v.GetLabels()[cmd.Declared])
 	})
+}
+
+// TestNobodyAtAPortSaysAHolderIsAnApps: `roster.app` is the label `roster app
+// install` writes on the holder it makes for an app, and a directory built on
+// roster leaves such a holder out of its people. So it is kept as
+// `roster.declared` is: written by what installs an app, at the box, and by no
+// caller -- or a person could leave the directory by saying they are an app,
+// and nothing would tell an app's holder from them.
+//
+// A request that carries it is refused where requests arrive, as one carrying
+// `roster.declared` is; and no verb served at a port writes a holder's labels
+// but `Add`, so nobody at one takes it off an app's holder either (`Patch` is
+// served nowhere, `TestNoGeneralWriteIsServed`). Answered before: `OK`, and
+// a holder that said it was an app's; right is `InvalidArgument` naming the
+// label.
+func TestNobodyAtAPortSaysAHolderIsAnApps(t *testing.T) {
+	x := require.New(t)
+	b := keyFor(t, verify)
+	ctx := t.Context()
+
+	const all = "/roster.*/*"
+
+	role, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+		Alias:   "administers",
+		Methods: []string{all},
+	}.Build())
+	x.NoError(err)
+	_, err = b.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+		Role:   app.RoleRef_builder{Id: role.GetId()}.Build(),
+		Holder: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	as := bearing(ctx, mintFor(t, ctx, b, b.Who, "theirs", []string{all}, time.Time{}))
+	contoso := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
+	said := map[string]string{appLabelKey: "loft"}
+
+	// An app's holder, as `roster app install` writes it at the box.
+	loft, err := b.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{Tenant: contoso, Alias: "loft", Labels: said}.Build())
+	x.NoError(err)
+	x.Equal("loft", loft.GetLabels()[appLabelKey])
+
+	_, err = app.NewHolderServiceClient(b.Conn).Add(as, app.HolderAddRequest_builder{
+		Tenant: contoso, Alias: "ghost", Labels: said,
+	}.Build())
+	x.Equal(codes.InvalidArgument, status.Code(err), "a holder was made at a port saying it is an app's: %v", err)
+	x.ErrorContains(err, appLabelKey)
+
+	_, err = app.NewRoleServiceClient(b.Conn).Add(as, app.RoleAddRequest_builder{
+		Tenant: contoso, Alias: "ghostly", Methods: []string{all}, Labels: said,
+	}.Build())
+	x.Equal(codes.InvalidArgument, status.Code(err), "%v", err)
+
+	// Nor on their own row, nor off the app's: neither is written at a port.
+	_, err = app.NewHolderServiceClient(b.Conn).Patch(as, app.HolderPatchRequest_builder{
+		Ref: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(), Labels: said,
+	}.Build())
+	x.Error(err, "a person said they were an app's")
+	_, err = app.NewHolderServiceClient(b.Conn).Patch(as, app.HolderPatchRequest_builder{
+		Ref: app.HolderRef_builder{Id: loft.GetId()}.Build(), Labels: map[string]string{"note": "a person"},
+	}.Build())
+	x.Error(err, "an app's holder was relabelled")
+
+	who, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{Id: b.Who.Bytes()}.Build(), Select: app.HolderSelect_builder{Labels: z.Ptr(true)}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.NotContains(who.GetLabels(), appLabelKey)
+	got, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{Id: loft.GetId()}.Build(), Select: app.HolderSelect_builder{Labels: z.Ptr(true)}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.Equal("loft", got.GetLabels()[appLabelKey])
 }

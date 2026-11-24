@@ -402,7 +402,7 @@ func (s coreHolder) said(ctx context.Context, ref *app.HolderRef, was *timestamp
 // -- matched by their address, never linked -- are the ones whose `externalId`
 // it has nowhere else to put. Held to what makes the word a directory's at
 // all: the tenant provisions through a connection, and the person is not a
-// row a file declares.
+// row a file declares, nor the holder an app acts as ([coreHolder.toldOf]).
 //
 // What is said is held to the form the real thing would be -- a subject to
 // the connection's claim, an address to its normal form -- so that an operator
@@ -415,7 +415,7 @@ func (s coreHolder) said(ctx context.Context, ref *app.HolderRef, was *timestamp
 // linked, and the directory's holder then had an account at the connection.
 // It is whoever holds the verb, and not the endpoint's key alone.
 func (s coreHolder) Tell(ctx context.Context, req *app.HolderTellRequest) (*app.Holder, error) {
-	if err := s.declaredHolder(ctx, req.GetRef()); err != nil {
+	if err := s.toldOf(ctx, req.GetRef()); err != nil {
 		return nil, err
 	}
 
@@ -502,6 +502,31 @@ func (s coreHolder) Tell(ctx context.Context, req *app.HolderTellRequest) (*app.
 	lock(&patch, req.GetDateUpdated())
 
 	return versioned(s.HolderServiceServer.Patch(ctx, patch.Build()))
+}
+
+// toldOf refuses [coreHolder.Tell] of a holder whose row says it is no person
+// ([app.Holder.NoPerson]): a row a file declares, refused as every write of
+// one is, and the holder `roster app install` made, which says it is an app's
+// (`roster.app`). A directory says what it calls people, and an app's holder
+// is none: told of it, `roster scim adopt` had an id for a holder nobody signs
+// in as (#451). Refused where the declared row is, at a port, and written at
+// the box, by the one test the directory and the SCIM endpoint ask.
+func (s coreHolder) toldOf(ctx context.Context, ref *app.HolderRef) error {
+	got, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
+		Ref: ref, Select: app.HolderSelect_builder{Labels: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return err
+	}
+	if !got.NoPerson() || inProcess(ctx) {
+		return nil
+	}
+	if err := s.mayWriteDeclared(ctx, "ref", got.GetLabels()); err != nil {
+		return err
+	}
+
+	return status.Errorf(codes.FailedPrecondition,
+		"ref: this row is what the app %s acts as, and a directory says nothing of it", got.GetLabels()[app.LabelApp])
 }
 
 // directed is somebody a directory may speak for, read with what deciding

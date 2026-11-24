@@ -389,9 +389,13 @@ on the person. Run it after a directory's first cycle, and again when the log
 says so.
 
 The list is of people. A holder an app acts as (`roster app install`) is nobody
-who signs in, so one the directory said an id for is left off it and never
-linked, and a sentence after the list names it. Nor does a directory say
-anything of its own holder: `Tell` of the caller's own row is refused.
+who signs in -- one a nomination names, and one whose row says it is no person,
+as above, which an app's still does after it is uninstalled -- so one the
+directory said an id for is left off it and never linked, and a sentence after
+the list names it. Nor does a directory say
+anything of its own holder: `Tell` of the caller's own row is refused. Nor of a
+holder whose row says it is no person: `Tell` of a front door's or an app's is
+`FailedPrecondition` at a port.
 
 **An account at the connection is not somebody's own to write.** Anywhere else
 a person may write an account at a provider onto their own row through a front
@@ -452,8 +456,13 @@ do not delete their own account, whatever their tenant offers
 (`MeService.Leave`).
 
 **A list with no filter is the people who sign in through its connection.**
-Its `totalResults` is counted by asking after each of them what reads nothing
-personal, so it may count somebody no page shows -- a row a file declares that
+A holder whose row says it is no person is not among them: one that carries
+`roster.declared`, a front door's, or `roster.app`, which `roster app install`
+writes on an app's (`rstr.Holder.NoPerson`, the test the directory asks too,
+[ldap.md](ldap.md)). `GET /Users/{id}` of one is `404`, no page and no filter
+answers it, and a write that names it as a member is refused as one naming
+nobody. Its `totalResults` is counted by asking after each of them what reads nothing
+personal, so it may count somebody no page shows -- such a row that
 has an account at the connection, which only an operator writing one makes, or
 somebody erased between the count and the page -- and a page skips them.
 
@@ -521,9 +530,9 @@ a group inside a group is not followed, and roster has none. Somebody erased
 since, or deleted by the directory, keeps their place in roster as an erase
 leaves it, and is not among `members`. Who is listed is asked with nothing
 personal, so a read of a group leaves no row of the access record for its
-members; what that does not ask is whether a file declared somebody, so a row
-a file declares that somebody else put in the group would be listed, though a
-read of it is `404`. Nothing the endpoint does puts one there.
+members; what that does not ask is whether a row says it is no person, so a
+front door's holder or an app's that somebody else put in the group would be
+listed, though a read of it is `404`. Nothing the endpoint does puts one there.
 
 **A list of members is written whole or not at all.** Every id an `add` or a
 whole list names is looked up before anything is written, and one that is
@@ -643,7 +652,7 @@ it.
 | `HolderService/Provision` | somebody new: the person, their identity, their address, in one write |
 | `HolderService/Deactivate`, `Activate` | a suspension of the directory's, for people who sign in through the connection |
 | `HolderService/Update`, `Get` | a profile, and reading it back: anybody's of the tenant no file declares, an administrator's among them |
-| `HolderService/Tell` | what it calls somebody, kept beside them: reaches anybody but its own holder, and is believed by nothing |
+| `HolderService/Tell` | what it calls somebody, kept beside them: reaches anybody but its own holder, a front door's and an app's, and is believed by nothing |
 | `PhoneService/Add`, `Erase`, `List` | where somebody is reached: written onto whoever holds no more than this key does, which is everybody it provisions |
 | `RelationService/Add`, `Erase`, `List` | who somebody reports to: a record no rule reads |
 | `EmailService/Get`, `List`, `IdentityService/Get`, `List` | finding somebody by an address or an `externalId`; asked of roster itself, every person's addresses and accounts at providers |

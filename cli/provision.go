@@ -116,24 +116,36 @@ func holderNamed(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, alias s
 		return nil, false, err
 	}
 
+	got, err := labelled(ctx, s, rstr.HolderRef_builder{
+		Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(alias), Tenant: at}.Build(),
+	}.Build(), labels)
+	if err != nil {
+		return nil, false, err
+	}
+
+	return got, false, nil
+}
+
+// labelled writes `labels` on the holder `ref` where it lacks them or says
+// otherwise, leaving the rest of its labels as they are, and answers with its
+// identifier. Nothing is written where nothing would change.
+func labelled(ctx context.Context, s *cmd.Server, ref *rstr.HolderRef, labels map[string]string) ([]byte, error) {
 	got, err := s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
-		Ref: rstr.HolderRef_builder{
-			Slug: rstr.HolderRefBySlug_builder{Alias: z.Ptr(alias), Tenant: at}.Build(),
-		}.Build(),
+		Ref:    ref,
 		Select: rstr.HolderSelect_builder{Labels: z.Ptr(true), DateUpdated: z.Ptr(true)}.Build(),
 	}.Build())
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	if next, ok := withLabels(got.GetLabels(), labels); ok {
 		if _, err := s.Ungated.Holder().Patch(ctx, rstr.HolderPatchRequest_builder{
 			Ref: rstr.HolderRef_builder{Id: got.GetId()}.Build(), Labels: next, DateUpdated: got.GetDateUpdated(),
 		}.Build()); err != nil {
-			return nil, false, err
+			return nil, err
 		}
 	}
 
-	return got.GetId(), false, nil
+	return got.GetId(), nil
 }
 
 // holderFound is the holder called `alias` in the tenant, or nil where there is
