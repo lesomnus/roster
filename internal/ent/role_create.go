@@ -9,6 +9,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/tenant"
@@ -109,6 +110,20 @@ func (_c *RoleCreate) SetNillableSiteId(v *uuid.UUID) *RoleCreate {
 	return _c
 }
 
+// SetAppId sets the "app_id" field.
+func (_c *RoleCreate) SetAppId(v uuid.UUID) *RoleCreate {
+	_c.mutation.SetAppId(v)
+	return _c
+}
+
+// SetNillableAppId sets the "app_id" field if the given value is not nil.
+func (_c *RoleCreate) SetNillableAppId(v *uuid.UUID) *RoleCreate {
+	if v != nil {
+		_c.SetAppId(*v)
+	}
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *RoleCreate) SetId(v uuid.UUID) *RoleCreate {
 	_c.mutation.SetId(v)
@@ -123,6 +138,11 @@ func (_c *RoleCreate) SetTenant(v *Tenant) *RoleCreate {
 // SetSite sets the "site" edge to the Site entity.
 func (_c *RoleCreate) SetSite(v *Site) *RoleCreate {
 	return _c.SetSiteId(v.Id)
+}
+
+// SetApp sets the "app" edge to the Holder entity.
+func (_c *RoleCreate) SetApp(v *Holder) *RoleCreate {
+	return _c.SetAppId(v.Id)
 }
 
 // Mutation returns the RoleMutation object of the builder.
@@ -295,6 +315,23 @@ func (_c *RoleCreate) createSpec() (*Role, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.SiteId = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AppIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   role.AppTable,
+			Columns: []string{role.AppColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.AppId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

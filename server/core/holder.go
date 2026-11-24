@@ -1,8 +1,10 @@
 package core
 
 import (
+	"bytes"
 	"context"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -13,10 +15,12 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/access"
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdid"
 	sqlpage "github.com/protobuf-orm/ent/dialect/sql/sqlpage"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/portrait"
 )
 
@@ -543,22 +547,56 @@ func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) 
 		return nil, err
 	}
 
-	ms, sites, every, err := s.rules.Held(ctx, who)
-	if err != nil {
-		return nil, err
+	// What somebody holds is held at an app (`Role.app`). Until a caller says
+	// which app it asks about, this answers what roster's roles give them and
+	// what the roles of the app asking give them, together: roster's, for the
+	// consoles that draw what somebody may do here, and the caller's own, for
+	// an app asking what somebody may call at it. A role of any other app's
+	// is not in it.
+	ats := []pdid.Id{pdid.Nil}
+	if f, ok := frame.From(ctx); ok && f.Actor != pdid.Nil && f.Actor.Domain() == pd.HolderDomain {
+		ats = append(ats, f.Actor)
 	}
 
-	res := app.HolderReachesResponse_builder{Methods: ms, EverySite: every}
-	for _, k := range sites {
-		res.Sites = append(res.Sites, k.Bytes())
-	}
-	if s.rules.Everywhere != nil {
-		if res.Everywhere, err = s.rules.Everywhere(ctx, who); err != nil {
+	res := app.HolderReachesResponse_builder{}
+	for _, at := range ats {
+		ms, sites, every, err := s.rules.Held(ctx, who, at)
+		if err != nil {
 			return nil, err
 		}
+
+		res.Methods = union(res.Methods, ms)
+		res.EverySite = res.EverySite || every
+		for _, k := range sites {
+			if !slices.ContainsFunc(res.Sites, func(b []byte) bool { return bytes.Equal(b, k.Bytes()) }) {
+				res.Sites = append(res.Sites, k.Bytes())
+			}
+		}
+		if s.rules.Everywhere != nil {
+			es, err := s.rules.Everywhere(ctx, who, at)
+			if err != nil {
+				return nil, err
+			}
+			res.Everywhere = union(res.Everywhere, es)
+		}
 	}
+	slices.SortFunc(res.Sites, bytes.Compare)
 
 	return res.Build(), nil
+}
+
+// union is `a` and each of `b` it does not have, in the order of their
+// spelling.
+func union(a, b []string) []string {
+	out := slices.Clone(a)
+	for _, v := range b {
+		if !slices.Contains(out, v) {
+			out = append(out, v)
+		}
+	}
+	slices.Sort(out)
+
+	return out
 }
 
 // SearchPageSize is what a search answers with when it was not told, and

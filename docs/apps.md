@@ -198,7 +198,11 @@ before the suspension is answered with nothing to cover. The app's own
 permissions are its own RPCs, and anything finer than one RPC is a **method of a
 permission service** the app declares in its own proto package -- for example
 `loft.AdminService/SeeEveryTenant` -- named in a role like any other
-method. A role is a bundle of those; an app asks about the permission and never
+method. **A role says whose methods it names** (`Role.app`, the holder the app
+is answered as): a role of Loft's is read by Loft and by nobody else, and gives
+nothing at roster or at another app, whatever its methods are called -- a
+method's name is no app's, and two apps may both serve one. A role is a bundle
+of those; an app asks about the permission and never
 about the role's name, so a role can be split or renamed without the app
 noticing. Nor about which group or team somebody is in: a membership nothing is
 bound to is guarded by nothing ([usage/permissions.md](usage/permissions.md) §
@@ -209,12 +213,13 @@ so a call that came with a key whose list is narrower than its holder's is the
 app's to hold to that list, as `Introspect` answers it, and `reach` says yes
 wherever the holder may.
 
-**Somebody has to hold an app's methods before they can grant them.** A tenant's
-first administrator is bound `/roster.*/*`, which covers none of an app's own
-methods, and nobody hands out what they do not hold. So a roster operator, on the
-admin listener, starts it: binds a tenant administrator the app's methods -- or a
-pattern over every app sold to that tenant -- and from there it is the tenant's to
-hand on.
+**Somebody has to hold an app's methods at the app before they can grant them.**
+Nobody hands out what they do not hold, and it is asked at the app the role
+names: what somebody holds at roster hands out nothing at an app, and the other
+way round. A tenant's first administrator is bound `/roster.*/*`, which is
+nothing at Loft. So a roster operator, at the box, starts it: binds a tenant
+administrator a role of the app's naming its methods, and from there it is the
+tenant's to hand on, at that app.
 
 Every shape asks the same questions in the same order, so this half of an app is
 written once, here: `reach`, below.
@@ -427,8 +432,9 @@ levyan ─ Reaches(erin), Reaches(@acme/loft) → both cover → serves it, or n
   app's key; the app's key, without somebody who signed in.
 - **The app's ceiling is its holder's bindings.** What Loft may do for people
   at levyan is a permission method levyan declares --
-  `levyan.AdminService/ActForPeople`, say -- which a tenant administrator
-  binds to `@acme/loft`, and levyan reads with `Reaches` on that holder. What
+  `levyan.AdminService/ActForPeople`, say -- in a role of levyan's, which a
+  tenant administrator who holds it at levyan binds to `@acme/loft`, and levyan
+  reads with `Reaches` on that holder. What
   is served is what both cover: never wider than erin, never wider than the
   app, and never a claim in either token.
 - **The token is erin's whole credential at that API** -- the one erin's own

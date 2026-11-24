@@ -1166,6 +1166,7 @@ var (
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "tenant_id", Type: field.TypeUuid},
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "app_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// RoleTable holds the schema information for the "role" table.
 	RoleTable = &schema.Table{
@@ -1183,6 +1184,12 @@ var (
 				Symbol:     "role_site_site",
 				Columns:    []*schema.Column{RoleColumns[10]},
 				RefColumns: []*schema.Column{SiteColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "role_holder_app",
+				Columns:    []*schema.Column{RoleColumns[11]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -1623,6 +1630,7 @@ func init() {
 	}
 	RoleTable.ForeignKeys[0].RefTable = TenantTable
 	RoleTable.ForeignKeys[1].RefTable = SiteTable
+	RoleTable.ForeignKeys[2].RefTable = HolderTable
 	RoleTable.Annotation = &entsql.Annotation{
 		Table: "role",
 	}

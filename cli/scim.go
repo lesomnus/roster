@@ -28,6 +28,7 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	rstr "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/scim"
+	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/keys"
 )
 
@@ -132,7 +133,7 @@ func scimOf(c *cmd.Config, l net.Listener) cmd.ScimConfig {
 }
 
 // ScimHolder is what a tenant's directory is called in it.
-const ScimHolder = "scim"
+const ScimHolder = core.ScimRole
 
 func newCmdScimProvision(c *cmd.Config) *xli.Command {
 	return &xli.Command{

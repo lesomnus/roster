@@ -59,6 +59,7 @@ type Role struct {
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_Methods     []string               `protobuf:"bytes,8,rep,name=methods"`
+	xxx_hidden_App         *Holder                `protobuf:"bytes,9,opt,name=app"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -147,6 +148,13 @@ func (x *Role) GetMethods() []string {
 	return nil
 }
 
+func (x *Role) GetApp() *Holder {
+	if x != nil {
+		return x.xxx_hidden_App
+	}
+	return nil
+}
+
 func (x *Role) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -203,6 +211,10 @@ func (x *Role) SetMethods(v []string) {
 	x.xxx_hidden_Methods = v
 }
 
+func (x *Role) SetApp(v *Holder) {
+	x.xxx_hidden_App = v
+}
+
 func (x *Role) SetDateUpdated(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateUpdated = v
 }
@@ -227,6 +239,13 @@ func (x *Role) HasSite() bool {
 		return false
 	}
 	return x.xxx_hidden_Site != nil
+}
+
+func (x *Role) HasApp() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_App != nil
 }
 
 func (x *Role) HasDateUpdated() bool {
@@ -256,6 +275,10 @@ func (x *Role) ClearTenant() {
 
 func (x *Role) ClearSite() {
 	x.xxx_hidden_Site = nil
+}
+
+func (x *Role) ClearApp() {
+	x.xxx_hidden_App = nil
 }
 
 func (x *Role) ClearDateUpdated() {
@@ -324,7 +347,28 @@ type Role_builder struct {
 	// `roster init` prints what it made in the words it made it. See
 	// `frame.Covers` for what a pattern may and may not say -- a whole part or
 	// nothing, never `*Get*`.
-	Methods     []string
+	Methods []string
+	// The app whose methods `methods` names, as the holder that app is answered
+	// as in this tenant; empty is roster's own.
+	//
+	// # A grant is at one app
+	//
+	// A method's name is held across a tenant, and every app is answered the
+	// whole of what somebody holds -- so a role naming a method two apps both
+	// serve was a grant at both, and whoever could hand the name out handed it
+	// out wherever it was read. Said here, a role is read by the app it names
+	// and by nobody else: roster's gate and wall read roster's roles alone
+	// (`cmd/policy.go`), and nobody hands out a method at an app who does not
+	// hold it there (`server/core/escalate.go`).
+	//
+	// One of the role's own tenant and not erased, and that is all that is
+	// asked of it: roster does not tell an app from a person to decide
+	// anything, only what each holds. Set when the role is made and never
+	// after, so `Widen`, `Narrow` and an erase keep it.
+	//
+	// Its alias is still one within the tenant, whichever app's it is:
+	// `@acme/viewer` names one role.
+	App         *Holder
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -342,6 +386,7 @@ func (b0 Role_builder) Build() *Role {
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_Methods = b.Methods
+	x.xxx_hidden_App = b.App
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -647,7 +692,7 @@ var File_app_role_proto protoreflect.FileDescriptor
 
 const file_app_role_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/role.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1aroster/payday/holder.proto\x1a\x0eapp/site.proto\x1a\x0fapp/group.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe1\x05\n" +
+	"\x0eapp/role.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1aroster/payday/holder.proto\x1a\x0eapp/site.proto\x1a\x0fapp/group.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x8d\x06\n" +
 	"\x04Role\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12*\n" +
@@ -656,7 +701,8 @@ const file_app_role_proto_rawDesc = "" +
 	"\x04name\x18\x05 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04name\x12\x1a\n" +
 	"\x04desc\x18\x06 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04desc\x128\n" +
 	"\x06labels\x18\a \x03(\v2\x18.roster.Role.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x00R\x06labels\x12 \n" +
-	"\amethods\x18\b \x03(\tB\x06\xaa\xc1\x16\x02\x18\x00R\amethods\x12F\n" +
+	"\amethods\x18\b \x03(\tB\x06\xaa\xc1\x16\x02\x18\x00R\amethods\x12*\n" +
+	"\x03app\x18\t \x01(\v2\x0e.roster.HolderB\b\xf2\x82\x16\x048\x01@\x01R\x03app\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -720,30 +766,31 @@ var file_app_role_proto_goTypes = []any{
 	nil,                           // 3: roster.Binding.LabelsEntry
 	(*Tenant)(nil),                // 4: roster.Tenant
 	(*Site)(nil),                  // 5: roster.Site
-	(*timestamppb.Timestamp)(nil), // 6: google.protobuf.Timestamp
-	(*Holder)(nil),                // 7: roster.Holder
+	(*Holder)(nil),                // 6: roster.Holder
+	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
 	(*Group)(nil),                 // 8: roster.Group
 }
 var file_app_role_proto_depIdxs = []int32{
 	4,  // 0: roster.Role.tenant:type_name -> roster.Tenant
 	5,  // 1: roster.Role.site:type_name -> roster.Site
 	2,  // 2: roster.Role.labels:type_name -> roster.Role.LabelsEntry
-	6,  // 3: roster.Role.date_updated:type_name -> google.protobuf.Timestamp
-	6,  // 4: roster.Role.date_erased:type_name -> google.protobuf.Timestamp
-	6,  // 5: roster.Role.date_created:type_name -> google.protobuf.Timestamp
-	0,  // 6: roster.Binding.role:type_name -> roster.Role
-	5,  // 7: roster.Binding.site:type_name -> roster.Site
-	7,  // 8: roster.Binding.holder:type_name -> roster.Holder
-	8,  // 9: roster.Binding.group:type_name -> roster.Group
-	3,  // 10: roster.Binding.labels:type_name -> roster.Binding.LabelsEntry
-	6,  // 11: roster.Binding.date_updated:type_name -> google.protobuf.Timestamp
-	6,  // 12: roster.Binding.date_erased:type_name -> google.protobuf.Timestamp
-	6,  // 13: roster.Binding.date_created:type_name -> google.protobuf.Timestamp
-	14, // [14:14] is the sub-list for method output_type
-	14, // [14:14] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	6,  // 3: roster.Role.app:type_name -> roster.Holder
+	7,  // 4: roster.Role.date_updated:type_name -> google.protobuf.Timestamp
+	7,  // 5: roster.Role.date_erased:type_name -> google.protobuf.Timestamp
+	7,  // 6: roster.Role.date_created:type_name -> google.protobuf.Timestamp
+	0,  // 7: roster.Binding.role:type_name -> roster.Role
+	5,  // 8: roster.Binding.site:type_name -> roster.Site
+	6,  // 9: roster.Binding.holder:type_name -> roster.Holder
+	8,  // 10: roster.Binding.group:type_name -> roster.Group
+	3,  // 11: roster.Binding.labels:type_name -> roster.Binding.LabelsEntry
+	7,  // 12: roster.Binding.date_updated:type_name -> google.protobuf.Timestamp
+	7,  // 13: roster.Binding.date_erased:type_name -> google.protobuf.Timestamp
+	7,  // 14: roster.Binding.date_created:type_name -> google.protobuf.Timestamp
+	15, // [15:15] is the sub-list for method output_type
+	15, // [15:15] is the sub-list for method input_type
+	15, // [15:15] is the sub-list for extension type_name
+	15, // [15:15] is the sub-list for extension extendee
+	0,  // [0:15] is the sub-list for field type_name
 }
 
 func init() { file_app_role_proto_init() }

@@ -40,6 +40,9 @@ func (Role) Fields() []ent.Field {
 		field.Uuid("site_id").
 			Optional().
 			Immutable(),
+		field.Uuid("app_id").
+			Optional().
+			Immutable(),
 	}
 }
 
@@ -53,6 +56,10 @@ func (Role) Edges() []ent.Edge {
 		edge.To("site", Site.Type).
 			Unique().
 			Field("site_id").
+			Immutable(),
+		edge.To("app", Holder.Type).
+			Unique().
+			Field("app_id").
 			Immutable(),
 	}
 }

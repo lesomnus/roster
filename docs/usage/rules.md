@@ -140,6 +140,10 @@ group does not write one, whatever it names (`server/core/tenantwide.go`).
 | A key of the deployment's, narrowed to a tenant, is whoever that tenant nominated for it, and nobody until a request names the tenant | `cmd/auth.go` | `TestADeploymentKeyIsNarrowedToWhoATenantNominatedForIt` · `TestANarrowedKeyDoesNothingUntilARequestNamesATenant` · `TestAKeyNobodyNominatedBorrowsNothing` |
 | A key of the deployment's is not the deployment: it calls its list, and is held to every rule here | `server/core/declared.go` | `TestAKeyOfTheDeploymentsIsNotTheDeployment` |
 | What somebody is told they hold is what the gate enforces | `cmd/policy.go` | `TestMeSaysWhatTheGateSays` · `TestMeAnswersWhatTheCredentialLeavesOfWhatIsHeld` |
+| A grant is at one app, the one its role names (`Role.app`): a role of an app's gives nothing at roster -- no method, no site, nothing `MeService/Get` says -- and nothing at another app, whatever its methods are called | `cmd/policy.go` | `TestARoleOfAnAppGivesNothingAtRoster` · `TestAMethodBothAppsServeIsHeldAtTheOneTheRoleNames` |
+| A role of an app's is bound to a person, or held in a team, and not bound to a group: a group does not say whose it is yet; nor is it a manager's role in a group, which is roster's | `server/core/agree.go`, `server/core/group.go` | `TestARoleOfAnAppIsBoundToAPersonAndNotToAGroup` · `TestAnAppsRoleIsNoManagersRole` |
+| A role of an app's takes no alias roster finds a role of its own by: `self-service`, `group-manager`, `everything`, `login-app`, `account`, `scim` | `server/core/agree.go` | `TestAnAppsRoleTakesNoNameRosterKeeps` |
+| What ends an app's holder ends the roles that are of it: erasing the holder erases them in the same act, a restore brings the holder back and not them, and no road that destroys a holder's row leaves a role behind to be read as roster's | `server/core/takeaway.go` | `TestWhatEndsAnAppsHolderEndsItsRoles` · `TestNoRoadThatDestroysAHolderLeavesARoleOfRosters` |
 
 ### Nobody hands out what they do not hold
 
@@ -158,6 +162,7 @@ grants has to cover the method **on its own** (`server/core/escalate.go`,
 | A key's methods | `TestNobodyMintsAKeyForWhatTheyDoNotHold` · `TestNobodyMintsAKeyWiderThanThemselves` · `TestNobodyMintsThemselvesAKeyWiderThanTheyAre` |
 | An app's key answered as somebody: that person holds no more than whoever nominates them, and a deployment key as itself nominates nobody | `TestNobodyNominatesAHolderWiderThanThemselves` · `TestADeploymentKeyAsItselfWritesNoNomination` |
 | What is held through a group is held, and may be passed on | `TestAGroupHeldPermissionIsYoursToPassOn` |
+| At the app the role names: what is held at roster hands out nothing at an app, what is held at one app nothing at another or at roster, and the refusal names the app | `TestWhoHoldsEverythingAtOneAppHandsOutThereAndNowhereElse` · `TestAllOfRosterHandsOutNothingAtAnApp` |
 | The role everybody holds names only what is somebody's own to do | `TestTheRoleEverybodyHoldsNamesOnlyWhatIsTheirOwn` |
 
 ### Nobody takes away what they could not have given
@@ -195,6 +200,7 @@ person (`server/core/escalate.go`, `mayReach`).
 | Any of them erased | `TestAWayInIsTakenAwayByWhoeverCouldWriteIt` · `TestARevokeReachesNobodyWider` · `TestSomebodyRemovesTheirOwnWayInAndNobodyElseS` |
 | What somebody holds, for this rule, is everything that reaches them: through a team and through a group too | `TestARoleHeldThroughATeamIsStillHeld` · `TestAPermissionHeldThroughAGroupIsStillHeld` |
 | What the **writer** holds is counted where they hold it: a role in a site or on a team is not one to reach the tenant's administrator by | `TestARoleOnATeamIsNotOneToBecomeSomebodyBy` |
+| And at roster alone: a role of an app's makes nobody wider or narrower, so whoever may write a way into an account may act as that person at an app; what is roster's counts wherever it is held | `TestAWayInIsAskedOfRostersRolesAlone` |
 | Somebody's keys, and where they are signed in, are read by them, and by whoever holds `HolderService/SignsIn` across the tenant | `TestAKeyIsReadByWhoseItIsAndByWhoeverIsToldTo` · `TestSomebodySeesWhereTheyAreSignedInAndEndsOne` |
 | And `SignsIn` answers all of them -- every account, credential and key somebody has, and not a list's first page -- in the order each was made, which is the order the person reads their own in | `TestHowSomebodySignsInIsAllOfIt` |
 
@@ -204,6 +210,7 @@ person (`server/core/escalate.go`, `mayReach`).
 | --- | --- | --- |
 | A tenant is made with somebody who administers it, whole or not at all: a refusal or a failure part way leaves nothing, and the alias free -- at the data plane, at `admin.addr`, at the box, and for a tenant a file declares | `server/core/tenant.go`, `cmd/admin.go` | `TestATenantIsMadeWithSomebodyWhoCanAdministerIt` · `TestATenantMadeAtTheOperatorsPortIsWholeOrNotThere` · `TestAFilesTenantIsWholeOrNotThere` |
 | No write leaves a tenant with nobody administering it -- narrowing, erasing, unbinding, suspending, whichever way | `server/core/administered.go` | `TestATenantKeepsSomebodyAdministeringIt` · `TestEveryWriteThatEndsTheLastAdministrationIsRefused` · `TestAnAdministratorThroughAGroupCounts` · `TestTwoNarrowingsCannotBothTakeTheLast` |
+| And administering it is holding `/roster.*/*` at roster: a role of an app's naming it administers nothing | `cmd/policy.go` | `TestTheRulesThatProtectATenantReadRostersRoles` |
 | Leaving is signed out everywhere and erased, both or neither: the last administrator who asks to leave is refused, and stays signed in | `server/me/me.go` | `TestTheLastAdministratorWhoAsksToLeaveStaysSignedIn` |
 | Nor the deployment with nobody operating it, by a key | `server/core/administered.go` | `TestAKeyOfTheDeploymentsIsNotTheDeployment` |
 | Nobody removes their last way in, and what is left is one that works: an account at a provider the tenant has a connection to, or a password where the tenant takes one | `server/core/identity.go` | `TestNobodyRemovesTheirLastWayIn` · `TestTheLastWayInSurvivesTwoCallersAtOnce` · `TestALastWayInIsOneThatWorks` |

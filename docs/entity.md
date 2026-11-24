@@ -67,7 +67,7 @@ flowchart TB
 it: there is no binding that makes somebody see another customer.
 
 **👤 `Holder` is who.** A credential resolves to one, the trail names one on
-every line, and seventeen foreign keys point at one.
+every line, and eighteen foreign keys point at one.
 
 **📍 `Site` is the second axis.** A tenant is the wall between customers and a
 site is the wall inside one -- a factory, a region, an environment. An entity
@@ -341,7 +341,10 @@ resource and a verb, and a table of resource kinds is a second schema that has
 to agree with the first. Empty allows nothing, which is `frame.Grant`'s zero
 value and the right way round. A pattern rather than a list because a list is a
 snapshot of something that grows. There are no deny rules: permissions are a
-union, so read order cannot matter. On the wire a role is added, erased,
+union, so read order cannot matter. **A role says whose methods it names**:
+`app`, the holder an app is answered as, fixed when the role is made, and none
+is roster's own. roster's gate reads roster's roles, an app is answered with its
+own, and nobody hands out a method at an app who does not hold it there. On the wire a role is added, erased,
 widened or narrowed -- `Role.Widen` adds methods and takes none away, which is
 what an app does to the roles it shipped ([apps.md](apps.md)), and
 `Role.Narrow` takes them out and adds none, which is what a tenant does in its

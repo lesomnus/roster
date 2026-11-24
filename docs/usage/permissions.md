@@ -154,8 +154,9 @@ any other group -- the gate lets him through for the method, and `server/core`
 refuses every group but the one he holds it in. Being a plain member of a group
 is not managing it.
 
-- **Such a role names those three methods and nothing else**, and belongs to no
-  site. The gate holds a role held in a group everywhere; only these writes are
+- **Such a role is roster's, names those three methods and nothing else**, and
+  belongs to no site: a role of an app's is refused, since it names nothing a
+  manager does at roster. The gate holds a role held in a group everywhere; only these writes are
   narrowed back to the group. A tenant's own `group-manager` naming fewer is
   used as it stands -- one whose managers do not rename groups keeps them so --
   and one naming anything else is refused where a group is made.
@@ -444,6 +445,22 @@ What counts is what they hold **wide**, through a binding. A role held inside
 one team does not let them write a tenant-wide binding of it, because that would
 be widening a scope rather than passing a permission on.
 
+And what they hold **at the app** the role names (`Role.app`; none is roster's
+own). A method is a name, and the same name at two apps is two grants: what
+somebody holds at roster hands out nothing at Loft, and what they hold at Loft
+nothing at roster or at levyan. The refusal names the app:
+
+```
+role.methods: you do not hold "/loft.BookingService/Cancel" at @acme/loft, so you may not grant it
+```
+
+A role of an app's is bound to a person, or held in a team; bound to a group it
+is refused, since a group does not say whose it is yet. It takes no alias roster
+finds a role of its own by -- `self-service`, `group-manager`, `everything`,
+`login-app`, `account`, `scim` -- and it ends with the app: erasing the holder
+the app is answered as erases the roles of it in the same act, and a restore of
+the holder does not bring them back.
+
 ### And the reason the first role can be written at all
 
 The rule is waived where there is **no caller**: `roster init`, a seed, and the
@@ -546,6 +563,13 @@ holds those permissions *for this rule* even though they may not bind them
 anywhere. The two readings differ on purpose: missing a path in the first rule
 refuses a grant somebody could have made, which is a conversation, and missing one
 in the second lets an administrator be reset by anybody.
+
+**And it is compared at roster.** What a role of an app's gives is not counted,
+on either side: an account's ways in are roster's, and a person who uses Loft is
+no wider for it than a tenant's administrator who holds nothing there. So
+whoever may write a way into an account may act as that person at an app. What
+is roster's counts wherever it is held: an app's own holder is wider than a
+caller who does not hold what its role at roster names.
 
 **Three verbs are not held to it, and cannot be. Each is every account of the
 tenant.** A front door -- the app a tenant's people sign in at -- holds nothing
@@ -689,7 +713,10 @@ and, as the person themselves, over the wire:
 MeService.Get → { alias, tenant, methods: ["/roster.*/*"], own: [...], sites, every_site, teams }
 ```
 
-`methods` comes back as the **pattern**, not what it expands to. A page that
+`methods` is what they hold **at roster**, of roster's roles: a role of an
+app's gives nothing here, and is what that app is answered with
+(`HolderService/Reaches`, [../apps.md](../apps.md)). It comes back as the
+**pattern**, not what it expands to. A page that
 expanded it would show what exists in one binary.
 
 Each list in that answer is in an order a page can rely on. `sites` says each

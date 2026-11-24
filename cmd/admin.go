@@ -516,7 +516,7 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 // the control plane nobody of a customer's is anybody.
 func adminRules(s *Server) core.Rules {
 	r := Rules(s.Control.Ent)
-	r.Held = core.Held(Everything(s.Ent, s.policySources...))
+	r.Held = HeldAt(s.Ent, s.policySources...)
 	r.Everywhere = Everywhere(s.Ent, s.policySources...)
 	r.TenantOf = TenantOf(s.Ent)
 	r.Releasing = Releasing(s.Ent, s.contents)

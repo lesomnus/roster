@@ -55,7 +55,7 @@ func TestEveryRowThatNamesAPersonIsAskedAboutThem(t *testing.T) {
 	for _, columns := range keyed {
 		keys += len(columns)
 	}
-	x.Equal(17, keys, "the comments in this package and docs/operating.md say seventeen foreign keys point at a holder")
+	x.Equal(18, keys, "the comments in this package and docs/operating.md say eighteen foreign keys point at a holder")
 
 	// What the messages say: every kind with an edge to a holder, and whether
 	// a write can point one of its edges at somebody else.

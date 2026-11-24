@@ -107,7 +107,7 @@ func (s coreTeamMembership) Add(ctx context.Context, req *app.TeamMembershipAddR
 	// of a role somebody holds in a team into what they may ever call, so
 	// naming one here **is** granting it. See `escalate.go`, "and through a
 	// team, which the gate cannot narrow".
-	ms, err := s.methodsOf(ctx, req.GetRole())
+	ms, of, err := s.methodsOf(ctx, req.GetRole())
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (s coreTeamMembership) Add(ctx context.Context, req *app.TeamMembershipAddR
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayGrant(ctx, "role", ms, at); err != nil {
+	if err := s.mayGrant(ctx, "role", ms, at, of); err != nil {
 		return nil, err
 	}
 
@@ -163,7 +163,7 @@ func (s coreTeamMembership) Patch(ctx context.Context, req *app.TeamMembershipPa
 		return nil, err
 	}
 
-	ms, err := s.methodsOf(ctx, req.GetRole())
+	ms, of, err := s.methodsOf(ctx, req.GetRole())
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +175,7 @@ func (s coreTeamMembership) Patch(ctx context.Context, req *app.TeamMembershipPa
 			return nil, err
 		}
 	}
-	if err := s.mayGrant(ctx, "role", ms, at); err != nil {
+	if err := s.mayGrant(ctx, "role", ms, at, of); err != nil {
 		return nil, err
 	}
 
@@ -486,12 +486,12 @@ func (s coreGroupMembership) mayAppoint(ctx context.Context, ref *app.RoleRef) e
 	if err := s.mayHoldInGroup(ctx, ref); err != nil {
 		return err
 	}
-	ms, err := s.methodsOf(ctx, ref)
+	ms, of, err := s.methodsOf(ctx, ref)
 	if err != nil {
 		return err
 	}
 
-	return s.mayGrant(ctx, "role", ms, pdid.Nil)
+	return s.mayGrant(ctx, "role", ms, pdid.Nil, of)
 }
 
 // Patch is `Add`'s questions about a role, asked when one is attached later --
@@ -604,10 +604,6 @@ type coreRole struct {
 func (s Core) Role() app.RoleServiceServer { return coreRole{s, s.Next().Role()} }
 
 func (s coreRole) Add(ctx context.Context, req *app.RoleAddRequest) (*app.Role, error) {
-	if err := mayBeOwned(req.GetAlias(), req.GetSite() != nil, req.GetMethods()); err != nil {
-		return nil, err
-	}
-
 	of, err := s.tenantOfRef(ctx, req.GetTenant())
 	if err != nil {
 		return nil, err
@@ -620,17 +616,38 @@ func (s coreRole) Add(ctx context.Context, req *app.RoleAddRequest) (*app.Role, 
 		return nil, err
 	}
 
+	// The app it names the methods of is a holder of its own tenant, read as
+	// the caller reads one -- and that is all that is asked of it (`Role.app`).
+	whose, err := s.tenantOfHolder(ctx, req.GetApp())
+	if err != nil {
+		return nil, err
+	}
+	if err := tenantsAgree("app", of, whose); err != nil {
+		return nil, err
+	}
+	by, err := s.appOf(ctx, req.GetApp())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.keptBy(ctx, by, req.GetAlias()); err != nil {
+		return nil, err
+	}
+	if err := mayBeOwned(req.GetAlias(), req.GetSite() != nil, req.GetMethods()); err != nil {
+		return nil, err
+	}
+
 	// A role nobody may bind is a delayed version of binding it, so writing one
 	// is held to the same rule as granting one. See `escalate.go`.
 	//
 	// The scope is the role's **own** site, because that is where it may be
 	// bound: a role of no site is bindable across the tenant, so writing one is
-	// a tenant-wide grant however narrow the writer is.
+	// a tenant-wide grant however narrow the writer is. And its own app: what
+	// it names is held there, and only what the writer holds there covers it.
 	at, err := s.siteOf(ctx, req.GetSite())
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayGrant(ctx, "methods", req.GetMethods(), at); err != nil {
+	if err := s.mayGrant(ctx, "methods", req.GetMethods(), at, by); err != nil {
 		return nil, err
 	}
 
@@ -673,14 +690,14 @@ func (s coreRole) Patch(ctx context.Context, req *app.RolePatchRequest) (*app.Ro
 	if err := s.declaredRole(ctx, req.GetRef()); err != nil {
 		return nil, err
 	}
-	// Read off the row rather than taken from the request: `Role.site` is
-	// immutable, so the request has no say in it, and asking the request would
-	// be asking the caller which rules to hold them to.
-	where, err := s.siteOfRole(ctx, req.GetRef())
+	// Read off the row rather than taken from the request: `Role.site` and
+	// `Role.app` are immutable, so the request has no say in them, and asking
+	// the request would be asking the caller which rules to hold them to.
+	where, of, err := s.siteOfRole(ctx, req.GetRef())
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayGrant(ctx, "methods", req.GetMethods(), where); err != nil {
+	if err := s.mayGrant(ctx, "methods", req.GetMethods(), where, of); err != nil {
 		return nil, err
 	}
 	if len(req.GetMethods()) == 0 {
@@ -704,7 +721,7 @@ func (s coreRole) Patch(ctx context.Context, req *app.RolePatchRequest) (*app.Ro
 			out = append(out, m)
 		}
 	}
-	if err := s.mayTakeAway(ctx, "methods", out, where); err != nil {
+	if err := s.mayTakeAway(ctx, "methods", out, where, of); err != nil {
 		return nil, err
 	}
 	tenant, err := pdid.From(got.GetTenant().GetId())
@@ -713,7 +730,7 @@ func (s coreRole) Patch(ctx context.Context, req *app.RolePatchRequest) (*app.Ro
 	}
 
 	var v *app.Role
-	could := where == pdid.Nil && administers(got.GetMethods()) && !administers(req.GetMethods())
+	could := where == pdid.Nil && of == pdid.Nil && administers(got.GetMethods()) && !administers(req.GetMethods())
 	err = s.keepsAdministered(ctx, tenant, could, "taking "+EveryMethod+" out of "+got.GetAlias(), func(next app.Server) error {
 		var err error
 		v, err = next.Role().Patch(ctx, req)
@@ -841,15 +858,28 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 		return nil, err
 	}
 
-	ms, err := s.methodsOf(ctx, req.GetRole())
+	ms, of, err := s.methodsOf(ctx, req.GetRole())
 	if err != nil {
 		return nil, err
 	}
+
+	// A role of an app's is bound to a person, for now, and to no group: the
+	// app's users are the people bound its roles and the members of the app's
+	// own groups, so taking one of them out is ending a binding or a
+	// membership -- and a group does not say whose it is yet. Bound to a group
+	// somebody else keeps, a person would be held the app's role for as long
+	// as they were in it, and the app could not take them out.
+	if of != pdid.Nil && group != nil {
+		return nil, status.Errorf(codes.PermissionDenied,
+			"group: a role of %s's is bound to a person or to a group of that app's, and a group does not say whose it is yet",
+			s.appNamed(ctx, of))
+	}
+
 	at, err := s.siteOf(ctx, req.GetSite())
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayGrant(ctx, "role", ms, at); err != nil {
+	if err := s.mayGrant(ctx, "role", ms, at, of); err != nil {
 		return nil, err
 	}
 
@@ -930,6 +960,51 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 // transaction the binding is written in. Nil is a stack that cannot say, and
 // a binding is then made as it always was.
 type Bound func(ctx context.Context, drv dialect.Driver, role, to, site pdid.Id) (bool, error)
+
+// The roles roster's own front doors are provisioned with, each found by its
+// alias in every tenant they answer in (`cli/login.go`, `cli/provision.go`,
+// `cli/scim.go`).
+const (
+	LoginRole   = "login-app"
+	AccountRole = "account"
+	ScimRole    = "scim"
+)
+
+// Kept is every alias roster finds a role of its own by: the tenant's
+// [Owns], its [Manages], the role it is administered by ([Everyverb]), and
+// the front doors' roles.
+//
+// A role's alias is one within its tenant, whichever app's it is. So a role
+// of an app's that took one of these stood where roster looks for its own:
+// the group-manager role an app had written stopped the tenant making its
+// first group, and one called `self-service` would have been asked what
+// everybody does to their own account.
+var Kept = []string{Owns, Manages, Everyverb, LoginRole, AccountRole, ScimRole}
+
+// keptBy refuses a role of an app's -- `of` is not [pdid.Nil] -- an alias
+// roster keeps ([Kept]). One that is no alias is the write's to refuse.
+func (s Core) keptBy(ctx context.Context, of pdid.Id, alias string) error {
+	if of == pdid.Nil || alias == "" {
+		return nil
+	}
+	name, err := slug.ParseAlias(alias)
+	if err != nil || !slices.Contains(Kept, name) {
+		return nil
+	}
+
+	return pderr.Invalidf("alias", "%q is roster's own: roster finds a role of its own by it, and this is a role of %s's", name, s.appNamed(ctx, of))
+}
+
+// appOf is the identifier a role's `app` names, [pdid.Nil] for none -- a
+// role of roster's own. [Core.holderOf], so one the caller cannot see is
+// nobody's.
+func (s Core) appOf(ctx context.Context, ref *app.HolderRef) (pdid.Id, error) {
+	if ref == nil {
+		return pdid.Nil, nil
+	}
+
+	return s.holderOf(ctx, ref)
+}
 
 // roleOf is the identifier a `RoleRef` names, read when it named something
 // else -- [Core.groupOf]'s shape, through `Next()`.

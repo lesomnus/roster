@@ -238,15 +238,17 @@ type Rules struct {
 	// attempted. See [Releasing].
 	Releasing Releasing
 
-	// Held is the same union as [Rules.Holding], in the shape a page reads:
-	// the method patterns, the sites, and whether a binding reaches the whole
-	// tenant. It is what `Holder.Reaches` answers with and what `MeService.Get`
-	// answers about the caller -- one function, so the two cannot disagree.
-	// Nil is a stack that cannot say, and `Reaches` says so.
+	// Held is the same union as [Rules.Holding] at one app, in the shape a
+	// page reads: the method patterns, the sites, and whether a binding
+	// reaches the whole tenant. It is what `Holder.Reaches` answers with and,
+	// at roster, what `MeService.Get` answers about the caller -- one
+	// function, so the two cannot disagree. Nil is a stack that cannot say,
+	// and `Reaches` says so.
 	Held Held
 
 	// Everywhere is [Held] without a site or a team: what `Holder.Reaches`
-	// answers as `everywhere`.
+	// answers as `everywhere`, and at roster what a rule here asks of somebody
+	// across the tenant.
 	Everywhere Everywhere
 
 	// Administered is whether a tenant still has somebody administering it,
@@ -317,14 +319,17 @@ type Borrower func(ctx context.Context, key pdid.Id) (pdid.Id, error)
 // which is a read that the insert already answers.
 type Releasing func(ctx context.Context, drv dialect.Driver, name string) error
 
-// Held is what somebody may call and where, as the gate decides it. The
-// signature is `me.Held`'s, so one function serves both.
-type Held func(ctx context.Context, who pdid.Id) (methods []string, sites []pdid.Id, every bool, err error)
+// Held is what somebody may call and where at the app `of`, as the gate
+// decides it at roster: of the roles that name that app's methods, and
+// [pdid.Nil] is roster's own. At roster it is `me.Held`'s answer, from one
+// function.
+type Held func(ctx context.Context, who, of pdid.Id) (methods []string, sites []pdid.Id, every bool, err error)
 
 // Everywhere is the part of [Held] that needs no narrowing: what somebody holds
-// through a binding across the whole tenant. `HolderReachesResponse.everywhere`
-// says who reads it.
-type Everywhere func(ctx context.Context, who pdid.Id) ([]string, error)
+// at the app `of` through a binding across the whole tenant.
+// `HolderReachesResponse.everywhere` says who reads it; the rules here that ask
+// what somebody holds across the tenant ask it of roster, [pdid.Nil].
+type Everywhere func(ctx context.Context, who, of pdid.Id) ([]string, error)
 
 // Administered is whether a tenant has somebody who could use `method` across
 // the whole of it: a person there and not suspended, holding a pattern that

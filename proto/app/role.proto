@@ -102,6 +102,28 @@ message Role {
   // nothing, never `*Get*`.
   repeated string methods = 8 [(payday.field) = {personal: false}];
 
+  // The app whose methods `methods` names, as the holder that app is answered
+  // as in this tenant; empty is roster's own.
+  //
+  // # A grant is at one app
+  //
+  // A method's name is held across a tenant, and every app is answered the
+  // whole of what somebody holds -- so a role naming a method two apps both
+  // serve was a grant at both, and whoever could hand the name out handed it
+  // out wherever it was read. Said here, a role is read by the app it names
+  // and by nobody else: roster's gate and wall read roster's roles alone
+  // (`cmd/policy.go`), and nobody hands out a method at an app who does not
+  // hold it there (`server/core/escalate.go`).
+  //
+  // One of the role's own tenant and not erased, and that is all that is
+  // asked of it: roster does not tell an app from a person to decide
+  // anything, only what each holds. Set when the role is made and never
+  // after, so `Widen`, `Narrow` and an erase keep it.
+  //
+  // Its alias is still one within the tenant, whichever app's it is:
+  // `@acme/viewer` names one role.
+  Holder app = 9 [(orm.edge) = {immutable: true, nullable: true}];
+
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {

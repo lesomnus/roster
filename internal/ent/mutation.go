@@ -7876,6 +7876,23 @@ func (m *RoleMutation) OldSiteId(ctx context.Context) (v uuid.UUID, err error) {
 	return oldValue.SiteId, nil
 }
 
+// OldAppId returns the old "app_id" field's value of the Role entity.
+// If the Role object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RoleMutation) OldAppId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAppId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAppId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAppId: %w", err)
+	}
+	return oldValue.AppId, nil
+}
+
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
@@ -7901,6 +7918,8 @@ func (m *RoleMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldTenantId(ctx)
 	case role.FieldSiteId:
 		return m.OldSiteId(ctx)
+	case role.FieldAppId:
+		return m.OldAppId(ctx)
 	}
 	return nil, fmt.Errorf("unknown Role field %s", name)
 }

@@ -11768,6 +11768,21 @@ func (s gateRole) admit(ctx context.Context, req *rstr.RoleAddRequest) (*rstr.Ro
 		}
 	}
 
+	if ref := req.GetApp(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Holder", ref, func() error {
+			_, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
 	return req, nil
 }
 
@@ -22801,6 +22816,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				{Number: 4, Name: entRole.FieldAlias, Type: 9, Nullable: false, Key: 0},
 				{Number: 5, Name: entRole.FieldName, Type: 9, Nullable: false, Key: 0},
 				{Number: 6, Name: entRole.FieldDesc, Type: 9, Nullable: false, Key: 0},
+				{Number: 9, Name: entRole.AppColumn, Type: 64, Nullable: true, Key: 1},
 				{Number: 13, Name: entRole.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
 				{Number: 14, Name: entRole.FieldDateErased, Type: 65, Nullable: true, Key: 0},
 				{Number: 15, Name: entRole.FieldDateCreated, Type: 65, Nullable: false, Key: 0},

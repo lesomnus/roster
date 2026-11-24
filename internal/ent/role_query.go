@@ -8,6 +8,7 @@ import (
 	"math"
 	"uuid"
 
+	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/site"
@@ -27,6 +28,7 @@ type RoleQuery struct {
 	predicates []predicate.Role
 	withTenant *TenantQuery
 	withSite   *SiteQuery
+	withApp    *HolderQuery
 	modifiers  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -101,6 +103,28 @@ func (_q *RoleQuery) QuerySite() *SiteQuery {
 			sqlgraph.From(role.Table, role.FieldId, selector),
 			sqlgraph.To(site.Table, site.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, role.SiteTable, role.SiteColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryApp chains the current query on the "app" edge.
+func (_q *RoleQuery) QueryApp() *HolderQuery {
+	query := (&HolderClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(role.Table, role.FieldId, selector),
+			sqlgraph.To(holder.Table, holder.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, role.AppTable, role.AppColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -302,6 +326,7 @@ func (_q *RoleQuery) Clone() *RoleQuery {
 		predicates: append([]predicate.Role{}, _q.predicates...),
 		withTenant: _q.withTenant.Clone(),
 		withSite:   _q.withSite.Clone(),
+		withApp:    _q.withApp.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -328,6 +353,17 @@ func (_q *RoleQuery) WithSite(opts ...func(*SiteQuery)) *RoleQuery {
 		opt(query)
 	}
 	_q.withSite = query
+	return _q
+}
+
+// WithApp tells the query-builder to eager-load the nodes that are connected to
+// the "app" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *RoleQuery) WithApp(opts ...func(*HolderQuery)) *RoleQuery {
+	query := (&HolderClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withApp = query
 	return _q
 }
 
@@ -409,9 +445,10 @@ func (_q *RoleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Role, e
 	var (
 		nodes       = []*Role{}
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			_q.withTenant != nil,
 			_q.withSite != nil,
+			_q.withApp != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -444,6 +481,12 @@ func (_q *RoleQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Role, e
 	if query := _q.withSite; query != nil {
 		if err := _q.loadSite(ctx, query, nodes, nil,
 			func(n *Role, e *Site) { n.Edges.Site = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withApp; query != nil {
+		if err := _q.loadApp(ctx, query, nodes, nil,
+			func(n *Role, e *Holder) { n.Edges.App = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -508,6 +551,35 @@ func (_q *RoleQuery) loadSite(ctx context.Context, query *SiteQuery, nodes []*Ro
 	}
 	return nil
 }
+func (_q *RoleQuery) loadApp(ctx context.Context, query *HolderQuery, nodes []*Role, init func(*Role), assign func(*Role, *Holder)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Role)
+	for i := range nodes {
+		fk := nodes[i].AppId
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(holder.IdIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.Id]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "app_id" returned %v`, n.Id)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (_q *RoleQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -542,6 +614,9 @@ func (_q *RoleQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withSite != nil {
 			_spec.Node.AddColumnOnce(role.FieldSiteId)
+		}
+		if _q.withApp != nil {
+			_spec.Node.AddColumnOnce(role.FieldAppId)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

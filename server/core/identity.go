@@ -157,7 +157,7 @@ func (s coreIdentity) vouched(ctx context.Context) error {
 	if of.IsZero() || of.Uuid() != f.Tenant.Uuid() {
 		return no
 	}
-	held, err := s.rules.Everywhere(ctx, issuer)
+	held, err := s.rules.Everywhere(ctx, issuer, pdid.Nil)
 	if err != nil {
 		return err
 	}
@@ -278,7 +278,7 @@ func (s coreIdentity) directorys(ctx context.Context, field string, tenant pdid.
 		return status.Error(codes.PermissionDenied,
 			"this server cannot say what you hold across the tenant, so it will not let you say who has an account at the connection its directory provisions through")
 	}
-	held, err := s.rules.Everywhere(ctx, f.Actor)
+	held, err := s.rules.Everywhere(ctx, f.Actor, pdid.Nil)
 	if err != nil {
 		return err
 	}
