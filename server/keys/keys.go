@@ -237,6 +237,14 @@ func Store(deployment app.Server, tenant app.Server) auth.TokenStore {
 			//
 			return auth.Identity{}, unasked(ctx, err)
 		}
+		if !v.ForRoster() {
+			// A key for an app is spent at that app, and is no key here: its
+			// methods are that app's, and a name they share with one of
+			// roster's -- `/roster.HolderService/Erase` written into a key for
+			// Foo -- opens nothing at roster (`ApiKey.app`). Refused as a key
+			// roster does not have, so that nothing says whose it is.
+			return auth.Identity{}, status.Error(codes.Unauthenticated, "no")
+		}
 
 		id := auth.Identity{
 			// What it may call, and nothing wider. An empty `methods` is
@@ -345,6 +353,10 @@ func lookup(ctx context.Context, s app.Server, token string) (*app.ApiKey, error
 				Tenant:       app.TenantSelect_builder{DateClosed: z.Ptr(true)}.Build(),
 				DateDisabled: z.Ptr(true),
 			}.Build(),
+
+			// And the app it is spent at, which decides where it is a
+			// credential at all (`ApiKey.app`): see [Store].
+			App: app.HolderSelect_builder{}.Build(),
 		}.Build(),
 	}.Build())
 	if err != nil {

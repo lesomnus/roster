@@ -324,6 +324,16 @@ message SignInKey {
   // When it was last used, unset for never -- which is the field that answers
   // *is anything still calling with this* before somebody revokes it.
   google.protobuf.Timestamp date_used = 10;
+
+  // The app it is spent at, as the holder that app is answered as, and empty
+  // for one of roster's own (`ApiKey.app`): which `methods` are of, and
+  // where the key is a credential at all. Said here because this is every key
+  // somebody has, of every app, in one list.
+  bytes app = 16;
+
+  // The app's alias in the tenant, beside `app` as `MeTeam` says `site_alias`
+  // beside `site`: what a screen draws, `@loft`. Empty for a key of roster's.
+  string app_alias = 17;
 }
 
 // SignInIdentity is one way somebody arrives from outside.

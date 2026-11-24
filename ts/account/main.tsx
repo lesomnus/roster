@@ -151,7 +151,7 @@ function Account(props: { of: Providers; onSignOut: () => void; onLeft: (forgott
 				<Factors own={own} alias={v.alias} brand={props.of.tenant.name || props.of.tenant.alias} may={may} />
 				<Sessions own={own} may={may} />
 				{props.of.terminal === true && <Terminal may={may} />}
-				<Keys own={own} keys={v.keys} may={may} />
+				<Keys own={own} tenant={v.tenant} keys={v.keys} may={may} />
 				{/* Not to somebody a directory provisions, whom roster refuses it: the directory says when they leave. */}
 				{props.of.leave === true && v.provisionedThrough === '' && (
 					<Leave
@@ -973,9 +973,11 @@ function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 
 function Keys(props: {
 	own: Uint8Array
+	tenant: Uint8Array
 	keys: {
 		id: Uint8Array
 		alias: string
+		appAlias: string
 		methods: string[]
 		dateExpired?: { seconds: bigint } | undefined
 		dateUsed?: { seconds: bigint } | undefined
@@ -985,7 +987,9 @@ function Keys(props: {
 	const issue = useCall(ApiKeyService.method.issue)
 	const revoke = useCall(ApiKeyService.method.erase)
 	const [gone, setGone] = useState<string[]>([])
-	const [made, setMade] = useState<{ id: Uint8Array; alias: string; methods: string[]; dateExpired?: { seconds: bigint } | undefined }[]>([])
+	const [made, setMade] = useState<
+		{ id: Uint8Array; alias: string; appAlias: string; methods: string[]; dateExpired?: { seconds: bigint } | undefined }[]
+	>([])
 	const [token, setToken] = useState<string | null>(null)
 	const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -993,19 +997,22 @@ function Keys(props: {
 	// the moment after is gone too, which the browser found it was not.
 	const keys = [...props.keys, ...made].filter((k) => !gone.includes(uuid(k.id)))
 
-	const mint = (form: HTMLFormElement, alias: string, methods: string[], expires: string): void => {
+	// `of` is the app the key is for, by its alias in their tenant, and empty
+	// for a key of roster's (`ApiKey.app`).
+	const mint = (form: HTMLFormElement, alias: string, methods: string[], expires: string, of = ''): void => {
 		if (alias === '' || methods.length === 0) return
 		setNote(null)
 		setToken(null)
+		const app = of === '' ? undefined : { key: { case: 'slug' as const, value: { alias: of, tenant: { key: { case: 'id' as const, value: props.tenant } } } } }
 		void issue
-			.call({ whose: { case: 'holder', value: ref(props.own) }, alias, methods, dateExpired: expiresAt(expires) })
+			.call({ whose: { case: 'holder', value: ref(props.own) }, alias, methods, dateExpired: expiresAt(expires), app })
 			.then((r) => {
 				form.reset()
 				setToken(r.token)
 				if (r.key !== undefined) {
 					setMade((was) => [
 						...was,
-						{ id: r.key!.id, alias: r.key!.alias, methods: r.key!.methods, dateExpired: r.key!.dateExpired },
+						{ id: r.key!.id, alias: r.key!.alias, appAlias: of, methods: r.key!.methods, dateExpired: r.key!.dateExpired },
 					])
 				}
 			})
@@ -1022,6 +1029,7 @@ function Keys(props: {
 						{keys.map((k) => (
 							<tr key={uuid(k.id)}>
 								<td>{k.alias}</td>
+								<td>{k.appAlias === '' ? '' : '@' + k.appAlias}</td>
 								<td className="mono">{k.methods.join(', ')}</td>
 								<td className={k.dateExpired === undefined ? 'none' : ''}>{until(k.dateExpired)}</td>
 								<td>
@@ -1076,10 +1084,12 @@ function Keys(props: {
 									.map((s) => s.trim())
 									.filter((s) => s !== ''),
 								String(f.get('expires') ?? 'never'),
+								String(f.get('app') ?? '').trim(),
 							)
 						}}
 					>
 						<input name="alias" placeholder="what to call it" required />
+						<input name="app" placeholder="the app it is for: empty is roster" />
 						<input name="methods" placeholder="/roster.MeService/Get, …" className="wide" required />
 						<Expires />
 						<button type="submit" disabled={issue.state === 'pending'}>

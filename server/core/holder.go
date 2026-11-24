@@ -466,6 +466,28 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 		}
 	}
 
+	// The alias of each app a key is for, read once each, as the caller
+	// reads a holder: what a screen draws beside the identifier.
+	aliases := map[string]string{}
+	aliasOf := func(of []byte) (string, error) {
+		if len(of) == 0 {
+			return "", nil
+		}
+		if v, ok := aliases[string(of)]; ok {
+			return v, nil
+		}
+		h, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
+			Ref:    app.HolderRef_builder{Id: of}.Build(),
+			Select: app.HolderSelect_builder{Alias: z.Ptr(true)}.Build(),
+		}.Build())
+		if err != nil && status.Code(err) != codes.NotFound {
+			return "", err
+		}
+		aliases[string(of)] = h.GetAlias()
+
+		return h.GetAlias(), nil
+	}
+
 	for after := ""; ; {
 		page, err := s.Next().ApiKey().List(ctx, app.ApiKeyListRequest_builder{
 			Filters: []*app.ApiKeyFilter{
@@ -486,7 +508,13 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 				Id:      k.GetId(),
 				Alias:   k.GetAlias(),
 				Methods: k.GetMethods(),
+				App:     k.GetApp().GetId(),
 			}
+			alias, err := aliasOf(k.GetApp().GetId())
+			if err != nil {
+				return nil, err
+			}
+			f.AppAlias = alias
 			if u := k.GetDateExpired(); u != nil {
 				f.DateExpired = u
 			}

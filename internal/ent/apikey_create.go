@@ -130,6 +130,20 @@ func (_c *ApiKeyCreate) SetHolderId(v uuid.UUID) *ApiKeyCreate {
 	return _c
 }
 
+// SetAppId sets the "app_id" field.
+func (_c *ApiKeyCreate) SetAppId(v uuid.UUID) *ApiKeyCreate {
+	_c.mutation.SetAppId(v)
+	return _c
+}
+
+// SetNillableAppId sets the "app_id" field if the given value is not nil.
+func (_c *ApiKeyCreate) SetNillableAppId(v *uuid.UUID) *ApiKeyCreate {
+	if v != nil {
+		_c.SetAppId(*v)
+	}
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *ApiKeyCreate) SetId(v uuid.UUID) *ApiKeyCreate {
 	_c.mutation.SetId(v)
@@ -139,6 +153,11 @@ func (_c *ApiKeyCreate) SetId(v uuid.UUID) *ApiKeyCreate {
 // SetHolder sets the "holder" edge to the Holder entity.
 func (_c *ApiKeyCreate) SetHolder(v *Holder) *ApiKeyCreate {
 	return _c.SetHolderId(v.Id)
+}
+
+// SetApp sets the "app" edge to the Holder entity.
+func (_c *ApiKeyCreate) SetApp(v *Holder) *ApiKeyCreate {
+	return _c.SetAppId(v.Id)
 }
 
 // Mutation returns the ApiKeyMutation object of the builder.
@@ -302,6 +321,23 @@ func (_c *ApiKeyCreate) createSpec() (*ApiKey, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.HolderId = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AppIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   apikey.AppTable,
+			Columns: []string{apikey.AppColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.AppId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

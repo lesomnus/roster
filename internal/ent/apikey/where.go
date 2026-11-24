@@ -106,6 +106,11 @@ func HolderId(v uuid.UUID) predicate.ApiKey {
 	return predicate.ApiKey(sql.FieldEQ(FieldHolderId, v))
 }
 
+// AppId applies equality check predicate on the "app_id" field. It's identical to AppIdEQ.
+func AppId(v uuid.UUID) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldEQ(FieldAppId, v))
+}
+
 // AliasEQ applies the EQ predicate on the "alias" field.
 func AliasEQ(v string) predicate.ApiKey {
 	return predicate.ApiKey(sql.FieldEQ(FieldAlias, v))
@@ -596,6 +601,36 @@ func HolderIdNotIn(vs ...uuid.UUID) predicate.ApiKey {
 	return predicate.ApiKey(sql.FieldNotIn(FieldHolderId, vs...))
 }
 
+// AppIdEQ applies the EQ predicate on the "app_id" field.
+func AppIdEQ(v uuid.UUID) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldEQ(FieldAppId, v))
+}
+
+// AppIdNEQ applies the NEQ predicate on the "app_id" field.
+func AppIdNEQ(v uuid.UUID) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldNEQ(FieldAppId, v))
+}
+
+// AppIdIn applies the In predicate on the "app_id" field.
+func AppIdIn(vs ...uuid.UUID) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldIn(FieldAppId, vs...))
+}
+
+// AppIdNotIn applies the NotIn predicate on the "app_id" field.
+func AppIdNotIn(vs ...uuid.UUID) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldNotIn(FieldAppId, vs...))
+}
+
+// AppIdIsNil applies the IsNil predicate on the "app_id" field.
+func AppIdIsNil() predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldIsNull(FieldAppId))
+}
+
+// AppIdNotNil applies the NotNil predicate on the "app_id" field.
+func AppIdNotNil() predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldNotNull(FieldAppId))
+}
+
 // HasHolder applies the HasEdge predicate on the "holder" edge.
 func HasHolder() predicate.ApiKey {
 	return predicate.ApiKey(func(s *sql.Selector) {
@@ -611,6 +646,29 @@ func HasHolder() predicate.ApiKey {
 func HasHolderWith(preds ...predicate.Holder) predicate.ApiKey {
 	return predicate.ApiKey(func(s *sql.Selector) {
 		step := newHolderStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasApp applies the HasEdge predicate on the "app" edge.
+func HasApp() predicate.ApiKey {
+	return predicate.ApiKey(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, AppTable, AppColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAppWith applies the HasEdge predicate on the "app" edge with a given conditions (other predicates).
+func HasAppWith(preds ...predicate.Holder) predicate.ApiKey {
+	return predicate.ApiKey(func(s *sql.Selector) {
+		step := newAppStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

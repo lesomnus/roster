@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
@@ -56,11 +57,18 @@ type coreApiKey struct {
 func (s Core) ApiKey() app.ApiKeyServiceServer { return coreApiKey{s, s.Next().ApiKey()} }
 
 func (s coreApiKey) Add(ctx context.Context, req *app.ApiKeyAddRequest) (*app.ApiKey, error) {
+	// The app it is for ([coreApiKey.forApp]), whose methods it names.
+	of, err := s.forApp(ctx, req.GetHolder(), req.GetApp())
+	if err != nil {
+		return nil, err
+	}
+
 	// `pdid.Nil`: a key names no site, so whoever holds it is narrowed by
 	// whatever narrows its holder and by nothing else. Writing one is therefore
 	// a tenant-wide grant, and somebody who holds a method only in a site may
-	// not put it on a key.
-	if err := s.mayGrant(ctx, "methods", req.GetMethods(), pdid.Nil, pdid.Nil, pdid.Nil); err != nil {
+	// not put it on a key. And at the key's app: what it names is spent there,
+	// and only what the minter holds there covers it.
+	if err := s.mayGrant(ctx, "methods", req.GetMethods(), pdid.Nil, of, pdid.Nil); err != nil {
 		return nil, err
 	}
 
@@ -88,8 +96,24 @@ func (s coreApiKey) Add(ctx context.Context, req *app.ApiKeyAddRequest) (*app.Ap
 // difference means reading the row, and a caller who may not grant a method
 // they are leaving in place is a caller who should not be writing this row at
 // all.
+//
+// At the key's own app, which a patch cannot change (`ApiKey.app` is
+// immutable): read off the row where the patch names methods.
 func (s coreApiKey) Patch(ctx context.Context, req *app.ApiKeyPatchRequest) (*app.ApiKey, error) {
-	if err := s.mayGrant(ctx, "methods", req.GetMethods(), pdid.Nil, pdid.Nil, pdid.Nil); err != nil {
+	of := pdid.Nil
+	if len(req.GetMethods()) > 0 {
+		v, err := s.ApiKeyServiceServer.Get(ctx, app.ApiKeyGetRequest_builder{
+			Ref:    req.GetRef(),
+			Select: app.ApiKeySelect_builder{App: app.HolderSelect_builder{}.Build()}.Build(),
+		}.Build())
+		if err != nil {
+			return nil, err
+		}
+		if of, err = idOr(v.GetApp().GetId()); err != nil {
+			return nil, err
+		}
+	}
+	if err := s.mayGrant(ctx, "methods", req.GetMethods(), pdid.Nil, of, pdid.Nil); err != nil {
 		return nil, err
 	}
 
@@ -128,12 +152,26 @@ func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*ap
 			"this server was not told which kind of key it mints")
 	}
 
-	// What the key may call, asked before whose it is. On the control plane
-	// naming a holder makes them ([Core.holderNamed]), and `Add` below asks
-	// this again where it has always asked it -- after: a key that was
-	// refused left behind the holder it had named, on a plane where a holder
-	// is a caller (#274). So nobody is made for a key that will not be.
-	if err := s.mayGrant(ctx, "methods", req.GetMethods(), pdid.Nil, pdid.Nil, pdid.Nil); err != nil {
+	// The control plane's keys are the deployment's own, for no app; refused
+	// here before a holder is named and made.
+	if req.GetApp() != nil && s.prefix == keys.PrefixDeployment {
+		return nil, noAppHere()
+	}
+
+	// What the key may call, asked before whose it is, at the app it is for.
+	// On the control plane naming a holder makes them ([Core.holderNamed]),
+	// and `Add` below asks this again where it has always asked it -- after:
+	// a key that was refused left behind the holder it had named, on a plane
+	// where a holder is a caller (#274). So nobody is made for a key that will
+	// not be.
+	of := pdid.Nil
+	if req.GetApp() != nil {
+		var err error
+		if of, err = s.forApp(ctx, req.GetHolder(), req.GetApp()); err != nil {
+			return nil, err
+		}
+	}
+	if err := s.mayGrant(ctx, "methods", req.GetMethods(), pdid.Nil, of, pdid.Nil); err != nil {
 		return nil, err
 	}
 
@@ -157,6 +195,9 @@ func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*ap
 	}
 	if v := req.GetDateExpired(); v != nil {
 		add.DateExpired = v
+	}
+	if of != pdid.Nil {
+		add.App = app.HolderRef_builder{Id: of.Bytes()}.Build()
 	}
 
 	// A key somebody issues themselves carries the sign-in they issued it
@@ -188,6 +229,53 @@ func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*ap
 	v.SetSecret(nil)
 
 	return app.ApiKeyIssueResponse_builder{Token: token, Key: v}.Build(), nil
+}
+
+// forApp is the app a key is for (`ApiKey.app`), [pdid.Nil] for roster's
+// own, and refuses one it may not be: on the control plane, whose keys are
+// the deployment's and for no app; and one that is not somebody of the
+// tenant whose key it is, live -- and that is all that is asked of it.
+//
+// # Read past the wall
+//
+// Minting a key is the person's own, and a person reads no holder but
+// themselves: read as they read one, the app is nobody to them, and nobody
+// could mint a key for an app. So it is read from the rows ([Resident]), of
+// the tenant of whose key it is and of no other, which a caller who may not
+// see that tenant's people learns nothing more by than that the name is
+// somebody's there. A stack that cannot say, and the box, read it as the
+// caller reads one.
+func (s coreApiKey) forApp(ctx context.Context, holder, ref *app.HolderRef) (pdid.Id, error) {
+	if ref == nil {
+		return pdid.Nil, nil
+	}
+	if s.prefix == keys.PrefixDeployment {
+		return pdid.Nil, noAppHere()
+	}
+
+	who, err := s.tenantOfHolder(ctx, holder)
+	if err != nil {
+		return pdid.Nil, err
+	}
+	if _, framed := frame.From(ctx); framed && s.rules.Resident != nil {
+		return s.rules.Resident(ctx, who, ref)
+	}
+
+	whose, err := s.tenantOfHolder(ctx, ref)
+	if err != nil {
+		return pdid.Nil, err
+	}
+	if err := tenantsAgree("app", who, whose); err != nil {
+		return pdid.Nil, err
+	}
+
+	return s.appOf(ctx, ref)
+}
+
+// noAppHere is the refusal of a key for an app on the control plane.
+func noAppHere() error {
+	return pderr.Invalidf("app",
+		"a key of this plane is the deployment's own, presented to roster, and is for no app; a key for an app is a tenant's")
 }
 
 // authenticatedFor is the sign-in a key for `ref` inherits: the caller's own,

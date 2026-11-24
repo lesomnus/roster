@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/gate"
+	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/rbac"
 
@@ -997,6 +998,52 @@ func Rules(db *ent.Client, sources ...rbac.Source) core.Rules {
 		Bound:        Bound(db),
 		Unsited:      Unsited(db),
 		TenantOf:     TenantOf(db),
+		Resident:     Resident(db),
+	}
+}
+
+// Resident is the live holder of a tenant a reference names, for
+// [core.Resident]: by its identifier, or by its alias where the reference's
+// tenant is that one. Read from the rows, so it answers the same whoever is
+// asking, and only of the tenant it is asked about.
+func Resident(db *ent.Client) core.Resident {
+	return func(ctx context.Context, tenant pdid.Id, ref *app.HolderRef) (pdid.Id, error) {
+		ps := []predicate.Holder{holder.TenantIdEQ(tenant.Uuid()), holder.DateErasedIsNil()}
+		switch {
+		case len(ref.GetId()) > 0:
+			k, err := pdid.From(ref.GetId())
+			if err != nil {
+				return pdid.Nil, pderr.Invalidf("id", "got %d bytes, want %d", len(ref.GetId()), len(pdid.Nil))
+			}
+			ps = append(ps, holder.IdEQ(k.Uuid()))
+		case ref.GetSlug() != nil && ref.GetSlug().GetAlias() != "":
+			at := ref.GetSlug().GetTenant()
+			switch {
+			case len(at.GetId()) > 0:
+				k, err := pdid.From(at.GetId())
+				if err != nil {
+					return pdid.Nil, status.Error(codes.NotFound, "Holder not found")
+				}
+				ps = append(ps, holder.HasTenantWith(enttenant.IdEQ(k.Uuid())))
+			case at.GetAlias() != "":
+				ps = append(ps, holder.HasTenantWith(enttenant.AliasEQ(at.GetAlias())))
+			default:
+				return pdid.Nil, status.Error(codes.NotFound, "Holder not found")
+			}
+			ps = append(ps, holder.AliasEQ(ref.GetSlug().GetAlias()))
+		default:
+			return pdid.Nil, status.Error(codes.NotFound, "Holder not found")
+		}
+
+		v, err := db.Holder.Query().Where(ps...).OnlyId(ctx)
+		if ent.IsNotFound(err) {
+			return pdid.Nil, status.Error(codes.NotFound, "Holder not found")
+		}
+		if err != nil {
+			return pdid.Nil, err
+		}
+
+		return pdid.Id(v), nil
 	}
 }
 

@@ -137,7 +137,13 @@ func newCmdMeGet(c *cmd.Config) *xli.Command {
 			}
 			for _, w := range v.GetKeys() {
 				j, _ := pdid.From(w.GetId())
-				cl.Printf("%s\t%s\t%s\t%s\n", "key", w.GetAlias(), j, strings.Join(w.GetMethods(), ","))
+				// With the app it is for, `@loft`, and nothing for a key of
+				// roster's (`SignInKey.app_alias`).
+				of := ""
+				if w.GetAppAlias() != "" {
+					of = "\tapp=@" + w.GetAppAlias()
+				}
+				cl.Printf("%s\t%s\t%s%s\t%s\n", "key", w.GetAlias(), j, of, strings.Join(w.GetMethods(), ","))
 			}
 
 			return nil
@@ -158,6 +164,7 @@ func newCmdMeIssueKey(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "name", Brief: "what to call it, unique among yours"},
 			&flg.Strings{Name: "allow", Brief: "the methods it may call; repeat it, or comma separate"},
 			&flg.String{Name: "expires", Brief: "how long it lasts, e.g. 720h; empty is forever"},
+			&flg.String{Name: "app", Brief: "the app it is spent at, by alias in your tenant; none is a key of roster's"},
 		},
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -180,12 +187,21 @@ func newCmdMeIssueKey(c *cmd.Config) *xli.Command {
 				return invocation(errors.New("--allow: a key that allows nothing is not a key; name the methods"))
 			}
 
-			own, err := myself(ctx, conn)
+			me, err := app.NewMeServiceClient(conn).Get(ctx, app.MeGetRequest_builder{}.Build())
 			if err != nil {
 				return err
 			}
 
-			req := app.ApiKeyIssueRequest_builder{Holder: own, Alias: name, Methods: methods}
+			req := app.ApiKeyIssueRequest_builder{Holder: app.HolderRef_builder{Id: me.GetId()}.Build(), Alias: name, Methods: methods}
+			of, _ := flg.Find[string](cl, "app")
+			if of != "" {
+				// The app it is for, by its alias in their own tenant
+				// (`ApiKey.app`): its methods are held to what they hold there.
+				req.App = app.HolderRef_builder{Slug: app.HolderRefBySlug_builder{
+					Alias:  &of,
+					Tenant: app.TenantRef_builder{Id: me.GetTenant()}.Build(),
+				}.Build()}.Build()
+			}
 			expires, err := expiresOf(cl)
 			if err != nil {
 				return err
@@ -201,6 +217,14 @@ func newCmdMeIssueKey(c *cmd.Config) *xli.Command {
 
 			// To stdout and nowhere else, as `roster key add` prints one.
 			fmt.Fprintf(os.Stdout, "%s\n", v.GetToken())
+			if of != "" {
+				// As `roster key add --app` says it: spent there, and nowhere else.
+				fmt.Fprintf(os.Stderr,
+					"key %q, for @%s, allowing %d of its method(s); it is presented there, and roster refuses it. "+
+						"This is the only time it is shown.\n", name, of, len(methods))
+
+				return nil
+			}
 			fmt.Fprintf(os.Stderr,
 				"key %q, allowing %d method(s). This is the only time it is shown.\n",
 				name, len(methods))

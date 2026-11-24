@@ -67,6 +67,7 @@ var (
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
 		{Name: "holder_id", Type: field.TypeUuid},
+		{Name: "app_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// ApikeyTable holds the schema information for the "apikey" table.
 	ApikeyTable = &schema.Table{
@@ -79,6 +80,12 @@ var (
 				Columns:    []*schema.Column{ApikeyColumns[11]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "apikey_holder_app",
+				Columns:    []*schema.Column{ApikeyColumns[12]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1541,6 +1548,7 @@ func init() {
 		Table: "access",
 	}
 	ApikeyTable.ForeignKeys[0].RefTable = HolderTable
+	ApikeyTable.ForeignKeys[1].RefTable = HolderTable
 	ApikeyTable.Annotation = &entsql.Annotation{
 		Table: "apikey",
 	}

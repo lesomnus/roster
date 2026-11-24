@@ -32,6 +32,8 @@ type Mutation struct {
 	exprs              map[string]sql.Querier
 	holder             *uuid.UUID
 	clearedholder      bool
+	app                *uuid.UUID
+	clearedapp         bool
 	predicates         []predicate.ApiKey
 }
 
@@ -378,6 +380,39 @@ func (m *Mutation) ResetHolderId() {
 	m.holder = nil
 }
 
+// SetAppId sets the "app_id" field.
+func (m *Mutation) SetAppId(u uuid.UUID) {
+	m.app = &u
+	delete(m.clearedFields, FieldAppId)
+}
+
+// AppId returns the value of the "app_id" field in the mutation.
+func (m *Mutation) AppId() (r uuid.UUID, exists bool) {
+	v := m.app
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearAppId clears the value of the "app_id" field.
+func (m *Mutation) ClearAppId() {
+	m.app = nil
+	m.clearedFields[FieldAppId] = struct{}{}
+}
+
+// AppIdCleared returns if the "app_id" field was cleared in this mutation.
+func (m *Mutation) AppIdCleared() bool {
+	_, ok := m.clearedFields[FieldAppId]
+	return ok
+}
+
+// ResetAppId resets all changes to the "app_id" field.
+func (m *Mutation) ResetAppId() {
+	m.app = nil
+	delete(m.clearedFields, FieldAppId)
+}
+
 // ClearHolder clears the "holder" edge to the Holder entity.
 func (m *Mutation) ClearHolder() {
 	m.clearedholder = true
@@ -403,6 +438,33 @@ func (m *Mutation) HolderIds() (ids []uuid.UUID) {
 func (m *Mutation) ResetHolder() {
 	m.holder = nil
 	m.clearedholder = false
+}
+
+// ClearApp clears the "app" edge to the Holder entity.
+func (m *Mutation) ClearApp() {
+	m.clearedapp = true
+	m.clearedFields[FieldAppId] = struct{}{}
+}
+
+// AppCleared reports if the "app" edge to the Holder entity was cleared.
+func (m *Mutation) AppCleared() bool {
+	return m.AppIdCleared() || m.clearedapp
+}
+
+// AppIds returns the "app" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// AppId instead. It exists only for internal usage by the builders.
+func (m *Mutation) AppIds() (ids []uuid.UUID) {
+	if id := m.app; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetApp resets all changes to the "app" edge.
+func (m *Mutation) ResetApp() {
+	m.app = nil
+	m.clearedapp = false
 }
 
 // Where appends a list predicates to the Mutation builder.
@@ -439,7 +501,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -472,6 +534,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.holder != nil {
 		fields = append(fields, FieldHolderId)
+	}
+	if m.app != nil {
+		fields = append(fields, FieldAppId)
 	}
 	return fields
 }
@@ -509,6 +574,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateCreated()
 	case FieldHolderId:
 		return m.HolderId()
+	case FieldAppId:
+		return m.AppId()
 	}
 	return nil, false
 }
@@ -638,6 +705,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetHolderId(v)
 		return nil
+	case FieldAppId:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAppId(v)
+		return nil
 	}
 	return fmt.Errorf("unknown ApiKey field %s", name)
 }
@@ -681,6 +758,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 	case FieldDateCreated:
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldHolderId:
+		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
+	case FieldAppId:
 		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
 	default:
 		return fmt.Errorf("unknown ApiKey field %s", name)
@@ -774,6 +853,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateCreated) {
 		fields = append(fields, FieldDateCreated)
 	}
+	if m.FieldCleared(FieldAppId) {
+		fields = append(fields, FieldAppId)
+	}
 	return fields
 }
 
@@ -805,6 +887,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateCreated:
 		m.ClearDateCreated()
+		return nil
+	case FieldAppId:
+		m.ClearAppId()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiKey nullable field %s", name)
@@ -847,15 +932,21 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldHolderId:
 		m.ResetHolderId()
 		return nil
+	case FieldAppId:
+		m.ResetAppId()
+		return nil
 	}
 	return fmt.Errorf("unknown ApiKey field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *Mutation) AddedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.holder != nil {
 		edges = append(edges, EdgeHolder)
+	}
+	if m.app != nil {
+		edges = append(edges, EdgeApp)
 	}
 	return edges
 }
@@ -868,13 +959,17 @@ func (m *Mutation) AddedIds(name string) []ent.Value {
 		if id := m.holder; id != nil {
 			return []ent.Value{*id}
 		}
+	case EdgeApp:
+		if id := m.app; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *Mutation) RemovedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	return edges
 }
 
@@ -886,9 +981,12 @@ func (m *Mutation) RemovedIds(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *Mutation) ClearedEdges() []string {
-	edges := make([]string, 0, 1)
+	edges := make([]string, 0, 2)
 	if m.clearedholder {
 		edges = append(edges, EdgeHolder)
+	}
+	if m.clearedapp {
+		edges = append(edges, EdgeApp)
 	}
 	return edges
 }
@@ -899,6 +997,8 @@ func (m *Mutation) EdgeCleared(name string) bool {
 	switch name {
 	case EdgeHolder:
 		return m.clearedholder
+	case EdgeApp:
+		return m.clearedapp
 	}
 	return false
 }
@@ -910,6 +1010,9 @@ func (m *Mutation) ClearEdge(name string) error {
 	case EdgeHolder:
 		m.ClearHolder()
 		return nil
+	case EdgeApp:
+		m.ClearApp()
+		return nil
 	}
 	return fmt.Errorf("unknown ApiKey unique edge %s", name)
 }
@@ -920,6 +1023,9 @@ func (m *Mutation) ResetEdge(name string) error {
 	switch name {
 	case EdgeHolder:
 		m.ResetHolder()
+		return nil
+	case EdgeApp:
+		m.ResetApp()
 		return nil
 	}
 	return fmt.Errorf("unknown ApiKey edge %s", name)

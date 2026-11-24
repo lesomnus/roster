@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/apikey.proto.
  */
 export const file_app_apikey: GenFile = /*@__PURE__*/
-  fileDesc("ChBhcHAvYXBpa2V5LnByb3RvEgZyb3N0ZXIisgUKBkFwaUtleRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEhUKBWFsaWFzGAQgASgJQgaqwRYCGAESFAoEZGVzYxgGIAEoCUIGqsEWAhgBEhcKB21ldGhvZHMYCCADKAlCBqrBFgIYABIcCgZzZWNyZXQYCSABKAxCDOqCFgIwAarBFgIIARI1CglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOAoMZGF0ZV9leHBpcmVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEkYKEmRhdGVfYXV0aGVudGljYXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDuqCFgQ4AUABqsEWAhABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqXAcr8FUcSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGaG9sZGVyEAIwAYq7FkgIDjIzChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZob2xkZXIgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChBhcHAvYXBpa2V5LnByb3RvEgZyb3N0ZXIi2QUKBkFwaUtleRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEhUKBWFsaWFzGAQgASgJQgaqwRYCGAESFAoEZGVzYxgGIAEoCUIGqsEWAhgBEhcKB21ldGhvZHMYCCADKAlCBqrBFgIYABIcCgZzZWNyZXQYCSABKAxCDOqCFgIwAarBFgIIARI1CglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOAoMZGF0ZV9leHBpcmVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEkYKEmRhdGVfYXV0aGVudGljYXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDuqCFgQ4AUABqsEWAhABEiUKA2FwcBgQIAEoCzIOLnJvc3Rlci5Ib2xkZXJCCPKCFgQ4AUABEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADqXAcr8FUcSAhABGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGaG9sZGVyEAIwAYq7FkgIDjIzChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZob2xkZXIgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * ApiKey is what one service may call this deployment for.
@@ -177,6 +177,30 @@ export type ApiKey = Message<"roster.ApiKey"> & {
    * @generated from field: google.protobuf.Timestamp date_authenticated = 12;
    */
   dateAuthenticated?: Timestamp | undefined;
+
+  /**
+   * The app this key is spent at, as the holder that app is answered as in
+   * the tenant of the key's holder; empty is roster's own: a key presented to
+   * roster itself.
+   *
+   * # A key is for one app
+   *
+   * A key's `methods` were a list of names, read by whoever the key was
+   * presented to: a key minted for one app was the same key at every app that
+   * read the same names, and at roster. Said here, a key's methods are that
+   * app's, held to what its minter holds **at that app**
+   * (`server/core/escalate.go`). And it is no credential at roster: presented
+   * to roster, in `authorization` or beside `roster-as`, it is refused as a
+   * key roster does not have is (`server/keys`), whatever its methods are
+   * called -- a name it shares with one of roster's opens nothing here.
+   *
+   * One of the key's holder's tenant and not erased, and nothing more is
+   * asked of it. Set when the key is minted and never after. A key of the
+   * control plane's (`rk_`) is the deployment's own and is for no app.
+   *
+   * @generated from field: roster.Holder app = 16;
+   */
+  app?: Holder | undefined;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

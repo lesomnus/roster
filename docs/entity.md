@@ -67,7 +67,7 @@ flowchart TB
 it: there is no binding that makes somebody see another customer.
 
 **👤 `Holder` is who.** A credential resolves to one, the trail names one on
-every line, and twenty foreign keys point at one.
+every line, and twenty-one foreign keys point at one.
 
 **📍 `Site` is the second axis.** A tenant is the wall between customers and a
 site is the wall inside one -- a factory, a region, an environment. An entity
@@ -612,6 +612,12 @@ and there is nowhere on a credential to write the second; nor would argon2id at
 19 MiB earn what every call from every service would pay for it, against a
 dictionary that does not exist for 256 random bits. `methods` is written out in
 full rather than a role name, and empty allows nothing.
+
+**And an `rt_` says the app it is spent at** (`app`, the holder that app is
+answered as in the key's tenant; none is roster's own). Its methods are that
+app's, held to what its minter holds there, and it is no credential at roster:
+presented here, it is refused as a key roster does not have is. An `rk_` is the
+deployment's own and is for no app.
 
 > contoso's nightly shift-report script holds an `rt_` that acts as erin,
 > narrowed to the two methods it calls. It is never wider than erin is, and

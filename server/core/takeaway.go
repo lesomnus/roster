@@ -317,10 +317,11 @@ func (s coreHolder) Erase(ctx context.Context, req *app.HolderRef) (*app.HolderE
 		return nil, err
 	}
 
-	// And the roles, the groups and the bindings that are theirs as an app
-	// (`Role.app`, `Group.app`, `Binding.app`), in the same act: a role of an
-	// app that has ended names the methods of nobody, a group of one is the
-	// users of nothing, a binding for one reaches the rows of nothing, and
+	// And the roles, the groups, the bindings and the keys that are theirs as
+	// an app (`Role.app`, `Group.app`, `Binding.app`, `ApiKey.app`), in the
+	// same act: a role of an app that has ended names the methods of nobody, a
+	// group of one is the users of nothing, a binding for one reaches the rows
+	// of nothing, a key for one is spent nowhere -- whoever's key it is -- and
 	// what any of them handed out is gone as an erased row's is. One
 	// transaction, on the person's row, so the erase and theirs are all made
 	// or none; a restore of the person brings the row back and none of these.
@@ -354,8 +355,9 @@ func (s coreHolder) Erase(ctx context.Context, req *app.HolderRef) (*app.HolderE
 }
 
 // erasedWithTheir erases every role and every group of the app `who` is, of
-// its tenant and still there, and every binding of a role of roster's that is
-// for it: what [coreHolder.Erase] ends with them. Through
+// its tenant and still there, every binding of a role of roster's that is for
+// it, and every key that is for it, whoever's: what [coreHolder.Erase] ends
+// with them. Through
 // `next`, the server under this layer, so each is the erase a role's or a
 // group's is, on the trail and on the stream; and asked nothing of what they
 // gave, which the person's erase already was.
@@ -427,8 +429,31 @@ func erasedWithTheir(ctx context.Context, next app.Server, tenant []byte, who pd
 		}
 	}
 
+	// And the keys for it (`ApiKey.app`), whoever's they are: a list says no
+	// app, so the tenant's are looked through, as its roles are.
+	var keys [][]byte
+	for after := ""; ; {
+		page, err := next.ApiKey().List(ctx, app.ApiKeyListRequest_builder{Size: 100, After: after}.Build())
+		if err != nil {
+			return err
+		}
+		for _, k := range page.GetItems() {
+			if bytes.Equal(k.GetApp().GetId(), who.Bytes()) {
+				keys = append(keys, k.GetId())
+			}
+		}
+		if after = page.GetNext(); after == "" {
+			break
+		}
+	}
+
 	for _, id := range bindings {
 		if _, err := next.Binding().Erase(ctx, app.BindingRef_builder{Id: id}.Build()); err != nil {
+			return err
+		}
+	}
+	for _, id := range keys {
+		if _, err := next.ApiKey().Erase(ctx, app.ApiKeyRef_builder{Id: id}.Build()); err != nil {
 			return err
 		}
 	}

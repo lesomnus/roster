@@ -738,6 +738,23 @@ func (m *ApiKeyMutation) OldHolderId(ctx context.Context) (v uuid.UUID, err erro
 	return oldValue.HolderId, nil
 }
 
+// OldAppId returns the old "app_id" field's value of the ApiKey entity.
+// If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ApiKeyMutation) OldAppId(ctx context.Context) (v uuid.UUID, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldAppId is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldAppId requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAppId: %w", err)
+	}
+	return oldValue.AppId, nil
+}
+
 // OldField returns the old value of the field from the database. An error is
 // returned if the mutation operation is not UpdateOne, or the query to the
 // database failed.
@@ -765,6 +782,8 @@ func (m *ApiKeyMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldDateCreated(ctx)
 	case apikey.FieldHolderId:
 		return m.OldHolderId(ctx)
+	case apikey.FieldAppId:
+		return m.OldAppId(ctx)
 	}
 	return nil, fmt.Errorf("unknown ApiKey field %s", name)
 }

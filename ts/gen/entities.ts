@@ -84,7 +84,7 @@ export const ApiKey = {
 	schema: ApiKeySchema,
 	domain: 14,
 	version: "dateUpdated",
-	refs: [{ field: "holder", to: "roster.Holder" }],
+	refs: [{ field: "holder", to: "roster.Holder" }, { field: "app", to: "roster.Holder" }],
 	alias: "alias",
 	key: "id",
 	ids: ["id"],

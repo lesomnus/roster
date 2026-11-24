@@ -112,6 +112,9 @@ it is where a second factor would be walked around.
 app -- the account page's *mint an app password* button, which is
 `ApiKey.Issue` on their own row with methods `[/roster.MeService/Get]` and the
 app's name as the alias -- and pastes it where the client asks for a password.
+It is a key **of roster's**, for no app (`ApiKey.app`), since what this process
+does with it is present it to roster: a key minted for an app is refused there
+as a key roster does not have is, and binds nothing.
 This process knows one by its shape -- the `rt_` prefix and the forty-three
 characters roster mints after it, so a password that merely begins `rt_` is a
 password -- dials roster bearing that token, calls `Me.Get`, and binds if the

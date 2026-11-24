@@ -144,6 +144,26 @@ message ApiKey {
     (payday.field) = {stamped: true}
   ];
 
+  // The app this key is spent at, as the holder that app is answered as in
+  // the tenant of the key's holder; empty is roster's own: a key presented to
+  // roster itself.
+  //
+  // # A key is for one app
+  //
+  // A key's `methods` were a list of names, read by whoever the key was
+  // presented to: a key minted for one app was the same key at every app that
+  // read the same names, and at roster. Said here, a key's methods are that
+  // app's, held to what its minter holds **at that app**
+  // (`server/core/escalate.go`). And it is no credential at roster: presented
+  // to roster, in `authorization` or beside `roster-as`, it is refused as a
+  // key roster does not have is (`server/keys`), whatever its methods are
+  // called -- a name it shares with one of roster's opens nothing here.
+  //
+  // One of the key's holder's tenant and not erased, and nothing more is
+  // asked of it. Set when the key is minted and never after. A key of the
+  // control plane's (`rk_`) is the deployment's own and is for no app.
+  Holder app = 16 [(orm.edge) = {immutable: true, nullable: true}];
+
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {

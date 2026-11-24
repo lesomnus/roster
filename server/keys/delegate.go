@@ -146,7 +146,16 @@ type bearer struct {
 	// Which caller was given it, empty for a key. Compared where a frame
 	// exists, which is not where the token is looked up.
 	Issuer []byte
+
+	// The app a key is spent at, as the holder that app is answered as, and
+	// empty for one of roster's own and for a delegation (`ApiKey.app`).
+	App []byte
 }
+
+// ForRoster is whether this is a credential roster itself takes: a key of
+// roster's own, which is for no app. A key for an app is that app's to be
+// answered about, and presented to roster is no key at all.
+func (v *bearer) ForRoster() bool { return len(v.App) == 0 }
 
 // findKey is [lookup] as a bearer, plus the one holder-level refusal both
 // tables share.
@@ -182,6 +191,7 @@ func findKey(ctx context.Context, s app.Server, token string) (*bearer, error) {
 		Holder:  v.GetHolder(),
 		Methods: v.GetMethods(),
 		Expires: expiryOf(v),
+		App:     v.GetApp().GetId(),
 	}, nil
 }
 

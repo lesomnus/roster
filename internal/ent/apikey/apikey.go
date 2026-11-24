@@ -34,8 +34,12 @@ const (
 	FieldDateCreated = "date_created"
 	// FieldHolderId holds the string denoting the holder_id field in the database.
 	FieldHolderId = "holder_id"
+	// FieldAppId holds the string denoting the app_id field in the database.
+	FieldAppId = "app_id"
 	// EdgeHolder holds the string denoting the holder edge name in mutations.
 	EdgeHolder = "holder"
+	// EdgeApp holds the string denoting the app edge name in mutations.
+	EdgeApp = "app"
 	// Table holds the table name of the apikey in the database.
 	Table = "apikey"
 	// HolderTable is the table that holds the holder relation/edge.
@@ -45,6 +49,13 @@ const (
 	HolderInverseTable = "holder"
 	// HolderColumn is the table column denoting the holder relation/edge.
 	HolderColumn = "holder_id"
+	// AppTable is the table that holds the app relation/edge.
+	AppTable = "apikey"
+	// AppInverseTable is the table name for the Holder entity.
+	// It exists in this package in order to avoid circular dependency with the "holder" package.
+	AppInverseTable = "holder"
+	// AppColumn is the table column denoting the app relation/edge.
+	AppColumn = "app_id"
 )
 
 // Columns holds all SQL columns for apikey fields.
@@ -61,6 +72,7 @@ var Columns = []string{
 	FieldDateErased,
 	FieldDateCreated,
 	FieldHolderId,
+	FieldAppId,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -126,10 +138,22 @@ func ByHolderId(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldHolderId, opts...).ToFunc()
 }
 
+// ByAppId orders the results by the app_id field.
+func ByAppId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAppId, opts...).ToFunc()
+}
+
 // ByHolderField orders the results by holder field.
 func ByHolderField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newHolderStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByAppField orders the results by app field.
+func ByAppField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAppStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newHolderStep() *sqlgraph.Step {
@@ -137,5 +161,12 @@ func newHolderStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldId),
 		sqlgraph.To(HolderInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, HolderTable, HolderColumn),
+	)
+}
+func newAppStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(AppInverseTable, FieldId),
+		sqlgraph.Edge(sqlgraph.M2O, false, AppTable, AppColumn),
 	)
 }

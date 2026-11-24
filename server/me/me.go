@@ -535,6 +535,7 @@ func (s *Server) credentials(ctx context.Context, who pdid.Id) ([]*app.SignInCre
 func (s *Server) keys(ctx context.Context, who pdid.Id) ([]*app.SignInKey, error) {
 	vs, err := s.db.ApiKey.Query().
 		Where(apikey.DateErasedIsNil(), apikey.HasHolderWith(holder.IdEQ(who.Uuid()))).
+		WithApp().
 		Order(apikey.ByDateCreated(), apikey.ById()).
 		All(ctx)
 	if err != nil {
@@ -553,6 +554,13 @@ func (s *Server) keys(ctx context.Context, who pdid.Id) ([]*app.SignInKey, error
 		}
 		if v.DateUsed != nil {
 			k.DateUsed = timestamppb.New(*v.DateUsed)
+		}
+		if v.AppId != uuid.Nil() {
+			// The app it is spent at (`ApiKey.app`), and none for roster's.
+			k.App = v.AppId[:]
+			if a := v.Edges.App; a != nil {
+				k.AppAlias = a.Alias
+			}
 		}
 
 		out = append(out, k.Build())

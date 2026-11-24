@@ -92,6 +92,7 @@ func newCmdKeyAdd(c *cmd.Config) *xli.Command {
 		Flags: append(flg.Flags{
 			&flg.String{Name: "tenant", Brief: "the customer, by alias or identifier"},
 			&flg.String{Name: "holder", Brief: "whose key this is, inside --tenant"},
+			&flg.String{Name: "app", Brief: "the app it is spent at, by alias inside --tenant; none is a key of roster's"},
 		}, mintFlags()...),
 
 		Handler: xli.OnRun(func(ctx context.Context, cl *xli.Command, next xli.Next) error {
@@ -143,6 +144,16 @@ func newCmdKeyAdd(c *cmd.Config) *xli.Command {
 				return err
 			}
 
+			// The app it is for (`ApiKey.app`), looked up as the holder is:
+			// one that is nobody there is refused, and nothing is minted.
+			if v, _ := flg.Find[string](cl, "app"); v != "" {
+				of, err := cmd.CustomerOf(ctx, s, tenant, v)
+				if err != nil {
+					return invocation(fmt.Errorf("--app %s: %w", v, err))
+				}
+				m.app, m.appName = of, "@"+tenant+"/"+v
+			}
+
 			by, err := namedAt(ctx, c, s)
 			if err != nil {
 				return err
@@ -168,6 +179,11 @@ type minting struct {
 	name    string
 	methods []string
 	expires *timestamppb.Timestamp
+
+	// The app it is spent at, and how a sentence names it: none is a key of
+	// roster's own (`ApiKey.app`). A tenant's alone.
+	app     pdid.Id
+	appName string
 }
 
 // mintingOf is what a command was asked to mint. `narrows` is whether it has
@@ -230,14 +246,19 @@ func (m minting) mint(ctx context.Context, at *cmd.Server, by *cmd.Operator, who
 
 	var v *app.ApiKey
 	err = keptBy(ctx, at, by, app.ApiKeyService_Issue_FullMethodName, func(ctx context.Context) error {
-		var err error
-		v, err = at.Ungated.ApiKey().Add(ctx, app.ApiKeyAddRequest_builder{
+		req := app.ApiKeyAddRequest_builder{
 			Holder:      app.HolderRef_builder{Id: who.Bytes()}.Build(),
 			Alias:       m.name,
 			Secret:      sum,
 			Methods:     m.methods,
 			DateExpired: m.expires,
-		}.Build())
+		}
+		if m.app != pdid.Nil {
+			req.App = app.HolderRef_builder{Id: m.app.Bytes()}.Build()
+		}
+
+		var err error
+		v, err = at.Ungated.ApiKey().Add(ctx, req.Build())
 
 		return err
 	})
@@ -256,6 +277,16 @@ func (m minting) mint(ctx context.Context, at *cmd.Server, by *cmd.Operator, who
 	// To stdout and nowhere else. It is not logged, because a credential that
 	// reaches a log has been given away.
 	fmt.Fprintf(os.Stdout, "%s\n", token)
+	if m.app != pdid.Nil {
+		// Spent at that app and nowhere else, which is the whole of what is
+		// to be known about where it may be presented: roster refuses it.
+		fmt.Fprintf(os.Stderr,
+			"key %s for %s, for %s, allowing %d of its method(s); it is presented there, and roster refuses it. "+
+				"This is the only time it is shown.\n",
+			k, whose, m.appName, len(m.methods))
+
+		return nil
+	}
 	if len(m.methods) == 0 {
 		fmt.Fprintf(os.Stderr,
 			"key %s for %s, narrowed: nothing as itself, and in a tenant whatever that tenant's nomination holds. "+

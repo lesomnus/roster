@@ -44,6 +44,7 @@ message ApiKeyAddRequest {
   google.protobuf.Timestamp date_used = 10;
   google.protobuf.Timestamp date_expired = 11;
   google.protobuf.Timestamp date_authenticated = 12;
+  HolderRef app = 16;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -75,6 +76,7 @@ message ApiKeySelect {
   bool date_used = 10;
   bool date_expired = 11;
   bool date_authenticated = 12;
+  HolderSelect app = 16;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;
@@ -189,10 +191,19 @@ message ApiKeyIssueRequest {
   // What it may be used for, in full. Empty is refused rather than defaulted:
   // everything hands out more than was asked for, and nothing mints a key that
   // silently does not work.
+  //
+  // They are the methods of `app`, and roster's where it is unset: each is
+  // held to what the caller holds at that app (`ApiKey.app`).
   repeated string methods = 3;
 
   // When it stops working, unset for one that does not.
   google.protobuf.Timestamp date_expired = 4;
+
+  // The app the key is for, as the holder that app is answered as in the
+  // tenant of whose key it is; unset is roster's own, a key presented to
+  // roster. **Data plane only**: a key of the control plane's is the
+  // deployment's, and is for no app. See `ApiKey.app`.
+  HolderRef app = 6;
 }
 
 message ApiKeyIssueResponse {

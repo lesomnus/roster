@@ -42,6 +42,8 @@ type ApiKey struct {
 	DateCreated time.Time `json:"date_created,omitempty"`
 	// HolderId holds the value of the "holder_id" field.
 	HolderId uuid.UUID `json:"holder_id,omitempty"`
+	// AppId holds the value of the "app_id" field.
+	AppId uuid.UUID `json:"app_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the ApiKeyQuery when eager-loading is set.
 	Edges        ApiKeyEdges `json:"edges"`
@@ -52,9 +54,11 @@ type ApiKey struct {
 type ApiKeyEdges struct {
 	// Holder holds the value of the holder edge.
 	Holder *Holder `json:"holder,omitempty"`
+	// App holds the value of the app edge.
+	App *Holder `json:"app,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // HolderOrErr returns the Holder value or an error if the edge
@@ -68,6 +72,17 @@ func (e ApiKeyEdges) HolderOrErr() (*Holder, error) {
 	return nil, &NotLoadedError{edge: "holder"}
 }
 
+// AppOrErr returns the App value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e ApiKeyEdges) AppOrErr() (*Holder, error) {
+	if e.App != nil {
+		return e.App, nil
+	} else if e.loadedTypes[1] {
+		return nil, &NotFoundError{label: holder.Label}
+	}
+	return nil, &NotLoadedError{edge: "app"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*ApiKey) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -79,6 +94,8 @@ func (*ApiKey) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case apikey.FieldDateUsed, apikey.FieldDateExpired, apikey.FieldDateAuthenticated, apikey.FieldDateUpdated, apikey.FieldDateErased, apikey.FieldDateCreated:
 			values[i] = new(sql.NullTime)
+		case apikey.FieldAppId:
+			values[i] = new(sql.Null[uuid.UUID])
 		case apikey.FieldId, apikey.FieldHolderId:
 			values[i] = new(uuid.UUID)
 		default:
@@ -177,6 +194,12 @@ func (_m *ApiKey) assignValues(columns []string, values []any) error {
 			} else if value != nil {
 				_m.HolderId = *value
 			}
+		case apikey.FieldAppId:
+			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
+				return fmt.Errorf("unexpected type %T for field app_id", values[i])
+			} else if value.Valid {
+				_m.AppId = value.V
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -193,6 +216,11 @@ func (_m *ApiKey) Value(name string) (ent.Value, error) {
 // QueryHolder queries the "holder" edge of the ApiKey entity.
 func (_m *ApiKey) QueryHolder() *HolderQuery {
 	return NewApiKeyClient(_m.config).QueryHolder(_m)
+}
+
+// QueryApp queries the "app" edge of the ApiKey entity.
+func (_m *ApiKey) QueryApp() *HolderQuery {
+	return NewApiKeyClient(_m.config).QueryApp(_m)
 }
 
 // Update returns a builder for updating this ApiKey.
@@ -258,6 +286,9 @@ func (_m *ApiKey) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("holder_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.HolderId))
+	builder.WriteString(", ")
+	builder.WriteString("app_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AppId))
 	builder.WriteByte(')')
 	return builder.String()
 }
