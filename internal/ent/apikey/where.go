@@ -76,9 +76,9 @@ func DateUsed(v time.Time) predicate.ApiKey {
 	return predicate.ApiKey(sql.FieldEQ(FieldDateUsed, v))
 }
 
-// DateExpires applies equality check predicate on the "date_expires" field. It's identical to DateExpiresEQ.
-func DateExpires(v time.Time) predicate.ApiKey {
-	return predicate.ApiKey(sql.FieldEQ(FieldDateExpires, v))
+// DateExpired applies equality check predicate on the "date_expired" field. It's identical to DateExpiredEQ.
+func DateExpired(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldEQ(FieldDateExpired, v))
 }
 
 // DateAuthenticated applies equality check predicate on the "date_authenticated" field. It's identical to DateAuthenticatedEQ.
@@ -336,54 +336,54 @@ func DateUsedNotNil() predicate.ApiKey {
 	return predicate.ApiKey(sql.FieldNotNull(FieldDateUsed))
 }
 
-// DateExpiresEQ applies the EQ predicate on the "date_expires" field.
-func DateExpiresEQ(v time.Time) predicate.ApiKey {
-	return predicate.ApiKey(sql.FieldEQ(FieldDateExpires, v))
+// DateExpiredEQ applies the EQ predicate on the "date_expired" field.
+func DateExpiredEQ(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldEQ(FieldDateExpired, v))
 }
 
-// DateExpiresNEQ applies the NEQ predicate on the "date_expires" field.
-func DateExpiresNEQ(v time.Time) predicate.ApiKey {
-	return predicate.ApiKey(sql.FieldNEQ(FieldDateExpires, v))
+// DateExpiredNEQ applies the NEQ predicate on the "date_expired" field.
+func DateExpiredNEQ(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldNEQ(FieldDateExpired, v))
 }
 
-// DateExpiresIn applies the In predicate on the "date_expires" field.
-func DateExpiresIn(vs ...time.Time) predicate.ApiKey {
-	return predicate.ApiKey(sql.FieldIn(FieldDateExpires, vs...))
+// DateExpiredIn applies the In predicate on the "date_expired" field.
+func DateExpiredIn(vs ...time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldIn(FieldDateExpired, vs...))
 }
 
-// DateExpiresNotIn applies the NotIn predicate on the "date_expires" field.
-func DateExpiresNotIn(vs ...time.Time) predicate.ApiKey {
-	return predicate.ApiKey(sql.FieldNotIn(FieldDateExpires, vs...))
+// DateExpiredNotIn applies the NotIn predicate on the "date_expired" field.
+func DateExpiredNotIn(vs ...time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldNotIn(FieldDateExpired, vs...))
 }
 
-// DateExpiresGT applies the GT predicate on the "date_expires" field.
-func DateExpiresGT(v time.Time) predicate.ApiKey {
-	return predicate.ApiKey(sql.FieldGT(FieldDateExpires, v))
+// DateExpiredGT applies the GT predicate on the "date_expired" field.
+func DateExpiredGT(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldGT(FieldDateExpired, v))
 }
 
-// DateExpiresGTE applies the GTE predicate on the "date_expires" field.
-func DateExpiresGTE(v time.Time) predicate.ApiKey {
-	return predicate.ApiKey(sql.FieldGTE(FieldDateExpires, v))
+// DateExpiredGTE applies the GTE predicate on the "date_expired" field.
+func DateExpiredGTE(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldGTE(FieldDateExpired, v))
 }
 
-// DateExpiresLT applies the LT predicate on the "date_expires" field.
-func DateExpiresLT(v time.Time) predicate.ApiKey {
-	return predicate.ApiKey(sql.FieldLT(FieldDateExpires, v))
+// DateExpiredLT applies the LT predicate on the "date_expired" field.
+func DateExpiredLT(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldLT(FieldDateExpired, v))
 }
 
-// DateExpiresLTE applies the LTE predicate on the "date_expires" field.
-func DateExpiresLTE(v time.Time) predicate.ApiKey {
-	return predicate.ApiKey(sql.FieldLTE(FieldDateExpires, v))
+// DateExpiredLTE applies the LTE predicate on the "date_expired" field.
+func DateExpiredLTE(v time.Time) predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldLTE(FieldDateExpired, v))
 }
 
-// DateExpiresIsNil applies the IsNil predicate on the "date_expires" field.
-func DateExpiresIsNil() predicate.ApiKey {
-	return predicate.ApiKey(sql.FieldIsNull(FieldDateExpires))
+// DateExpiredIsNil applies the IsNil predicate on the "date_expired" field.
+func DateExpiredIsNil() predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldIsNull(FieldDateExpired))
 }
 
-// DateExpiresNotNil applies the NotNil predicate on the "date_expires" field.
-func DateExpiresNotNil() predicate.ApiKey {
-	return predicate.ApiKey(sql.FieldNotNull(FieldDateExpires))
+// DateExpiredNotNil applies the NotNil predicate on the "date_expired" field.
+func DateExpiredNotNil() predicate.ApiKey {
+	return predicate.ApiKey(sql.FieldNotNull(FieldDateExpired))
 }
 
 // DateAuthenticatedEQ applies the EQ predicate on the "date_authenticated" field.

@@ -75,7 +75,7 @@ func TestATenantRegistersItsOwnHostname(t *testing.T) {
 	c := claiming(t, b, b.ContosoUser, b.Contoso, name)
 	x.NotEmpty(c.GetToken())
 	x.True(len(c.GetToken()) > len(prove.Prefix), "a token is a prefix and nothing else")
-	x.NotNil(c.GetDateExpires())
+	x.NotNil(c.GetDateExpired())
 
 	t.Run("and nothing is claimed by claiming", func(t *testing.T) {
 		x := require.New(t)
@@ -284,10 +284,10 @@ func TestAClaimIsRostersToWrite(t *testing.T) {
 
 		_, err := b.Walled.HostProof().Add(as, app.HostProofAddRequest_builder{
 			Tenant: at, Name: "forever.example.com",
-			DateExpires: timestamppb.New(time.Now().Add(100 * 365 * 24 * time.Hour)),
+			DateExpired: timestamppb.New(time.Now().Add(100 * 365 * 24 * time.Hour)),
 		}.Build())
 		x.Equal(codes.InvalidArgument, status.Code(err))
-		x.ErrorContains(err, "date_expires")
+		x.ErrorContains(err, "date_expired")
 	})
 }
 
@@ -312,7 +312,7 @@ func TestAnExpiredClaimIsRefusedRatherThanCollected(t *testing.T) {
 	// tested is the read, not how a row got old.
 	_, err := b.Ungated.HostProof().Patch(ctx, app.HostProofPatchRequest_builder{
 		Ref:         app.HostProofRef_builder{Id: c.GetId()}.Build(),
-		DateExpires: timestamppb.New(time.Now().Add(-time.Minute)),
+		DateExpired: timestamppb.New(time.Now().Add(-time.Minute)),
 		DateUpdated: c.GetDateUpdated(),
 	}.Build())
 	x.NoError(err)

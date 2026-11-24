@@ -36,16 +36,16 @@ func (_c *HostProofCreate) SetToken(v string) *HostProofCreate {
 	return _c
 }
 
-// SetDateExpires sets the "date_expires" field.
-func (_c *HostProofCreate) SetDateExpires(v time.Time) *HostProofCreate {
-	_c.mutation.SetDateExpires(v)
+// SetDateExpired sets the "date_expired" field.
+func (_c *HostProofCreate) SetDateExpired(v time.Time) *HostProofCreate {
+	_c.mutation.SetDateExpired(v)
 	return _c
 }
 
-// SetNillableDateExpires sets the "date_expires" field if the given value is not nil.
-func (_c *HostProofCreate) SetNillableDateExpires(v *time.Time) *HostProofCreate {
+// SetNillableDateExpired sets the "date_expired" field if the given value is not nil.
+func (_c *HostProofCreate) SetNillableDateExpired(v *time.Time) *HostProofCreate {
 	if v != nil {
-		_c.SetDateExpires(*v)
+		_c.SetDateExpired(*v)
 	}
 	return _c
 }
@@ -221,9 +221,9 @@ func (_c *HostProofCreate) createSpec() (*HostProof, *sqlgraph.CreateSpec) {
 		_spec.SetField(hostproof.FieldToken, field.TypeString, value)
 		_node.Token = value
 	}
-	if value, ok := _c.mutation.DateExpires(); ok {
-		_spec.SetField(hostproof.FieldDateExpires, field.TypeTime, value)
-		_node.DateExpires = &value
+	if value, ok := _c.mutation.DateExpired(); ok {
+		_spec.SetField(hostproof.FieldDateExpired, field.TypeTime, value)
+		_node.DateExpired = &value
 	}
 	if value, ok := _c.mutation.Desc(); ok {
 		_spec.SetField(hostproof.FieldDesc, field.TypeString, value)

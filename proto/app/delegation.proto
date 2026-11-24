@@ -141,7 +141,7 @@ message Delegation {
   //
   // Nullable because the generator has no way to say required -- a singular
   // message field with neither `nullable` nor a default generates a NOT NULL
-  // column while the API still answers `HasDateExpires`, which is the thing D6
+  // column while the API still answers `HasDateExpired`, which is the thing D6
   // is about and F3 has open. So "always set" is the minting path's rule, and
   // the read refuses an absent one rather than treating it as forever.
   //
@@ -152,7 +152,7 @@ message Delegation {
   // -- and that is the declaration. This row is minted once and erased; a
   // delegation is never extended, because extending one is how a credential
   // that was meant to live for minutes comes to live for a day.
-  google.protobuf.Timestamp date_expires = 11 [(orm.field) = {
+  google.protobuf.Timestamp date_expired = 11 [(orm.field) = {
     nullable: true
     immutable: true
   }];

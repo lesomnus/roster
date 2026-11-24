@@ -1962,8 +1962,8 @@ func (a *App) leaveLink(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 	_ = json.NewEncoder(w).Encode(struct {
 		Address     string    `json:"address"`
-		DateExpires time.Time `json:"date_expires"`
-	}{res.GetAddress(), res.GetDateExpires().AsTime()})
+		DateExpired time.Time `json:"date_expired"`
+	}{res.GetAddress(), res.GetDateExpired().AsTime()})
 }
 
 // leaving is where a link that deletes an account lands: a page that asks for

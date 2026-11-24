@@ -18,8 +18,8 @@ const (
 	FieldSecret = "secret"
 	// FieldIssuedTo holds the string denoting the issued_to field in the database.
 	FieldIssuedTo = "issued_to"
-	// FieldDateExpires holds the string denoting the date_expires field in the database.
-	FieldDateExpires = "date_expires"
+	// FieldDateExpired holds the string denoting the date_expired field in the database.
+	FieldDateExpired = "date_expired"
 	// FieldDateAuthenticated holds the string denoting the date_authenticated field in the database.
 	FieldDateAuthenticated = "date_authenticated"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
@@ -49,7 +49,7 @@ var Columns = []string{
 	FieldMethods,
 	FieldSecret,
 	FieldIssuedTo,
-	FieldDateExpires,
+	FieldDateExpired,
 	FieldDateAuthenticated,
 	FieldDateUpdated,
 	FieldDateErased,
@@ -75,9 +75,9 @@ func ById(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldId, opts...).ToFunc()
 }
 
-// ByDateExpires orders the results by the date_expires field.
-func ByDateExpires(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDateExpires, opts...).ToFunc()
+// ByDateExpired orders the results by the date_expired field.
+func ByDateExpired(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateExpired, opts...).ToFunc()
 }
 
 // ByDateAuthenticated orders the results by the date_authenticated field.

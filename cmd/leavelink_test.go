@@ -107,7 +107,7 @@ func TestALinkThatConfirmsLeavingSignsNobodyIn(t *testing.T) {
 	x.NoError(err)
 	x.True(strings.HasPrefix(made.GetToken(), vouch.PrefixLink))
 	x.Equal("someone@contoso.example", made.GetAddress(), "the address roster holds, which is what is mailed")
-	x.WithinDuration(time.Now().Add(vouch.LeaveFor), made.GetDateExpires().AsTime(), time.Minute)
+	x.WithinDuration(time.Now().Add(vouch.LeaveFor), made.GetDateExpired().AsTime(), time.Minute)
 	token := made.GetToken()
 
 	t.Run("not at the door a recovery link is spent at", func(t *testing.T) {
@@ -307,7 +307,7 @@ func TestALinkThatConfirmsLeavingAsksWhatLeavingAsks(t *testing.T) {
 			Leave:       z.Ptr(true),
 			Secret:      sum,
 			IssuedTo:    issuerOf(t, ctx, l.keyedBuilt),
-			DateExpires: timestamppb.New(time.Now().Add(-time.Minute)),
+			DateExpired: timestamppb.New(time.Now().Add(-time.Minute)),
 		}.Build())
 		x.NoError(err)
 

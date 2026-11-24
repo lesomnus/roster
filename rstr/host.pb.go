@@ -706,7 +706,7 @@ type HostProof struct {
 	xxx_hidden_Tenant      *Tenant                `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Token       string                 `protobuf:"bytes,9,opt,name=token"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
@@ -768,9 +768,9 @@ func (x *HostProof) GetToken() string {
 	return ""
 }
 
-func (x *HostProof) GetDateExpires() *timestamppb.Timestamp {
+func (x *HostProof) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -822,8 +822,8 @@ func (x *HostProof) SetToken(v string) {
 	x.xxx_hidden_Token = v
 }
 
-func (x *HostProof) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *HostProof) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *HostProof) SetDesc(v string) {
@@ -849,11 +849,11 @@ func (x *HostProof) HasTenant() bool {
 	return x.xxx_hidden_Tenant != nil
 }
 
-func (x *HostProof) HasDateExpires() bool {
+func (x *HostProof) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
 func (x *HostProof) HasDateUpdated() bool {
@@ -881,8 +881,8 @@ func (x *HostProof) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
 
-func (x *HostProof) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *HostProof) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 func (x *HostProof) ClearDateUpdated() {
@@ -922,7 +922,7 @@ type HostProof_builder struct {
 	// what the window is for is that a token lying in DNS forever is a name
 	// provable by whoever finds it. Abandoned claims are collected by
 	// `prove.Sweep`; the expiry is what makes them refused before then.
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 	Desc        string
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
@@ -937,7 +937,7 @@ func (b0 HostProof_builder) Build() *HostProof {
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Token = b.Token
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
@@ -1012,8 +1012,8 @@ const file_app_host_proto_rawDesc = "" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12 \n" +
 	"\x04name\x18\x05 \x01(\tB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x04name\x12\"\n" +
 	"\x05token\x18\t \x01(\tB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x05token\x12E\n" +
-	"\fdate_expires\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateExpires\x12\x1a\n" +
+	"\fdate_expired\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateExpired\x12\x1a\n" +
 	"\x04desc\x18\x06 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04desc\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
@@ -1058,7 +1058,7 @@ var file_app_host_proto_depIdxs = []int32{
 	6,  // 9: roster.MailDomain.date_erased:type_name -> google.protobuf.Timestamp
 	6,  // 10: roster.MailDomain.date_created:type_name -> google.protobuf.Timestamp
 	5,  // 11: roster.HostProof.tenant:type_name -> roster.Tenant
-	6,  // 12: roster.HostProof.date_expires:type_name -> google.protobuf.Timestamp
+	6,  // 12: roster.HostProof.date_expired:type_name -> google.protobuf.Timestamp
 	6,  // 13: roster.HostProof.date_updated:type_name -> google.protobuf.Timestamp
 	6,  // 14: roster.HostProof.date_erased:type_name -> google.protobuf.Timestamp
 	6,  // 15: roster.HostProof.date_created:type_name -> google.protobuf.Timestamp

@@ -56,16 +56,16 @@ func (_c *ContinuationCreate) SetNillableMeteredBy(v *uuid.UUID) *ContinuationCr
 	return _c
 }
 
-// SetDateExpires sets the "date_expires" field.
-func (_c *ContinuationCreate) SetDateExpires(v time.Time) *ContinuationCreate {
-	_c.mutation.SetDateExpires(v)
+// SetDateExpired sets the "date_expired" field.
+func (_c *ContinuationCreate) SetDateExpired(v time.Time) *ContinuationCreate {
+	_c.mutation.SetDateExpired(v)
 	return _c
 }
 
-// SetNillableDateExpires sets the "date_expires" field if the given value is not nil.
-func (_c *ContinuationCreate) SetNillableDateExpires(v *time.Time) *ContinuationCreate {
+// SetNillableDateExpired sets the "date_expired" field if the given value is not nil.
+func (_c *ContinuationCreate) SetNillableDateExpired(v *time.Time) *ContinuationCreate {
 	if v != nil {
-		_c.SetDateExpires(*v)
+		_c.SetDateExpired(*v)
 	}
 	return _c
 }
@@ -240,9 +240,9 @@ func (_c *ContinuationCreate) createSpec() (*Continuation, *sqlgraph.CreateSpec)
 		_spec.SetField(continuation.FieldMeteredBy, field.TypeUuid, value)
 		_node.MeteredBy = &value
 	}
-	if value, ok := _c.mutation.DateExpires(); ok {
-		_spec.SetField(continuation.FieldDateExpires, field.TypeTime, value)
-		_node.DateExpires = &value
+	if value, ok := _c.mutation.DateExpired(); ok {
+		_spec.SetField(continuation.FieldDateExpired, field.TypeTime, value)
+		_node.DateExpired = &value
 	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(continuation.FieldDateUpdated, field.TypeTime, value)

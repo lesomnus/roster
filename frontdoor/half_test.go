@@ -94,7 +94,7 @@ func whole() *rstr.VouchDelegateResponse {
 			Tenant: somehere.Bytes(),
 		}.Build(),
 		Token:       "rd_whole",
-		DateExpires: timestamppb.New(time.Now().Add(time.Hour)),
+		DateExpired: timestamppb.New(time.Now().Add(time.Hour)),
 	}.Build()
 }
 
@@ -279,7 +279,7 @@ func TestSigningOutRevokesEvenAWindowThatHasPassed(t *testing.T) {
 	// on arrival, and the row is roster's to say otherwise about.
 	f := &vouch{delegate: func(*rstr.VouchDelegateRequest) (*rstr.VouchDelegateResponse, error) {
 		v := whole()
-		v.SetDateExpires(timestamppb.New(time.Now().Add(-time.Hour)))
+		v.SetDateExpired(timestamppb.New(time.Now().Add(-time.Hour)))
 		return v, nil
 	}}
 	d := doorFor(t, f, nil)

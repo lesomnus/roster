@@ -239,7 +239,7 @@ func TestASessionMadeAtRostersOwnDoorIsOnTheTrail(t *testing.T) {
 			SetHolderId(b.ContosoUser.Uuid()).
 			SetSecret(session.Sum("a-cookie-from-before")).
 			SetGrant([]byte{}).
-			SetDateExpires(time.Now().Add(-time.Minute)).
+			SetDateExpired(time.Now().Add(-time.Minute)).
 			SetDateUpdated(time.Now()).
 			SetDateCreated(time.Now()).
 			Exec(ctx))

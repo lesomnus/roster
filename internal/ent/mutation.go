@@ -636,21 +636,21 @@ func (m *ApiKeyMutation) OldDateUsed(ctx context.Context) (v *time.Time, err err
 	return oldValue.DateUsed, nil
 }
 
-// OldDateExpires returns the old "date_expires" field's value of the ApiKey entity.
+// OldDateExpired returns the old "date_expired" field's value of the ApiKey entity.
 // If the ApiKey object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ApiKeyMutation) OldDateExpires(ctx context.Context) (v *time.Time, err error) {
+func (m *ApiKeyMutation) OldDateExpired(ctx context.Context) (v *time.Time, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateExpires is only allowed on UpdateOne operations")
+		return v, errors.New("OldDateExpired is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateExpires requires an Id field in the mutation")
+		return v, errors.New("OldDateExpired requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateExpires: %w", err)
+		return v, fmt.Errorf("querying old value for OldDateExpired: %w", err)
 	}
-	return oldValue.DateExpires, nil
+	return oldValue.DateExpired, nil
 }
 
 // OldDateAuthenticated returns the old "date_authenticated" field's value of the ApiKey entity.
@@ -753,8 +753,8 @@ func (m *ApiKeyMutation) OldField(ctx context.Context, name string) (ent.Value, 
 		return m.OldSecret(ctx)
 	case apikey.FieldDateUsed:
 		return m.OldDateUsed(ctx)
-	case apikey.FieldDateExpires:
-		return m.OldDateExpires(ctx)
+	case apikey.FieldDateExpired:
+		return m.OldDateExpired(ctx)
 	case apikey.FieldDateAuthenticated:
 		return m.OldDateAuthenticated(ctx)
 	case apikey.FieldDateUpdated:
@@ -2726,21 +2726,21 @@ func (m *ContinuationMutation) OldMeteredBy(ctx context.Context) (v *uuid.UUID, 
 	return oldValue.MeteredBy, nil
 }
 
-// OldDateExpires returns the old "date_expires" field's value of the Continuation entity.
+// OldDateExpired returns the old "date_expired" field's value of the Continuation entity.
 // If the Continuation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *ContinuationMutation) OldDateExpires(ctx context.Context) (v *time.Time, err error) {
+func (m *ContinuationMutation) OldDateExpired(ctx context.Context) (v *time.Time, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateExpires is only allowed on UpdateOne operations")
+		return v, errors.New("OldDateExpired is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateExpires requires an Id field in the mutation")
+		return v, errors.New("OldDateExpired requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateExpires: %w", err)
+		return v, fmt.Errorf("querying old value for OldDateExpired: %w", err)
 	}
-	return oldValue.DateExpires, nil
+	return oldValue.DateExpired, nil
 }
 
 // OldDateUpdated returns the old "date_updated" field's value of the Continuation entity.
@@ -2824,8 +2824,8 @@ func (m *ContinuationMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldIssuedTo(ctx)
 	case continuation.FieldMeteredBy:
 		return m.OldMeteredBy(ctx)
-	case continuation.FieldDateExpires:
-		return m.OldDateExpires(ctx)
+	case continuation.FieldDateExpired:
+		return m.OldDateExpired(ctx)
 	case continuation.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case continuation.FieldDateErased:
@@ -3348,21 +3348,21 @@ func (m *DelegationMutation) OldIssuedTo(ctx context.Context) (v []byte, err err
 	return oldValue.IssuedTo, nil
 }
 
-// OldDateExpires returns the old "date_expires" field's value of the Delegation entity.
+// OldDateExpired returns the old "date_expired" field's value of the Delegation entity.
 // If the Delegation object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *DelegationMutation) OldDateExpires(ctx context.Context) (v *time.Time, err error) {
+func (m *DelegationMutation) OldDateExpired(ctx context.Context) (v *time.Time, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateExpires is only allowed on UpdateOne operations")
+		return v, errors.New("OldDateExpired is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateExpires requires an Id field in the mutation")
+		return v, errors.New("OldDateExpired requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateExpires: %w", err)
+		return v, fmt.Errorf("querying old value for OldDateExpired: %w", err)
 	}
-	return oldValue.DateExpires, nil
+	return oldValue.DateExpired, nil
 }
 
 // OldDateAuthenticated returns the old "date_authenticated" field's value of the Delegation entity.
@@ -3461,8 +3461,8 @@ func (m *DelegationMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldSecret(ctx)
 	case delegation.FieldIssuedTo:
 		return m.OldIssuedTo(ctx)
-	case delegation.FieldDateExpires:
-		return m.OldDateExpires(ctx)
+	case delegation.FieldDateExpired:
+		return m.OldDateExpired(ctx)
 	case delegation.FieldDateAuthenticated:
 		return m.OldDateAuthenticated(ctx)
 	case delegation.FieldDateUpdated:
@@ -5368,21 +5368,21 @@ func (m *HostProofMutation) OldToken(ctx context.Context) (v string, err error) 
 	return oldValue.Token, nil
 }
 
-// OldDateExpires returns the old "date_expires" field's value of the HostProof entity.
+// OldDateExpired returns the old "date_expired" field's value of the HostProof entity.
 // If the HostProof object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *HostProofMutation) OldDateExpires(ctx context.Context) (v *time.Time, err error) {
+func (m *HostProofMutation) OldDateExpired(ctx context.Context) (v *time.Time, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateExpires is only allowed on UpdateOne operations")
+		return v, errors.New("OldDateExpired is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateExpires requires an Id field in the mutation")
+		return v, errors.New("OldDateExpired requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateExpires: %w", err)
+		return v, fmt.Errorf("querying old value for OldDateExpired: %w", err)
 	}
-	return oldValue.DateExpires, nil
+	return oldValue.DateExpired, nil
 }
 
 // OldDesc returns the old "desc" field's value of the HostProof entity.
@@ -5479,8 +5479,8 @@ func (m *HostProofMutation) OldField(ctx context.Context, name string) (ent.Valu
 		return m.OldName(ctx)
 	case hostproof.FieldToken:
 		return m.OldToken(ctx)
-	case hostproof.FieldDateExpires:
-		return m.OldDateExpires(ctx)
+	case hostproof.FieldDateExpired:
+		return m.OldDateExpired(ctx)
 	case hostproof.FieldDesc:
 		return m.OldDesc(ctx)
 	case hostproof.FieldDateUpdated:
@@ -5927,21 +5927,21 @@ func (m *LinkMutation) OldIssuedTo(ctx context.Context) (v []byte, err error) {
 	return oldValue.IssuedTo, nil
 }
 
-// OldDateExpires returns the old "date_expires" field's value of the Link entity.
+// OldDateExpired returns the old "date_expired" field's value of the Link entity.
 // If the Link object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *LinkMutation) OldDateExpires(ctx context.Context) (v *time.Time, err error) {
+func (m *LinkMutation) OldDateExpired(ctx context.Context) (v *time.Time, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateExpires is only allowed on UpdateOne operations")
+		return v, errors.New("OldDateExpired is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateExpires requires an Id field in the mutation")
+		return v, errors.New("OldDateExpired requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateExpires: %w", err)
+		return v, fmt.Errorf("querying old value for OldDateExpired: %w", err)
 	}
-	return oldValue.DateExpires, nil
+	return oldValue.DateExpired, nil
 }
 
 // OldDateUpdated returns the old "date_updated" field's value of the Link entity.
@@ -6042,8 +6042,8 @@ func (m *LinkMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldSecret(ctx)
 	case link.FieldIssuedTo:
 		return m.OldIssuedTo(ctx)
-	case link.FieldDateExpires:
-		return m.OldDateExpires(ctx)
+	case link.FieldDateExpired:
+		return m.OldDateExpired(ctx)
 	case link.FieldDateUpdated:
 		return m.OldDateUpdated(ctx)
 	case link.FieldDateErased:
@@ -8227,21 +8227,21 @@ func (m *SessionMutation) OldSecret(ctx context.Context) (v []byte, err error) {
 	return oldValue.Secret, nil
 }
 
-// OldDateExpires returns the old "date_expires" field's value of the Session entity.
+// OldDateExpired returns the old "date_expired" field's value of the Session entity.
 // If the Session object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *SessionMutation) OldDateExpires(ctx context.Context) (v *time.Time, err error) {
+func (m *SessionMutation) OldDateExpired(ctx context.Context) (v *time.Time, err error) {
 	if !m.Op().Is(OpUpdateOne) {
-		return v, errors.New("OldDateExpires is only allowed on UpdateOne operations")
+		return v, errors.New("OldDateExpired is only allowed on UpdateOne operations")
 	}
 	if _, exists := m.Id(); !exists || m.oldValue == nil {
-		return v, errors.New("OldDateExpires requires an Id field in the mutation")
+		return v, errors.New("OldDateExpired requires an Id field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDateExpires: %w", err)
+		return v, fmt.Errorf("querying old value for OldDateExpired: %w", err)
 	}
-	return oldValue.DateExpires, nil
+	return oldValue.DateExpired, nil
 }
 
 // OldDateIdle returns the old "date_idle" field's value of the Session entity.
@@ -8338,8 +8338,8 @@ func (m *SessionMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldGrant(ctx)
 	case session.FieldSecret:
 		return m.OldSecret(ctx)
-	case session.FieldDateExpires:
-		return m.OldDateExpires(ctx)
+	case session.FieldDateExpired:
+		return m.OldDateExpired(ctx)
 	case session.FieldDateIdle:
 		return m.OldDateIdle(ctx)
 	case session.FieldDateUpdated:

@@ -153,8 +153,8 @@ func (st ContinuationServiceServer) create(ctx context.Context, req *rstr.Contin
 			q.SetMeteredBy(v)
 		}
 	}
-	if req.HasDateExpires() {
-		q.SetDateExpires(req.GetDateExpires().AsTime())
+	if req.HasDateExpired() {
+		q.SetDateExpired(req.GetDateExpired().AsTime())
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
@@ -307,8 +307,8 @@ func ContinuationSelectedFields(m *rstr.ContinuationSelect) []string {
 	if m.GetMeteredBy() {
 		vs = append(vs, continuation.FieldMeteredBy)
 	}
-	if m.GetDateExpires() {
-		vs = append(vs, continuation.FieldDateExpires)
+	if m.GetDateExpired() {
+		vs = append(vs, continuation.FieldDateExpired)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, continuation.FieldDateUpdated)

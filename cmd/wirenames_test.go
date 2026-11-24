@@ -263,6 +263,40 @@ func TestNoFieldIsNamedDateLocked(t *testing.T) {
 	x.Empty(named, "a field named for when a lock began holds when it ends")
 }
 
+// TestNoFieldIsNamedForWhenItExpires: the same rule, for the moment something
+// stops being good. No field of the package, payday's copied messages and the
+// nested ones included, is `date_expires` or a `date_*_expires`.
+//
+// `date_expires` was on six entities and their columns (`ApiKey`,
+// `Continuation`, `Delegation`, `HostProof`, `Link`, `Session`) and on twelve
+// requests and answers, and payday said it too until it moved; and
+// `VouchDelegateResponse.date_link_expires` said it under another name.
+// Answered: a name in the future tense that is untrue of every row read after
+// the moment; right is `date_expired`, as payday's own fields are.
+func TestNoFieldIsNamedForWhenItExpires(t *testing.T) {
+	x := require.New(t)
+
+	named := []string{}
+	var walk func(protoreflect.MessageDescriptors)
+	walk = func(ms protoreflect.MessageDescriptors) {
+		for i := range ms.Len() {
+			m := ms.Get(i)
+			walk(m.Messages())
+			for j := range m.Fields().Len() {
+				f := string(m.Fields().Get(j).Name())
+				if f == "date_expires" || (strings.HasPrefix(f, "date_") && strings.HasSuffix(f, "_expires")) {
+					named = append(named, string(m.FullName())+"."+f)
+				}
+			}
+		}
+	}
+	protoregistry.GlobalFiles.RangeFilesByPackage("roster", func(file protoreflect.FileDescriptor) bool {
+		walk(file.Messages())
+		return true
+	})
+	x.Empty(named, "a field is named for a moment that is still to come")
+}
+
 // TestWhatADirectorySaysIsOneMessage: `HolderTellRequest` carries what a
 // directory says of somebody as one `DirectoryEntry`, so that no word in it
 // means one column there and another beside it.

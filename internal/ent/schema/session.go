@@ -25,7 +25,7 @@ func (Session) Fields() []ent.Field {
 			Immutable(),
 		field.Bytes("secret").
 			Immutable(),
-		field.Time("date_expires").
+		field.Time("date_expired").
 			Nillable().
 			Immutable().
 			Optional(),

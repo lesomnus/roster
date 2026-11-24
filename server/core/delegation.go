@@ -290,6 +290,6 @@ func (s coreDelegation) Exchange(ctx context.Context, req *app.DelegationExchang
 
 	return app.DelegationExchangeResponse_builder{
 		Token:       token,
-		DateExpires: v.GetDateExpires(),
+		DateExpired: v.GetDateExpired(),
 	}.Build(), nil
 }

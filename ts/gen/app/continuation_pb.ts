@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/continuation.proto.
  */
 export const file_app_continuation: GenFile = /*@__PURE__*/
-  fileDesc("ChZhcHAvY29udGludWF0aW9uLnByb3RvEgZyb3N0ZXIisAQKDENvbnRpbnVhdGlvbhIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEh8KCXNhdGlzZmllZBgIIAMoCUIM6oIWAkABqsEWAhgAEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESHwoJaXNzdWVkX3RvGAogASgMQgzqghYCQAGqwRYCGAASHgoKbWV0ZXJlZF9ieRgMIAEoDEIK6oIWBhBAOAFAARI6CgxkYXRlX2V4cGlyZXMYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgjqghYEOAFAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6b8r8FS0SCYIBAIoBAJoBABogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY6CBYyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGQiDwoNaG9sZGVyLnRlbmFudEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChZhcHAvY29udGludWF0aW9uLnByb3RvEgZyb3N0ZXIisAQKDENvbnRpbnVhdGlvbhIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEh8KCXNhdGlzZmllZBgIIAMoCUIM6oIWAkABqsEWAhgAEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESHwoJaXNzdWVkX3RvGAogASgMQgzqghYCQAGqwRYCGAASHgoKbWV0ZXJlZF9ieRgMIAEoDEIK6oIWBhBAOAFAARI6CgxkYXRlX2V4cGlyZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgjqghYEOAFAARI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6b8r8FS0SCYIBAIoBAJoBABogEgRwYWdlGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxY6CBYyJQoQCg4KDGRhdGVfY3JlYXRlZAoGCgQKAmlkGgUKA3JlZiAUKGQiDwoNaG9sZGVyLnRlbmFudEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Continuation is what has been proved about somebody, part way through.
@@ -152,9 +152,9 @@ export type Continuation = Message<"roster.Continuation"> & {
    * open -- so an absent one is refused on read rather than read as forever.
    * Nobody may name it: see the note above about whose lifetime this is.
    *
-   * @generated from field: google.protobuf.Timestamp date_expires = 11;
+   * @generated from field: google.protobuf.Timestamp date_expired = 11;
    */
-  dateExpires?: Timestamp | undefined;
+  dateExpired?: Timestamp | undefined;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

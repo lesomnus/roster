@@ -2152,7 +2152,7 @@ type EmailClaimRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref         *EmailRef              `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Holder      *HolderRef             `protobuf:"bytes,3,opt,name=holder"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_expired,json=dateExpired"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -2196,9 +2196,9 @@ func (x *EmailClaimRequest) GetHolder() *HolderRef {
 	return nil
 }
 
-func (x *EmailClaimRequest) GetDateExpires() *timestamppb.Timestamp {
+func (x *EmailClaimRequest) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -2211,8 +2211,8 @@ func (x *EmailClaimRequest) SetHolder(v *HolderRef) {
 	x.xxx_hidden_Holder = v
 }
 
-func (x *EmailClaimRequest) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *EmailClaimRequest) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *EmailClaimRequest) HasRef() bool {
@@ -2229,11 +2229,11 @@ func (x *EmailClaimRequest) HasHolder() bool {
 	return x.xxx_hidden_Holder != nil
 }
 
-func (x *EmailClaimRequest) HasDateExpires() bool {
+func (x *EmailClaimRequest) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
 func (x *EmailClaimRequest) ClearRef() {
@@ -2244,8 +2244,8 @@ func (x *EmailClaimRequest) ClearHolder() {
 	x.xxx_hidden_Holder = nil
 }
 
-func (x *EmailClaimRequest) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *EmailClaimRequest) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 type EmailClaimRequest_builder struct {
@@ -2274,7 +2274,7 @@ type EmailClaimRequest_builder struct {
 	Holder *HolderRef
 	// When the link stops working; unset, or later than the default, is the
 	// default (`vouch.LinkFor`).
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 }
 
 func (b0 EmailClaimRequest_builder) Build() *EmailClaimRequest {
@@ -2283,14 +2283,14 @@ func (b0 EmailClaimRequest_builder) Build() *EmailClaimRequest {
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Holder = b.Holder
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	return m0
 }
 
 type EmailClaimResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Token       string                 `protobuf:"bytes,1,opt,name=token"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=date_expired,json=dateExpired"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -2327,9 +2327,9 @@ func (x *EmailClaimResponse) GetToken() string {
 	return ""
 }
 
-func (x *EmailClaimResponse) GetDateExpires() *timestamppb.Timestamp {
+func (x *EmailClaimResponse) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -2338,19 +2338,19 @@ func (x *EmailClaimResponse) SetToken(v string) {
 	x.xxx_hidden_Token = v
 }
 
-func (x *EmailClaimResponse) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *EmailClaimResponse) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
-func (x *EmailClaimResponse) HasDateExpires() bool {
+func (x *EmailClaimResponse) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
-func (x *EmailClaimResponse) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *EmailClaimResponse) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 type EmailClaimResponse_builder struct {
@@ -2358,7 +2358,7 @@ type EmailClaimResponse_builder struct {
 
 	// The link, and the only time it is readable. What is stored is a hash.
 	Token       string
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 }
 
 func (b0 EmailClaimResponse_builder) Build() *EmailClaimResponse {
@@ -2366,7 +2366,7 @@ func (b0 EmailClaimResponse_builder) Build() *EmailClaimResponse {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Token = b.Token
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	return m0
 }
 
@@ -2714,10 +2714,10 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\x11EmailClaimRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\x12)\n" +
 	"\x06holder\x18\x03 \x01(\v2\x11.roster.HolderRefR\x06holder\x12=\n" +
-	"\fdate_expires\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"p\n" +
+	"\fdate_expired\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\"p\n" +
 	"\x12EmailClaimResponse\x12\x1b\n" +
 	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x12=\n" +
-	"\fdate_expires\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"2\n" +
+	"\fdate_expired\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\"2\n" +
 	"\x13EmailConfirmRequest\x12\x1b\n" +
 	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\";\n" +
 	"\x14EmailConfirmResponse\x12#\n" +
@@ -2798,8 +2798,8 @@ var file_app_email_svc_g_proto_depIdxs = []int32{
 	26, // 23: roster.EmailWatchItem.value:type_name -> roster.Email
 	2,  // 24: roster.EmailClaimRequest.ref:type_name -> roster.EmailRef
 	20, // 25: roster.EmailClaimRequest.holder:type_name -> roster.HolderRef
-	21, // 26: roster.EmailClaimRequest.date_expires:type_name -> google.protobuf.Timestamp
-	21, // 27: roster.EmailClaimResponse.date_expires:type_name -> google.protobuf.Timestamp
+	21, // 26: roster.EmailClaimRequest.date_expired:type_name -> google.protobuf.Timestamp
+	21, // 27: roster.EmailClaimResponse.date_expired:type_name -> google.protobuf.Timestamp
 	26, // 28: roster.EmailConfirmResponse.email:type_name -> roster.Email
 	20, // 29: roster.EmailAttestRequest.holder:type_name -> roster.HolderRef
 	22, // 30: roster.EmailAttestRequest.vouched_by:type_name -> roster.IdentityRef

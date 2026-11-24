@@ -64,7 +64,7 @@ type Link struct {
 	xxx_hidden_Leave       bool                   `protobuf:"varint,16,opt,name=leave"`
 	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
 	xxx_hidden_IssuedTo    []byte                 `protobuf:"bytes,10,opt,name=issued_to,json=issuedTo"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -146,9 +146,9 @@ func (x *Link) GetIssuedTo() []byte {
 	return nil
 }
 
-func (x *Link) GetDateExpires() *timestamppb.Timestamp {
+func (x *Link) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -211,8 +211,8 @@ func (x *Link) SetIssuedTo(v []byte) {
 	x.xxx_hidden_IssuedTo = v
 }
 
-func (x *Link) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *Link) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *Link) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -241,11 +241,11 @@ func (x *Link) HasEmail() bool {
 	return x.xxx_hidden_Email != nil
 }
 
-func (x *Link) HasDateExpires() bool {
+func (x *Link) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
 func (x *Link) HasDateUpdated() bool {
@@ -277,8 +277,8 @@ func (x *Link) ClearEmail() {
 	x.xxx_hidden_Email = nil
 }
 
-func (x *Link) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *Link) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 func (x *Link) ClearDateUpdated() {
@@ -378,7 +378,7 @@ type Link_builder struct {
 	//
 	// Nullable because the generator has no way to say required -- D6, and F3 is
 	// open -- so an absent one is refused on read rather than read as forever.
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 	DateUpdated *timestamppb.Timestamp
 	// Spending it is an erase, which is the whole of what single-use means here
 	// -- `Undelegate`'s answer, and one mechanism rather than two.
@@ -413,7 +413,7 @@ func (b0 Link_builder) Build() *Link {
 	x.xxx_hidden_Leave = b.Leave
 	x.xxx_hidden_Secret = b.Secret
 	x.xxx_hidden_IssuedTo = b.IssuedTo
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -435,7 +435,7 @@ const file_app_link_proto_rawDesc = "" +
 	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12)\n" +
 	"\tissued_to\x18\n" +
 	" \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\bissuedTo\x12G\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpires\x12F\n" +
+	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpired\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -461,7 +461,7 @@ var file_app_link_proto_goTypes = []any{
 var file_app_link_proto_depIdxs = []int32{
 	1, // 0: roster.Link.holder:type_name -> roster.Holder
 	2, // 1: roster.Link.email:type_name -> roster.Email
-	3, // 2: roster.Link.date_expires:type_name -> google.protobuf.Timestamp
+	3, // 2: roster.Link.date_expired:type_name -> google.protobuf.Timestamp
 	3, // 3: roster.Link.date_updated:type_name -> google.protobuf.Timestamp
 	3, // 4: roster.Link.date_erased:type_name -> google.protobuf.Timestamp
 	3, // 5: roster.Link.date_created:type_name -> google.protobuf.Timestamp

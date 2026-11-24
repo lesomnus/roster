@@ -21,8 +21,8 @@ func (e *Session) Proto() *rstr.Session {
 	}
 	x.SetGrant(e.Grant)
 	x.SetSecret(e.Secret)
-	if e.DateExpires != nil {
-		x.SetDateExpires(timestamppb.New(*e.DateExpires))
+	if e.DateExpired != nil {
+		x.SetDateExpired(timestamppb.New(*e.DateExpired))
 	}
 	if e.DateIdle != nil {
 		x.SetDateIdle(timestamppb.New(*e.DateIdle))

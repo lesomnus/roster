@@ -28,7 +28,7 @@ message LinkAddRequest {
   bool leave = 16;
   bytes secret = 9 [features.field_presence = IMPLICIT];
   bytes issued_to = 10 [features.field_presence = IMPLICIT];
-  google.protobuf.Timestamp date_expires = 11;
+  google.protobuf.Timestamp date_expired = 11;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -52,7 +52,7 @@ message LinkSelect {
   bool leave = 16;
   bool secret = 9;
   bool issued_to = 10;
-  bool date_expires = 11;
+  bool date_expired = 11;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;

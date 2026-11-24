@@ -146,7 +146,7 @@ func (s *Server) LeaveLink(ctx context.Context, req *app.VouchLeaveLinkRequest) 
 		Leave:       z.Ptr(true),
 		Secret:      sum,
 		IssuedTo:    issuer.Bytes(),
-		DateExpires: timestamppb.New(time.Now().Add(LeaveFor)),
+		DateExpired: timestamppb.New(time.Now().Add(LeaveFor)),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func (s *Server) LeaveLink(ctx context.Context, req *app.VouchLeaveLinkRequest) 
 		Token:   token,
 		Address: e.GetAddress(),
 		// The row's expiry, for `mint`'s reason.
-		DateExpires: row.GetDateExpires(),
+		DateExpired: row.GetDateExpired(),
 	}.Build(), nil
 }
 

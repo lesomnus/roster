@@ -20,8 +20,8 @@ const (
 	FieldIssuedTo = "issued_to"
 	// FieldMeteredBy holds the string denoting the metered_by field in the database.
 	FieldMeteredBy = "metered_by"
-	// FieldDateExpires holds the string denoting the date_expires field in the database.
-	FieldDateExpires = "date_expires"
+	// FieldDateExpired holds the string denoting the date_expired field in the database.
+	FieldDateExpired = "date_expired"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -50,7 +50,7 @@ var Columns = []string{
 	FieldSecret,
 	FieldIssuedTo,
 	FieldMeteredBy,
-	FieldDateExpires,
+	FieldDateExpired,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -80,9 +80,9 @@ func ByMeteredBy(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMeteredBy, opts...).ToFunc()
 }
 
-// ByDateExpires orders the results by the date_expires field.
-func ByDateExpires(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDateExpires, opts...).ToFunc()
+// ByDateExpired orders the results by the date_expired field.
+func ByDateExpired(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDateExpired, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.

@@ -29,7 +29,7 @@ func (ApiKey) Fields() []ent.Field {
 		field.Time("date_used").
 			Nillable().
 			Optional(),
-		field.Time("date_expires").
+		field.Time("date_expired").
 			Nillable().
 			Optional(),
 		field.Time("date_authenticated").

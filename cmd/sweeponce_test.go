@@ -142,7 +142,7 @@ func TestAPassSaysOnlyTheRowsItsOwnDeleteRemoved(t *testing.T) {
 				return read, nil
 			}
 
-			vs, err := db.Session.Query().Where(entsession.DateExpiresLT(time.Now())).All(ctx)
+			vs, err := db.Session.Query().Where(entsession.DateExpiredLT(time.Now())).All(ctx)
 			if err != nil {
 				return nil, err
 			}

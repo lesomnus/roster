@@ -169,7 +169,7 @@ func (s *Store) Put(ctx context.Context, v authsession.Session) error {
 			SetDateUpdated(time.Now()).
 			SetDateCreated(time.Now())
 		if !v.Expires.IsZero() {
-			c = c.SetDateExpires(v.Expires)
+			c = c.SetDateExpired(v.Expires)
 		}
 		if !v.Idle.IsZero() {
 			c = c.SetDateIdle(v.Idle)
@@ -288,8 +288,8 @@ func (s *Store) Get(ctx context.Context, key string) (authsession.Session, error
 		TenantId: tenantOf(h),
 		Grant:    decode(v.Grant),
 	}
-	if v.DateExpires != nil {
-		out.Expires = *v.DateExpires
+	if v.DateExpired != nil {
+		out.Expires = *v.DateExpired
 	}
 	if v.DateIdle != nil {
 		out.Idle = *v.DateIdle

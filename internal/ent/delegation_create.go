@@ -42,16 +42,16 @@ func (_c *DelegationCreate) SetIssuedTo(v []byte) *DelegationCreate {
 	return _c
 }
 
-// SetDateExpires sets the "date_expires" field.
-func (_c *DelegationCreate) SetDateExpires(v time.Time) *DelegationCreate {
-	_c.mutation.SetDateExpires(v)
+// SetDateExpired sets the "date_expired" field.
+func (_c *DelegationCreate) SetDateExpired(v time.Time) *DelegationCreate {
+	_c.mutation.SetDateExpired(v)
 	return _c
 }
 
-// SetNillableDateExpires sets the "date_expires" field if the given value is not nil.
-func (_c *DelegationCreate) SetNillableDateExpires(v *time.Time) *DelegationCreate {
+// SetNillableDateExpired sets the "date_expired" field if the given value is not nil.
+func (_c *DelegationCreate) SetNillableDateExpired(v *time.Time) *DelegationCreate {
 	if v != nil {
-		_c.SetDateExpires(*v)
+		_c.SetDateExpired(*v)
 	}
 	return _c
 }
@@ -236,9 +236,9 @@ func (_c *DelegationCreate) createSpec() (*Delegation, *sqlgraph.CreateSpec) {
 		_spec.SetField(delegation.FieldIssuedTo, field.TypeBytes, value)
 		_node.IssuedTo = value
 	}
-	if value, ok := _c.mutation.DateExpires(); ok {
-		_spec.SetField(delegation.FieldDateExpires, field.TypeTime, value)
-		_node.DateExpires = &value
+	if value, ok := _c.mutation.DateExpired(); ok {
+		_spec.SetField(delegation.FieldDateExpired, field.TypeTime, value)
+		_node.DateExpired = &value
 	}
 	if value, ok := _c.mutation.DateAuthenticated(); ok {
 		_spec.SetField(delegation.FieldDateAuthenticated, field.TypeTime, value)

@@ -28,11 +28,11 @@ func TestTheSweepOfAttemptsNamesTheRowItCollected(t *testing.T) {
 	past := timestamppb.New(time.Now().Add(-time.Minute))
 
 	attempt, err := b.Ungated.Continuation().Add(ctx, app.ContinuationAddRequest_builder{
-		Holder: who, IssuedTo: who.GetId(), Secret: sweepable(t), DateExpires: past,
+		Holder: who, IssuedTo: who.GetId(), Secret: sweepable(t), DateExpired: past,
 	}.Build())
 	x.NoError(err)
 	link, err := b.Ungated.Link().Add(ctx, app.LinkAddRequest_builder{
-		Holder: who, IssuedTo: who.GetId(), Secret: sweepable(t), DateExpires: past,
+		Holder: who, IssuedTo: who.GetId(), Secret: sweepable(t), DateExpired: past,
 	}.Build())
 	x.NoError(err)
 

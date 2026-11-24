@@ -58,7 +58,7 @@ func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 	}.Build())
 	x.NoError(err)
 	x.NotEmpty(got.GetToken())
-	x.NotNil(got.GetDateExpires())
+	x.NotNil(got.GetDateExpired())
 
 	ask := func(ctx context.Context) (*pdpb.TokenIntrospectResponse, error) {
 		return tokens.Introspect(ctx, pdpb.TokenIntrospectRequest_builder{Token: got.GetToken()}.Build())

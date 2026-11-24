@@ -1481,7 +1481,7 @@ sequenceDiagram
 
   Note over A,R: POST /session {alias, password}
   A->>R: Vouch.Delegate
-  R-->>A: {ok, holder, tenant, token, date_expires}
+  R-->>A: {ok, holder, tenant, token, date_expired}
 
   Note over A,R: later, drawing a page
   A->>R: MeService/Get<br/>authorization: Bearer rk_… (who is calling)<br/>roster-as: rd_… (who the call is about)

@@ -26,7 +26,7 @@ message ContinuationAddRequest {
   bytes secret = 9 [features.field_presence = IMPLICIT];
   bytes issued_to = 10 [features.field_presence = IMPLICIT];
   bytes metered_by = 12 [(orm.field) = {type: TYPE_UUID}];
-  google.protobuf.Timestamp date_expires = 11;
+  google.protobuf.Timestamp date_expired = 11;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -49,7 +49,7 @@ message ContinuationSelect {
   bool secret = 9;
   bool issued_to = 10;
   bool metered_by = 12;
-  bool date_expires = 11;
+  bool date_expired = 11;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;

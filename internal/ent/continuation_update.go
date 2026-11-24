@@ -127,8 +127,8 @@ func (_u *ContinuationUpdate) sqlSave(ctx context.Context) (_node int, err error
 	if _u.mutation.MeteredByCleared() {
 		_spec.ClearField(continuation.FieldMeteredBy, field.TypeUuid)
 	}
-	if _u.mutation.DateExpiresCleared() {
-		_spec.ClearField(continuation.FieldDateExpires, field.TypeTime)
+	if _u.mutation.DateExpiredCleared() {
+		_spec.ClearField(continuation.FieldDateExpired, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(continuation.FieldDateUpdated, field.TypeTime, value)
@@ -298,8 +298,8 @@ func (_u *ContinuationUpdateOne) sqlSave(ctx context.Context) (_node *Continuati
 	if _u.mutation.MeteredByCleared() {
 		_spec.ClearField(continuation.FieldMeteredBy, field.TypeUuid)
 	}
-	if _u.mutation.DateExpiresCleared() {
-		_spec.ClearField(continuation.FieldDateExpires, field.TypeTime)
+	if _u.mutation.DateExpiredCleared() {
+		_spec.ClearField(continuation.FieldDateExpired, field.TypeTime)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(continuation.FieldDateUpdated, field.TypeTime, value)

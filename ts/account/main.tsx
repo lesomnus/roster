@@ -824,7 +824,7 @@ function Sessions(props: { own: Uint8Array; may: (m: string) => boolean }): Reac
 						{items.map((v) => (
 							<tr key={uuid(v.id)}>
 								<td className="dim">since {when(v.dateCreated)}</td>
-								<td className="dim">until {when(v.dateExpires)}</td>
+								<td className="dim">until {when(v.dateExpired)}</td>
 								<td className="mono">{v.methods.length} method(s)</td>
 								<td>
 									<button
@@ -977,7 +977,7 @@ function Keys(props: {
 		id: Uint8Array
 		alias: string
 		methods: string[]
-		dateExpires?: { seconds: bigint } | undefined
+		dateExpired?: { seconds: bigint } | undefined
 		dateUsed?: { seconds: bigint } | undefined
 	}[]
 	may: (m: string) => boolean
@@ -985,7 +985,7 @@ function Keys(props: {
 	const issue = useCall(ApiKeyService.method.issue)
 	const revoke = useCall(ApiKeyService.method.erase)
 	const [gone, setGone] = useState<string[]>([])
-	const [made, setMade] = useState<{ id: Uint8Array; alias: string; methods: string[]; dateExpires?: { seconds: bigint } | undefined }[]>([])
+	const [made, setMade] = useState<{ id: Uint8Array; alias: string; methods: string[]; dateExpired?: { seconds: bigint } | undefined }[]>([])
 	const [token, setToken] = useState<string | null>(null)
 	const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
 
@@ -998,14 +998,14 @@ function Keys(props: {
 		setNote(null)
 		setToken(null)
 		void issue
-			.call({ whose: { case: 'holder', value: ref(props.own) }, alias, methods, dateExpires: expiresAt(expires) })
+			.call({ whose: { case: 'holder', value: ref(props.own) }, alias, methods, dateExpired: expiresAt(expires) })
 			.then((r) => {
 				form.reset()
 				setToken(r.token)
 				if (r.key !== undefined) {
 					setMade((was) => [
 						...was,
-						{ id: r.key!.id, alias: r.key!.alias, methods: r.key!.methods, dateExpires: r.key!.dateExpires },
+						{ id: r.key!.id, alias: r.key!.alias, methods: r.key!.methods, dateExpired: r.key!.dateExpired },
 					])
 				}
 			})
@@ -1023,7 +1023,7 @@ function Keys(props: {
 							<tr key={uuid(k.id)}>
 								<td>{k.alias}</td>
 								<td className="mono">{k.methods.join(', ')}</td>
-								<td className={k.dateExpires === undefined ? 'none' : ''}>{until(k.dateExpires)}</td>
+								<td className={k.dateExpired === undefined ? 'none' : ''}>{until(k.dateExpired)}</td>
 								<td>
 									<button
 										disabled={!props.may('/roster.ApiKeyService/Erase')}
@@ -1249,7 +1249,7 @@ function Leave(props: {
  */
 function ByMail(props: { alias: string; proved: string[] }): React.ReactNode {
 	const [to, setTo] = useState(props.proved[0] ?? '')
-	const [sent, setSent] = useState<{ address: string; date_expires: string } | null>(null)
+	const [sent, setSent] = useState<{ address: string; date_expired: string } | null>(null)
 	const [bad, setBad] = useState<string | null>(null)
 	const [busy, setBusy] = useState(false)
 
@@ -1267,7 +1267,7 @@ function ByMail(props: { alias: string; proved: string[] }): React.ReactNode {
 					void fetch('/leave/link', json({ address: to }))
 						.then(async (res) => {
 							if (res.status === 202) {
-								setSent((await res.json()) as { address: string; date_expires: string })
+								setSent((await res.json()) as { address: string; date_expired: string })
 								return
 							}
 							setBad(await why(res))
@@ -1292,7 +1292,7 @@ function ByMail(props: { alias: string; proved: string[] }): React.ReactNode {
 			{sent !== null && (
 				<p className="note">
 					A link is on its way to {sent.address}. Open it before{' '}
-					{new Date(sent.date_expires).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}; after that it is
+					{new Date(sent.date_expired).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}; after that it is
 					nothing, and you can ask for another.
 				</p>
 			)}

@@ -30,7 +30,7 @@ type ContinuationAddRequest struct {
 	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
 	xxx_hidden_IssuedTo    []byte                 `protobuf:"bytes,10,opt,name=issued_to,json=issuedTo"`
 	xxx_hidden_MeteredBy   []byte                 `protobuf:"bytes,12,opt,name=metered_by,json=meteredBy"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
@@ -105,9 +105,9 @@ func (x *ContinuationAddRequest) GetMeteredBy() []byte {
 	return nil
 }
 
-func (x *ContinuationAddRequest) GetDateExpires() *timestamppb.Timestamp {
+func (x *ContinuationAddRequest) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -157,8 +157,8 @@ func (x *ContinuationAddRequest) SetMeteredBy(v []byte) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 8)
 }
 
-func (x *ContinuationAddRequest) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *ContinuationAddRequest) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *ContinuationAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -186,11 +186,11 @@ func (x *ContinuationAddRequest) HasMeteredBy() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *ContinuationAddRequest) HasDateExpires() bool {
+func (x *ContinuationAddRequest) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
 func (x *ContinuationAddRequest) HasDateCreated() bool {
@@ -214,8 +214,8 @@ func (x *ContinuationAddRequest) ClearMeteredBy() {
 	x.xxx_hidden_MeteredBy = nil
 }
 
-func (x *ContinuationAddRequest) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *ContinuationAddRequest) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 func (x *ContinuationAddRequest) ClearDateCreated() {
@@ -231,7 +231,7 @@ type ContinuationAddRequest_builder struct {
 	Secret      []byte
 	IssuedTo    []byte
 	MeteredBy   []byte
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
 }
 
@@ -251,7 +251,7 @@ func (b0 ContinuationAddRequest_builder) Build() *ContinuationAddRequest {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 8)
 		x.xxx_hidden_MeteredBy = b.MeteredBy
 	}
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -526,7 +526,7 @@ type ContinuationSelect struct {
 	xxx_hidden_Secret      bool                   `protobuf:"varint,9,opt,name=secret"`
 	xxx_hidden_IssuedTo    bool                   `protobuf:"varint,10,opt,name=issued_to,json=issuedTo"`
 	xxx_hidden_MeteredBy   bool                   `protobuf:"varint,12,opt,name=metered_by,json=meteredBy"`
-	xxx_hidden_DateExpires bool                   `protobuf:"varint,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired bool                   `protobuf:"varint,11,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
@@ -603,9 +603,9 @@ func (x *ContinuationSelect) GetMeteredBy() bool {
 	return false
 }
 
-func (x *ContinuationSelect) GetDateExpires() bool {
+func (x *ContinuationSelect) GetDateExpired() bool {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return false
 }
@@ -660,8 +660,8 @@ func (x *ContinuationSelect) SetMeteredBy(v bool) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 5, 10)
 }
 
-func (x *ContinuationSelect) SetDateExpires(v bool) {
-	x.xxx_hidden_DateExpires = v
+func (x *ContinuationSelect) SetDateExpired(v bool) {
+	x.xxx_hidden_DateExpired = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 10)
 }
 
@@ -722,7 +722,7 @@ func (x *ContinuationSelect) HasMeteredBy() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 5)
 }
 
-func (x *ContinuationSelect) HasDateExpires() bool {
+func (x *ContinuationSelect) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
@@ -779,9 +779,9 @@ func (x *ContinuationSelect) ClearMeteredBy() {
 	x.xxx_hidden_MeteredBy = false
 }
 
-func (x *ContinuationSelect) ClearDateExpires() {
+func (x *ContinuationSelect) ClearDateExpired() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 6)
-	x.xxx_hidden_DateExpires = false
+	x.xxx_hidden_DateExpired = false
 }
 
 func (x *ContinuationSelect) ClearDateUpdated() {
@@ -808,7 +808,7 @@ type ContinuationSelect_builder struct {
 	Secret      *bool
 	IssuedTo    *bool
 	MeteredBy   *bool
-	DateExpires *bool
+	DateExpired *bool
 	DateUpdated *bool
 	DateErased  *bool
 	DateCreated *bool
@@ -839,9 +839,9 @@ func (b0 ContinuationSelect_builder) Build() *ContinuationSelect {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 10)
 		x.xxx_hidden_MeteredBy = *b.MeteredBy
 	}
-	if b.DateExpires != nil {
+	if b.DateExpired != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 10)
-		x.xxx_hidden_DateExpires = *b.DateExpires
+		x.xxx_hidden_DateExpired = *b.DateExpired
 	}
 	if b.DateUpdated != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 10)
@@ -1214,7 +1214,7 @@ const file_app_continuation_svc_g_proto_rawDesc = "" +
 	" \x01(\fB\x05\xaa\x01\x02\b\x02R\bissuedTo\x12%\n" +
 	"\n" +
 	"metered_by\x18\f \x01(\fB\x06\xea\x82\x16\x02\x10@R\tmeteredBy\x12=\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12=\n" +
+	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"w\n" +
 	"\x16ContinuationGetRequest\x12)\n" +
 	"\x03ref\x18\x01 \x01(\v2\x17.roster.ContinuationRefR\x03ref\x122\n" +
@@ -1232,7 +1232,7 @@ const file_app_continuation_svc_g_proto_rawDesc = "" +
 	" \x01(\bR\bissuedTo\x12\x1d\n" +
 	"\n" +
 	"metered_by\x18\f \x01(\bR\tmeteredBy\x12!\n" +
-	"\fdate_expires\x18\v \x01(\bR\vdateExpires\x12!\n" +
+	"\fdate_expired\x18\v \x01(\bR\vdateExpired\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
@@ -1272,7 +1272,7 @@ var file_app_continuation_svc_g_proto_goTypes = []any{
 }
 var file_app_continuation_svc_g_proto_depIdxs = []int32{
 	8,  // 0: roster.ContinuationAddRequest.holder:type_name -> roster.HolderRef
-	9,  // 1: roster.ContinuationAddRequest.date_expires:type_name -> google.protobuf.Timestamp
+	9,  // 1: roster.ContinuationAddRequest.date_expired:type_name -> google.protobuf.Timestamp
 	9,  // 2: roster.ContinuationAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.ContinuationGetRequest.ref:type_name -> roster.ContinuationRef
 	3,  // 4: roster.ContinuationGetRequest.select:type_name -> roster.ContinuationSelect

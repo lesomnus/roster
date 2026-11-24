@@ -173,8 +173,8 @@ func (st LinkServiceServer) create(ctx context.Context, req *rstr.LinkAddRequest
 	}
 	q.SetSecret(req.GetSecret())
 	q.SetIssuedTo(req.GetIssuedTo())
-	if req.HasDateExpires() {
-		q.SetDateExpires(req.GetDateExpires().AsTime())
+	if req.HasDateExpired() {
+		q.SetDateExpired(req.GetDateExpired().AsTime())
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
@@ -327,8 +327,8 @@ func LinkSelectedFields(m *rstr.LinkSelect) []string {
 	if m.GetIssuedTo() {
 		vs = append(vs, link.FieldIssuedTo)
 	}
-	if m.GetDateExpires() {
-		vs = append(vs, link.FieldDateExpires)
+	if m.GetDateExpired() {
+		vs = append(vs, link.FieldDateExpired)
 	}
 	if m.GetDateUpdated() {
 		vs = append(vs, link.FieldDateUpdated)

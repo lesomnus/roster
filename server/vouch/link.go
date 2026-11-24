@@ -60,7 +60,7 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 	}
 
 	expires := time.Now().Add(LinkFor)
-	if u := req.GetDateExpires(); u != nil {
+	if u := req.GetDateExpired(); u != nil {
 		if at := u.AsTime(); at.After(time.Now()) && at.Before(expires) {
 			// Less, and not more. How long the channel takes is the caller's to
 			// know; how long a way into somebody's account may lie around is
@@ -102,7 +102,7 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 			// here anyway.
 			return app.VouchLinkResponse_builder{
 				Token:       token,
-				DateExpires: timestamppb.New(expires),
+				DateExpired: timestamppb.New(expires),
 			}.Build(), nil
 		}
 	}
@@ -141,7 +141,7 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 
 		return app.VouchLinkResponse_builder{
 			Token:       token,
-			DateExpires: timestamppb.New(expires),
+			DateExpired: timestamppb.New(expires),
 		}.Build(), nil
 	}
 	if !Offers(who.GetTenant(), KindLink) {
@@ -158,7 +158,7 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 		// configuration.
 		return app.VouchLinkResponse_builder{
 			Token:       token,
-			DateExpires: timestamppb.New(expires),
+			DateExpired: timestamppb.New(expires),
 		}.Build(), nil
 	}
 	if who.GetDateDisabled() != nil || who.GetTenant().GetDateClosed() != nil {
@@ -167,7 +167,7 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 		// one a stranger gets.
 		return app.VouchLinkResponse_builder{
 			Token:       token,
-			DateExpires: timestamppb.New(expires),
+			DateExpired: timestamppb.New(expires),
 		}.Build(), nil
 	}
 
@@ -175,14 +175,14 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 		Holder:      app.HolderRef_builder{Id: who.GetId()}.Build(),
 		Secret:      sum,
 		IssuedTo:    issuer.Bytes(),
-		DateExpires: timestamppb.New(expires),
+		DateExpired: timestamppb.New(expires),
 	}.Build()); err != nil {
 		return nil, err
 	}
 
 	return app.VouchLinkResponse_builder{
 		Token:       token,
-		DateExpires: timestamppb.New(expires),
+		DateExpired: timestamppb.New(expires),
 	}.Build(), nil
 }
 
@@ -257,7 +257,7 @@ func (s *Server) Redeem(ctx context.Context, req *app.VouchRedeemRequest) (*app.
 	}
 
 	// Proved now: the link was in the mailbox, and it has just been spent.
-	return s.mint(ctx, res, holder, issuer, methods, req.GetDateExpires(), time.Now())
+	return s.mint(ctx, res, holder, issuer, methods, req.GetDateExpired(), time.Now())
 }
 
 // link finds the row a token names, if it is the caller's and still open.
@@ -354,7 +354,7 @@ func (s *Server) row(ctx context.Context, token string) (*app.Link, error) {
 			Secret:      z.Ptr(true),
 			IssuedTo:    z.Ptr(true),
 			At:          z.Ptr(true),
-			DateExpires: z.Ptr(true),
+			DateExpired: z.Ptr(true),
 			// When it was minted, to read against when everything of its
 			// holder's was last ended (`date_invalidated`, below).
 			DateCreated: z.Ptr(true),
@@ -384,7 +384,7 @@ func (s *Server) row(ctx context.Context, token string) (*app.Link, error) {
 		return nil, status.Error(codes.NotFound, "no such link")
 	}
 
-	u := v.GetDateExpires()
+	u := v.GetDateExpired()
 	if u == nil || !time.Now().Before(u.AsTime()) {
 		return nil, status.Error(codes.NotFound, "no such link")
 	}
@@ -501,14 +501,14 @@ func (s *Server) linkAt(ctx context.Context, holder, issuer pdid.Id, at string) 
 		Secret:      sum,
 		IssuedTo:    issuer.Bytes(),
 		At:          at,
-		DateExpires: timestamppb.New(time.Now().Add(LinkAtFor)),
+		DateExpired: timestamppb.New(time.Now().Add(LinkAtFor)),
 	}.Build())
 	if err != nil {
 		return "", nil, err
 	}
 
 	// The row's expiry and not the one computed above, for `mint`'s reason.
-	return token, row.GetDateExpires(), nil
+	return token, row.GetDateExpired(), nil
 }
 
 // mintLink is the token and the verifier stored for it.

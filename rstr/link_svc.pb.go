@@ -31,7 +31,7 @@ type LinkAddRequest struct {
 	xxx_hidden_Leave       bool                   `protobuf:"varint,16,opt,name=leave"`
 	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
 	xxx_hidden_IssuedTo    []byte                 `protobuf:"bytes,10,opt,name=issued_to,json=issuedTo"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
 	XXX_presence           [1]uint32
@@ -113,9 +113,9 @@ func (x *LinkAddRequest) GetIssuedTo() []byte {
 	return nil
 }
 
-func (x *LinkAddRequest) GetDateExpires() *timestamppb.Timestamp {
+func (x *LinkAddRequest) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -166,8 +166,8 @@ func (x *LinkAddRequest) SetIssuedTo(v []byte) {
 	x.xxx_hidden_IssuedTo = v
 }
 
-func (x *LinkAddRequest) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *LinkAddRequest) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *LinkAddRequest) SetDateCreated(v *timestamppb.Timestamp) {
@@ -202,11 +202,11 @@ func (x *LinkAddRequest) HasLeave() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 4)
 }
 
-func (x *LinkAddRequest) HasDateExpires() bool {
+func (x *LinkAddRequest) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
 func (x *LinkAddRequest) HasDateCreated() bool {
@@ -234,8 +234,8 @@ func (x *LinkAddRequest) ClearLeave() {
 	x.xxx_hidden_Leave = false
 }
 
-func (x *LinkAddRequest) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *LinkAddRequest) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 func (x *LinkAddRequest) ClearDateCreated() {
@@ -252,7 +252,7 @@ type LinkAddRequest_builder struct {
 	Leave       *bool
 	Secret      []byte
 	IssuedTo    []byte
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
 }
 
@@ -273,7 +273,7 @@ func (b0 LinkAddRequest_builder) Build() *LinkAddRequest {
 	}
 	x.xxx_hidden_Secret = b.Secret
 	x.xxx_hidden_IssuedTo = b.IssuedTo
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
 }
@@ -549,7 +549,7 @@ type LinkSelect struct {
 	xxx_hidden_Leave       bool                   `protobuf:"varint,16,opt,name=leave"`
 	xxx_hidden_Secret      bool                   `protobuf:"varint,9,opt,name=secret"`
 	xxx_hidden_IssuedTo    bool                   `protobuf:"varint,10,opt,name=issued_to,json=issuedTo"`
-	xxx_hidden_DateExpires bool                   `protobuf:"varint,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired bool                   `protobuf:"varint,11,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated bool                   `protobuf:"varint,15,opt,name=date_created,json=dateCreated"`
@@ -633,9 +633,9 @@ func (x *LinkSelect) GetIssuedTo() bool {
 	return false
 }
 
-func (x *LinkSelect) GetDateExpires() bool {
+func (x *LinkSelect) GetDateExpired() bool {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return false
 }
@@ -694,8 +694,8 @@ func (x *LinkSelect) SetIssuedTo(v bool) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 6, 11)
 }
 
-func (x *LinkSelect) SetDateExpires(v bool) {
-	x.xxx_hidden_DateExpires = v
+func (x *LinkSelect) SetDateExpired(v bool) {
+	x.xxx_hidden_DateExpired = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 7, 11)
 }
 
@@ -763,7 +763,7 @@ func (x *LinkSelect) HasIssuedTo() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 6)
 }
 
-func (x *LinkSelect) HasDateExpires() bool {
+func (x *LinkSelect) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
@@ -824,9 +824,9 @@ func (x *LinkSelect) ClearIssuedTo() {
 	x.xxx_hidden_IssuedTo = false
 }
 
-func (x *LinkSelect) ClearDateExpires() {
+func (x *LinkSelect) ClearDateExpired() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 7)
-	x.xxx_hidden_DateExpires = false
+	x.xxx_hidden_DateExpired = false
 }
 
 func (x *LinkSelect) ClearDateUpdated() {
@@ -854,7 +854,7 @@ type LinkSelect_builder struct {
 	Leave       *bool
 	Secret      *bool
 	IssuedTo    *bool
-	DateExpires *bool
+	DateExpired *bool
 	DateUpdated *bool
 	DateErased  *bool
 	DateCreated *bool
@@ -886,9 +886,9 @@ func (b0 LinkSelect_builder) Build() *LinkSelect {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 6, 11)
 		x.xxx_hidden_IssuedTo = *b.IssuedTo
 	}
-	if b.DateExpires != nil {
+	if b.DateExpired != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 7, 11)
-		x.xxx_hidden_DateExpires = *b.DateExpires
+		x.xxx_hidden_DateExpired = *b.DateExpired
 	}
 	if b.DateUpdated != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 8, 11)
@@ -1261,7 +1261,7 @@ const file_app_link_svc_g_proto_rawDesc = "" +
 	"\x06secret\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12\"\n" +
 	"\tissued_to\x18\n" +
 	" \x01(\fB\x05\xaa\x01\x02\b\x02R\bissuedTo\x12=\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12=\n" +
+	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"_\n" +
 	"\x0eLinkGetRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.LinkRefR\x03ref\x12*\n" +
@@ -1280,7 +1280,7 @@ const file_app_link_svc_g_proto_rawDesc = "" +
 	"\x06secret\x18\t \x01(\bR\x06secret\x12\x1b\n" +
 	"\tissued_to\x18\n" +
 	" \x01(\bR\bissuedTo\x12!\n" +
-	"\fdate_expires\x18\v \x01(\bR\vdateExpires\x12!\n" +
+	"\fdate_expired\x18\v \x01(\bR\vdateExpired\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
@@ -1324,7 +1324,7 @@ var file_app_link_svc_g_proto_goTypes = []any{
 var file_app_link_svc_g_proto_depIdxs = []int32{
 	8,  // 0: roster.LinkAddRequest.holder:type_name -> roster.HolderRef
 	9,  // 1: roster.LinkAddRequest.email:type_name -> roster.EmailRef
-	10, // 2: roster.LinkAddRequest.date_expires:type_name -> google.protobuf.Timestamp
+	10, // 2: roster.LinkAddRequest.date_expired:type_name -> google.protobuf.Timestamp
 	10, // 3: roster.LinkAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 4: roster.LinkGetRequest.ref:type_name -> roster.LinkRef
 	3,  // 5: roster.LinkGetRequest.select:type_name -> roster.LinkSelect

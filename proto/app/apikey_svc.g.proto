@@ -42,7 +42,7 @@ message ApiKeyAddRequest {
   repeated string methods = 8;
   bytes secret = 9 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_used = 10;
-  google.protobuf.Timestamp date_expires = 11;
+  google.protobuf.Timestamp date_expired = 11;
   google.protobuf.Timestamp date_authenticated = 12;
   google.protobuf.Timestamp date_created = 15;
 }
@@ -73,7 +73,7 @@ message ApiKeySelect {
   bool methods = 8;
   bool secret = 9;
   bool date_used = 10;
-  bool date_expires = 11;
+  bool date_expired = 11;
   bool date_authenticated = 12;
   bool date_updated = 13;
   bool date_erased = 14;
@@ -92,12 +92,12 @@ message ApiKeyPatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and date_used clears.
   bool date_used_null = 21;
-  google.protobuf.Timestamp date_expires = 22;
-  // Clear date_expires instead of writing it.
+  google.protobuf.Timestamp date_expired = 22;
+  // Clear date_expired instead of writing it.
   // It takes a field of its own because an unset value already means
   // "leave it alone", so no value could have meant NULL. It wins
-  // outright: setting both this and date_expires clears.
-  bool date_expires_null = 23;
+  // outright: setting both this and date_expired clears.
+  bool date_expired_null = 23;
   // The version this update requires the stored date_updated to be.
   // It is a precondition, not a write: the update applies only if the row
   // still holds this value, and the server stamps the new version itself.
@@ -192,7 +192,7 @@ message ApiKeyIssueRequest {
   repeated string methods = 3;
 
   // When it stops working, unset for one that does not.
-  google.protobuf.Timestamp date_expires = 4;
+  google.protobuf.Timestamp date_expired = 4;
 }
 
 message ApiKeyIssueResponse {

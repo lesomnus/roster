@@ -62,16 +62,16 @@ func (_c *ApiKeyCreate) SetNillableDateUsed(v *time.Time) *ApiKeyCreate {
 	return _c
 }
 
-// SetDateExpires sets the "date_expires" field.
-func (_c *ApiKeyCreate) SetDateExpires(v time.Time) *ApiKeyCreate {
-	_c.mutation.SetDateExpires(v)
+// SetDateExpired sets the "date_expired" field.
+func (_c *ApiKeyCreate) SetDateExpired(v time.Time) *ApiKeyCreate {
+	_c.mutation.SetDateExpired(v)
 	return _c
 }
 
-// SetNillableDateExpires sets the "date_expires" field if the given value is not nil.
-func (_c *ApiKeyCreate) SetNillableDateExpires(v *time.Time) *ApiKeyCreate {
+// SetNillableDateExpired sets the "date_expired" field if the given value is not nil.
+func (_c *ApiKeyCreate) SetNillableDateExpired(v *time.Time) *ApiKeyCreate {
 	if v != nil {
-		_c.SetDateExpires(*v)
+		_c.SetDateExpired(*v)
 	}
 	return _c
 }
@@ -267,9 +267,9 @@ func (_c *ApiKeyCreate) createSpec() (*ApiKey, *sqlgraph.CreateSpec) {
 		_spec.SetField(apikey.FieldDateUsed, field.TypeTime, value)
 		_node.DateUsed = &value
 	}
-	if value, ok := _c.mutation.DateExpires(); ok {
-		_spec.SetField(apikey.FieldDateExpires, field.TypeTime, value)
-		_node.DateExpires = &value
+	if value, ok := _c.mutation.DateExpired(); ok {
+		_spec.SetField(apikey.FieldDateExpired, field.TypeTime, value)
+		_node.DateExpired = &value
 	}
 	if value, ok := _c.mutation.DateAuthenticated(); ok {
 		_spec.SetField(apikey.FieldDateAuthenticated, field.TypeTime, value)

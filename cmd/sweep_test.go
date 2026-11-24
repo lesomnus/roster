@@ -82,7 +82,7 @@ func TestExpiredSessionsAreCollected(t *testing.T) {
 }
 
 // TestSigningOutLeavesARowUntilItsOwnClockRuns is the shape that makes the
-// predicate `date_expires` alone.
+// predicate `date_expired` alone.
 //
 // `Del` erases softly, so a signed-out session is out of reach and still
 // present, and it is collected when its own expiry passes, exactly as

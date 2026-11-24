@@ -441,7 +441,7 @@ func newCmdVouchDelegate(c *cmd.Config) *xli.Command {
 			if err != nil {
 				return err
 			}
-			req.DateExpires = expires
+			req.DateExpired = expires
 
 			kind, _ := flg.Find[string](cl, "kind")
 			name, _ := flg.Find[string](cl, "name")
@@ -452,7 +452,7 @@ func newCmdVouchDelegate(c *cmd.Config) *xli.Command {
 			if err != nil {
 				return err
 			}
-			if err := answered(v.GetVerified(), v.GetToken(), v.GetDateExpires()); err != nil {
+			if err := answered(v.GetVerified(), v.GetToken(), v.GetDateExpired()); err != nil {
 				return err
 			}
 			if w := cmd.Widest(v.GetToken(), methods); w != "" && v.GetToken() != "" {
@@ -560,7 +560,7 @@ func newCmdVouchLink(c *cmd.Config) *xli.Command {
 
 			v, err := client.Link(ctx, app.VouchLinkRequest_builder{
 				Who:         who,
-				DateExpires: expires,
+				DateExpired: expires,
 			}.Build())
 			if err != nil {
 				return err
@@ -571,7 +571,7 @@ func newCmdVouchLink(c *cmd.Config) *xli.Command {
 				"until %s, single use. This is the only time it is shown, and roster does not "+
 					"deliver it -- that is the point. It answers the same for a name that is "+
 					"nobody's; a dud fails at redeem like any bad token.\n",
-				v.GetDateExpires().AsTime().Format(time.RFC3339))
+				v.GetDateExpired().AsTime().Format(time.RFC3339))
 
 			return next(ctx)
 		}),
@@ -615,12 +615,12 @@ func newCmdVouchRedeem(c *cmd.Config) *xli.Command {
 			v, err := client.Redeem(ctx, app.VouchRedeemRequest_builder{
 				Token:       string(token),
 				Methods:     methods,
-				DateExpires: expires,
+				DateExpired: expires,
 			}.Build())
 			if err != nil {
 				return err
 			}
-			if err := answered(v.GetVerified(), v.GetToken(), v.GetDateExpires()); err != nil {
+			if err := answered(v.GetVerified(), v.GetToken(), v.GetDateExpired()); err != nil {
 				return err
 			}
 
@@ -673,7 +673,7 @@ func newCmdVouchLeaveLink(c *cmd.Config) *xli.Command {
 				"for %s, until %s, single use. It deletes their account once spent with their "+
 					"alias typed, and signs nobody in. This is the only time it is shown, and roster "+
 					"does not deliver it: send it to that address and nowhere else.\n",
-				v.GetAddress(), v.GetDateExpires().AsTime().Format(time.RFC3339))
+				v.GetAddress(), v.GetDateExpired().AsTime().Format(time.RFC3339))
 
 			return next(ctx)
 		}),
@@ -908,12 +908,12 @@ func newCmdVouchAccept(c *cmd.Config) *xli.Command {
 					Subject:  subject,
 				}.Build(),
 				Methods:     methods,
-				DateExpires: expires,
+				DateExpired: expires,
 			}.Build())
 			if err != nil {
 				return err
 			}
-			if err := answered(v.GetVerified(), v.GetToken(), v.GetDateExpires()); err != nil {
+			if err := answered(v.GetVerified(), v.GetToken(), v.GetDateExpired()); err != nil {
 				return err
 			}
 

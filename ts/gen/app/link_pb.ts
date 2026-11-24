@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/link.proto.
  */
 export const file_app_link: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyIsgECgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESJgoFZW1haWwYDCABKAsyDS5yb3N0ZXIuRW1haWxCCPKCFgQ4AUABEhgKAmF0GAggASgJQgzqghYCQAGqwRYCGAASHQoFbGVhdmUYECABKAhCDuqCFgpAAYIBBWZhbHNlEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESHwoJaXNzdWVkX3RvGAogASgMQgzqghYCQAGqwRYCGAASOgoMZGF0ZV9leHBpcmVzGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOm/K/BUtEgmCAQCKAQCaAQAaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWOggXMiUKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_app_email, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvbGluay5wcm90bxIGcm9zdGVyIsgECgRMaW5rEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZob2xkZXIYAiABKAsyDi5yb3N0ZXIuSG9sZGVyQgbyghYCQAESJgoFZW1haWwYDCABKAsyDS5yb3N0ZXIuRW1haWxCCPKCFgQ4AUABEhgKAmF0GAggASgJQgzqghYCQAGqwRYCGAASHQoFbGVhdmUYECABKAhCDuqCFgpAAYIBBWZhbHNlEh4KBnNlY3JldBgJIAEoDEIO6oIWBDABQAGqwRYCCAESHwoJaXNzdWVkX3RvGAogASgMQgzqghYCQAGqwRYCGAASOgoMZGF0ZV9leHBpcmVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEII6oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOm/K/BUtEgmCAQCKAQCaAQAaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWOggXMiUKEAoOCgxkYXRlX2NyZWF0ZWQKBgoECgJpZBoFCgNyZWYgFChkIg8KDWhvbGRlci50ZW5hbnRCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_app_email, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Link is a way in that roster mints and somebody else delivers -- or, for two
@@ -176,9 +176,9 @@ export type Link = Message<"roster.Link"> & {
    * Nullable because the generator has no way to say required -- D6, and F3 is
    * open -- so an absent one is refused on read rather than read as forever.
    *
-   * @generated from field: google.protobuf.Timestamp date_expires = 11;
+   * @generated from field: google.protobuf.Timestamp date_expired = 11;
    */
-  dateExpires?: Timestamp | undefined;
+  dateExpired?: Timestamp | undefined;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

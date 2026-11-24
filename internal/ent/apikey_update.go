@@ -102,23 +102,23 @@ func (_u *ApiKeyUpdate) ClearDateUsed() *ApiKeyUpdate {
 	return _u
 }
 
-// SetDateExpires sets the "date_expires" field.
-func (_u *ApiKeyUpdate) SetDateExpires(v time.Time) *ApiKeyUpdate {
-	_u.mutation.SetDateExpires(v)
+// SetDateExpired sets the "date_expired" field.
+func (_u *ApiKeyUpdate) SetDateExpired(v time.Time) *ApiKeyUpdate {
+	_u.mutation.SetDateExpired(v)
 	return _u
 }
 
-// SetNillableDateExpires sets the "date_expires" field if the given value is not nil.
-func (_u *ApiKeyUpdate) SetNillableDateExpires(v *time.Time) *ApiKeyUpdate {
+// SetNillableDateExpired sets the "date_expired" field if the given value is not nil.
+func (_u *ApiKeyUpdate) SetNillableDateExpired(v *time.Time) *ApiKeyUpdate {
 	if v != nil {
-		_u.SetDateExpires(*v)
+		_u.SetDateExpired(*v)
 	}
 	return _u
 }
 
-// ClearDateExpires clears the value of the "date_expires" field.
-func (_u *ApiKeyUpdate) ClearDateExpires() *ApiKeyUpdate {
-	_u.mutation.ClearDateExpires()
+// ClearDateExpired clears the value of the "date_expired" field.
+func (_u *ApiKeyUpdate) ClearDateExpired() *ApiKeyUpdate {
+	_u.mutation.ClearDateExpired()
 	return _u
 }
 
@@ -255,14 +255,14 @@ func (_u *ApiKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.DateUsedCleared() {
 		_spec.ClearField(apikey.FieldDateUsed, field.TypeTime)
 	}
-	if value, ok := _u.mutation.DateExpires(); ok {
-		_spec.SetField(apikey.FieldDateExpires, field.TypeTime, value)
+	if value, ok := _u.mutation.DateExpired(); ok {
+		_spec.SetField(apikey.FieldDateExpired, field.TypeTime, value)
 	}
-	if e, ok := _u.mutation.FieldExpr(apikey.FieldDateExpires); ok {
-		_spec.SetField(apikey.FieldDateExpires, field.TypeTime, e)
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldDateExpired); ok {
+		_spec.SetField(apikey.FieldDateExpired, field.TypeTime, e)
 	}
-	if _u.mutation.DateExpiresCleared() {
-		_spec.ClearField(apikey.FieldDateExpires, field.TypeTime)
+	if _u.mutation.DateExpiredCleared() {
+		_spec.ClearField(apikey.FieldDateExpired, field.TypeTime)
 	}
 	if _u.mutation.DateAuthenticatedCleared() {
 		_spec.ClearField(apikey.FieldDateAuthenticated, field.TypeTime)
@@ -379,23 +379,23 @@ func (_u *ApiKeyUpdateOne) ClearDateUsed() *ApiKeyUpdateOne {
 	return _u
 }
 
-// SetDateExpires sets the "date_expires" field.
-func (_u *ApiKeyUpdateOne) SetDateExpires(v time.Time) *ApiKeyUpdateOne {
-	_u.mutation.SetDateExpires(v)
+// SetDateExpired sets the "date_expired" field.
+func (_u *ApiKeyUpdateOne) SetDateExpired(v time.Time) *ApiKeyUpdateOne {
+	_u.mutation.SetDateExpired(v)
 	return _u
 }
 
-// SetNillableDateExpires sets the "date_expires" field if the given value is not nil.
-func (_u *ApiKeyUpdateOne) SetNillableDateExpires(v *time.Time) *ApiKeyUpdateOne {
+// SetNillableDateExpired sets the "date_expired" field if the given value is not nil.
+func (_u *ApiKeyUpdateOne) SetNillableDateExpired(v *time.Time) *ApiKeyUpdateOne {
 	if v != nil {
-		_u.SetDateExpires(*v)
+		_u.SetDateExpired(*v)
 	}
 	return _u
 }
 
-// ClearDateExpires clears the value of the "date_expires" field.
-func (_u *ApiKeyUpdateOne) ClearDateExpires() *ApiKeyUpdateOne {
-	_u.mutation.ClearDateExpires()
+// ClearDateExpired clears the value of the "date_expired" field.
+func (_u *ApiKeyUpdateOne) ClearDateExpired() *ApiKeyUpdateOne {
+	_u.mutation.ClearDateExpired()
 	return _u
 }
 
@@ -562,14 +562,14 @@ func (_u *ApiKeyUpdateOne) sqlSave(ctx context.Context) (_node *ApiKey, err erro
 	if _u.mutation.DateUsedCleared() {
 		_spec.ClearField(apikey.FieldDateUsed, field.TypeTime)
 	}
-	if value, ok := _u.mutation.DateExpires(); ok {
-		_spec.SetField(apikey.FieldDateExpires, field.TypeTime, value)
+	if value, ok := _u.mutation.DateExpired(); ok {
+		_spec.SetField(apikey.FieldDateExpired, field.TypeTime, value)
 	}
-	if e, ok := _u.mutation.FieldExpr(apikey.FieldDateExpires); ok {
-		_spec.SetField(apikey.FieldDateExpires, field.TypeTime, e)
+	if e, ok := _u.mutation.FieldExpr(apikey.FieldDateExpired); ok {
+		_spec.SetField(apikey.FieldDateExpired, field.TypeTime, e)
 	}
-	if _u.mutation.DateExpiresCleared() {
-		_spec.ClearField(apikey.FieldDateExpires, field.TypeTime)
+	if _u.mutation.DateExpiredCleared() {
+		_spec.ClearField(apikey.FieldDateExpired, field.TypeTime)
 	}
 	if _u.mutation.DateAuthenticatedCleared() {
 		_spec.ClearField(apikey.FieldDateAuthenticated, field.TypeTime)

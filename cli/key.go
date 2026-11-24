@@ -236,7 +236,7 @@ func (m minting) mint(ctx context.Context, at *cmd.Server, by *cmd.Operator, who
 			Alias:       m.name,
 			Secret:      sum,
 			Methods:     m.methods,
-			DateExpires: m.expires,
+			DateExpired: m.expires,
 		}.Build())
 
 		return err

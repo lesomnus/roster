@@ -3398,7 +3398,7 @@ type HostProofAddRequest struct {
 	xxx_hidden_Tenant      *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Name        string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Token       string                 `protobuf:"bytes,9,opt,name=token"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_Desc        string                 `protobuf:"bytes,6,opt,name=desc"`
 	xxx_hidden_DateCreated *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
 	XXX_raceDetectHookData protoimpl.RaceDetectHookData
@@ -3460,9 +3460,9 @@ func (x *HostProofAddRequest) GetToken() string {
 	return ""
 }
 
-func (x *HostProofAddRequest) GetDateExpires() *timestamppb.Timestamp {
+func (x *HostProofAddRequest) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -3501,8 +3501,8 @@ func (x *HostProofAddRequest) SetToken(v string) {
 	x.xxx_hidden_Token = v
 }
 
-func (x *HostProofAddRequest) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *HostProofAddRequest) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *HostProofAddRequest) SetDesc(v string) {
@@ -3527,11 +3527,11 @@ func (x *HostProofAddRequest) HasTenant() bool {
 	return x.xxx_hidden_Tenant != nil
 }
 
-func (x *HostProofAddRequest) HasDateExpires() bool {
+func (x *HostProofAddRequest) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
 func (x *HostProofAddRequest) HasDateCreated() bool {
@@ -3550,8 +3550,8 @@ func (x *HostProofAddRequest) ClearTenant() {
 	x.xxx_hidden_Tenant = nil
 }
 
-func (x *HostProofAddRequest) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *HostProofAddRequest) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 func (x *HostProofAddRequest) ClearDateCreated() {
@@ -3565,7 +3565,7 @@ type HostProofAddRequest_builder struct {
 	Tenant      *TenantRef
 	Name        string
 	Token       string
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 	Desc        string
 	DateCreated *timestamppb.Timestamp
 }
@@ -3581,7 +3581,7 @@ func (b0 HostProofAddRequest_builder) Build() *HostProofAddRequest {
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Token = b.Token
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_Desc = b.Desc
 	x.xxx_hidden_DateCreated = b.DateCreated
 	return m0
@@ -3959,7 +3959,7 @@ type HostProofSelect struct {
 	xxx_hidden_Tenant      *TenantSelect          `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Name        bool                   `protobuf:"varint,5,opt,name=name"`
 	xxx_hidden_Token       bool                   `protobuf:"varint,9,opt,name=token"`
-	xxx_hidden_DateExpires bool                   `protobuf:"varint,10,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired bool                   `protobuf:"varint,10,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_Desc        bool                   `protobuf:"varint,6,opt,name=desc"`
 	xxx_hidden_DateUpdated bool                   `protobuf:"varint,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  bool                   `protobuf:"varint,14,opt,name=date_erased,json=dateErased"`
@@ -4023,9 +4023,9 @@ func (x *HostProofSelect) GetToken() bool {
 	return false
 }
 
-func (x *HostProofSelect) GetDateExpires() bool {
+func (x *HostProofSelect) GetDateExpired() bool {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return false
 }
@@ -4077,8 +4077,8 @@ func (x *HostProofSelect) SetToken(v bool) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 3, 9)
 }
 
-func (x *HostProofSelect) SetDateExpires(v bool) {
-	x.xxx_hidden_DateExpires = v
+func (x *HostProofSelect) SetDateExpired(v bool) {
+	x.xxx_hidden_DateExpired = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 4, 9)
 }
 
@@ -4130,7 +4130,7 @@ func (x *HostProofSelect) HasToken() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 3)
 }
 
-func (x *HostProofSelect) HasDateExpires() bool {
+func (x *HostProofSelect) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
@@ -4184,9 +4184,9 @@ func (x *HostProofSelect) ClearToken() {
 	x.xxx_hidden_Token = false
 }
 
-func (x *HostProofSelect) ClearDateExpires() {
+func (x *HostProofSelect) ClearDateExpired() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 4)
-	x.xxx_hidden_DateExpires = false
+	x.xxx_hidden_DateExpired = false
 }
 
 func (x *HostProofSelect) ClearDesc() {
@@ -4216,7 +4216,7 @@ type HostProofSelect_builder struct {
 	Tenant      *TenantSelect
 	Name        *bool
 	Token       *bool
-	DateExpires *bool
+	DateExpired *bool
 	Desc        *bool
 	DateUpdated *bool
 	DateErased  *bool
@@ -4240,9 +4240,9 @@ func (b0 HostProofSelect_builder) Build() *HostProofSelect {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 9)
 		x.xxx_hidden_Token = *b.Token
 	}
-	if b.DateExpires != nil {
+	if b.DateExpired != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 4, 9)
-		x.xxx_hidden_DateExpires = *b.DateExpires
+		x.xxx_hidden_DateExpired = *b.DateExpired
 	}
 	if b.Desc != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 5, 9)
@@ -4266,8 +4266,8 @@ func (b0 HostProofSelect_builder) Build() *HostProofSelect {
 type HostProofPatchRequest struct {
 	state                       protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Ref              *HostProofRef          `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_DateExpires      *timestamppb.Timestamp `protobuf:"bytes,20,opt,name=date_expires,json=dateExpires"`
-	xxx_hidden_DateExpiresNull  bool                   `protobuf:"varint,21,opt,name=date_expires_null,json=dateExpiresNull"`
+	xxx_hidden_DateExpired      *timestamppb.Timestamp `protobuf:"bytes,20,opt,name=date_expired,json=dateExpired"`
+	xxx_hidden_DateExpiredNull  bool                   `protobuf:"varint,21,opt,name=date_expired_null,json=dateExpiredNull"`
 	xxx_hidden_Desc             *string                `protobuf:"bytes,12,opt,name=desc"`
 	xxx_hidden_DateUpdated      *timestamppb.Timestamp `protobuf:"bytes,26,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateUpdatedForce bool                   `protobuf:"varint,27,opt,name=date_updated_force,json=dateUpdatedForce"`
@@ -4309,16 +4309,16 @@ func (x *HostProofPatchRequest) GetRef() *HostProofRef {
 	return nil
 }
 
-func (x *HostProofPatchRequest) GetDateExpires() *timestamppb.Timestamp {
+func (x *HostProofPatchRequest) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
 
-func (x *HostProofPatchRequest) GetDateExpiresNull() bool {
+func (x *HostProofPatchRequest) GetDateExpiredNull() bool {
 	if x != nil {
-		return x.xxx_hidden_DateExpiresNull
+		return x.xxx_hidden_DateExpiredNull
 	}
 	return false
 }
@@ -4351,12 +4351,12 @@ func (x *HostProofPatchRequest) SetRef(v *HostProofRef) {
 	x.xxx_hidden_Ref = v
 }
 
-func (x *HostProofPatchRequest) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *HostProofPatchRequest) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
-func (x *HostProofPatchRequest) SetDateExpiresNull(v bool) {
-	x.xxx_hidden_DateExpiresNull = v
+func (x *HostProofPatchRequest) SetDateExpiredNull(v bool) {
+	x.xxx_hidden_DateExpiredNull = v
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 2, 6)
 }
 
@@ -4381,14 +4381,14 @@ func (x *HostProofPatchRequest) HasRef() bool {
 	return x.xxx_hidden_Ref != nil
 }
 
-func (x *HostProofPatchRequest) HasDateExpires() bool {
+func (x *HostProofPatchRequest) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
-func (x *HostProofPatchRequest) HasDateExpiresNull() bool {
+func (x *HostProofPatchRequest) HasDateExpiredNull() bool {
 	if x == nil {
 		return false
 	}
@@ -4420,13 +4420,13 @@ func (x *HostProofPatchRequest) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
 
-func (x *HostProofPatchRequest) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *HostProofPatchRequest) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
-func (x *HostProofPatchRequest) ClearDateExpiresNull() {
+func (x *HostProofPatchRequest) ClearDateExpiredNull() {
 	protoimpl.X.ClearPresent(&(x.XXX_presence[0]), 2)
-	x.xxx_hidden_DateExpiresNull = false
+	x.xxx_hidden_DateExpiredNull = false
 }
 
 func (x *HostProofPatchRequest) ClearDesc() {
@@ -4447,12 +4447,12 @@ type HostProofPatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref         *HostProofRef
-	DateExpires *timestamppb.Timestamp
-	// Clear date_expires instead of writing it.
+	DateExpired *timestamppb.Timestamp
+	// Clear date_expired instead of writing it.
 	// It takes a field of its own because an unset value already means
 	// "leave it alone", so no value could have meant NULL. It wins
-	// outright: setting both this and date_expires clears.
-	DateExpiresNull *bool
+	// outright: setting both this and date_expired clears.
+	DateExpiredNull *bool
 	Desc            *string
 	// The version this update requires the stored date_updated to be.
 	// It is a precondition, not a write: the update applies only if the row
@@ -4475,10 +4475,10 @@ func (b0 HostProofPatchRequest_builder) Build() *HostProofPatchRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_DateExpires = b.DateExpires
-	if b.DateExpiresNull != nil {
+	x.xxx_hidden_DateExpired = b.DateExpired
+	if b.DateExpiredNull != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 2, 6)
-		x.xxx_hidden_DateExpiresNull = *b.DateExpiresNull
+		x.xxx_hidden_DateExpiredNull = *b.DateExpiredNull
 	}
 	if b.Desc != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 6)
@@ -5094,8 +5094,8 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x1b\n" +
 	"\x05token\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x12=\n" +
-	"\fdate_expires\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12\x19\n" +
+	"\fdate_expired\x18\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"n\n" +
 	"\x13HostProofGetRequest\x12&\n" +
@@ -5113,8 +5113,8 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x06tenant\x18\x02 \x01(\v2\x14.roster.TenantSelectR\x06tenant\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\bR\x04name\x12\x14\n" +
 	"\x05token\x18\t \x01(\bR\x05token\x12!\n" +
-	"\fdate_expires\x18\n" +
-	" \x01(\bR\vdateExpires\x12\x12\n" +
+	"\fdate_expired\x18\n" +
+	" \x01(\bR\vdateExpired\x12\x12\n" +
 	"\x04desc\x18\x06 \x01(\bR\x04desc\x12!\n" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
@@ -5122,8 +5122,8 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xab\x02\n" +
 	"\x15HostProofPatchRequest\x12&\n" +
 	"\x03ref\x18\x01 \x01(\v2\x14.roster.HostProofRefR\x03ref\x12=\n" +
-	"\fdate_expires\x18\x14 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12*\n" +
-	"\x11date_expires_null\x18\x15 \x01(\bR\x0fdateExpiresNull\x12\x12\n" +
+	"\fdate_expired\x18\x14 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\x12*\n" +
+	"\x11date_expired_null\x18\x15 \x01(\bR\x0fdateExpiredNull\x12\x12\n" +
 	"\x04desc\x18\f \x01(\tR\x04desc\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"c\n" +
@@ -5255,7 +5255,7 @@ var file_app_host_svc_g_proto_depIdxs = []int32{
 	13, // 36: roster.MailDomainUpdateRequest.ref:type_name -> roster.MailDomainRef
 	39, // 37: roster.MailDomainUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
 	38, // 38: roster.HostProofAddRequest.tenant:type_name -> roster.TenantRef
-	39, // 39: roster.HostProofAddRequest.date_expires:type_name -> google.protobuf.Timestamp
+	39, // 39: roster.HostProofAddRequest.date_expired:type_name -> google.protobuf.Timestamp
 	39, // 40: roster.HostProofAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	25, // 41: roster.HostProofGetRequest.ref:type_name -> roster.HostProofRef
 	27, // 42: roster.HostProofGetRequest.select:type_name -> roster.HostProofSelect
@@ -5263,7 +5263,7 @@ var file_app_host_svc_g_proto_depIdxs = []int32{
 	38, // 44: roster.HostProofRefByAt.tenant:type_name -> roster.TenantRef
 	40, // 45: roster.HostProofSelect.tenant:type_name -> roster.TenantSelect
 	25, // 46: roster.HostProofPatchRequest.ref:type_name -> roster.HostProofRef
-	39, // 47: roster.HostProofPatchRequest.date_expires:type_name -> google.protobuf.Timestamp
+	39, // 47: roster.HostProofPatchRequest.date_expired:type_name -> google.protobuf.Timestamp
 	39, // 48: roster.HostProofPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
 	25, // 49: roster.HostProofApplyRequest.ref:type_name -> roster.HostProofRef
 	41, // 50: roster.HostProofApplyRequest.patch:type_name -> patch.Patch

@@ -19,7 +19,7 @@ import (
 //
 // `--expires` is how long a key lasts, and `-1h` -- a sign the wrong way
 // round, a variable that came out negative -- was added to now and written. So
-// was a `date_expires` in the past, sent to `ApiKeyService/Issue`. Each
+// was a `date_expired` in the past, sent to `ApiKeyService/Issue`. Each
 // answered a token under *this is the only time it is shown*, and the token
 // had already stopped working: refused on its first call as any dead key is,
 // with nothing to say that it had never been alive (#276). A delegation was
@@ -64,13 +64,13 @@ func TestAKeyIsNotMintedAlreadyExpired(t *testing.T) {
 
 		_, err := cl.Issue(as, app.ApiKeyIssueRequest_builder{
 			Holder: own, Alias: "dead", Methods: []string{issue},
-			DateExpires: timestamppb.New(time.Now().Add(-time.Hour)),
+			DateExpired: timestamppb.New(time.Now().Add(-time.Hour)),
 		}.Build())
 		x.Equal(codes.InvalidArgument, status.Code(err), "%v", err)
 
 		v, err := cl.Issue(as, app.ApiKeyIssueRequest_builder{
 			Holder: own, Alias: "alive", Methods: []string{issue},
-			DateExpires: timestamppb.New(time.Now().Add(time.Hour)),
+			DateExpired: timestamppb.New(time.Now().Add(time.Hour)),
 		}.Build())
 		x.NoError(err)
 		x.NotEmpty(v.GetToken())

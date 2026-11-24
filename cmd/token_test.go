@@ -39,7 +39,7 @@ func mintFor(t *testing.T, ctx context.Context, b *keyedBuilt, who pdid.Id, alia
 		Methods: methods,
 	}
 	if !expires.IsZero() {
-		req.DateExpires = timestamppb.New(expires)
+		req.DateExpired = timestamppb.New(expires)
 	}
 
 	_, err = b.Ungated.ApiKey().Add(ctx, req.Build())

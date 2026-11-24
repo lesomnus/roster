@@ -28,7 +28,7 @@ func (Delegation) Fields() []ent.Field {
 			Immutable(),
 		field.Bytes("issued_to").
 			Immutable(),
-		field.Time("date_expires").
+		field.Time("date_expired").
 			Nillable().
 			Immutable().
 			Optional(),

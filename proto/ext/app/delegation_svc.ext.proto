@@ -103,5 +103,5 @@ message DelegationExchangeResponse {
   string token = 1 [features.field_presence = IMPLICIT];
 
   // When it stops working.
-  google.protobuf.Timestamp date_expires = 2;
+  google.protobuf.Timestamp date_expired = 2;
 }

@@ -71,7 +71,7 @@ func (b *built) erasableRows(t *testing.T, ctx context.Context, tenant, site pdi
 	b.sets(t, ctx, whose, "a password of "+sfx+" that nobody has leaked")
 	d, err := b.Ungated.Delegation().Add(ctx, app.DelegationAddRequest_builder{
 		Holder: who, IssuedTo: who.GetId(), Secret: sweepable(t), Methods: []string{app.MeService_Get_FullMethodName},
-		DateExpires: timestamppb.New(time.Now().Add(time.Hour)),
+		DateExpired: timestamppb.New(time.Now().Add(time.Hour)),
 	}.Build())
 	made("Delegation", d.GetId(), err)
 	r, err := b.Ungated.Relation().Add(ctx, app.RelationAddRequest_builder{Holder: who, Other: other}.Build())

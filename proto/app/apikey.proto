@@ -124,7 +124,7 @@ message ApiKey {
   // When it stops working. Null is a key that does not expire, which is what a
   // service running unattended needs and what makes rotation somebody's job
   // rather than an outage.
-  google.protobuf.Timestamp date_expires = 11 [(orm.field) = {nullable: true}];
+  google.protobuf.Timestamp date_expired = 11 [(orm.field) = {nullable: true}];
 
   // When the person it acts as proved who they are, for a key they issued
   // themselves: the authentication the credential they issued it with carried

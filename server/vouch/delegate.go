@@ -111,7 +111,7 @@ func (s *Server) Delegate(ctx context.Context, req *app.VouchDelegateRequest) (*
 	}
 
 	// Proved now: the last secret of the sign-in was checked a moment ago.
-	return s.mint(ctx, res, who, issuer, methods, req.GetDateExpires(), time.Now())
+	return s.mint(ctx, res, who, issuer, methods, req.GetDateExpired(), time.Now())
 }
 
 // mint is the credential a finished sign-in answers with.
@@ -150,7 +150,7 @@ func (s *Server) mint(ctx context.Context, res *app.VouchVerifyResponse, who, is
 		// actually stored is the difference between a caller knowing when this
 		// stops working and a caller knowing what somebody meant.
 		Token:       token,
-		DateExpires: row.GetDateExpires(),
+		DateExpired: row.GetDateExpired(),
 	}.Build(), nil
 }
 
@@ -407,7 +407,7 @@ func (s *Server) Accept(ctx context.Context, req *app.VouchAcceptRequest) (*app.
 		authenticated = v.AsTime()
 	}
 
-	out, err := s.mint(ctx, res, holder, issuer, methods, req.GetDateExpires(), authenticated)
+	out, err := s.mint(ctx, res, holder, issuer, methods, req.GetDateExpired(), authenticated)
 	if err != nil {
 		return nil, err
 	}
@@ -418,7 +418,7 @@ func (s *Server) Accept(ctx context.Context, req *app.VouchAcceptRequest) (*app.
 			return nil, err
 		}
 		out.SetLink(link)
-		out.SetDateLinkExpires(until)
+		out.SetDateLinkExpired(until)
 	}
 
 	return out, nil

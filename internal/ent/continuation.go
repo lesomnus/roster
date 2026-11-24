@@ -28,8 +28,8 @@ type Continuation struct {
 	IssuedTo []byte `json:"issued_to,omitempty"`
 	// MeteredBy holds the value of the "metered_by" field.
 	MeteredBy *uuid.UUID `json:"metered_by,omitempty"`
-	// DateExpires holds the value of the "date_expires" field.
-	DateExpires *time.Time `json:"date_expires,omitempty"`
+	// DateExpired holds the value of the "date_expired" field.
+	DateExpired *time.Time `json:"date_expired,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -71,7 +71,7 @@ func (*Continuation) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case continuation.FieldSatisfied, continuation.FieldSecret, continuation.FieldIssuedTo:
 			values[i] = new([]byte)
-		case continuation.FieldDateExpires, continuation.FieldDateUpdated, continuation.FieldDateErased, continuation.FieldDateCreated:
+		case continuation.FieldDateExpired, continuation.FieldDateUpdated, continuation.FieldDateErased, continuation.FieldDateCreated:
 			values[i] = new(sql.NullTime)
 		case continuation.FieldMeteredBy:
 			values[i] = new(sql.Null[uuid.UUID])
@@ -131,12 +131,12 @@ func (_m *Continuation) assignValues(columns []string, values []any) error {
 				_m.MeteredBy = new(uuid.UUID)
 				*_m.MeteredBy = value.V
 			}
-		case continuation.FieldDateExpires:
+		case continuation.FieldDateExpired:
 			if value, ok := values[i].(*sql.NullTime); !ok {
-				return fmt.Errorf("unexpected type %T for field date_expires", values[i])
+				return fmt.Errorf("unexpected type %T for field date_expired", values[i])
 			} else if value.Valid {
-				_m.DateExpires = new(time.Time)
-				*_m.DateExpires = value.Time
+				_m.DateExpired = new(time.Time)
+				*_m.DateExpired = value.Time
 			}
 		case continuation.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -218,8 +218,8 @@ func (_m *Continuation) String() string {
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")
-	if v := _m.DateExpires; v != nil {
-		builder.WriteString("date_expires=")
+	if v := _m.DateExpired; v != nil {
+		builder.WriteString("date_expired=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")

@@ -1411,8 +1411,8 @@ func (st HostProofServiceServer) create(ctx context.Context, req *rstr.HostProof
 	}
 	q.SetName(req.GetName())
 	q.SetToken(req.GetToken())
-	if req.HasDateExpires() {
-		q.SetDateExpires(req.GetDateExpires().AsTime())
+	if req.HasDateExpired() {
+		q.SetDateExpired(req.GetDateExpired().AsTime())
 	}
 	q.SetDesc(req.GetDesc())
 	q.SetDateUpdated(st.now())
@@ -1560,8 +1560,8 @@ func HostProofSelectedFields(m *rstr.HostProofSelect) []string {
 	if m.GetToken() {
 		vs = append(vs, hostproof.FieldToken)
 	}
-	if m.GetDateExpires() {
-		vs = append(vs, hostproof.FieldDateExpires)
+	if m.GetDateExpired() {
+		vs = append(vs, hostproof.FieldDateExpired)
 	}
 	if m.GetDesc() {
 		vs = append(vs, hostproof.FieldDesc)
@@ -1665,7 +1665,7 @@ func HostProofGetKey(ctx context.Context, db *ent.Client, ref *rstr.HostProofRef
 var hostProofOrmEntity = ormpatch.MustEntityOf(rstr.File_app_host_proto, "HostProof")
 
 var hostProofPatchColumns = entpatch.Columns{
-	1: hostproof.FieldId, 2: hostproof.TenantColumn, 5: hostproof.FieldName, 9: hostproof.FieldToken, 10: hostproof.FieldDateExpires, 6: hostproof.FieldDesc, 13: hostproof.FieldDateUpdated, 14: hostproof.FieldDateErased, 15: hostproof.FieldDateCreated}
+	1: hostproof.FieldId, 2: hostproof.TenantColumn, 5: hostproof.FieldName, 9: hostproof.FieldToken, 10: hostproof.FieldDateExpired, 6: hostproof.FieldDesc, 13: hostproof.FieldDateUpdated, 14: hostproof.FieldDateErased, 15: hostproof.FieldDateCreated}
 
 func (s HostProofServiceServer) Apply(ctx context.Context, req *rstr.HostProofApplyRequest) (*rstr.HostProof, error) {
 	if s.admission != nil {

@@ -485,8 +485,8 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 				Alias:   k.GetAlias(),
 				Methods: k.GetMethods(),
 			}
-			if u := k.GetDateExpires(); u != nil {
-				f.DateExpires = u
+			if u := k.GetDateExpired(); u != nil {
+				f.DateExpired = u
 			}
 			if u := k.GetDateUsed(); u != nil {
 				f.DateUsed = u

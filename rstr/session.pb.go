@@ -78,7 +78,7 @@ type Session struct {
 	xxx_hidden_Holder      *Holder                `protobuf:"bytes,2,opt,name=holder"`
 	xxx_hidden_Grant       []byte                 `protobuf:"bytes,8,opt,name=grant"`
 	xxx_hidden_Secret      []byte                 `protobuf:"bytes,9,opt,name=secret"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_DateIdle    *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_idle,json=dateIdle"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
@@ -140,9 +140,9 @@ func (x *Session) GetSecret() []byte {
 	return nil
 }
 
-func (x *Session) GetDateExpires() *timestamppb.Timestamp {
+func (x *Session) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -200,8 +200,8 @@ func (x *Session) SetSecret(v []byte) {
 	x.xxx_hidden_Secret = v
 }
 
-func (x *Session) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *Session) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *Session) SetDateIdle(v *timestamppb.Timestamp) {
@@ -227,11 +227,11 @@ func (x *Session) HasHolder() bool {
 	return x.xxx_hidden_Holder != nil
 }
 
-func (x *Session) HasDateExpires() bool {
+func (x *Session) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
 func (x *Session) HasDateIdle() bool {
@@ -266,8 +266,8 @@ func (x *Session) ClearHolder() {
 	x.xxx_hidden_Holder = nil
 }
 
-func (x *Session) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *Session) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 func (x *Session) ClearDateIdle() {
@@ -310,7 +310,7 @@ type Session_builder struct {
 	// The digest of the cookie value, and how the row is found. Never the value.
 	Secret []byte
 	// When it stops working whatever happens, counted from the sign-in.
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 	// When it stops working if it is not used.
 	//
 	// The one column here that moves, and `authsession` moves it rarely on
@@ -333,7 +333,7 @@ func (b0 Session_builder) Build() *Session {
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Grant = b.Grant
 	x.xxx_hidden_Secret = b.Secret
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_DateIdle = b.DateIdle
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
@@ -351,7 +351,7 @@ const file_app_session_proto_rawDesc = "" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\"\n" +
 	"\x05grant\x18\b \x01(\fB\f\xea\x82\x16\x02@\x01\xaa\xc1\x16\x02\x18\x00R\x05grant\x12&\n" +
 	"\x06secret\x18\t \x01(\fB\x0e\xea\x82\x16\x040\x01@\x01\xaa\xc1\x16\x02\b\x01R\x06secret\x12G\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpires\x12?\n" +
+	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\b\xea\x82\x16\x048\x01@\x01R\vdateExpired\x12?\n" +
 	"\tdate_idle\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateIdle\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
@@ -377,7 +377,7 @@ var file_app_session_proto_goTypes = []any{
 }
 var file_app_session_proto_depIdxs = []int32{
 	1, // 0: roster.Session.holder:type_name -> roster.Holder
-	2, // 1: roster.Session.date_expires:type_name -> google.protobuf.Timestamp
+	2, // 1: roster.Session.date_expired:type_name -> google.protobuf.Timestamp
 	2, // 2: roster.Session.date_idle:type_name -> google.protobuf.Timestamp
 	2, // 3: roster.Session.date_updated:type_name -> google.protobuf.Timestamp
 	2, // 4: roster.Session.date_erased:type_name -> google.protobuf.Timestamp

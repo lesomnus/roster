@@ -1176,7 +1176,7 @@ type VouchDelegateRequest struct {
 	xxx_hidden_Continuation string                 `protobuf:"bytes,12,opt,name=continuation"`
 	xxx_hidden_Name         string                 `protobuf:"bytes,5,opt,name=name"`
 	xxx_hidden_Methods      []string               `protobuf:"bytes,10,rep,name=methods"`
-	xxx_hidden_DateExpires  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired  *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
 	unknownFields           protoimpl.UnknownFields
 	sizeCache               protoimpl.SizeCache
 }
@@ -1248,9 +1248,9 @@ func (x *VouchDelegateRequest) GetMethods() []string {
 	return nil
 }
 
-func (x *VouchDelegateRequest) GetDateExpires() *timestamppb.Timestamp {
+func (x *VouchDelegateRequest) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -1282,8 +1282,8 @@ func (x *VouchDelegateRequest) SetMethods(v []string) {
 	x.xxx_hidden_Methods = v
 }
 
-func (x *VouchDelegateRequest) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *VouchDelegateRequest) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *VouchDelegateRequest) HasWho() bool {
@@ -1293,19 +1293,19 @@ func (x *VouchDelegateRequest) HasWho() bool {
 	return x.xxx_hidden_Who != nil
 }
 
-func (x *VouchDelegateRequest) HasDateExpires() bool {
+func (x *VouchDelegateRequest) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
 func (x *VouchDelegateRequest) ClearWho() {
 	x.xxx_hidden_Who = nil
 }
 
-func (x *VouchDelegateRequest) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *VouchDelegateRequest) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 type VouchDelegateRequest_builder struct {
@@ -1369,7 +1369,7 @@ type VouchDelegateRequest_builder struct {
 	// it was minted for.
 	//
 	// A time in the past is refused rather than clamped.
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 }
 
 func (b0 VouchDelegateRequest_builder) Build() *VouchDelegateRequest {
@@ -1382,7 +1382,7 @@ func (b0 VouchDelegateRequest_builder) Build() *VouchDelegateRequest {
 	x.xxx_hidden_Continuation = b.Continuation
 	x.xxx_hidden_Name = b.Name
 	x.xxx_hidden_Methods = b.Methods
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	return m0
 }
 
@@ -1390,7 +1390,7 @@ type VouchAcceptRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Claim       *VouchClaim            `protobuf:"bytes,1,opt,name=claim"`
 	xxx_hidden_Methods     []string               `protobuf:"bytes,2,rep,name=methods"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_At          string                 `protobuf:"bytes,4,opt,name=at"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
@@ -1435,9 +1435,9 @@ func (x *VouchAcceptRequest) GetMethods() []string {
 	return nil
 }
 
-func (x *VouchAcceptRequest) GetDateExpires() *timestamppb.Timestamp {
+func (x *VouchAcceptRequest) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -1457,8 +1457,8 @@ func (x *VouchAcceptRequest) SetMethods(v []string) {
 	x.xxx_hidden_Methods = v
 }
 
-func (x *VouchAcceptRequest) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *VouchAcceptRequest) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *VouchAcceptRequest) SetAt(v string) {
@@ -1472,19 +1472,19 @@ func (x *VouchAcceptRequest) HasClaim() bool {
 	return x.xxx_hidden_Claim != nil
 }
 
-func (x *VouchAcceptRequest) HasDateExpires() bool {
+func (x *VouchAcceptRequest) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
 func (x *VouchAcceptRequest) ClearClaim() {
 	x.xxx_hidden_Claim = nil
 }
 
-func (x *VouchAcceptRequest) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *VouchAcceptRequest) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 type VouchAcceptRequest_builder struct {
@@ -1497,7 +1497,7 @@ type VouchAcceptRequest_builder struct {
 	// opens no door.
 	Methods []string
 	// When it stops working. Unset is `keys.DelegateFor`, which is minutes.
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 	// A name the person's own tenant answers at, to also mint a **link** for:
 	// one the front door hands the browser, and the user console at that name
 	// spends for a session of roster's own (`AuthService.SignIn`). Empty mints no
@@ -1544,7 +1544,7 @@ func (b0 VouchAcceptRequest_builder) Build() *VouchAcceptRequest {
 	_, _ = b, x
 	x.xxx_hidden_Claim = b.Claim
 	x.xxx_hidden_Methods = b.Methods
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_At = b.At
 	return m0
 }
@@ -1553,9 +1553,9 @@ type VouchDelegateResponse struct {
 	state                      protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Verified        *VouchVerifyResponse   `protobuf:"bytes,1,opt,name=verified"`
 	xxx_hidden_Token           string                 `protobuf:"bytes,10,opt,name=token"`
-	xxx_hidden_DateExpires     *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired     *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_Link            string                 `protobuf:"bytes,12,opt,name=link"`
-	xxx_hidden_DateLinkExpires *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_link_expires,json=dateLinkExpires"`
+	xxx_hidden_DateLinkExpired *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_link_expired,json=dateLinkExpired"`
 	unknownFields              protoimpl.UnknownFields
 	sizeCache                  protoimpl.SizeCache
 }
@@ -1599,9 +1599,9 @@ func (x *VouchDelegateResponse) GetToken() string {
 	return ""
 }
 
-func (x *VouchDelegateResponse) GetDateExpires() *timestamppb.Timestamp {
+func (x *VouchDelegateResponse) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -1613,9 +1613,9 @@ func (x *VouchDelegateResponse) GetLink() string {
 	return ""
 }
 
-func (x *VouchDelegateResponse) GetDateLinkExpires() *timestamppb.Timestamp {
+func (x *VouchDelegateResponse) GetDateLinkExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateLinkExpires
+		return x.xxx_hidden_DateLinkExpired
 	}
 	return nil
 }
@@ -1628,16 +1628,16 @@ func (x *VouchDelegateResponse) SetToken(v string) {
 	x.xxx_hidden_Token = v
 }
 
-func (x *VouchDelegateResponse) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *VouchDelegateResponse) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *VouchDelegateResponse) SetLink(v string) {
 	x.xxx_hidden_Link = v
 }
 
-func (x *VouchDelegateResponse) SetDateLinkExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateLinkExpires = v
+func (x *VouchDelegateResponse) SetDateLinkExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateLinkExpired = v
 }
 
 func (x *VouchDelegateResponse) HasVerified() bool {
@@ -1647,30 +1647,30 @@ func (x *VouchDelegateResponse) HasVerified() bool {
 	return x.xxx_hidden_Verified != nil
 }
 
-func (x *VouchDelegateResponse) HasDateExpires() bool {
+func (x *VouchDelegateResponse) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
-func (x *VouchDelegateResponse) HasDateLinkExpires() bool {
+func (x *VouchDelegateResponse) HasDateLinkExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateLinkExpires != nil
+	return x.xxx_hidden_DateLinkExpired != nil
 }
 
 func (x *VouchDelegateResponse) ClearVerified() {
 	x.xxx_hidden_Verified = nil
 }
 
-func (x *VouchDelegateResponse) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *VouchDelegateResponse) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
-func (x *VouchDelegateResponse) ClearDateLinkExpires() {
-	x.xxx_hidden_DateLinkExpires = nil
+func (x *VouchDelegateResponse) ClearDateLinkExpired() {
+	x.xxx_hidden_DateLinkExpired = nil
 }
 
 type VouchDelegateResponse_builder struct {
@@ -1691,7 +1691,7 @@ type VouchDelegateResponse_builder struct {
 	// `keys.HeaderActing` for why that is what makes it bindable at all.
 	Token string
 	// When it stops working, which is always set when a token is.
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 	// The link, when [VouchAcceptRequest.at] asked for one, and the only time it
 	// is readable -- `link.proto` says what is stored. A browser carries it to
 	// the name it was minted for, once, within minutes (`vouch.LinkAtFor`).
@@ -1702,7 +1702,7 @@ type VouchDelegateResponse_builder struct {
 	// ask, the way `continuation` is absent for a finished sign-in.
 	Link string
 	// When the link stops working, set exactly when the link is.
-	DateLinkExpires *timestamppb.Timestamp
+	DateLinkExpired *timestamppb.Timestamp
 }
 
 func (b0 VouchDelegateResponse_builder) Build() *VouchDelegateResponse {
@@ -1711,16 +1711,16 @@ func (b0 VouchDelegateResponse_builder) Build() *VouchDelegateResponse {
 	_, _ = b, x
 	x.xxx_hidden_Verified = b.Verified
 	x.xxx_hidden_Token = b.Token
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_Link = b.Link
-	x.xxx_hidden_DateLinkExpires = b.DateLinkExpires
+	x.xxx_hidden_DateLinkExpired = b.DateLinkExpired
 	return m0
 }
 
 type VouchLinkRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Who         *VouchWho              `protobuf:"bytes,1,opt,name=who"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -1757,9 +1757,9 @@ func (x *VouchLinkRequest) GetWho() *VouchWho {
 	return nil
 }
 
-func (x *VouchLinkRequest) GetDateExpires() *timestamppb.Timestamp {
+func (x *VouchLinkRequest) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -1768,8 +1768,8 @@ func (x *VouchLinkRequest) SetWho(v *VouchWho) {
 	x.xxx_hidden_Who = v
 }
 
-func (x *VouchLinkRequest) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *VouchLinkRequest) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
 func (x *VouchLinkRequest) HasWho() bool {
@@ -1779,19 +1779,19 @@ func (x *VouchLinkRequest) HasWho() bool {
 	return x.xxx_hidden_Who != nil
 }
 
-func (x *VouchLinkRequest) HasDateExpires() bool {
+func (x *VouchLinkRequest) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
 func (x *VouchLinkRequest) ClearWho() {
 	x.xxx_hidden_Who = nil
 }
 
-func (x *VouchLinkRequest) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *VouchLinkRequest) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 type VouchLinkRequest_builder struct {
@@ -1804,7 +1804,7 @@ type VouchLinkRequest_builder struct {
 	// channel roster knows nothing about, and how long that channel takes is the
 	// caller's to know -- but how long a way into somebody's account may lie
 	// around is not.
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 }
 
 func (b0 VouchLinkRequest_builder) Build() *VouchLinkRequest {
@@ -1812,14 +1812,14 @@ func (b0 VouchLinkRequest_builder) Build() *VouchLinkRequest {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Who = b.Who
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	return m0
 }
 
 type VouchLinkResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Token       string                 `protobuf:"bytes,1,opt,name=token"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -1856,9 +1856,9 @@ func (x *VouchLinkResponse) GetToken() string {
 	return ""
 }
 
-func (x *VouchLinkResponse) GetDateExpires() *timestamppb.Timestamp {
+func (x *VouchLinkResponse) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -1867,19 +1867,19 @@ func (x *VouchLinkResponse) SetToken(v string) {
 	x.xxx_hidden_Token = v
 }
 
-func (x *VouchLinkResponse) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *VouchLinkResponse) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
-func (x *VouchLinkResponse) HasDateExpires() bool {
+func (x *VouchLinkResponse) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
-func (x *VouchLinkResponse) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *VouchLinkResponse) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 type VouchLinkResponse_builder struct {
@@ -1891,7 +1891,7 @@ type VouchLinkResponse_builder struct {
 	// method for why: the alternative is a form that answers *is this address
 	// here* to anybody who types into it.
 	Token       string
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 }
 
 func (b0 VouchLinkResponse_builder) Build() *VouchLinkResponse {
@@ -1899,7 +1899,7 @@ func (b0 VouchLinkResponse_builder) Build() *VouchLinkResponse {
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Token = b.Token
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	return m0
 }
 
@@ -1992,7 +1992,7 @@ type VouchLeaveLinkResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Token       string                 `protobuf:"bytes,1,opt,name=token"`
 	xxx_hidden_Address     string                 `protobuf:"bytes,2,opt,name=address"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -2036,9 +2036,9 @@ func (x *VouchLeaveLinkResponse) GetAddress() string {
 	return ""
 }
 
-func (x *VouchLeaveLinkResponse) GetDateExpires() *timestamppb.Timestamp {
+func (x *VouchLeaveLinkResponse) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -2051,19 +2051,19 @@ func (x *VouchLeaveLinkResponse) SetAddress(v string) {
 	x.xxx_hidden_Address = v
 }
 
-func (x *VouchLeaveLinkResponse) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *VouchLeaveLinkResponse) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
-func (x *VouchLeaveLinkResponse) HasDateExpires() bool {
+func (x *VouchLeaveLinkResponse) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
-func (x *VouchLeaveLinkResponse) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *VouchLeaveLinkResponse) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 type VouchLeaveLinkResponse_builder struct {
@@ -2074,7 +2074,7 @@ type VouchLeaveLinkResponse_builder struct {
 	// The address it is for, as roster holds it: what the front door mails, and
 	// not what it was asked.
 	Address     string
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 }
 
 func (b0 VouchLeaveLinkResponse_builder) Build() *VouchLeaveLinkResponse {
@@ -2083,7 +2083,7 @@ func (b0 VouchLeaveLinkResponse_builder) Build() *VouchLeaveLinkResponse {
 	_, _ = b, x
 	x.xxx_hidden_Token = b.Token
 	x.xxx_hidden_Address = b.Address
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	return m0
 }
 
@@ -2165,7 +2165,7 @@ type VouchRedeemRequest struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Token       string                 `protobuf:"bytes,1,opt,name=token"`
 	xxx_hidden_Methods     []string               `protobuf:"bytes,10,rep,name=methods"`
-	xxx_hidden_DateExpires *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expires,json=dateExpires"`
+	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -2209,9 +2209,9 @@ func (x *VouchRedeemRequest) GetMethods() []string {
 	return nil
 }
 
-func (x *VouchRedeemRequest) GetDateExpires() *timestamppb.Timestamp {
+func (x *VouchRedeemRequest) GetDateExpired() *timestamppb.Timestamp {
 	if x != nil {
-		return x.xxx_hidden_DateExpires
+		return x.xxx_hidden_DateExpired
 	}
 	return nil
 }
@@ -2224,19 +2224,19 @@ func (x *VouchRedeemRequest) SetMethods(v []string) {
 	x.xxx_hidden_Methods = v
 }
 
-func (x *VouchRedeemRequest) SetDateExpires(v *timestamppb.Timestamp) {
-	x.xxx_hidden_DateExpires = v
+func (x *VouchRedeemRequest) SetDateExpired(v *timestamppb.Timestamp) {
+	x.xxx_hidden_DateExpired = v
 }
 
-func (x *VouchRedeemRequest) HasDateExpires() bool {
+func (x *VouchRedeemRequest) HasDateExpired() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_DateExpires != nil
+	return x.xxx_hidden_DateExpired != nil
 }
 
-func (x *VouchRedeemRequest) ClearDateExpires() {
-	x.xxx_hidden_DateExpires = nil
+func (x *VouchRedeemRequest) ClearDateExpired() {
+	x.xxx_hidden_DateExpired = nil
 }
 
 type VouchRedeemRequest_builder struct {
@@ -2249,7 +2249,7 @@ type VouchRedeemRequest_builder struct {
 	// and no wider than the caller.
 	Methods []string
 	// When the delegation stops working. Unset takes the default.
-	DateExpires *timestamppb.Timestamp
+	DateExpired *timestamppb.Timestamp
 }
 
 func (b0 VouchRedeemRequest_builder) Build() *VouchRedeemRequest {
@@ -2258,7 +2258,7 @@ func (b0 VouchRedeemRequest_builder) Build() *VouchRedeemRequest {
 	_, _ = b, x
 	x.xxx_hidden_Token = b.Token
 	x.xxx_hidden_Methods = b.Methods
-	x.xxx_hidden_DateExpires = b.DateExpires
+	x.xxx_hidden_DateExpired = b.DateExpired
 	return m0
 }
 
@@ -2318,32 +2318,32 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x18\n" +
 	"\amethods\x18\n" +
 	" \x03(\tR\amethods\x12=\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"\xa7\x01\n" +
+	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\"\xa7\x01\n" +
 	"\x12VouchAcceptRequest\x12(\n" +
 	"\x05claim\x18\x01 \x01(\v2\x12.roster.VouchClaimR\x05claim\x12\x18\n" +
 	"\amethods\x18\x02 \x03(\tR\amethods\x12=\n" +
-	"\fdate_expires\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12\x0e\n" +
+	"\fdate_expired\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\x12\x0e\n" +
 	"\x02at\x18\x04 \x01(\tR\x02at\"\x81\x02\n" +
 	"\x15VouchDelegateResponse\x127\n" +
 	"\bverified\x18\x01 \x01(\v2\x1b.roster.VouchVerifyResponseR\bverified\x12\x14\n" +
 	"\x05token\x18\n" +
 	" \x01(\tR\x05token\x12=\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12\x12\n" +
+	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\x12\x12\n" +
 	"\x04link\x18\f \x01(\tR\x04link\x12F\n" +
-	"\x11date_link_expires\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateLinkExpires\"u\n" +
+	"\x11date_link_expired\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\x0fdateLinkExpired\"u\n" +
 	"\x10VouchLinkRequest\x12\"\n" +
 	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12=\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"h\n" +
+	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\"h\n" +
 	"\x11VouchLinkResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12=\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"U\n" +
+	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\"U\n" +
 	"\x15VouchLeaveLinkRequest\x12\"\n" +
 	"\x03who\x18\x01 \x01(\v2\x10.roster.VouchWhoR\x03who\x12\x18\n" +
 	"\aaddress\x18\x02 \x01(\tR\aaddress\"\x87\x01\n" +
 	"\x16VouchLeaveLinkResponse\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x18\n" +
 	"\aaddress\x18\x02 \x01(\tR\aaddress\x12=\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\"C\n" +
+	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\"C\n" +
 	"\x11VouchLeaveRequest\x12\x14\n" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x18\n" +
 	"\aconfirm\x18\x02 \x01(\tR\aconfirm\"\x83\x01\n" +
@@ -2351,7 +2351,7 @@ const file_app_vouch_proto_rawDesc = "" +
 	"\x05token\x18\x01 \x01(\tR\x05token\x12\x18\n" +
 	"\amethods\x18\n" +
 	" \x03(\tR\amethods\x12=\n" +
-	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires2\xb3\x04\n" +
+	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired2\xb3\x04\n" +
 	"\fVouchService\x12A\n" +
 	"\x06Verify\x12\x1a.roster.VouchVerifyRequest\x1a\x1b.roster.VouchVerifyResponse\x12G\n" +
 	"\bDelegate\x12\x1c.roster.VouchDelegateRequest\x1a\x1d.roster.VouchDelegateResponse\x12;\n" +
@@ -2393,18 +2393,18 @@ var file_app_vouch_proto_depIdxs = []int32{
 	4,  // 5: roster.VouchVerifyResponse.available:type_name -> roster.VouchFactor
 	5,  // 6: roster.VouchContinueResponse.verified:type_name -> roster.VouchVerifyResponse
 	0,  // 7: roster.VouchDelegateRequest.who:type_name -> roster.VouchWho
-	17, // 8: roster.VouchDelegateRequest.date_expires:type_name -> google.protobuf.Timestamp
+	17, // 8: roster.VouchDelegateRequest.date_expired:type_name -> google.protobuf.Timestamp
 	2,  // 9: roster.VouchAcceptRequest.claim:type_name -> roster.VouchClaim
-	17, // 10: roster.VouchAcceptRequest.date_expires:type_name -> google.protobuf.Timestamp
+	17, // 10: roster.VouchAcceptRequest.date_expired:type_name -> google.protobuf.Timestamp
 	5,  // 11: roster.VouchDelegateResponse.verified:type_name -> roster.VouchVerifyResponse
-	17, // 12: roster.VouchDelegateResponse.date_expires:type_name -> google.protobuf.Timestamp
-	17, // 13: roster.VouchDelegateResponse.date_link_expires:type_name -> google.protobuf.Timestamp
+	17, // 12: roster.VouchDelegateResponse.date_expired:type_name -> google.protobuf.Timestamp
+	17, // 13: roster.VouchDelegateResponse.date_link_expired:type_name -> google.protobuf.Timestamp
 	0,  // 14: roster.VouchLinkRequest.who:type_name -> roster.VouchWho
-	17, // 15: roster.VouchLinkRequest.date_expires:type_name -> google.protobuf.Timestamp
-	17, // 16: roster.VouchLinkResponse.date_expires:type_name -> google.protobuf.Timestamp
+	17, // 15: roster.VouchLinkRequest.date_expired:type_name -> google.protobuf.Timestamp
+	17, // 16: roster.VouchLinkResponse.date_expired:type_name -> google.protobuf.Timestamp
 	0,  // 17: roster.VouchLeaveLinkRequest.who:type_name -> roster.VouchWho
-	17, // 18: roster.VouchLeaveLinkResponse.date_expires:type_name -> google.protobuf.Timestamp
-	17, // 19: roster.VouchRedeemRequest.date_expires:type_name -> google.protobuf.Timestamp
+	17, // 18: roster.VouchLeaveLinkResponse.date_expired:type_name -> google.protobuf.Timestamp
+	17, // 19: roster.VouchRedeemRequest.date_expired:type_name -> google.protobuf.Timestamp
 	3,  // 20: roster.VouchService.Verify:input_type -> roster.VouchVerifyRequest
 	8,  // 21: roster.VouchService.Delegate:input_type -> roster.VouchDelegateRequest
 	11, // 22: roster.VouchService.Link:input_type -> roster.VouchLinkRequest

@@ -75,7 +75,7 @@ func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error
 	n, err := expire.Rows(ctx, db, cs, ContinuationExpired,
 		func(ctx context.Context, db *ent.Client) ([]expire.Row, error) {
 			vs, err := db.Continuation.Query().
-				Where(continuation.DateExpiresLT(now)).
+				Where(continuation.DateExpiredLT(now)).
 				WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldTenantId) }).
 				Limit(audit.RowsPage).
 				All(ctx)
@@ -104,7 +104,7 @@ func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error
 	m, err := expire.Rows(ctx, db, cs, LinkExpired,
 		func(ctx context.Context, db *ent.Client) ([]expire.Row, error) {
 			vs, err := db.Link.Query().
-				Where(link.DateExpiresLT(now)).
+				Where(link.DateExpiredLT(now)).
 				WithHolder(func(q *ent.HolderQuery) { q.Select(holder.FieldTenantId) }).
 				Limit(audit.RowsPage).
 				All(ctx)
