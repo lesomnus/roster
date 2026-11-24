@@ -204,6 +204,10 @@ type Server struct {
 	// undone at the admin port answers to the same grace as one undone here.
 	RestoreWithin time.Duration
 
+	// DelegationLife is `delegation.life`, for the same servers: how long a
+	// delegation somebody hands an app may live.
+	DelegationLife time.Duration
+
 	// People is the cookie a **roster user** carries, minted by `AuthService`
 	// on the data plane and resolved against its holders. Nil unless
 	// `sign_in.enabled`, which is what leaves that door shut by default.
@@ -681,7 +685,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// handed: a name taken is on the trail of whoever held it.
 	rules.Releasing = Releasing(client, content)
 
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild(), core.NotErasedBuild())
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin), core.WithDelegationLife(c.Delegation.Life)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild(), core.NotErasedBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -696,7 +700,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// what this app means -- an identity linked by `init` or by an admin console
 	// is still an identity, and a subject that is an email address is still
 	// wrong.
-	ungated, err := app.Build(sink.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin)), pd.AuditBuild())
+	ungated, err := app.Build(sink.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin), core.WithDelegationLife(c.Delegation.Life)), pd.AuditBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -705,7 +709,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	s := &Server{
 		PolicyFile: policyFile, policySources: policySources,
 		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, broker: c.Watch.Broker, Queue: queue, sink: sink, narrow: narrow,
-		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password,
+		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password, DelegationLife: c.Delegation.Life,
 		RestoreWithin: c.Tenant.RestoreWithin,
 		recheck:       c.Stream.Recheck,
 		owners:        owners,

@@ -339,6 +339,13 @@ func TestWhatIsSomebodysOwnReachesNobodyElse(t *testing.T) {
 			}
 			refused(x, err)
 		},
+		app.DelegationService_Issue_FullMethodName: func(x *require.Assertions) {
+			// A delegation of the victim's, handed to an app that is the caller.
+			_, err := dels.Issue(as, app.DelegationIssueRequest_builder{
+				Holder: theirs, App: app.HolderRef_builder{Id: mallory.Bytes()}.Build(), Methods: []string{app.MeService_Get_FullMethodName},
+			}.Build())
+			refused(x, err)
+		},
 	}
 
 	for _, m := range core.Owning {

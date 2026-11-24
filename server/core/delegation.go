@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"crypto/subtle"
+	"time"
 
 	"github.com/lesomnus/payday/pdid"
 
@@ -292,4 +293,165 @@ func (s coreDelegation) Exchange(ctx context.Context, req *app.DelegationExchang
 		Token:       token,
 		DateExpired: v.GetDateExpired(),
 	}.Build(), nil
+}
+
+// Issue is somebody handing an app a delegation of their own, answered once:
+// the app presents its own key and this beside it in `roster-as`, and is
+// answered as the person within `methods` (`delegation_svc.ext.proto`).
+//
+// # The rules, each where a rule of its kind already is
+//
+//   - **Whose** is the rule every write of a way in meets
+//     ([Core.mayWriteAWayIn]): a delegation is a way into the account it is
+//     of, as a key is. One's own passes it; the person is read through the
+//     wall, so somebody who cannot see them cannot name them.
+//   - **The app** is read past the wall, of the person's tenant and of no
+//     other ([Rules.Resident]), as a key's app is: a person reads no holder
+//     but themselves, and the app is somebody of their tenant all the same.
+//     One of another tenant, erased, or nobody is `NotFound`, told apart by
+//     nothing. The person themselves is refused: a delegation issued to whom
+//     it is of is a credential for nobody else, and the trail would name one
+//     party twice.
+//   - **The methods** are asked of the gate, as if the person were calling
+//     each ([Rules.Calls]): what a call through it is answered with is them,
+//     so it narrows what they may call and adds nothing. A method they may
+//     call nowhere is refused, naming it -- an app's among them, which is
+//     nothing roster serves.
+//   - **How long** is `delegation.life` from now at most, a day unless the
+//     deployment says; none is that bound, and later is refused saying it,
+//     rather than shortened without a word.
+//
+// It is not held to the frame's grant, which `Exchange` is: the token is
+// issued to an app and not to the caller's own credential, and what it
+// carries is the person's, as a key `ApiKey.Issue` mints for somebody is
+// held to what they hold and not to the key that asked. So the account app,
+// acting through the delegation a person signed in with, mints one for them.
+func (s coreDelegation) Issue(ctx context.Context, req *app.DelegationIssueRequest) (*app.DelegationIssueResponse, error) {
+	if req.GetHolder() == nil {
+		return nil, status.Error(codes.InvalidArgument, "holder: whose delegation this is")
+	}
+	if req.GetApp() == nil {
+		return nil, status.Error(codes.InvalidArgument, "app: which app in this tenant the delegation is issued to")
+	}
+	if len(req.GetMethods()) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "methods: a delegation that allows nothing opens no door")
+	}
+	if err := keys.Listed("methods", req.GetMethods()); err != nil {
+		return nil, err
+	}
+
+	life := s.delegationLife
+	if life <= 0 {
+		life = DelegationLife
+	}
+	now := time.Now()
+	until := now.Add(life)
+	if v := req.GetDateExpired(); v != nil {
+		switch at := v.AsTime(); {
+		case !at.After(now):
+			return nil, status.Error(codes.InvalidArgument, "date_expired: a delegation cannot have already expired")
+		case at.After(until):
+			return nil, status.Errorf(codes.InvalidArgument,
+				"date_expired: a delegation handed to an app lives at most %s here (delegation.life), so it ends by %s at the latest; ask for that, or leave date_expired out",
+				life, until.UTC().Format(time.RFC3339))
+		default:
+			until = at
+		}
+	}
+
+	who, err := s.holderOf(ctx, req.GetHolder())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayWriteAWayIn(ctx, "holder", app.HolderRef_builder{Id: who.Bytes()}.Build()); err != nil {
+		return nil, err
+	}
+	tenant, err := s.tenantOfHolder(ctx, app.HolderRef_builder{Id: who.Bytes()}.Build())
+	if err != nil {
+		return nil, err
+	}
+
+	to, err := s.issuedTo(ctx, tenant, req.GetApp())
+	if err != nil {
+		return nil, err
+	}
+	if to == who {
+		return nil, pderr.Invalidf("app",
+			"the app is the person the delegation is of; name the app that is to act for them")
+	}
+
+	// A call made through a delegation is a front door acting for the person
+	// (`cmd.Resolver` puts the delegation on the frame), and what it may hand
+	// on is a delegation for another app: one for itself would be its own
+	// delegation renewed for a day, out of reach of what ends the first.
+	if f, ok := frame.From(ctx); ok {
+		if d, ok := f.Row.(*app.Delegation); ok && len(d.GetIssuedTo()) > 0 && subtle.ConstantTimeCompare(d.GetIssuedTo(), to.Bytes()) == 1 {
+			return nil, pderr.Invalidf("app", "the app this call came through is not handed a delegation by it")
+		}
+	}
+
+	if s.rules.Calls == nil {
+		return nil, status.Error(codes.PermissionDenied,
+			"methods: this server cannot say what anybody may call, so it will not hand an app a delegation")
+	}
+	for _, m := range req.GetMethods() {
+		err := s.rules.Calls(ctx, who, tenant, m)
+		if status.Code(err) == codes.PermissionDenied {
+			// In this rule's words and not the gate's, which are about a call
+			// that was made: nothing here was called.
+			return nil, status.Errorf(codes.PermissionDenied,
+				"methods: whoever this delegation is of may not call %s at roster, so it may not carry it", quote.Sent(m))
+		}
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// One somebody hands an app of their own carries the sign-in they handed
+	// it over with, as a key they mint does; one minted for somebody else
+	// carries none, because that person proved nothing
+	// (`Delegation.date_authenticated`).
+	var at time.Time
+	if f, ok := frame.From(ctx); ok && f.Actor == who {
+		if at, err = keys.Authenticated(ctx, s.Next(), who); err != nil {
+			return nil, err
+		}
+	}
+
+	token, v, err := keys.Delegate(ctx, s.Next(), keys.Delegated{
+		Holder:        who,
+		Issuer:        to.Bytes(),
+		Methods:       req.GetMethods(),
+		Expires:       until,
+		Authenticated: at,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// The hash never leaves, even here, for `ApiKey.Issue`'s reason: the
+	// layer that clears `secret` clears a top-level answer and not one
+	// nested in this response.
+	v.SetSecret(nil)
+
+	return app.DelegationIssueResponse_builder{Token: token, Delegation: v}.Build(), nil
+}
+
+// issuedTo is the app a delegation is issued to: a live holder of `tenant`,
+// read past the wall where the stack can ([Rules.Resident]), and as the
+// caller reads one where it cannot.
+func (s coreDelegation) issuedTo(ctx context.Context, tenant pdid.Id, ref *app.HolderRef) (pdid.Id, error) {
+	if _, framed := frame.From(ctx); framed && s.rules.Resident != nil {
+		return s.rules.Resident(ctx, tenant, ref)
+	}
+
+	whose, err := s.tenantOfHolder(ctx, ref)
+	if err != nil {
+		return pdid.Nil, err
+	}
+	if err := tenantsAgree("app", tenant, whose); err != nil {
+		return pdid.Nil, err
+	}
+
+	return s.holderOf(ctx, ref)
 }

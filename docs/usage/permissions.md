@@ -719,7 +719,7 @@ methods   /roster.HolderService/Get  /roster.HolderService/Update  /roster.Holde
           /roster.IdentityService/Attest  /roster.IdentityService/Erase
           /roster.CredentialService/Set  /roster.CredentialService/Enrol  /roster.CredentialService/Erase
           /roster.ApiKeyService/List /roster.ApiKeyService/Issue   /roster.ApiKeyService/Erase
-          /roster.DelegationService/List  /roster.DelegationService/Erase
+          /roster.DelegationService/List  /roster.DelegationService/Erase  /roster.DelegationService/Issue
 ```
 
 It is the entity's own verb each time, with the person's own reference:

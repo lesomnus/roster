@@ -69,6 +69,8 @@ type handedOver struct {
 // (`escalate.go`, `mayWriteAWayIn` and `mayReach`).
 var aPersonsVerbs = []string{
 	app.ApiKeyService_Issue_FullMethodName,
+	// A delegation handed to an app acts as whoever it is of.
+	app.DelegationService_Issue_FullMethodName,
 	app.CredentialService_Issue_FullMethodName,
 	app.CredentialService_Enrol_FullMethodName,
 	app.CredentialService_Unlock_FullMethodName,

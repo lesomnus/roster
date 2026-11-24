@@ -47,6 +47,11 @@ type Delegated struct {
 	// otherwise quietly live for the default.
 	For time.Duration
 
+	// Expires is when it stops working, for a caller that decided it and
+	// held it to a bound of its own (`Delegation.Issue`). Zero takes [For];
+	// one that is not after now is refused, as a negative [For] is.
+	Expires time.Time
+
 	// When the person proved who they are, by the sign-in this is minted for:
 	// now for a secret just checked, the provider's word for one it checked,
 	// and the zero time for a sign-in that cannot say. A time after now is
@@ -93,6 +98,13 @@ func Delegate(ctx context.Context, s app.Server, req Delegated) (string, *app.De
 	case d == 0:
 		d = DelegateFor
 	}
+	expires := time.Now().Add(d)
+	if !req.Expires.IsZero() {
+		if !req.Expires.After(time.Now()) {
+			return "", nil, status.Error(codes.InvalidArgument, "date_expired: a delegation cannot have already expired")
+		}
+		expires = req.Expires
+	}
 
 	token, sum, err := Mint(PrefixDelegation)
 	if err != nil {
@@ -104,7 +116,7 @@ func Delegate(ctx context.Context, s app.Server, req Delegated) (string, *app.De
 		Secret:      sum,
 		IssuedTo:    req.Issuer,
 		Methods:     req.Methods,
-		DateExpired: timestamppb.New(time.Now().Add(d)),
+		DateExpired: timestamppb.New(expires),
 	}
 	if at := req.Authenticated; !at.IsZero() {
 		if now := time.Now(); at.After(now) {

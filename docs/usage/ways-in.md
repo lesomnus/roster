@@ -24,7 +24,7 @@ them*, and what an app does with the answer is the app's.
 | a **password** | an argon2id verifier on a `Credential` row | a person, to your front door | `VouchService.Verify`, here |
 | **`rk_`** deployment key | a control-plane row; presents **as itself**, or -- naming a tenant with `roster-at` -- as the holder that tenant nominated for it | an app you run across tenants | the auth interceptor, every request |
 | **`rt_`** tenant key | a data-plane row; **resolves to its holder**, and is for roster or for one app | a customer's script, or their app | the same interceptor, for one of roster's; `Introspect`, by the app it is for and nobody else, for an app's |
-| **`rd_`** delegation | short-lived, bound to the key that asked for it | an app, *beside* its own key | the same interceptor |
+| **`rd_`** delegation | short-lived, bound to the key it was issued to: minutes at a sign-in, a day at most when somebody hands one to an app | an app, *beside* its own key | the same interceptor |
 | an **identity** | `(tenant, provider, subject)` — an account somewhere else | nobody; it is a fact, not a secret | whoever verified the provider |
 | a **second factor** | TOTP seed, or a WebAuthn credential | a person, after the first factor | `VouchService.Verify` |
 
@@ -434,7 +434,9 @@ its own reach.
 It is minted by `VouchService.Delegate` (a password checked, and a credential
 back in one call), `Accept` (a front door that verified an SSO token vouches for
 who it saw), or `Redeem` (a magic link). It lives for minutes, is single-use in
-the ways that matter, and is **bound to the key that asked for it**.
+the ways that matter, and is **bound to the key that asked for it**. Or the
+person hands one to an app themselves, which lives longer (§ *One somebody
+hands an app*).
 
 It rides beside that key rather than instead of it:
 
@@ -450,6 +452,47 @@ caller without resolving to a row and there is nothing to compare.
 An app asks for one at the moment it needs it, and a shell can too:
 `roster vouch delegate` prints one for scripting the same flow, bound to the
 key in `client.auth` exactly as an app's would be.
+
+### One somebody hands an app
+
+An app's page that writes for a person -- puts somebody into the app's group
+because its administrator pressed the button -- writes as that person, through a
+delegation they handed it at roster:
+
+```
+DelegationService/Issue { holder: erin, app: @contoso/foo, methods: [...] }
+  → rd_…, once, and the row
+```
+
+Foo then presents its own key and the token beside it, as above, and is answered
+**as erin**: within the methods, held to what erin holds, and the trail names
+her. Another app presenting the token is refused, and so is the token alone;
+`Introspect` answers it to Foo and nobody else.
+
+- **It is the person's own act.** Everybody of a tenant may hand an app a
+  delegation of their own, since the tenant's `self-service` role names
+  `DelegationService/Issue`; a tenant that does not want it takes it out as it
+  takes any of them out. One for somebody else is held to the rule every way in
+  is: nobody writes a way into an account wider than their own.
+- **It adds nothing.** Each method is one of roster's that the person may call
+  at all -- through a binding, a team, a group, over what is their own, or asked
+  of nobody -- and one they may call nowhere is refused, naming it.
+- **It is issued to an app of the person's own tenant**, live, and not to the
+  person themselves.
+- **It lives a day at most**, `delegation.life` from now unless the deployment
+  says otherwise; none is that bound, and a later end is refused saying it
+  ([../operating.md](../operating.md) § *Stopping somebody*).
+- **What ends it** is what ends every delegation of theirs: its end; the app
+  ending it, with the token (`DelegationService/Revoke`, the app's: it ends what
+  the caller was issued); the person ending it by reference
+  (`DelegationService/Erase`, which `self-service` names); signing out
+  everywhere, a suspension, an erasure. Each stops it at the next call.
+
+`Exchange` still refuses a caller acting through a delegation; `Issue` does not,
+since a person's road to it from a browser is the account app acting for them.
+But the app such a call came through is not handed one by it: a front door
+approves for another app, never for itself (`InvalidArgument`, `app: the app
+this call came through is not handed a delegation by it`).
 
 ### What a key means, to the app that was handed one
 

@@ -217,6 +217,26 @@ type Config struct {
 	// payday has a `Tenant` and no opinion about a customer leaving. See
 	// `server/forget`, and `docs/operating.md` § "A tenant leaving".
 	Tenant TenantLeaveConfig `yaml:"tenant"`
+
+	// Delegation is how long a delegation somebody hands an app may live
+	// (`DelegationService/Issue`). See [DelegationConfig].
+	Delegation DelegationConfig `yaml:"delegation"`
+}
+
+// DelegationConfig bounds the delegations people hand apps.
+//
+// An app writes for a person through a delegation that person approved: it
+// presents its own key and the delegation beside it, and is answered as the
+// person (`server/keys`, `acting.go`). What a front door is handed at a
+// sign-in lives minutes; this one is approved once and lives for as long as
+// the app is to act for them, so it is the deployment's to bound. Signing
+// out everywhere, a suspension, an erasure and the person ending it stop it
+// sooner, at the next call.
+type DelegationConfig struct {
+	// Life is how long a delegation somebody hands an app may live: no
+	// `date_expired` later than this from now is taken, and none is this.
+	// Empty is [core.DelegationLife], a day.
+	Life time.Duration `yaml:"life"`
 }
 
 // TenantLeaveConfig is a closed tenant's grace, and its alias's after it is

@@ -44,9 +44,10 @@ writing a role whose methods end in `*`.
 
 ### A person's verb, across the tenant
 
-`ApiKeyService/Issue`, `CredentialService/Issue`, `/Enrol`, `/Unlock`,
-`IdentityService/Add`, `/Resubject`, `EmailService/Add`, `PhoneService/Add` --
-each writes a way into an account, and each takes a *whose*.
+`ApiKeyService/Issue`, `DelegationService/Issue`, `CredentialService/Issue`,
+`/Enrol`, `/Unlock`, `IdentityService/Add`, `/Resubject`, `EmailService/Add`,
+`PhoneService/Add` -- each writes a way into an account, and each takes a
+*whose*.
 
 **Reads as** *may manage their keys*. **Is** *may write a way into anybody who
 holds no more than they do* -- which, bound to two people, is each other.

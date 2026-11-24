@@ -999,6 +999,19 @@ func Rules(db *ent.Client, sources ...rbac.Source) core.Rules {
 		Unsited:      Unsited(db),
 		TenantOf:     TenantOf(db),
 		Resident:     Resident(db),
+		Calls:        Calls(db, sources...),
+	}
+}
+
+// Calls is whether somebody may call a method at roster at all, for
+// [core.Calls]: the gate's own [policy.May], asked of them as if they were
+// calling it, so that what a delegation of theirs may name is what the gate
+// would let them call, and not a second reading of their bindings.
+func Calls(db *ent.Client, sources ...rbac.Source) core.Calls {
+	p := policy{db: db, sources: sources}
+
+	return func(ctx context.Context, who, tenant pdid.Id, method string) error {
+		return p.May(ctx, gate.Call{Actor: who, Tenant: tenant, Action: method})
 	}
 }
 

@@ -2,6 +2,7 @@ edition = "2023";
 
 package roster;
 
+import "app/delegation.proto";
 import "google/protobuf/timestamp.proto";
 import "roster/payday/holder_svc.g.proto";
 
@@ -38,7 +39,8 @@ service DelegationService {
   // which is `Erase`'s rule (*erasing what is not there succeeds*) and what
   // keeps the answer from telling whoever holds a found string whether it is
   // real, whose it is, or still alive. What a caller may rely on is that a
-  // delegation **it** was issued is gone afterwards.
+  // delegation **it** was issued is gone afterwards. A person ends one they
+  // handed an app (`Issue`) by reference, with `Erase`.
   rpc Revoke(DelegationRevokeRequest) returns (DelegationRevokeResponse);
 
   // Exchange is a short-lived token naming the caller, for one other app in the
@@ -71,6 +73,45 @@ service DelegationService {
   // a call across tenants is not something this can say, and a token for
   // yourself proves nothing to anybody.
   rpc Exchange(DelegationExchangeRequest) returns (DelegationExchangeResponse);
+
+  // Issue is somebody handing an app a delegation of their own, and answers
+  // the token once -- the verb `ApiKeyService/Issue` and
+  // `CredentialService/Issue` are for their rows.
+  //
+  // # What it is for
+  //
+  // An app writes for a person through a delegation that person approved at
+  // roster: it presents its own key in `authorization` and this token in
+  // `roster-as`, and is answered **as the person**, within `methods`. So an
+  // app's page that puts somebody into the app's group because its
+  // administrator pressed the button is answered as that administrator, held
+  // to what they hold, and the trail names them. What an app does for itself
+  // it still does as itself.
+  //
+  // # The rules
+  //
+  // - **Whose**: one's own, and for anybody else the rule every write of a
+  //   way in meets -- nobody writes a way into an account wider than their
+  //   own. It is the person's own act, so the tenant's `self-service` role
+  //   names it.
+  // - **The app**: a holder of the same tenant, not erased, and not the
+  //   person themselves. It is what the token is issued to (`issued_to`), so
+  //   only that app's key presents it, and `TokenService/Introspect` answers
+  //   it to that app alone.
+  // - **The methods**: roster's, each one the person may call at all. The
+  //   delegation narrows what they hold and adds nothing, since a call through
+  //   it is answered as them; a method they hold nowhere is refused, naming
+  //   it.
+  // - **How long**: no later than `delegation.life` from now, a day unless the
+  //   deployment says; none is that bound, and later is refused, saying it.
+  //
+  // It may be called through a delegation, as `ApiKeyService/Issue` is: that
+  // is the road a person has to it from a browser; the app such a call came
+  // through is not handed one by it. Its end, the app ending it (`Revoke`,
+  // with the token), the person ending it (`Erase`, by reference), signing
+  // out everywhere, a suspension and an erasure end it, as they end every
+  // delegation of theirs.
+  rpc Issue(DelegationIssueRequest) returns (DelegationIssueResponse);
 }
 
 message DelegationRevokeRequest {
@@ -97,6 +138,35 @@ message DelegationExchangeRequest {
   // `roster-as`, and roster answers that as the caller within these methods,
   // whatever they name. A key attenuated to a few methods hands on no more.
   repeated string methods = 2;
+}
+
+message DelegationIssueRequest {
+  // Whose it is: one's own, or somebody whose account the caller may write a
+  // way into. None is refused.
+  HolderRef holder = 1;
+
+  // The app it is issued to, as the holder that app is answered as in the
+  // tenant of whose it is: the one whose own key presents it. Required.
+  HolderRef app = 2;
+
+  // What it may call: roster's methods, each one the person may call at all.
+  // Required, for `Exchange`'s reason: a delegation that allows nothing opens
+  // no door.
+  repeated string methods = 3;
+
+  // When it stops working: no later than `delegation.life` from now. Unset is
+  // that bound.
+  google.protobuf.Timestamp date_expired = 4;
+}
+
+message DelegationIssueResponse {
+  // The token, and the only time it is ever readable. What is stored is a
+  // hash.
+  string token = 1 [features.field_presence = IMPLICIT];
+
+  // The row, so a page can list it beside the others without asking again.
+  // Its `secret` is cleared like any other answer.
+  Delegation delegation = 2;
 }
 
 message DelegationExchangeResponse {
