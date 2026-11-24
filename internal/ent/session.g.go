@@ -21,6 +21,9 @@ func (e *Session) Proto() *rstr.Session {
 	}
 	x.SetGrant(e.Grant)
 	x.SetSecret(e.Secret)
+	if e.DateAuthenticated != nil {
+		x.SetDateAuthenticated(timestamppb.New(*e.DateAuthenticated))
+	}
 	if e.DateExpired != nil {
 		x.SetDateExpired(timestamppb.New(*e.DateExpired))
 	}

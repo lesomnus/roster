@@ -82,6 +82,10 @@ var _ authsession.Store = (*Store)(nil)
 
 // Put writes a session, or moves the one clock that moves.
 //
+// What it keeps is what payday says a store keeps: who, the grant, both
+// clocks, and when its person signed in (`DateAuthenticated`), which is
+// written with the row and never by the update.
+//
 // `authsession` calls this twice for two different reasons: once when a cookie
 // is minted, and again -- rarely -- when the idle clock has passed its halfway
 // point. So a row that is already there is updated rather than refused, and the
@@ -168,6 +172,11 @@ func (s *Store) Put(ctx context.Context, v authsession.Session) error {
 			SetGrant(grant).
 			SetDateUpdated(time.Now()).
 			SetDateCreated(time.Now())
+		if !v.DateAuthenticated.IsZero() {
+			// When its person proved who they are, as the sign-in said it, and
+			// never moved after: the update above writes the idle clock alone.
+			c = c.SetDateAuthenticated(v.DateAuthenticated)
+		}
 		if !v.Expires.IsZero() {
 			c = c.SetDateExpired(v.Expires)
 		}
@@ -287,6 +296,9 @@ func (s *Store) Get(ctx context.Context, key string) (authsession.Session, error
 		Id:       pdid.Id(h.Id).String(),
 		TenantId: tenantOf(h),
 		Grant:    decode(v.Grant),
+	}
+	if v.DateAuthenticated != nil {
+		out.DateAuthenticated = *v.DateAuthenticated
 	}
 	if v.DateExpired != nil {
 		out.Expires = *v.DateExpired

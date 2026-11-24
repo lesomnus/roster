@@ -23,6 +23,8 @@ type Session struct {
 	Grant []byte `json:"grant,omitempty"`
 	// Secret holds the value of the "secret" field.
 	Secret []byte `json:"secret,omitempty"`
+	// DateAuthenticated holds the value of the "date_authenticated" field.
+	DateAuthenticated *time.Time `json:"date_authenticated,omitempty"`
 	// DateExpired holds the value of the "date_expired" field.
 	DateExpired *time.Time `json:"date_expired,omitempty"`
 	// DateIdle holds the value of the "date_idle" field.
@@ -68,7 +70,7 @@ func (*Session) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case session.FieldGrant, session.FieldSecret:
 			values[i] = new([]byte)
-		case session.FieldDateExpired, session.FieldDateIdle, session.FieldDateUpdated, session.FieldDateErased, session.FieldDateCreated:
+		case session.FieldDateAuthenticated, session.FieldDateExpired, session.FieldDateIdle, session.FieldDateUpdated, session.FieldDateErased, session.FieldDateCreated:
 			values[i] = new(sql.NullTime)
 		case session.FieldId, session.FieldHolderId:
 			values[i] = new(uuid.UUID)
@@ -110,6 +112,13 @@ func (_m *Session) assignValues(columns []string, values []any) error {
 				if _m.Secret == nil {
 					_m.Secret = []byte{}
 				}
+			}
+		case session.FieldDateAuthenticated:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field date_authenticated", values[i])
+			} else if value.Valid {
+				_m.DateAuthenticated = new(time.Time)
+				*_m.DateAuthenticated = value.Time
 			}
 		case session.FieldDateExpired:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -196,6 +205,11 @@ func (_m *Session) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("secret=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Secret))
+	builder.WriteString(", ")
+	if v := _m.DateAuthenticated; v != nil {
+		builder.WriteString("date_authenticated=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
 	builder.WriteString(", ")
 	if v := _m.DateExpired; v != nil {
 		builder.WriteString("date_expired=")

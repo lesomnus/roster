@@ -31,6 +31,7 @@ message SessionSelect {
   HolderSelect holder = 2;
   bool grant = 8;
   bool secret = 9;
+  bool date_authenticated = 10;
   bool date_expired = 11;
   bool date_idle = 12;
   bool date_updated = 13;

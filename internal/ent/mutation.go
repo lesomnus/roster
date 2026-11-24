@@ -8303,6 +8303,23 @@ func (m *SessionMutation) OldSecret(ctx context.Context) (v []byte, err error) {
 	return oldValue.Secret, nil
 }
 
+// OldDateAuthenticated returns the old "date_authenticated" field's value of the Session entity.
+// If the Session object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SessionMutation) OldDateAuthenticated(ctx context.Context) (v *time.Time, err error) {
+	if !m.Op().Is(OpUpdateOne) {
+		return v, errors.New("OldDateAuthenticated is only allowed on UpdateOne operations")
+	}
+	if _, exists := m.Id(); !exists || m.oldValue == nil {
+		return v, errors.New("OldDateAuthenticated requires an Id field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDateAuthenticated: %w", err)
+	}
+	return oldValue.DateAuthenticated, nil
+}
+
 // OldDateExpired returns the old "date_expired" field's value of the Session entity.
 // If the Session object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
@@ -8414,6 +8431,8 @@ func (m *SessionMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldGrant(ctx)
 	case session.FieldSecret:
 		return m.OldSecret(ctx)
+	case session.FieldDateAuthenticated:
+		return m.OldDateAuthenticated(ctx)
 	case session.FieldDateExpired:
 		return m.OldDateExpired(ctx)
 	case session.FieldDateIdle:
