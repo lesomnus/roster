@@ -636,6 +636,12 @@ func (s coreRole) Add(ctx context.Context, req *app.RoleAddRequest) (*app.Role, 
 		return nil, err
 	}
 
+	// And one of roster's names what roster serves ([Serves]): one naming
+	// another app's methods grants nothing anywhere.
+	if err := s.namesRosters(by, req.GetMethods()); err != nil {
+		return nil, err
+	}
+
 	// A role nobody may bind is a delayed version of binding it, so writing one
 	// is held to the same rule as granting one. See `escalate.go`.
 	//
@@ -695,6 +701,11 @@ func (s coreRole) Patch(ctx context.Context, req *app.RolePatchRequest) (*app.Ro
 	// the request would be asking the caller which rules to hold them to.
 	where, of, err := s.siteOfRole(ctx, req.GetRef())
 	if err != nil {
+		return nil, err
+	}
+	// `Role.Widen` is this, and is held to it here: one of roster's names
+	// what roster serves ([Serves]).
+	if err := s.namesRosters(of, req.GetMethods()); err != nil {
 		return nil, err
 	}
 	if err := s.mayGrant(ctx, "methods", req.GetMethods(), where, of); err != nil {

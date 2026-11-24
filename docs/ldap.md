@@ -440,10 +440,12 @@ group nothing is bound to can be joined by anybody who may call
 `GroupMembership.Add`, and a team membership with no role grants nothing roster
 can see.
 
-So: **map a client's permission to a group, and bind that group to a role naming
-the permission** -- `/ext.jenkins.Admin/*`, a method no RPC answers to -- so that
-joining it is held to the rule ([usage/permissions.md](usage/permissions.md) §
-*Membership is not a permission, outside roster either*). Teams are published here,
+So: **map a client's permission to a group, and give the group managers**, so
+that whoever may put somebody in it is somebody chosen
+([usage/permissions.md](usage/permissions.md) § *Membership is not a permission,
+outside roster either*). A role naming the permission is no guard on the group
+for now: a role of roster's names only what roster serves, and an app's role is
+bound to no group until a group says whose it is. Teams are published here,
 `memberOf` included, because a directory is also an address book and an
 organisation chart; they carry no binding, so nothing maps a permission to one
 safely. That is a decision about what this tree shows, taken knowing it, and

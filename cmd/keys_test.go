@@ -418,7 +418,7 @@ func TestASuspendedHolderReachesNothing(t *testing.T) {
 	ctx := t.Context()
 
 	who := addHolder(t, ctx, b.Server, b.Contoso, "suspended")
-	permits(t, ctx, b, b.Contoso, who, "staff", "/loft.*/*")
+	permits(t, ctx, b, b.Contoso, who, "staff", "/roster.HolderService/*")
 
 	reach := func() []string {
 		v, err := b.Server.Ungated.Holder().Reaches(ctx, app.HolderReachesRequest_builder{
@@ -428,7 +428,7 @@ func TestASuspendedHolderReachesNothing(t *testing.T) {
 
 		return v.GetMethods()
 	}
-	x.Equal([]string{"/loft.*/*"}, reach())
+	x.Equal([]string{"/roster.HolderService/*"}, reach())
 
 	h, err := b.Server.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
 		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
@@ -478,12 +478,12 @@ func TestWhatSomebodyHoldsEverywhereIsSaidApart(t *testing.T) {
 	at := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()
 
 	who := addHolder(t, ctx, b.Server, b.Contoso, "erin")
-	permits(t, ctx, b, b.Contoso, who, "reader", "/loft.AssetService/Get")
+	permits(t, ctx, b, b.Contoso, who, "reader", "/roster.HolderService/Get")
 
 	seoul, err := b.Server.Ungated.Site().Add(ctx, app.SiteAddRequest_builder{Tenant: at, Alias: "seoul"}.Build())
 	x.NoError(err)
 	writer, err := b.Server.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant: at, Alias: "writer", Methods: []string{"/loft.AssetService/Erase"},
+		Tenant: at, Alias: "writer", Methods: []string{"/roster.HolderService/Erase"},
 	}.Build())
 	x.NoError(err)
 	_, err = b.Server.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
@@ -497,6 +497,6 @@ func TestWhatSomebodyHoldsEverywhereIsSaidApart(t *testing.T) {
 		Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
-	x.ElementsMatch([]string{"/loft.AssetService/Get", "/loft.AssetService/Erase"}, v.GetMethods())
-	x.Equal([]string{"/loft.AssetService/Get"}, v.GetEverywhere(), "a grant bound at one site was said to hold everywhere")
+	x.ElementsMatch([]string{"/roster.HolderService/Get", "/roster.HolderService/Erase"}, v.GetMethods())
+	x.Equal([]string{"/roster.HolderService/Get"}, v.GetEverywhere(), "a grant bound at one site was said to hold everywhere")
 }

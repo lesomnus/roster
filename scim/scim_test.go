@@ -979,7 +979,7 @@ func TestADirectoryDeletesAGroupAsFarAsItsRoleGoes(t *testing.T) {
 	x.NoError(err)
 	at := rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build()
 	reads, err := d.s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
-		Tenant: at, Alias: "auditor", Methods: []string{rstr.AccessService_List_FullMethodName},
+		Tenant: at, Alias: "auditor", Methods: []string{rstr.AuditService_List_FullMethodName},
 	}.Build())
 	x.NoError(err)
 	_, err = d.s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
@@ -998,13 +998,13 @@ func TestADirectoryDeletesAGroupAsFarAsItsRoleGoes(t *testing.T) {
 
 		return v.GetMethods()
 	}
-	x.Contains(holds(), rstr.AccessService_List_FullMethodName)
+	x.Contains(holds(), rstr.AuditService_List_FullMethodName)
 
 	code, got = d.group(t, http.MethodDelete, "/"+id, nil)
 	x.Equal(http.StatusNoContent, code, "%v", got)
 	code, _ = d.group(t, http.MethodGet, "/"+id, nil)
 	x.Equal(http.StatusNotFound, code)
-	x.NotContains(holds(), rstr.AccessService_List_FullMethodName, "what the group handed out went with it")
+	x.NotContains(holds(), rstr.AuditService_List_FullMethodName, "what the group handed out went with it")
 }
 
 // TestADirectoryChangesTheGroupsItMadeAndNoOther: the directory's key holds
@@ -1061,7 +1061,7 @@ func TestADirectoryChangesTheGroupsItMadeAndNoOther(t *testing.T) {
 		}.Build())
 		x.NoError(err)
 		reads, err := d.s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
-			Tenant: at, Alias: "payroll-reader", Methods: []string{rstr.AccessService_List_FullMethodName},
+			Tenant: at, Alias: "payroll-reader", Methods: []string{rstr.AuditService_List_FullMethodName},
 		}.Build())
 		x.NoError(err)
 		_, err = d.s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{

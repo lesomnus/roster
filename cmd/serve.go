@@ -25,6 +25,7 @@ import (
 	"github.com/lesomnus/payday/auth"
 	"github.com/lesomnus/payday/auth/authsession"
 	"github.com/lesomnus/payday/config"
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/gate"
 	"github.com/lesomnus/payday/grpcx"
 	"github.com/lesomnus/payday/pdpb"
@@ -183,6 +184,10 @@ type Server struct {
 	// owners is who answers which control-plane holder a deployment key hangs
 	// off, for this plane's rules ([keyOwners]).
 	owners *keyOwners
+
+	// served is what a role of roster's may name ([Served]), kept for the
+	// operators' port, whose stack is built from the control plane's rules.
+	served []string
 
 	// stopsSeen, where it is set, is told as each listener begins its stop,
 	// with the deadline it was given, and as it has stopped. Nothing of the
@@ -666,6 +671,10 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	owners := &keyOwners{}
 	rules := Rules(client, policySources...)
 	rules.Borrower = owners.of
+	// What a role of roster's may name, at every port and at the box alike:
+	// the methods this build serves ([Served]).
+	served := Served(sink)
+	rules.Serves = Serves(served)
 	// With what this deployment's trail keeps of a row, which `Rules` is not
 	// handed: a name taken is on the trail of whoever held it.
 	rules.Releasing = Releasing(client, content)
@@ -698,6 +707,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		RestoreWithin: c.Tenant.RestoreWithin,
 		recheck:       c.Stream.Recheck,
 		owners:        owners,
+		served:        served,
 		contents:      content,
 		log:           log.From(ctx),
 	}
@@ -1494,6 +1504,56 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 	// `server/core` narrows to the calling app's own. Its generated writes are
 	// shut by method in `closed`: a consent is never written as a row.
 	app.RegisterConsentServiceServer(g, s.Consent())
+}
+
+// Served is every method a port of this build registers, both planes and the
+// operators' port together: what [Register] puts on each, and the services
+// [Server.Grpc] and [Server.GrpcAdmin] put beside it. `s` is any server of the
+// stack, whose services are named and not called.
+//
+// It is what a role of roster's may name ([Serves]), and a list kept beside
+// the registrations rather than read off a listener, because a role is also
+// written where there is none -- at the box, and by what applies a file.
+// `TestWhatRosterServesIsWhatItsPortsRegister` holds the two to each other,
+// so a service registered tomorrow and not here fails there.
+func Served(s app.Server) []string {
+	var r registered
+	Register(&r, s)
+	for _, d := range []*grpc.ServiceDesc{
+		&app.SyncService_ServiceDesc,
+		&app.VouchService_ServiceDesc,
+		&app.FrontService_ServiceDesc,
+		&app.AuthService_ServiceDesc,
+		&app.MeService_ServiceDesc,
+		&pdpb.TokenService_ServiceDesc,
+	} {
+		r.RegisterService(d, nil)
+	}
+
+	slices.Sort(r)
+
+	return slices.Compact(r)
+}
+
+// registered is the methods a registration names, as a gRPC server would
+// dispatch them.
+type registered []string
+
+func (r *registered) RegisterService(d *grpc.ServiceDesc, _ any) {
+	for _, m := range d.Methods {
+		*r = append(*r, "/"+d.ServiceName+"/"+m.MethodName)
+	}
+	for _, m := range d.Streams {
+		*r = append(*r, "/"+d.ServiceName+"/"+m.StreamName)
+	}
+}
+
+// Serves is [core.Serves] over [Served]: whether a pattern covers one of the
+// methods this build serves.
+func Serves(methods []string) core.Serves {
+	return func(pattern string) bool {
+		return slices.ContainsFunc(methods, func(m string) bool { return frame.Covers(pattern, m) })
+	}
 }
 
 // closed is what this server does not answer at all.

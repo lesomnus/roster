@@ -49,7 +49,7 @@ func TestProvisioningTakesNothingThatIsSomebodys(t *testing.T) {
 	// fabrikam: a person called account.
 	person, err := s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{Tenant: in(fabrikam), Alias: "account"}.Build())
 	x.NoError(err)
-	staff, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{Tenant: in(fabrikam), Alias: "staff", Methods: []string{"/loft.*/*"}}.Build())
+	staff, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{Tenant: in(fabrikam), Alias: "staff", Methods: []string{"/roster.HolderService/Get"}}.Build())
 	x.NoError(err)
 	bind(staff.GetId(), person.GetId())
 

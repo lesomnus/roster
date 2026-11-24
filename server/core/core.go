@@ -283,6 +283,12 @@ type Rules struct {
 	// refused rather than shown every app's. See [coreNomination.List].
 	Borrower Borrower
 
+	// Serves is whether a pattern covers a method this deployment serves,
+	// which a role of roster's is held to where it is written. Nil is a stack
+	// that cannot say, and a role is then taken as written, as every role was
+	// before roster asked. See [Serves].
+	Serves Serves
+
 	// TenantOf is the tenant a holder is of, read past the wall, which
 	// `IdentityService/Attest` asks of the app a delegation was issued to:
 	// its grant vouches only where it is held, in the person's own tenant. Nil
@@ -290,6 +296,23 @@ type Rules struct {
 	// [TenantOf].
 	TenantOf TenantOf
 }
+
+// Serves answers whether `pattern` covers at least one method a port of this
+// deployment registers, either plane's: what a role of roster's may name.
+//
+// # A role of roster's names what roster serves
+//
+// A role names methods and, since `Role.app`, whose. One of roster's that
+// names `/loft.*/*` is read by roster's gate alone, which never asks about a
+// method of Loft's, and by no app: it grants nothing anywhere, and whoever
+// wrote it believes it does. So it is refused where it is written, `Role.Add`
+// and `Role.Widen` and the `Patch` both reach, and named for what it is:
+// an app's methods are written in a role of that app. Whoever writes it -- at
+// a port, at the box, by what applies a file -- since the mistake is the same.
+//
+// A role of an app's is taken as written: roster does not know an app's
+// methods.
+type Serves func(pattern string) bool
 
 // TenantOf answers the tenant `who` is of, and the nil identifier where `who`
 // is no live holder -- nobody, or of no tenant.

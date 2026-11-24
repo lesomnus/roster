@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 const getHolder = "/roster.HolderService/Get"
@@ -477,22 +479,46 @@ func TestARoleMayNameAServiceOrAPackage(t *testing.T) {
 	// "every read" to somebody arriving from glob, and a matcher that treated
 	// it as one would make the docs' promise -- what a role opens can be read
 	// off it -- false in the widest possible way. A partial segment must open
-	// **nothing**, rather than something a substring happens to reach.
+	// **nothing**, rather than something a substring happens to reach. A role
+	// of roster's naming one names no method roster serves, and a port refuses
+	// to write it; so the row is written through the store, as a database
+	// written before that refusal holds one, and the gate still reads it as
+	// nothing.
 	t.Run("a partial segment opens nothing at all", func(t *testing.T) {
 		x := require.New(t)
 
 		who := b.holder(t, ctx, b.Contoso, "glob-writer")
-		b.binds(t, who, roleOf(t, "not-a-pattern",
-			"*Get*", "/roster.Holder*/Get", "roster.HolderService/Get"), nil)
+		r, err := b.Ent.Role.Create().
+			SetId(pdid.New(pd.RoleDomain).Uuid()).
+			SetTenantId(b.Contoso.Uuid()).
+			SetAlias("not-a-pattern").
+			SetName("").
+			SetDesc("").
+			SetLabels(map[string]string{}).
+			SetMethods([]string{"*Get*", "/roster.Holder*/Get", "roster.HolderService/Get"}).
+			SetDateUpdated(time.Now()).
+			Save(ctx)
+		x.NoError(err)
+		b.binds(t, who, pdid.Id(r.Id), nil)
 
 		conn := served(t, b.Server)
 		as := asOverTheWire(ctx, who)
 
-		_, err := app.NewHolderServiceClient(conn).Get(as, app.HolderGetRequest_builder{
+		_, err = app.NewHolderServiceClient(conn).Get(as, app.HolderGetRequest_builder{
 			Ref: app.HolderRef_builder{Id: who.Bytes()}.Build(),
 		}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err),
 			"a partial segment matched a method")
+
+		// And a port refuses to write one.
+		for _, m := range []string{"*Get*", "/roster.Holder*/Get", "roster.HolderService/Get"} {
+			_, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+				Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
+				Alias:   "not-a-pattern-again",
+				Methods: []string{m},
+			}.Build())
+			x.Equal(codes.FailedPrecondition, status.Code(err), "%s: a role of roster's naming no method of roster's was written", m)
+		}
 	})
 }
 

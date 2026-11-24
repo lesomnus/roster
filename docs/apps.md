@@ -95,7 +95,7 @@ operator does it, once per tenant (#75):
 
 ```sh
 roster app install --tenant acme \
-  --allow '/loft.AssetService/*' \
+  --allow '/roster.HolderService/Reaches,/roster.SyncService/Watch' \
   --administer '/loft.*/*' \
   loft
 ```

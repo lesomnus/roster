@@ -9,9 +9,12 @@ import (
 
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pderr"
+	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/z"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
+	"github.com/lesomnus/roster/server/quote"
 )
 
 // widenTries is how many times [coreRole.Widen] reads a role again because a
@@ -36,7 +39,7 @@ func (s coreRole) Widen(ctx context.Context, req *app.RoleWidenRequest) (*app.Ro
 	for range widenTries {
 		got, err := s.RoleServiceServer.Get(ctx, app.RoleGetRequest_builder{
 			Ref:    req.GetRef(),
-			Select: app.RoleSelect_builder{All: z.Ptr(true)}.Build(),
+			Select: app.RoleSelect_builder{All: z.Ptr(true), App: app.HolderSelect_builder{}.Build()}.Build(),
 		}.Build())
 		if err != nil {
 			return nil, err
@@ -57,6 +60,16 @@ func (s coreRole) Widen(ctx context.Context, req *app.RoleWidenRequest) (*app.Ro
 		if len(next) == len(got.GetMethods()) {
 			// Nothing new, and so no write: the role as it is.
 			return got, nil
+		}
+
+		// Asked here as well as in the patch, since the patch's refusal of
+		// it is the code a version that moved is answered with.
+		of, err := idOr(got.GetApp().GetId())
+		if err != nil {
+			return nil, err
+		}
+		if err := s.namesRosters(of, next); err != nil {
+			return nil, err
 		}
 
 		v, err := s.Patch(ctx, app.RolePatchRequest_builder{
@@ -93,4 +106,26 @@ func widened(have, add []string) []string {
 	}
 
 	return next
+}
+
+// namesRosters refuses a role of roster's -- `of` is [pdid.Nil] -- a pattern
+// that covers no method this deployment serves ([Serves]). A role of an
+// app's is taken as written.
+func (s Core) namesRosters(of pdid.Id, methods []string) error {
+	if of != pdid.Nil || s.rules.Serves == nil {
+		return nil
+	}
+	if keys.Listed("methods", methods) != nil {
+		// A list too long to be one, which the write refuses for its
+		// length, in its own words, whatever it names (`form.go`).
+		return nil
+	}
+	for _, m := range methods {
+		if !s.rules.Serves(m) {
+			return status.Errorf(codes.FailedPrecondition,
+				"methods: %s names no method of roster's; an app's methods are written in a role of that app (app)", quote.Sent(m))
+		}
+	}
+
+	return nil
 }

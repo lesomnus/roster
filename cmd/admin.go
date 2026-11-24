@@ -512,6 +512,9 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 // is there already: asked of the control plane neither ever is, and an
 // operator made each twice.
 //
+// And `Serves`, which is what a customer's role of roster's may name: what
+// this build serves, which [Build] worked out once for both planes.
+//
 // And `TenantOf`, which is of whom a customer's delegation was issued to: on
 // the control plane nobody of a customer's is anybody.
 func adminRules(s *Server) core.Rules {
@@ -524,6 +527,7 @@ func adminRules(s *Server) core.Rules {
 	r.Sited = Sited(s.Ent)
 	r.Bound = Bound(s.Ent)
 	r.Unsited = Unsited(s.Ent)
+	r.Serves = Serves(s.served)
 
 	return r
 }

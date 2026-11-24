@@ -17,15 +17,17 @@ const widen = "/roster.RoleService/Widen"
 // roles it shipped a method of its next release with (`role_svc.ext.proto`):
 // what is named and not already covered goes after what the role holds, once;
 // what it holds stays; nothing new is no write; nothing named is a mistake.
-// Over the wire, where `Patch` is closed and this is not.
+// Over the wire, where `Patch` is closed and this is not, on a role of the
+// app's (`Role.app`).
 func TestAWidenAddsWhatIsNewAndTakesNothingAway(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
-	shipped := b.grantee(t, ctx, "shipper", widen, "/loft.*/*")
+	loft := b.holder(t, ctx, b.Contoso, "loft")
+	shipped := b.granteeAt(t, ctx, "shipper", loft, []string{widen}, "/loft.*/*")
 	roles := app.NewRoleServiceClient(served(t, b.Server))
 	as := asOverTheWire(ctx, shipped)
 
-	ref := app.RoleRef_builder{Id: b.role(t, ctx, "staff", "/loft.AssetService/Get").Bytes()}.Build()
+	ref := app.RoleRef_builder{Id: b.roleAtApp(t, ctx, loft, "staff", "/loft.AssetService/Get").Bytes()}.Build()
 	v, err := roles.Widen(as, app.RoleWidenRequest_builder{Ref: ref, Methods: []string{
 		"/loft.AssetService/List", "/loft.AssetService/Get", "/loft.AssetService/List",
 	}}.Build())
@@ -54,9 +56,10 @@ func TestAWidenAddsWhatIsNewAndTakesNothingAway(t *testing.T) {
 func TestNobodyWidensARoleBeyondWhatTheyHold(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
-	as := framed(ctx, b.grantee(t, ctx, "editor", widen, "/loft.AssetService/*"), b.Contoso)
+	loft := b.holder(t, ctx, b.Contoso, "loft")
+	as := framed(ctx, b.granteeAt(t, ctx, "editor", loft, []string{widen}, "/loft.AssetService/*"), b.Contoso)
 
-	ref := app.RoleRef_builder{Id: b.role(t, ctx, "staff", "/loft.AssetService/Get").Bytes()}.Build()
+	ref := app.RoleRef_builder{Id: b.roleAtApp(t, ctx, loft, "staff", "/loft.AssetService/Get").Bytes()}.Build()
 	_, err := b.Walled.Role().Widen(as, app.RoleWidenRequest_builder{Ref: ref, Methods: []string{"/loft.AssetService/List"}}.Build())
 	x.NoError(err, "what they hold")
 
@@ -66,7 +69,7 @@ func TestNobodyWidensARoleBeyondWhatTheyHold(t *testing.T) {
 	x.NoError(err)
 	x.Equal([]string{"/loft.AssetService/Get", "/loft.AssetService/List"}, v.GetMethods(), "and something of it was written")
 
-	wider := app.RoleRef_builder{Id: b.role(t, ctx, "wider", "/loft.AssetService/Get", "/roster.HolderService/Erase").Bytes()}.Build()
+	wider := app.RoleRef_builder{Id: b.roleAtApp(t, ctx, loft, "wider", "/loft.AssetService/Get", "/loft.Permission/RunWork").Bytes()}.Build()
 	_, err = b.Walled.Role().Widen(as, app.RoleWidenRequest_builder{Ref: wider, Methods: []string{"/loft.AssetService/List"}}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err), "a role holding what its editor does not, widened by what they do")
 }
@@ -78,13 +81,15 @@ func TestNobodyWidensARoleBeyondWhatTheyHold(t *testing.T) {
 func TestADeclaredRoleIsNobodysToWiden(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
-	as := framed(ctx, b.grantee(t, ctx, "editor", widen, "/loft.*/*"), b.Contoso)
+	loft := b.holder(t, ctx, b.Contoso, "loft")
+	as := framed(ctx, b.granteeAt(t, ctx, "editor", loft, []string{widen}, "/loft.*/*"), b.Contoso)
 
 	r, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   "front-door",
 		Labels:  map[string]string{cmd.Declared: "roster.yaml"},
 		Methods: []string{"/loft.AssetService/Get"},
+		App:     app.HolderRef_builder{Id: loft.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 	ref := app.RoleRef_builder{Id: r.GetId()}.Build()
@@ -104,11 +109,14 @@ func TestADeclaredRoleIsNobodysToWiden(t *testing.T) {
 // `cli/entity.go` that makes a method a console can reach one a terminal can.
 func TestARoleIsWidenedFromATerminal(t *testing.T) {
 	x := require.New(t)
-	b := cliUp(t, widen, "/loft.*/*")
+	b := cliUp(t, widen)
+	loft := appIn(t, b.Server, b.Tenant.GetId(), "loft")
+	heldAtApp(t, b.Server, b.Tenant.GetId(), loft, b.Alice.GetId(), "operator-at-loft", "/loft.*/*")
 	r, err := b.Server.Ungated.Role().Add(t.Context(), app.RoleAddRequest_builder{
 		Tenant:  app.TenantRef_builder{Id: b.Tenant.GetId()}.Build(),
 		Alias:   "support",
 		Methods: []string{"/loft.AssetService/Get"},
+		App:     app.HolderRef_builder{Id: loft}.Build(),
 	}.Build())
 	x.NoError(err)
 

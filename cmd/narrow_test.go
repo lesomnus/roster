@@ -33,14 +33,15 @@ func (b *built) methodsOf(t *testing.T, ctx context.Context, role *app.RoleRef) 
 // entry under it; a role may be narrowed to nothing; nothing to take out is no
 // write; and a method still reached through an entry left in the role is
 // refused rather than answered as done. Over the wire, where `Patch` is closed
-// and this is not.
+// and this is not, on a role of the app's (`Role.app`).
 func TestANarrowTakesOutWhatIsNamedAndAddsNothing(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
-	as := asOverTheWire(ctx, b.grantee(t, ctx, "steward", narrow, "/loft.*/*"))
+	loft := b.holder(t, ctx, b.Contoso, "loft")
+	as := asOverTheWire(ctx, b.granteeAt(t, ctx, "steward", loft, []string{narrow}, "/loft.*/*"))
 	roles := app.NewRoleServiceClient(served(t, b.Server))
 
-	ref := app.RoleRef_builder{Id: b.role(t, ctx, "staff",
+	ref := app.RoleRef_builder{Id: b.roleAtApp(t, ctx, loft, "staff",
 		"/loft.AssetService/Get", "/loft.AssetService/List", "/loft.Permission/RunWork").Bytes()}.Build()
 	v, err := roles.Narrow(as, app.RoleNarrowRequest_builder{Ref: ref, Methods: []string{"/loft.AssetService/*"}}.Build())
 	x.NoError(err)
@@ -59,7 +60,7 @@ func TestANarrowTakesOutWhatIsNamedAndAddsNothing(t *testing.T) {
 	x.Equal(codes.InvalidArgument, status.Code(err), "a narrowing that names nothing")
 
 	// What was named still reached through what is left: refused, whole.
-	wide := app.RoleRef_builder{Id: b.role(t, ctx, "wide", "/loft.*/*", "/loft.AssetService/Get").Bytes()}.Build()
+	wide := app.RoleRef_builder{Id: b.roleAtApp(t, ctx, loft, "wide", "/loft.*/*", "/loft.AssetService/Get").Bytes()}.Build()
 	_, err = roles.Narrow(as, app.RoleNarrowRequest_builder{Ref: wide, Methods: []string{"/loft.AssetService/Get"}}.Build())
 	x.Equal(codes.FailedPrecondition, status.Code(err))
 	x.ErrorContains(err, "/loft.*/*")
@@ -75,16 +76,17 @@ func TestANarrowTakesOutWhatIsNamedAndAddsNothing(t *testing.T) {
 func TestNobodyTakesAwayWhatTheyCouldNotHaveGiven(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
-	as := framed(ctx, b.grantee(t, ctx, "steward", narrow, "/loft.AssetService/*"), b.Contoso)
+	loft := b.holder(t, ctx, b.Contoso, "loft")
+	as := framed(ctx, b.granteeAt(t, ctx, "steward", loft, []string{narrow}, "/loft.AssetService/*"), b.Contoso)
 
-	ref := app.RoleRef_builder{Id: b.role(t, ctx, "officer", "/loft.AssetService/Get", "/roster.HolderService/Erase").Bytes()}.Build()
-	_, err := b.Walled.Role().Narrow(as, app.RoleNarrowRequest_builder{Ref: ref, Methods: []string{"/roster.HolderService/Erase"}}.Build())
+	ref := app.RoleRef_builder{Id: b.roleAtApp(t, ctx, loft, "officer", "/loft.AssetService/Get", "/loft.Permission/RunWork").Bytes()}.Build()
+	_, err := b.Walled.Role().Narrow(as, app.RoleNarrowRequest_builder{Ref: ref, Methods: []string{"/loft.Permission/RunWork"}}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err), "a method its taker does not hold, taken away")
 	x.ErrorContains(err, "take it away")
 
 	v, err := b.Walled.Role().Narrow(as, app.RoleNarrowRequest_builder{Ref: ref, Methods: []string{"/loft.AssetService/Get"}}.Build())
 	x.NoError(err, "what they hold, out of a role that holds more besides")
-	x.Equal([]string{"/roster.HolderService/Erase"}, v.GetMethods())
+	x.Equal([]string{"/loft.Permission/RunWork"}, v.GetMethods())
 
 	// Bound at a site, a role is taken from at that site's width: what the
 	// taker holds only in another site is not theirs to take there.
@@ -97,12 +99,14 @@ func TestNobodyTakesAwayWhatTheyCouldNotHaveGiven(t *testing.T) {
 	b.binds(t, clerk, mustId(t, local.GetId()), nil)
 	there, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(), Alias: "busan-assets", Methods: []string{"/loft.AssetService/*"},
+		App: app.HolderRef_builder{Id: loft.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 	b.binds(t, clerk, mustId(t, there.GetId()), &busan)
 	inSeoul, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(), Site: app.SiteRef_builder{Id: seoul.Bytes()}.Build(),
 		Alias: "seoul-desk", Methods: []string{"/loft.AssetService/Get"},
+		App: app.HolderRef_builder{Id: loft.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 	_, err = b.Walled.Role().Narrow(framed(ctx, clerk, b.Contoso), app.RoleNarrowRequest_builder{
@@ -117,13 +121,15 @@ func TestNobodyTakesAwayWhatTheyCouldNotHaveGiven(t *testing.T) {
 func TestADeclaredRoleIsNobodysToNarrow(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
-	as := framed(ctx, b.grantee(t, ctx, "steward", narrow, "/loft.*/*"), b.Contoso)
+	loft := b.holder(t, ctx, b.Contoso, "loft")
+	as := framed(ctx, b.granteeAt(t, ctx, "steward", loft, []string{narrow}, "/loft.*/*"), b.Contoso)
 
 	r, err := b.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
 		Tenant:  app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build(),
 		Alias:   "front-door",
 		Labels:  map[string]string{cmd.Declared: "roster.yaml"},
 		Methods: []string{"/loft.AssetService/Get", "/loft.AssetService/List"},
+		App:     app.HolderRef_builder{Id: loft.Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 	ref := app.RoleRef_builder{Id: r.GetId()}.Build()
@@ -310,11 +316,14 @@ func TestTwoNarrowingsCannotBothTakeTheLast(t *testing.T) {
 // wire as anybody holding the method and what it takes out.
 func TestARoleIsNarrowedFromATerminal(t *testing.T) {
 	x := require.New(t)
-	b := cliUp(t, narrow, "/loft.*/*")
+	b := cliUp(t, narrow)
+	loft := appIn(t, b.Server, b.Tenant.GetId(), "loft")
+	heldAtApp(t, b.Server, b.Tenant.GetId(), loft, b.Alice.GetId(), "operator-at-loft", "/loft.*/*")
 	r, err := b.Server.Ungated.Role().Add(t.Context(), app.RoleAddRequest_builder{
 		Tenant:  app.TenantRef_builder{Id: b.Tenant.GetId()}.Build(),
 		Alias:   "support",
 		Methods: []string{"/loft.AssetService/Get", "/loft.AssetService/List"},
+		App:     app.HolderRef_builder{Id: loft}.Build(),
 	}.Build())
 	x.NoError(err)
 
