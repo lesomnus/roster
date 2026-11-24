@@ -31,6 +31,7 @@ type BindingQuery struct {
 	withSite   *SiteQuery
 	withHolder *HolderQuery
 	withGroup  *GroupQuery
+	withApp    *HolderQuery
 	modifiers  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -149,6 +150,28 @@ func (_q *BindingQuery) QueryGroup() *GroupQuery {
 			sqlgraph.From(binding.Table, binding.FieldId, selector),
 			sqlgraph.To(group.Table, group.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, binding.GroupTable, binding.GroupColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryApp chains the current query on the "app" edge.
+func (_q *BindingQuery) QueryApp() *HolderQuery {
+	query := (&HolderClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(binding.Table, binding.FieldId, selector),
+			sqlgraph.To(holder.Table, holder.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, binding.AppTable, binding.AppColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -352,6 +375,7 @@ func (_q *BindingQuery) Clone() *BindingQuery {
 		withSite:   _q.withSite.Clone(),
 		withHolder: _q.withHolder.Clone(),
 		withGroup:  _q.withGroup.Clone(),
+		withApp:    _q.withApp.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -400,6 +424,17 @@ func (_q *BindingQuery) WithGroup(opts ...func(*GroupQuery)) *BindingQuery {
 		opt(query)
 	}
 	_q.withGroup = query
+	return _q
+}
+
+// WithApp tells the query-builder to eager-load the nodes that are connected to
+// the "app" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *BindingQuery) WithApp(opts ...func(*HolderQuery)) *BindingQuery {
+	query := (&HolderClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withApp = query
 	return _q
 }
 
@@ -481,11 +516,12 @@ func (_q *BindingQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bind
 	var (
 		nodes       = []*Binding{}
 		_spec       = _q.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			_q.withRole != nil,
 			_q.withSite != nil,
 			_q.withHolder != nil,
 			_q.withGroup != nil,
+			_q.withApp != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -530,6 +566,12 @@ func (_q *BindingQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Bind
 	if query := _q.withGroup; query != nil {
 		if err := _q.loadGroup(ctx, query, nodes, nil,
 			func(n *Binding, e *Group) { n.Edges.Group = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withApp; query != nil {
+		if err := _q.loadApp(ctx, query, nodes, nil,
+			func(n *Binding, e *Holder) { n.Edges.App = e }); err != nil {
 			return nil, err
 		}
 	}
@@ -652,6 +694,35 @@ func (_q *BindingQuery) loadGroup(ctx context.Context, query *GroupQuery, nodes 
 	}
 	return nil
 }
+func (_q *BindingQuery) loadApp(ctx context.Context, query *HolderQuery, nodes []*Binding, init func(*Binding), assign func(*Binding, *Holder)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*Binding)
+	for i := range nodes {
+		fk := nodes[i].AppId
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(holder.IdIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.Id]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "app_id" returned %v`, n.Id)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
 
 func (_q *BindingQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := _q.querySpec()
@@ -692,6 +763,9 @@ func (_q *BindingQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withGroup != nil {
 			_spec.Node.AddColumnOnce(binding.FieldGroupId)
+		}
+		if _q.withApp != nil {
+			_spec.Node.AddColumnOnce(binding.FieldAppId)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

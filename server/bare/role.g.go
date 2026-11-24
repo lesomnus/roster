@@ -876,6 +876,20 @@ func (s BindingServiceServer) image(v *rstr.Binding) *rstr.Binding {
 			trim(m.Get(f).Message())
 		}
 	}
+	{
+		f := m.Descriptor().Fields().ByNumber(10)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
 	return out
 }
 
@@ -883,7 +897,7 @@ func (s BindingServiceServer) image(v *rstr.Binding) *rstr.Binding {
 // and what the answer says about its edges. Add and AddMany both write
 // with it, so that an item of an AddMany is the row an Add of it would be.
 func (st BindingServiceServer) create(ctx context.Context, req *rstr.BindingAddRequest) (*ent.BindingCreate, []func(v *rstr.Binding), error) {
-	ds := make([]func(v *rstr.Binding), 0, 4)
+	ds := make([]func(v *rstr.Binding), 0, 5)
 	q := st.Db.Binding.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -933,6 +947,16 @@ func (st BindingServiceServer) create(ctx context.Context, req *rstr.BindingAddR
 			q.SetGroupId(k)
 			ds = append(ds, func(v *rstr.Binding) {
 				v.SetGroup(rstr.Group_builder{Id: k[:]}.Build())
+			})
+		}
+	}
+	if req.HasApp() {
+		if k, err := HolderGetKey(ctx, st.Db, req.GetApp()); err != nil {
+			return nil, nil, err
+		} else {
+			q.SetAppId(k)
+			ds = append(ds, func(v *rstr.Binding) {
+				v.SetApp(rstr.Holder_builder{Id: k[:]}.Build())
 			})
 		}
 	}
@@ -1163,6 +1187,21 @@ func BindingSelect(ctx context.Context, scope Scope, q *ent.BindingQuery, m *rst
 			return err
 		}
 	}
+	if m.HasApp() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
+		q.WithApp(func(q *ent.HolderQuery) {
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetApp())
+		})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -1225,7 +1264,7 @@ func BindingGetKey(ctx context.Context, db *ent.Client, ref *rstr.BindingRef) (u
 var bindingOrmEntity = ormpatch.MustEntityOf(rstr.File_app_role_proto, "Binding")
 
 var bindingPatchColumns = entpatch.Columns{
-	1: binding.FieldId, 2: binding.RoleColumn, 3: binding.SiteColumn, 8: binding.HolderColumn, 9: binding.GroupColumn, 7: binding.FieldLabels, 13: binding.FieldDateUpdated, 14: binding.FieldDateErased, 15: binding.FieldDateCreated}
+	1: binding.FieldId, 2: binding.RoleColumn, 3: binding.SiteColumn, 8: binding.HolderColumn, 9: binding.GroupColumn, 10: binding.AppColumn, 7: binding.FieldLabels, 13: binding.FieldDateUpdated, 14: binding.FieldDateErased, 15: binding.FieldDateCreated}
 
 func (s BindingServiceServer) Apply(ctx context.Context, req *rstr.BindingApplyRequest) (*rstr.Binding, error) {
 	if s.admission != nil {

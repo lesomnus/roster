@@ -345,8 +345,10 @@ type Releasing func(ctx context.Context, drv dialect.Driver, name string) error
 // Held is what somebody may call and where at the app `of`, as the gate
 // decides it at roster: of the roles that name that app's methods, and
 // [pdid.Nil] is roster's own. At roster it is `me.Held`'s answer, from one
-// function.
-type Held func(ctx context.Context, who, of pdid.Id) (methods []string, sites []pdid.Id, every bool, err error)
+// function. `apps` is what a binding of a role of roster's that reaches them
+// is for (`Binding.app`), each once in the order of their identifiers, and
+// none at an app.
+type Held func(ctx context.Context, who, of pdid.Id) (methods []string, sites, apps []pdid.Id, every bool, err error)
 
 // Everywhere is the part of [Held] that needs no narrowing: what somebody holds
 // at the app `of` through a binding across the whole tenant.

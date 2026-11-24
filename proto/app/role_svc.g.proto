@@ -315,6 +315,7 @@ message BindingAddRequest {
   SiteRef site = 3;
   HolderRef holder = 8;
   GroupRef group = 9;
+  HolderRef app = 10;
   map<string, string> labels = 7;
   google.protobuf.Timestamp date_created = 15;
 }
@@ -336,6 +337,7 @@ message BindingSelect {
   SiteSelect site = 3;
   HolderSelect holder = 8;
   GroupSelect group = 9;
+  HolderSelect app = 10;
   bool labels = 7;
   bool date_updated = 13;
   bool date_erased = 14;

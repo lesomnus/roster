@@ -352,13 +352,13 @@ func TestAnErasedRoleGrantsNothing(t *testing.T) {
 	b.binds(t, who, r, nil)
 	held := cmd.Everything(b.Ent)
 
-	ms, _, _, err := held(ctx, who)
+	ms, _, _, _, err := held(ctx, who)
 	x.NoError(err)
 	x.Equal([]string{"/roster.HolderService/Get"}, ms)
 
 	_, err = b.Ungated.Role().Erase(ctx, roleRef(r))
 	x.NoError(err)
-	ms, sites, every, err := held(ctx, who)
+	ms, sites, _, every, err := held(ctx, who)
 	x.NoError(err)
 	x.Empty(ms, "an erased role went on granting")
 	x.Empty(sites)
@@ -388,7 +388,7 @@ func TestATeamErasedHandsOutNothing(t *testing.T) {
 	b.inTeam(t, ctx, who, team, b.role(t, ctx, "west-admin", "/roster.HolderService/Get"))
 
 	held := cmd.Everything(b.Ent)
-	ms, sites, _, err := held(ctx, who)
+	ms, sites, _, _, err := held(ctx, who)
 	x.NoError(err)
 	x.Equal([]string{"/roster.HolderService/Get"}, ms)
 	x.Len(sites, 1, "the team's site, which a place on it reaches")
@@ -397,7 +397,7 @@ func TestATeamErasedHandsOutNothing(t *testing.T) {
 	x.NoError(err)
 	x.True(gone.GetErased())
 
-	ms, sites, every, err := held(ctx, who)
+	ms, sites, _, every, err := held(ctx, who)
 	x.NoError(err)
 	x.Empty(ms, "a team that was erased went on handing out its role")
 	x.Empty(sites, "and its site")

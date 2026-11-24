@@ -115,7 +115,7 @@ func (s coreTeamMembership) Add(ctx context.Context, req *app.TeamMembershipAddR
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayGrant(ctx, "role", ms, at, of); err != nil {
+	if err := s.mayGrant(ctx, "role", ms, at, of, pdid.Nil); err != nil {
 		return nil, err
 	}
 
@@ -175,7 +175,7 @@ func (s coreTeamMembership) Patch(ctx context.Context, req *app.TeamMembershipPa
 			return nil, err
 		}
 	}
-	if err := s.mayGrant(ctx, "role", ms, at, of); err != nil {
+	if err := s.mayGrant(ctx, "role", ms, at, of, pdid.Nil); err != nil {
 		return nil, err
 	}
 
@@ -465,7 +465,7 @@ func (s coreGroupMembership) Add(ctx context.Context, req *app.GroupMembershipAd
 	// And, naming a role, the manager it appoints: a role that reaches no
 	// further than this group, held to what the appointer holds **through a
 	// binding** -- so a manager puts people in and does not make another.
-	if err := s.mayAppoint(ctx, req.GetRole()); err != nil {
+	if err := s.mayAppoint(ctx, req.GetRole(), req.GetGroup()); err != nil {
 		return nil, err
 	}
 
@@ -479,7 +479,11 @@ func (s coreGroupMembership) Add(ctx context.Context, req *app.GroupMembershipAd
 // binding's -- the scope a role held in a group is handed out at, since the
 // gate holds it everywhere -- and a role held in a group counts for nothing.
 // `TeamMembership.Add` asks the same of a team's role.
-func (s coreGroupMembership) mayAppoint(ctx context.Context, ref *app.RoleRef) error {
+//
+// For the app the group is of (`Group.app`): a manager's role reaches that
+// group alone, so in a group of an app's it is handed out for that app, and
+// whoever holds roster's verbs for the app appoints one there.
+func (s coreGroupMembership) mayAppoint(ctx context.Context, ref *app.RoleRef, group *app.GroupRef) error {
 	if ref == nil {
 		return nil
 	}
@@ -490,8 +494,30 @@ func (s coreGroupMembership) mayAppoint(ctx context.Context, ref *app.RoleRef) e
 	if err != nil {
 		return err
 	}
+	to, err := s.appOfGroup(ctx, group)
+	if err != nil {
+		return err
+	}
 
-	return s.mayGrant(ctx, "role", ms, pdid.Nil, of)
+	return s.mayGrant(ctx, "role", ms, pdid.Nil, of, to)
+}
+
+// appOfGroup is the app a group is of (`Group.app`), [pdid.Nil] for the
+// tenant's own, read through this stack.
+func (s Core) appOfGroup(ctx context.Context, ref *app.GroupRef) (pdid.Id, error) {
+	if ref == nil {
+		return pdid.Nil, nil
+	}
+
+	v, err := s.Next().Group().Get(ctx, app.GroupGetRequest_builder{
+		Ref:    ref,
+		Select: app.GroupSelect_builder{App: app.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return pdid.Nil, err
+	}
+
+	return idOr(v.GetApp().GetId())
 }
 
 // Patch is `Add`'s questions about a role, asked when one is attached later --
@@ -518,7 +544,7 @@ func (s coreGroupMembership) Patch(ctx context.Context, req *app.GroupMembership
 	if err := s.mayChangeGroup(ctx, app.GroupMembershipService_Patch_FullMethodName, group); err != nil {
 		return nil, err
 	}
-	if err := s.mayAppoint(ctx, req.GetRole()); err != nil {
+	if err := s.mayAppoint(ctx, req.GetRole(), group); err != nil {
 		return nil, err
 	}
 
@@ -653,7 +679,14 @@ func (s coreRole) Add(ctx context.Context, req *app.RoleAddRequest) (*app.Role, 
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayGrant(ctx, "methods", req.GetMethods(), at, by); err != nil {
+
+	// Made by somebody who holds this for an app alone, it is that app's
+	// role: refused without that `app`, and not quietly given it
+	// ([Core.mayWriteOfApp]).
+	if err := s.mayWriteOfApp(ctx, "app", app.RoleService_Add_FullMethodName, "role", by, at); err != nil {
+		return nil, err
+	}
+	if err := s.mayGrant(ctx, "methods", req.GetMethods(), at, by, pdid.Nil); err != nil {
 		return nil, err
 	}
 
@@ -708,7 +741,7 @@ func (s coreRole) Patch(ctx context.Context, req *app.RolePatchRequest) (*app.Ro
 	if err := s.namesRosters(of, req.GetMethods()); err != nil {
 		return nil, err
 	}
-	if err := s.mayGrant(ctx, "methods", req.GetMethods(), where, of); err != nil {
+	if err := s.mayGrant(ctx, "methods", req.GetMethods(), where, of, pdid.Nil); err != nil {
 		return nil, err
 	}
 	if len(req.GetMethods()) == 0 {
@@ -732,7 +765,7 @@ func (s coreRole) Patch(ctx context.Context, req *app.RolePatchRequest) (*app.Ro
 			out = append(out, m)
 		}
 	}
-	if err := s.mayTakeAway(ctx, "methods", out, where, of); err != nil {
+	if err := s.mayTakeAway(ctx, "methods", out, where, of, pdid.Nil); err != nil {
 		return nil, err
 	}
 	tenant, err := pdid.From(got.GetTenant().GetId())
@@ -760,12 +793,26 @@ type coreGroup struct {
 func (s Core) Group() app.GroupServiceServer { return coreGroup{s, s.Next().Group()} }
 
 func (s coreGroup) Add(ctx context.Context, req *app.GroupAddRequest) (*app.Group, error) {
+	// The app whose group it is, [pdid.Nil] for the tenant's own: the
+	// holder, read as the caller reads one.
+	by, err := s.appOf(ctx, req.GetApp())
+	if err != nil {
+		return nil, err
+	}
+
 	// A group of no site is the tenant's, as a team of none is
 	// ([coreTeam.Add]): its maker manages it, and somebody bound in a site
-	// would manage a group of the whole tenant.
+	// would manage a group of the whole tenant. A group of an app's of no site
+	// is that app's whole, which a grant for the app reaches.
 	if req.GetSite() == nil {
-		if err := s.acrossTheTenant(ctx, app.GroupService_Add_FullMethodName); err != nil {
+		held, err := s.heldForApp(ctx, app.GroupService_Add_FullMethodName, by)
+		if err != nil {
 			return nil, err
+		}
+		if !held {
+			if err := s.acrossTheTenant(ctx, app.GroupService_Add_FullMethodName); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -789,6 +836,16 @@ func (s coreGroup) Add(ctx context.Context, req *app.GroupAddRequest) (*app.Grou
 		return nil, err
 	}
 	if err := tenantsAgree("app", of, whose); err != nil {
+		return nil, err
+	}
+
+	// Made by somebody who holds this for an app alone, it is that app's
+	// group: refused without that `app`, and not quietly given it.
+	site, err := s.siteOf(ctx, req.GetSite())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayWriteOfApp(ctx, "app", app.GroupService_Add_FullMethodName, "group", by, site); err != nil {
 		return nil, err
 	}
 
@@ -849,9 +906,18 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 	case holder == nil && group == nil:
 		return nil, pderr.Invalidf("holder",
 			"a binding grants to somebody; this names nobody, and would allow nothing forever")
+	case req.GetApp() != nil && req.GetSite() != nil:
+		// Both narrow what the role reaches, the one to an app's rows and the
+		// other to a site's, and a binding says one of them or neither.
+		return nil, pderr.Invalidf("app",
+			"a binding is held for an app or in a site, and this says both; one for an app reaches that app's rows wherever they are")
 	}
 
 	who, err := s.tenantOfHolder(ctx, holder)
+	if err != nil {
+		return nil, err
+	}
+	whose, err := s.tenantOfHolder(ctx, req.GetApp())
 	if err != nil {
 		return nil, err
 	}
@@ -867,7 +933,7 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 	if err != nil {
 		return nil, err
 	}
-	if err := tenantsAgree("role", who, what, role, where); err != nil {
+	if err := tenantsAgree("role", who, what, role, where, whose); err != nil {
 		return nil, err
 	}
 
@@ -892,11 +958,27 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 		}
 	}
 
+	// And for an app: roster's verbs over that app's rows (`forapp.go`).
+	to, err := s.bindsFor(ctx, req.GetApp(), of, ms)
+	if err != nil {
+		return nil, err
+	}
+
 	at, err := s.siteOf(ctx, req.GetSite())
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayGrant(ctx, "role", ms, at, of); err != nil {
+
+	// Written by somebody who holds this for an app alone, it is a binding of
+	// that app's: of a role of its own, or of roster's for it.
+	row := of
+	if row == pdid.Nil {
+		row = to
+	}
+	if err := s.mayWriteOfApp(ctx, "role", app.BindingService_Add_FullMethodName, "binding", row, at); err != nil {
+		return nil, err
+	}
+	if err := s.mayGrant(ctx, "role", ms, at, of, to); err != nil {
 		return nil, err
 	}
 
@@ -906,11 +988,11 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 	if err != nil {
 		return nil, err
 	}
-	var to pdid.Id
+	var subject pdid.Id
 	if holder != nil {
-		to, err = s.holderOf(ctx, holder)
+		subject, err = s.holderOf(ctx, holder)
 	} else {
-		to, err = s.groupOf(ctx, group)
+		subject, err = s.groupOf(ctx, group)
 	}
 	if err != nil {
 		return nil, err
@@ -934,7 +1016,7 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 	var out *app.Binding
 	err = s.only(ctx, on.Bytes(), func(next app.Server, tx dialect.Driver) error {
 		if s.rules.Bound != nil {
-			made, err := s.rules.Bound(ctx, tx, which, to, at)
+			made, err := s.rules.Bound(ctx, tx, which, subject, at, to)
 			if err != nil {
 				return err
 			}
@@ -956,8 +1038,10 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 }
 
 // Bound is whether a role is already bound to somebody, or to a group, in a
-// place: `to` is the holder or the group, told apart by its identifier, and
-// `site` is [pdid.Nil] for a binding across the tenant.
+// place: `to` is the holder or the group, told apart by its identifier,
+// `site` is [pdid.Nil] for a binding across the tenant, and `of` the app it is
+// held for (`Binding.app`), [pdid.Nil] for the tenant's whole. One for Foo
+// and one for Bar are two grants.
 //
 // # A grant is made once
 //
@@ -976,7 +1060,7 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 // On the driver it is handed, as [Administered] is: asked inside the
 // transaction the binding is written in. Nil is a stack that cannot say, and
 // a binding is then made as it always was.
-type Bound func(ctx context.Context, drv dialect.Driver, role, to, site pdid.Id) (bool, error)
+type Bound func(ctx context.Context, drv dialect.Driver, role, to, site, of pdid.Id) (bool, error)
 
 // The roles roster's own front doors are provisioned with, each found by its
 // alias in every tenant they answer in (`cli/login.go`, `cli/provision.go`,
@@ -988,15 +1072,16 @@ const (
 )
 
 // Kept is every alias roster finds a role of its own by: the tenant's
-// [Owns], its [Manages], the role it is administered by ([Everyverb]), and
-// the front doors' roles.
+// [Owns], its [Manages], the role it is administered by ([Everyverb]), what
+// an app's administrators hold for it ([AppAdministrator]), and the front
+// doors' roles.
 //
 // A role's alias is one within its tenant, whichever app's it is. So a role
 // of an app's that took one of these stood where roster looks for its own:
 // the group-manager role an app had written stopped the tenant making its
 // first group, and one called `self-service` would have been asked what
 // everybody does to their own account.
-var Kept = []string{Owns, Manages, Everyverb, LoginRole, AccountRole, ScimRole}
+var Kept = []string{Owns, Manages, Everyverb, AppAdministrator, LoginRole, AccountRole, ScimRole}
 
 // keptBy refuses a role of an app's -- `of` is not [pdid.Nil] -- an alias
 // roster keeps ([Kept]). One that is no alias is the write's to refuse.

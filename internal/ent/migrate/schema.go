@@ -218,6 +218,7 @@ var (
 		{Name: "site_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "holder_id", Type: field.TypeUuid, Nullable: true},
 		{Name: "group_id", Type: field.TypeUuid, Nullable: true},
+		{Name: "app_id", Type: field.TypeUuid, Nullable: true},
 	}
 	// BindingTable holds the schema information for the "binding" table.
 	BindingTable = &schema.Table{
@@ -247,6 +248,12 @@ var (
 				Symbol:     "binding_group_group",
 				Columns:    []*schema.Column{BindingColumns[8]},
 				RefColumns: []*schema.Column{GroupColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "binding_holder_app",
+				Columns:    []*schema.Column{BindingColumns[9]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
@@ -1547,6 +1554,7 @@ func init() {
 	BindingTable.ForeignKeys[1].RefTable = SiteTable
 	BindingTable.ForeignKeys[2].RefTable = HolderTable
 	BindingTable.ForeignKeys[3].RefTable = GroupTable
+	BindingTable.ForeignKeys[4].RefTable = HolderTable
 	BindingTable.Annotation = &entsql.Annotation{
 		Table: "binding",
 	}

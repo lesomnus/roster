@@ -212,6 +212,14 @@ earlier, since a role is written to be bound. And it is at every app they hold
 something: what they hold at Loft, through a role of Loft's, they hand out at
 Loft (`Role.app`), with the one verb of roster's.
 
+Held **for one app** (`Binding.app`, [permissions.md](permissions.md) § *Held
+for one app*), it spreads no wider than that app: an app's administrator who
+holds `BindingService/Add` for Loft makes a second administrator of Loft, binds
+Loft's roles to anybody of the tenant and puts anybody in Loft's groups -- and
+makes nobody anything at another app or across the tenant. Read *administrator
+of Loft* as **somebody who decides who uses Loft**, which is every person of the
+tenant they can name.
+
 ### A role bound to a group
 
 **Reads as** *this group gets this role*. **Is** handing the role to whoever

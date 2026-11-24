@@ -604,9 +604,11 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// whole tenant, and otherwise the sites they were bound in.
 	//
 	// And [People], for the rows that name no site: a person and what is
-	// theirs, reached by a grant made in a site when they are in it.
+	// theirs, reached by a grant made in a site when they are in it. And
+	// [Apps], for what is an app's, read by somebody who holds roster's verbs
+	// for that app and not across the tenant.
 	sets := Sets(client, policySources...)
-	narrow := bare.Scopes{pd.Wall(), pd.Grouped(sets), People(sets)}
+	narrow := bare.Scopes{pd.Wall(), pd.Grouped(sets), People(sets), Apps(client, policySources...)}
 
 	walled, err := pd.NewSink(client, append(opts, bare.WithScope(narrow))...)
 	if err != nil {

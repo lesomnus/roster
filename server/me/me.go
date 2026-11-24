@@ -69,10 +69,11 @@ import (
 // already reads it, and a second implementation of one question is two that
 // drift.
 //
-// The methods are in the order of their spelling. The sites are each said
+// The methods are in the order of their spelling. The sites, and the apps a
+// binding of roster's that reaches them is for (`Binding.app`), are each said
 // once, in the order of their identifiers, which is the order they were made
 // in.
-type Held func(ctx context.Context, who pdid.Id) (methods []string, sites []pdid.Id, every bool, err error)
+type Held func(ctx context.Context, who pdid.Id) (methods []string, sites, apps []pdid.Id, every bool, err error)
 
 // Own is what somebody may call about their own account and nobody else's:
 // what the gate lets through for everybody of their tenant, by its
@@ -191,7 +192,7 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 	}
 
 	if s.held != nil {
-		ms, sites, every, err := s.held(ctx, f.Actor)
+		ms, sites, apps, every, err := s.held(ctx, f.Actor)
 		if err != nil {
 			return nil, err
 		}
@@ -225,6 +226,12 @@ func (s *Server) Get(ctx context.Context, _ *app.MeGetRequest) (*app.MeGetRespon
 		res.EverySite = every
 		for _, k := range sites {
 			res.Sites = append(res.Sites, k.Bytes())
+		}
+
+		// And which apps what of `methods` is held for one app is for: over
+		// that app's rows alone (`Binding.app`).
+		for _, k := range apps {
+			res.Apps = append(res.Apps, k.Bytes())
 		}
 	}
 

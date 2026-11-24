@@ -72,6 +72,22 @@ func (s coreRole) Narrow(ctx context.Context, req *app.RoleNarrowRequest) (*app.
 			return nil, err
 		}
 
+		at := pdid.Nil
+		if b := got.GetSite().GetId(); len(b) > 0 {
+			if at, err = pdid.From(b); err != nil {
+				return nil, err
+			}
+		}
+		of, err := idOr(got.GetApp().GetId())
+		if err != nil {
+			return nil, err
+		}
+		// Somebody who holds this for an app narrows that app's roles, and is
+		// answered nothing of another's ([Core.mayWriteOfApp]).
+		if err := s.mayWriteOfApp(ctx, "ref", app.RoleService_Narrow_FullMethodName, "role", of, at); err != nil {
+			return nil, err
+		}
+
 		out, left := narrowed(got.GetMethods(), req.GetMethods())
 		for _, m := range req.GetMethods() {
 			if by := slices.IndexFunc(left, func(h string) bool { return frame.Covers(h, m) }); by >= 0 {
@@ -85,17 +101,7 @@ func (s coreRole) Narrow(ctx context.Context, req *app.RoleNarrowRequest) (*app.
 			return got, nil
 		}
 
-		at := pdid.Nil
-		if b := got.GetSite().GetId(); len(b) > 0 {
-			if at, err = pdid.From(b); err != nil {
-				return nil, err
-			}
-		}
-		of, err := idOr(got.GetApp().GetId())
-		if err != nil {
-			return nil, err
-		}
-		if err := s.mayTakeAway(ctx, "methods", out, at, of); err != nil {
+		if err := s.mayTakeAway(ctx, "methods", out, at, of, pdid.Nil); err != nil {
 			return nil, err
 		}
 
@@ -179,8 +185,11 @@ func narrowed(have, take []string) (out, left []string) {
 // At the app `of`, as `mayGrant` is: what somebody holds at roster takes
 // nothing away at an app, and the other way round.
 //
+// And for `to`, as `mayGrant` is: what is held for one app takes away what is
+// for that app, and nothing held for the tenant's whole.
+//
 // Waived for the deployment's own work, with no frame, as `mayGrant` is.
-func (s Core) mayTakeAway(ctx context.Context, field string, methods []string, at, of pdid.Id) error {
+func (s Core) mayTakeAway(ctx context.Context, field string, methods []string, at, of, to pdid.Id) error {
 	f, ok := frame.From(ctx)
 	if !ok {
 		return nil
@@ -195,11 +204,11 @@ func (s Core) mayTakeAway(ctx context.Context, field string, methods []string, a
 		return err
 	}
 
-	reaches := reachingAt(held, at, of)
+	reaches := reachingAt(held, at, of, to)
 	for _, m := range methods {
 		if !slices.ContainsFunc(reaches, func(v string) bool { return frame.Covers(v, m) }) {
 			return status.Errorf(codes.PermissionDenied,
-				"%s: you do not hold %s %s, so you may not take it away", field, quote.Sent(m), s.whereHeld(ctx, of))
+				"%s: you do not hold %s %s, so you may not take it away", field, quote.Sent(m), s.whereHeld(ctx, of, to))
 		}
 	}
 

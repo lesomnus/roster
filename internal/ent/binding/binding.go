@@ -28,6 +28,8 @@ const (
 	FieldHolderId = "holder_id"
 	// FieldGroupId holds the string denoting the group_id field in the database.
 	FieldGroupId = "group_id"
+	// FieldAppId holds the string denoting the app_id field in the database.
+	FieldAppId = "app_id"
 	// EdgeRole holds the string denoting the role edge name in mutations.
 	EdgeRole = "role"
 	// EdgeSite holds the string denoting the site edge name in mutations.
@@ -36,6 +38,8 @@ const (
 	EdgeHolder = "holder"
 	// EdgeGroup holds the string denoting the group edge name in mutations.
 	EdgeGroup = "group"
+	// EdgeApp holds the string denoting the app edge name in mutations.
+	EdgeApp = "app"
 	// Table holds the table name of the binding in the database.
 	Table = "binding"
 	// RoleTable is the table that holds the role relation/edge.
@@ -66,6 +70,13 @@ const (
 	GroupInverseTable = "group"
 	// GroupColumn is the table column denoting the group relation/edge.
 	GroupColumn = "group_id"
+	// AppTable is the table that holds the app relation/edge.
+	AppTable = "binding"
+	// AppInverseTable is the table name for the Holder entity.
+	// It exists in this package in order to avoid circular dependency with the "holder" package.
+	AppInverseTable = "holder"
+	// AppColumn is the table column denoting the app relation/edge.
+	AppColumn = "app_id"
 )
 
 // Columns holds all SQL columns for binding fields.
@@ -79,6 +90,7 @@ var Columns = []string{
 	FieldSiteId,
 	FieldHolderId,
 	FieldGroupId,
+	FieldAppId,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -134,6 +146,11 @@ func ByGroupId(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldGroupId, opts...).ToFunc()
 }
 
+// ByAppId orders the results by the app_id field.
+func ByAppId(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAppId, opts...).ToFunc()
+}
+
 // ByRoleField orders the results by role field.
 func ByRoleField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -159,6 +176,13 @@ func ByHolderField(field string, opts ...sql.OrderTermOption) OrderOption {
 func ByGroupField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newGroupStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByAppField orders the results by app field.
+func ByAppField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAppStep(), sql.OrderByField(field, opts...))
 	}
 }
 func newRoleStep() *sqlgraph.Step {
@@ -187,5 +211,12 @@ func newGroupStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldId),
 		sqlgraph.To(GroupInverseTable, FieldId),
 		sqlgraph.Edge(sqlgraph.M2O, false, GroupTable, GroupColumn),
+	)
+}
+func newAppStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldId),
+		sqlgraph.To(AppInverseTable, FieldId),
+		sqlgraph.Edge(sqlgraph.M2O, false, AppTable, AppColumn),
 	)
 }

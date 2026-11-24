@@ -120,7 +120,10 @@ func (s coreBinding) Erase(ctx context.Context, req *app.BindingRef) (*app.Bindi
 			Role: app.RoleSelect_builder{
 				Alias:  z.Ptr(true),
 				Tenant: app.TenantSelect_builder{}.Build(),
+				App:    app.HolderSelect_builder{}.Build(),
 			}.Build(),
+			Site: app.SiteSelect_builder{}.Build(),
+			App:  app.HolderSelect_builder{}.Build(),
 		}.Build(),
 	}.Build())
 	if status.Code(err) == codes.NotFound {
@@ -132,6 +135,25 @@ func (s coreBinding) Erase(ctx context.Context, req *app.BindingRef) (*app.Bindi
 		return nil, err
 	}
 	if err := s.mayWriteDeclared(ctx, "ref", v.GetLabels()); err != nil {
+		return nil, err
+	}
+
+	// Somebody who holds this for an app erases that app's bindings: of a
+	// role of its own, or of roster's for it ([Core.mayWriteOfApp]).
+	row, err := idOr(v.GetRole().GetApp().GetId())
+	if err != nil {
+		return nil, err
+	}
+	if row == pdid.Nil {
+		if row, err = idOr(v.GetApp().GetId()); err != nil {
+			return nil, err
+		}
+	}
+	site, err := idOr(v.GetSite().GetId())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayWriteOfApp(ctx, "ref", app.BindingService_Erase_FullMethodName, "binding", row, site); err != nil {
 		return nil, err
 	}
 
@@ -195,7 +217,10 @@ func (s coreRole) Erase(ctx context.Context, req *app.RoleRef) (*app.RoleEraseRe
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayTakeAway(ctx, "ref", got.GetMethods(), at, of); err != nil {
+	if err := s.mayWriteOfApp(ctx, "ref", app.RoleService_Erase_FullMethodName, "role", of, at); err != nil {
+		return nil, err
+	}
+	if err := s.mayTakeAway(ctx, "ref", got.GetMethods(), at, of, pdid.Nil); err != nil {
 		return nil, err
 	}
 	tenant, err := pdid.From(got.GetTenant().GetId())
@@ -292,12 +317,13 @@ func (s coreHolder) Erase(ctx context.Context, req *app.HolderRef) (*app.HolderE
 		return nil, err
 	}
 
-	// And the roles and the groups that are theirs as an app (`Role.app`,
-	// `Group.app`), in the same act: a role of an app that has ended names
-	// the methods of nobody, a group of one is the users of nothing, and what
-	// either handed out is gone as an erased role's or group's is. One
+	// And the roles, the groups and the bindings that are theirs as an app
+	// (`Role.app`, `Group.app`, `Binding.app`), in the same act: a role of an
+	// app that has ended names the methods of nobody, a group of one is the
+	// users of nothing, a binding for one reaches the rows of nothing, and
+	// what any of them handed out is gone as an erased row's is. One
 	// transaction, on the person's row, so the erase and theirs are all made
-	// or none; a restore of the person brings the row back and not these.
+	// or none; a restore of the person brings the row back and none of these.
 	var out *app.HolderEraseResponse
 	err = s.only(ctx, who.Bytes(), func(next app.Server, tx dialect.Driver) error {
 		in := coreHolder{s.over(next, tx), next.Holder()}
@@ -328,12 +354,13 @@ func (s coreHolder) Erase(ctx context.Context, req *app.HolderRef) (*app.HolderE
 }
 
 // erasedWithTheir erases every role and every group of the app `who` is, of
-// its tenant and still there: what [coreHolder.Erase] ends with them. Through
+// its tenant and still there, and every binding of a role of roster's that is
+// for it: what [coreHolder.Erase] ends with them. Through
 // `next`, the server under this layer, so each is the erase a role's or a
 // group's is, on the trail and on the stream; and asked nothing of what they
 // gave, which the person's erase already was.
 func erasedWithTheir(ctx context.Context, next app.Server, tenant []byte, who pdid.Id) error {
-	var roles [][]byte
+	var roles, rosters [][]byte
 	for after := ""; ; {
 		page, err := next.Role().List(ctx, app.RoleListRequest_builder{
 			Filters: []*app.RoleFilter{app.RoleFilter_builder{Tenant: app.TenantRef_builder{Id: tenant}.Build()}.Build()},
@@ -344,8 +371,11 @@ func erasedWithTheir(ctx context.Context, next app.Server, tenant []byte, who pd
 			return err
 		}
 		for _, r := range page.GetItems() {
-			if bytes.Equal(r.GetApp().GetId(), who.Bytes()) {
+			switch {
+			case bytes.Equal(r.GetApp().GetId(), who.Bytes()):
 				roles = append(roles, r.GetId())
+			case len(r.GetApp().GetId()) == 0:
+				rosters = append(rosters, r.GetId())
 			}
 		}
 		if after = page.GetNext(); after == "" {
@@ -373,6 +403,35 @@ func erasedWithTheir(ctx context.Context, next app.Server, tenant []byte, who pd
 		}
 	}
 
+	// A binding for an app is of a role of roster's (`Binding.app`), so
+	// those are what is looked through.
+	var bindings [][]byte
+	for _, r := range rosters {
+		for after := ""; ; {
+			page, err := next.Binding().List(ctx, app.BindingListRequest_builder{
+				Filters: []*app.BindingFilter{app.BindingFilter_builder{Role: app.RoleRef_builder{Id: r}.Build()}.Build()},
+				Size:    100,
+				After:   after,
+			}.Build())
+			if err != nil {
+				return err
+			}
+			for _, b := range page.GetItems() {
+				if bytes.Equal(b.GetApp().GetId(), who.Bytes()) {
+					bindings = append(bindings, b.GetId())
+				}
+			}
+			if after = page.GetNext(); after == "" {
+				break
+			}
+		}
+	}
+
+	for _, id := range bindings {
+		if _, err := next.Binding().Erase(ctx, app.BindingRef_builder{Id: id}.Build()); err != nil {
+			return err
+		}
+	}
 	for _, id := range roles {
 		if _, err := next.Role().Erase(ctx, app.RoleRef_builder{Id: id}.Build()); err != nil {
 			return err

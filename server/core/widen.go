@@ -39,7 +39,7 @@ func (s coreRole) Widen(ctx context.Context, req *app.RoleWidenRequest) (*app.Ro
 	for range widenTries {
 		got, err := s.RoleServiceServer.Get(ctx, app.RoleGetRequest_builder{
 			Ref:    req.GetRef(),
-			Select: app.RoleSelect_builder{All: z.Ptr(true), App: app.HolderSelect_builder{}.Build()}.Build(),
+			Select: app.RoleSelect_builder{All: z.Ptr(true), App: app.HolderSelect_builder{}.Build(), Site: app.SiteSelect_builder{}.Build()}.Build(),
 		}.Build())
 		if err != nil {
 			return nil, err
@@ -49,6 +49,20 @@ func (s coreRole) Widen(ctx context.Context, req *app.RoleWidenRequest) (*app.Ro
 		// is the same code a version that moved is answered with -- so it is
 		// never left to the patch to say.
 		if err := s.mayWriteDeclared(ctx, "ref", got.GetLabels()); err != nil {
+			return nil, err
+		}
+
+		// Somebody who holds this for an app widens that app's roles, and is
+		// answered nothing of another's ([Core.mayWriteOfApp]).
+		of, err := idOr(got.GetApp().GetId())
+		if err != nil {
+			return nil, err
+		}
+		at, err := idOr(got.GetSite().GetId())
+		if err != nil {
+			return nil, err
+		}
+		if err := s.mayWriteOfApp(ctx, "ref", app.RoleService_Widen_FullMethodName, "role", of, at); err != nil {
 			return nil, err
 		}
 
@@ -64,10 +78,6 @@ func (s coreRole) Widen(ctx context.Context, req *app.RoleWidenRequest) (*app.Ro
 
 		// Asked here as well as in the patch, since the patch's refusal of
 		// it is the code a version that moved is answered with.
-		of, err := idOr(got.GetApp().GetId())
-		if err != nil {
-			return nil, err
-		}
 		if err := s.namesRosters(of, next); err != nil {
 			return nil, err
 		}

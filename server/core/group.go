@@ -31,7 +31,9 @@ import (
 //   - the method held through a binding, which reaches every group of the
 //     scope it was made in -- a tenant's administrator;
 //   - the method held through a role in **this** group's own membership -- its
-//     managers.
+//     managers;
+//   - the method held for an app (`Binding.app`), which reaches that app's
+//     groups -- its administrators.
 //
 // What it does not replace is `mayJoin`. A group bound to roster's roles still
 // asks whoever puts somebody into it to hold what the group hands out. A
@@ -59,10 +61,37 @@ func (s Core) mayChangeGroup(ctx context.Context, method string, ref *app.GroupR
 		return err
 	}
 	if !ok {
-		return groupDenied(method)
+		return s.groupDeniedFor(ctx, method, ref)
 	}
 
 	return nil
+}
+
+// groupDeniedFor is [groupDenied], said to somebody who holds `method` for an
+// app (`Binding.app`): a binding for one reaches that app's groups and no
+// other ([Rules.Holds]), and the refusal names the app and the group.
+func (s Core) groupDeniedFor(ctx context.Context, method string, ref *app.GroupRef) error {
+	apps, _, _, err := s.heldFor(ctx, method)
+	if err != nil {
+		return err
+	}
+	if len(apps) == 0 {
+		return groupDenied(method)
+	}
+
+	g := "that group"
+	if v, err := s.Next().Group().Get(ctx, app.GroupGetRequest_builder{
+		Ref: ref,
+		Select: app.GroupSelect_builder{
+			Alias:  z.Ptr(true),
+			Tenant: app.TenantSelect_builder{Alias: z.Ptr(true)}.Build(),
+		}.Build(),
+	}.Build()); err == nil && v.GetAlias() != "" && v.GetTenant().GetAlias() != "" {
+		g = "@" + v.GetTenant().GetAlias() + "/" + v.GetAlias()
+	}
+
+	return status.Errorf(codes.PermissionDenied, "%s: you hold it for %s, and %s is not %s",
+		method, s.appsNamed(ctx, apps), g, s.whoseOf(ctx, apps))
 }
 
 func groupDenied(method string) error {

@@ -429,6 +429,7 @@ type Binding struct {
 	xxx_hidden_Site        *Site                  `protobuf:"bytes,3,opt,name=site"`
 	xxx_hidden_Holder      *Holder                `protobuf:"bytes,8,opt,name=holder"`
 	xxx_hidden_Group       *Group                 `protobuf:"bytes,9,opt,name=group"`
+	xxx_hidden_App         *Holder                `protobuf:"bytes,10,opt,name=app"`
 	xxx_hidden_Labels      map[string]string      `protobuf:"bytes,7,rep,name=labels" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
 	xxx_hidden_DateUpdated *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased  *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
@@ -497,6 +498,13 @@ func (x *Binding) GetGroup() *Group {
 	return nil
 }
 
+func (x *Binding) GetApp() *Holder {
+	if x != nil {
+		return x.xxx_hidden_App
+	}
+	return nil
+}
+
 func (x *Binding) GetLabels() map[string]string {
 	if x != nil {
 		return x.xxx_hidden_Labels
@@ -548,6 +556,10 @@ func (x *Binding) SetGroup(v *Group) {
 	x.xxx_hidden_Group = v
 }
 
+func (x *Binding) SetApp(v *Holder) {
+	x.xxx_hidden_App = v
+}
+
 func (x *Binding) SetLabels(v map[string]string) {
 	x.xxx_hidden_Labels = v
 }
@@ -592,6 +604,13 @@ func (x *Binding) HasGroup() bool {
 	return x.xxx_hidden_Group != nil
 }
 
+func (x *Binding) HasApp() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_App != nil
+}
+
 func (x *Binding) HasDateUpdated() bool {
 	if x == nil {
 		return false
@@ -629,6 +648,10 @@ func (x *Binding) ClearGroup() {
 	x.xxx_hidden_Group = nil
 }
 
+func (x *Binding) ClearApp() {
+	x.xxx_hidden_App = nil
+}
+
 func (x *Binding) ClearDateUpdated() {
 	x.xxx_hidden_DateUpdated = nil
 }
@@ -653,6 +676,26 @@ type Binding_builder struct {
 	// Who it is for: one of these, never both and never neither.
 	Holder *Holder
 	Group  *Group
+	// The app this role of roster's is held for, as the holder that app is
+	// answered as; empty is the tenant's whole.
+	//
+	// # roster's verbs, held for one app
+	//
+	// *This role of roster's, over what is that app's and nothing else*: its
+	// roles, the bindings of them, its groups and their memberships. It is what
+	// an app's administrator holds -- they put people into the app's groups and
+	// bind them the app's roles, and make a second administrator -- and it
+	// narrows as `site` narrows, so the two are not said together.
+	//
+	// Only for a role of roster's that names nothing but the verbs that reach an
+	// app's rows (`server/core`, `ForAnApp`), and the gate counts it for those
+	// alone whatever the role names after (`cmd/policy.go`); a binding of an
+	// app's own role says no app, since the role says it. What is held for one
+	// app is handed out for that app and no wider.
+	//
+	// One of the tenant's and not erased, set when the binding is made and never
+	// after.
+	App *Holder
 	// Whatever the deployment keeps about this row that the schema does not name.
 	//
 	// Number seven, the one an entity spends on labels (`host.proto`). A row a
@@ -681,6 +724,7 @@ func (b0 Binding_builder) Build() *Binding {
 	x.xxx_hidden_Site = b.Site
 	x.xxx_hidden_Holder = b.Holder
 	x.xxx_hidden_Group = b.Group
+	x.xxx_hidden_App = b.App
 	x.xxx_hidden_Labels = b.Labels
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
@@ -725,13 +769,15 @@ const file_app_role_proto_rawDesc = "" +
 	"\x02id\x10\x01\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
 	"\x06tenant\x1a\x06\n" +
-	"\x04site \x14(d\"\xed\x05\n" +
+	"\x04site \x14(d\"\x99\x06\n" +
 	"\aBinding\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12(\n" +
 	"\x04role\x18\x02 \x01(\v2\f.roster.RoleB\x06\xf2\x82\x16\x02@\x01R\x04role\x12*\n" +
 	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x120\n" +
 	"\x06holder\x18\b \x01(\v2\x0e.roster.HolderB\b\xf2\x82\x16\x048\x01@\x01R\x06holder\x12-\n" +
-	"\x05group\x18\t \x01(\v2\r.roster.GroupB\b\xf2\x82\x16\x048\x01@\x01R\x05group\x12;\n" +
+	"\x05group\x18\t \x01(\v2\r.roster.GroupB\b\xf2\x82\x16\x048\x01@\x01R\x05group\x12*\n" +
+	"\x03app\x18\n" +
+	" \x01(\v2\x0e.roster.HolderB\b\xf2\x82\x16\x048\x01@\x01R\x03app\x12;\n" +
 	"\x06labels\x18\a \x03(\v2\x1b.roster.Binding.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x01R\x06labels\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
@@ -782,15 +828,16 @@ var file_app_role_proto_depIdxs = []int32{
 	5,  // 8: roster.Binding.site:type_name -> roster.Site
 	6,  // 9: roster.Binding.holder:type_name -> roster.Holder
 	8,  // 10: roster.Binding.group:type_name -> roster.Group
-	3,  // 11: roster.Binding.labels:type_name -> roster.Binding.LabelsEntry
-	7,  // 12: roster.Binding.date_updated:type_name -> google.protobuf.Timestamp
-	7,  // 13: roster.Binding.date_erased:type_name -> google.protobuf.Timestamp
-	7,  // 14: roster.Binding.date_created:type_name -> google.protobuf.Timestamp
-	15, // [15:15] is the sub-list for method output_type
-	15, // [15:15] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	6,  // 11: roster.Binding.app:type_name -> roster.Holder
+	3,  // 12: roster.Binding.labels:type_name -> roster.Binding.LabelsEntry
+	7,  // 13: roster.Binding.date_updated:type_name -> google.protobuf.Timestamp
+	7,  // 14: roster.Binding.date_erased:type_name -> google.protobuf.Timestamp
+	7,  // 15: roster.Binding.date_created:type_name -> google.protobuf.Timestamp
+	16, // [16:16] is the sub-list for method output_type
+	16, // [16:16] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_app_role_proto_init() }

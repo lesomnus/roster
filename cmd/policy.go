@@ -435,25 +435,44 @@ type held struct {
 //     given (`mayGrant`);
 //   - a manager's role in a group reaches the group's site, or the tenant
 //     when it is in none -- and names only what changes that group's members;
-//   - what a file grants reaches the tenant.
+//   - what a file grants reaches the tenant;
+//   - a binding of a role of roster's for an app reaches that app's rows, in
+//     whatever site, and `of` says which: the wall that narrows it is
+//     [Apps], and the sites are not asked.
 type reach struct {
 	methods []string
 	site    uuid.UUID
 	all     bool
+	of      uuid.UUID
 }
 
 // sitesFor is where this caller holds `method`: the sites, or everywhere.
+//
+// What is held for an app is narrowed by its app ([Apps]) and the layer, and
+// not by a site: held for one app alone, a method is everywhere here and
+// that app's there. Held besides by a grant of no app in a site, it is that
+// site here, and the app narrows within it.
 func (h held) sitesFor(method string) (sites []uuid.UUID, all bool) {
+	forApp, other := false, false
 	for _, r := range h.reaches {
 		if !slices.ContainsFunc(r.methods, func(m string) bool { return frame.Covers(m, method) }) {
 			continue
 		}
+		if r.of != uuid.Nil() {
+			forApp = true
+
+			continue
+		}
+		other = true
 		if r.all {
 			return nil, true
 		}
 		if !slices.Contains(sites, r.site) {
 			sites = append(sites, r.site)
 		}
+	}
+	if forApp && !other {
+		return nil, true
 	}
 
 	return sites, false
@@ -691,6 +710,26 @@ func (p policy) of(ctx context.Context, who uuid.UUID, app uuid.UUID) (held, err
 			// another app's, which grants nothing here.
 			continue
 		}
+		if v.AppId != uuid.Nil() {
+			// Held for one app (`Binding.app`): the verbs that reach an app's
+			// rows and no other, whatever the role names by now
+			// ([core.HeldForAnApp]) -- for any other method it is as if it
+			// were not held. Across the tenant for the gate, and held to the
+			// app's rows by the wall ([Apps]) and the layer; not the sight of
+			// a site, nor anything `everywhere` says, which is the tenant's
+			// whole. A binding that says a site as well, or of a role of an
+			// app's, was refused where it was written, and gives nothing.
+			if app != roster || v.Edges.Site != nil {
+				continue
+			}
+			ms := core.HeldForAnApp(v.Edges.Role.Methods)
+			for _, m := range ms {
+				h.methods[m] = struct{}{}
+			}
+			h.reaches = append(h.reaches, reach{methods: ms, all: true, of: v.AppId})
+
+			continue
+		}
 		for _, m := range v.Edges.Role.Methods {
 			h.methods[m] = struct{}{}
 		}
@@ -874,9 +913,10 @@ func asItIs(column string) func(*entsql.UpdateBuilder) {
 }
 
 // Administered is [core.Administered] on this deployment's rows: the tenant's
-// roles of roster's whose patterns cover `method`, bound with no site to
-// somebody there and not suspended, or to a group of the tenant's with such
-// somebody in it. A role of an app's is nothing at roster, whatever it names.
+// roles of roster's whose patterns cover `method`, bound with no site and for
+// no app to somebody there and not suspended, or to a group of the tenant's
+// with such somebody in it. A role of an app's is nothing at roster, whatever
+// it names, and a binding for an app reaches that app's rows alone.
 //
 // Bindings and groups, and not a team: a role held in a team is held at the
 // team's site, which is not the whole tenant. And not what a deployment's
@@ -911,7 +951,7 @@ func Administered(db *ent.Client) core.Administered {
 		}
 
 		live := []predicate.Holder{holder.DateErasedIsNil(), holder.DateDisabledIsNil()}
-		across := []predicate.Binding{binding.RoleIdIn(ids...), binding.DateErasedIsNil(), binding.Not(binding.HasSite())}
+		across := []predicate.Binding{binding.RoleIdIn(ids...), binding.DateErasedIsNil(), binding.Not(binding.HasSite()), binding.AppIdIsNil()}
 		ok, err := c.Binding.Query().Where(append(across, binding.HasHolderWith(live...))...).Exist(ctx)
 		if err != nil || ok {
 			return ok, err
@@ -978,12 +1018,13 @@ func TenantOf(db *ent.Client) core.TenantOf {
 
 // Bound is whether a role is already bound to somebody, or to a group, in a
 // place, for [core.Bound]: a live binding of that role to that holder or
-// group, in that site or -- where `site` is the nil identifier -- in none.
+// group, in that site or -- where `site` is the nil identifier -- in none, and
+// for that app or for none.
 //
 // Written out where an index would say it, because an index cannot: a null
 // site is a value here, and no two nulls are equal to SQL.
 func Bound(db *ent.Client) core.Bound {
-	return func(ctx context.Context, drv dialect.Driver, role, to, site pdid.Id) (bool, error) {
+	return func(ctx context.Context, drv dialect.Driver, role, to, site, of pdid.Id) (bool, error) {
 		// On the driver it is handed, as [Administered] is: the transaction
 		// the binding is written in.
 		c := db
@@ -1001,6 +1042,11 @@ func Bound(db *ent.Client) core.Bound {
 			ps = append(ps, binding.SiteIdIsNil())
 		} else {
 			ps = append(ps, binding.SiteIdEQ(site.Uuid()))
+		}
+		if of == pdid.Nil {
+			ps = append(ps, binding.AppIdIsNil())
+		} else {
+			ps = append(ps, binding.AppIdEQ(of.Uuid()))
 		}
 
 		return c.Binding.Query().Where(ps...).Exist(ctx)
@@ -1314,15 +1360,23 @@ func Giving(db *ent.Client) core.Giving {
 					groupmembership.HasGroupWith(group.DateErasedIsNil()),
 				).
 				WithRole(live).
+				WithGroup().
 				All(ctx)
 			if err != nil {
 				return nil, err
 			}
 
+			// A manager's place in a group of an app's is held for that app,
+			// as appointing one was asked (`core`'s `mayAppoint`): it reaches
+			// that group alone, which is the app's.
 			var gs []core.Grant
 			for _, v := range vs {
 				if v.Edges.Role != nil {
-					gs = append(gs, core.Grant{Methods: v.Edges.Role.Methods, App: appOf(v.Edges.Role)})
+					g := core.Grant{Methods: v.Edges.Role.Methods, App: appOf(v.Edges.Role)}
+					if v.Edges.Group != nil && v.Edges.Group.AppId != uuid.Nil() {
+						g.For = pdid.Id(v.Edges.Group.AppId)
+					}
+					gs = append(gs, g)
 				}
 			}
 
@@ -1400,7 +1454,8 @@ func Holding(db *ent.Client, sources ...rbac.Source) core.Holding {
 }
 
 // grantsOf is a set of bindings as the rule reads them: what each allows,
-// where, and at which app.
+// where, at which app, and for which -- a binding of a role of roster's for an
+// app ([core.Grant]).
 //
 // One function because both answers are the same rows read the same way, and
 // two copies of this loop would be two places to remember that a binding with
@@ -1415,6 +1470,16 @@ func grantsOf(vs []*ent.Binding) []core.Grant {
 		g := core.Grant{Methods: v.Edges.Role.Methods, App: appOf(v.Edges.Role)}
 		if v.Edges.Site != nil {
 			g.Site = pdid.Id(v.Edges.Site.Id)
+		}
+		if v.AppId != uuid.Nil() {
+			// Held for one app: the verbs that reach an app's rows and no
+			// other, as the gate counts it ([policy.of]). A binding that says
+			// a site as well gives nothing.
+			if v.Edges.Site != nil || v.Edges.Role.AppId != roster {
+				continue
+			}
+			g.Methods = core.HeldForAnApp(v.Edges.Role.Methods)
+			g.For = pdid.Id(v.AppId)
 		}
 
 		gs = append(gs, g)
@@ -1457,6 +1522,16 @@ func Holds(db *ent.Client, sources ...rbac.Source) core.Holds {
 		)
 		for _, v := range vs {
 			if !allows(v.Edges.Role, method) {
+				continue
+			}
+			if v.AppId != uuid.Nil() {
+				// Held for one app: a group of that app's, by one of the verbs
+				// that reach an app's rows, and nothing else.
+				ok, err := ofTheApp(ctx, db, v, method, scope)
+				if err != nil || ok {
+					return ok, err
+				}
+
 				continue
 			}
 			if v.Edges.Site == nil || scope == pdid.Nil {
@@ -1528,6 +1603,19 @@ func Holds(db *ent.Client, sources ...rbac.Source) core.Holds {
 
 		return false, nil
 	}
+}
+
+// ofTheApp is whether a binding for an app (`Binding.app`) lets its holder
+// call `method` on the group `scope`: one of [core.ForAnApp], a group of that
+// app's, and the binding saying no site, which one for an app never does.
+func ofTheApp(ctx context.Context, db *ent.Client, v *ent.Binding, method string, scope pdid.Id) (bool, error) {
+	if v.Edges.Site != nil || scope.Domain() != pd.GroupDomain || !slices.Contains(core.ForAnApp, method) {
+		return false, nil
+	}
+
+	return db.Group.Query().
+		Where(group.IdEQ(scope.Uuid()), group.AppIdEQ(v.AppId), group.DateErasedIsNil()).
+		Exist(ctx)
 }
 
 // siteOf is the site a team or a group is in, and the nil identifier for one in none
@@ -1613,7 +1701,7 @@ func Everywhere(db *ent.Client, sources ...rbac.Source) core.Everywhere {
 func Everything(db *ent.Client, sources ...rbac.Source) me.Held {
 	held := HeldAt(db, sources...)
 
-	return func(ctx context.Context, who pdid.Id) ([]string, []pdid.Id, bool, error) {
+	return func(ctx context.Context, who pdid.Id) ([]string, []pdid.Id, []pdid.Id, bool, error) {
 		return held(ctx, who, pdid.Nil)
 	}
 }
@@ -1623,10 +1711,10 @@ func Everything(db *ent.Client, sources ...rbac.Source) me.Held {
 func HeldAt(db *ent.Client, sources ...rbac.Source) core.Held {
 	p := policy{db: db, sources: sources}
 
-	return func(ctx context.Context, who, of pdid.Id) ([]string, []pdid.Id, bool, error) {
+	return func(ctx context.Context, who, of pdid.Id) ([]string, []pdid.Id, []pdid.Id, bool, error) {
 		h, err := p.of(ctx, who.Uuid(), of.Uuid())
 		if err != nil {
-			return nil, nil, false, err
+			return nil, nil, nil, false, err
 		}
 
 		// The patterns themselves, not what they expand to.
@@ -1660,7 +1748,18 @@ func HeldAt(db *ent.Client, sources ...rbac.Source) core.Held {
 		slices.SortFunc(ks, func(a, b pdid.Id) int { return bytes.Compare(a.Bytes(), b.Bytes()) })
 		ks = slices.Compact(ks)
 
-		return ms, ks, h.anySite, nil
+		// And the apps what is held for one app is for (`Binding.app`), said
+		// as the sites are. None at an app: a binding for one is roster's.
+		as := make([]pdid.Id, 0)
+		for _, r := range h.reaches {
+			if r.of != uuid.Nil() {
+				as = append(as, pdid.Id(r.of))
+			}
+		}
+		slices.SortFunc(as, func(a, b pdid.Id) int { return bytes.Compare(a.Bytes(), b.Bytes()) })
+		as = slices.Compact(as)
+
+		return ms, ks, as, h.anySite, nil
 	}
 }
 

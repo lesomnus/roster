@@ -101,10 +101,11 @@ func (s Core) keepsAdministered(ctx context.Context, tenant pdid.Id, could bool,
 
 // grantsAdministration is whether any of `gs` is held across the whole tenant,
 // at roster, and administers it. A role of an app's naming [EveryMethod] gives
-// nothing at roster, so it administers nothing.
+// nothing at roster, so it administers nothing; nor does one of roster's held
+// for an app, which reaches that app's rows alone.
 func grantsAdministration(gs []Grant) bool {
 	return slices.ContainsFunc(gs, func(g Grant) bool {
-		return g.App == pdid.Nil && g.Site == pdid.Nil && administers(g.Methods)
+		return g.App == pdid.Nil && g.For == pdid.Nil && g.Site == pdid.Nil && administers(g.Methods)
 	})
 }
 
@@ -112,7 +113,7 @@ func grantsAdministration(gs []Grant) bool {
 // scope and its own app: what a row granted, taken away with it.
 func (s Core) mayTakeAll(ctx context.Context, field string, gs []Grant) error {
 	for _, g := range gs {
-		if err := s.mayTakeAway(ctx, field, g.Methods, g.Site, g.App); err != nil {
+		if err := s.mayTakeAway(ctx, field, g.Methods, g.Site, g.App, g.For); err != nil {
 			return err
 		}
 	}
