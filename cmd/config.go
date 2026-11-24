@@ -1239,14 +1239,10 @@ type ClientAuthConfig struct {
 	Scheme string `yaml:"scheme"`
 
 	// Credential is what goes after the scheme -- a key for `bearer`, a slug
-	// for `plain`.
-	//
-	// CredentialFile is the same thing from a file, which is what a deployment
-	// that mounts a secret has. Both may be set and the file wins, so that a
-	// development default in a checked-in file is overridden by the mount
-	// rather than silently competing with it.
-	Credential     string `yaml:"credential"`
-	CredentialFile string `yaml:"credential_file"`
+	// for `plain` -- as a [Token]: the thing itself, or where a deployment
+	// keeps it, `${file:/run/secrets/roster-key}` for a mounted secret. The
+	// whitespace around it goes, because a file ends in a newline.
+	Credential Token `yaml:"credential"`
 }
 
 // IsSet reports whether this says anything at all.
@@ -1254,7 +1250,7 @@ type ClientAuthConfig struct {
 // It is what makes `client.auth` with no `client.addr` a refusal rather than a
 // credential that is quietly never sent; see `cli/entity.go`.
 func (c ClientAuthConfig) IsSet() bool {
-	return c.Scheme != "" || c.Credential != "" || c.CredentialFile != ""
+	return c.Scheme != "" || !c.Credential.IsZero()
 }
 
 // Provider is how a command says who it is, or nil when it says nothing.
@@ -1304,23 +1300,19 @@ func (c ClientAuthConfig) Provider() (auth.Provider, error) {
 	}
 }
 
-// value is the credential, from whichever of the two said one.
+// value is the credential, read.
 //
-// The file wins, and a file that is named and not there is an error rather than
-// an empty credential: a deployment that mounted a secret and got the mount
-// path wrong must not fall through to calling as nobody, which reads as a
-// permission problem three layers away.
+// A file that is named and not there is an error rather than an empty
+// credential: a deployment that mounted a secret and got the mount path wrong
+// must not fall through to calling as nobody, which reads as a permission
+// problem three layers away.
 func (c ClientAuthConfig) value() (string, error) {
-	if c.CredentialFile == "" {
-		return c.Credential, nil
-	}
-
-	b, err := os.ReadFile(c.CredentialFile)
+	v, err := c.Credential.Value()
 	if err != nil {
-		return "", fmt.Errorf("client.auth.credential_file: %w", err)
+		return "", fmt.Errorf("client.auth.credential: %w", err)
 	}
 
-	return strings.TrimSpace(string(b)), nil
+	return v, nil
 }
 
 // ControlConfig is the second roster: the one holding keys rather than people.

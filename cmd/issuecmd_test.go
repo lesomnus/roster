@@ -121,7 +121,7 @@ func TestIssueMintsOverTheWire(t *testing.T) {
 		Client: cmd.ClientConfig{
 			Addr:     l.Addr().String(),
 			Insecure: true,
-			Auth:     cmd.ClientAuthConfig{Scheme: "bearer", Credential: token},
+			Auth:     cmd.ClientAuthConfig{Scheme: "bearer", Credential: credentialOf(token)},
 		},
 	}
 

@@ -92,7 +92,7 @@ func TestSyncWatchSaysWhatEndedIt(t *testing.T) {
 
 		c := cmd.Config{Client: cmd.ClientConfig{
 			Addr: cutSync(t), Insecure: true,
-			Auth: cmd.ClientAuthConfig{Scheme: "bearer", Credential: "rt_anything"},
+			Auth: cmd.ClientAuthConfig{Scheme: "bearer", Credential: credentialOf("rt_anything")},
 		}}
 		_, err := cliRun(t, &c, "sync", "watch")
 		x.Error(err)

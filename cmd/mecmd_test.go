@@ -110,7 +110,7 @@ func TestTheCliIsAlsoACustomersPerson(t *testing.T) {
 		Client: cmd.ClientConfig{
 			Addr:     l.Addr().String(),
 			Insecure: true,
-			Auth:     cmd.ClientAuthConfig{Scheme: "bearer", Credential: token},
+			Auth:     cmd.ClientAuthConfig{Scheme: "bearer", Credential: credentialOf(token)},
 		},
 	}
 	x.Empty(hers.Db.Driver, "a customer's person needs a database")
@@ -152,7 +152,7 @@ func TestTheCliIsAlsoACustomersPerson(t *testing.T) {
 		// straight into a laptop's configuration. Narrowed to what it names,
 		// besides -- her role lists holders and this key must not.
 		laptop := hers
-		laptop.Client.Auth = cmd.ClientAuthConfig{Scheme: "bearer", Credential: v}
+		laptop.Client.Auth = cmd.ClientAuthConfig{Scheme: "bearer", Credential: credentialOf(v)}
 
 		out := stdoutOf(t, root(t, &laptop), "me", "get")
 		x.Contains(out, "alice", "the minted key answers as somebody else")

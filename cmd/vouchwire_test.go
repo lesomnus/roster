@@ -113,7 +113,7 @@ func actingAs(t *testing.T, b *cliServed, delegation string, of []byte) error {
 	t.Cleanup(func() { conn.Close() })
 
 	ctx := metadata.AppendToOutgoingContext(t.Context(),
-		"authorization", "Bearer "+b.Hers.Client.Auth.Credential,
+		"authorization", "Bearer "+b.Token,
 		keys.HeaderActing, delegation,
 	)
 

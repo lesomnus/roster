@@ -70,7 +70,7 @@ client:
   addr: "roster.internal:50051"
   auth:
     scheme: bearer
-    credential_file: /home/kim/.roster/key   # an rt_, which resolves to them; the path as it is, `~` is not expanded
+    credential: ${file:/home/kim/.roster/key}   # an rt_, which resolves to them; the path as it is, `~` is not expanded
   # insecure: true                           # only for a listener that has no `tls:`
 ```
 

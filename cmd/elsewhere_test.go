@@ -93,12 +93,45 @@ func TestAValueKeptSomewhereElseIsWrittenAsTheLoaderWritesIt(t *testing.T) {
 
 	t.Run("a tenant key in the map is the key the reference names", func(t *testing.T) {
 		b := cliUp(t, directoryReads...)
-		at := elsewhereFile(t, b.Hers.Client.Auth.Credential)
+		at := elsewhereFile(t, b.Token)
 
 		// newco's key named for another tenant: refused by the directory as a
 		// key that cannot see it, which only the token itself can be.
 		err := elsewhereRun(t, "ldap:\n  roster: "+b.Hers.Client.Addr+"\n  insecure: true\n  keys:\n    other: ${file:"+at+"}\n",
 			"ldap", "serve")
 		require.ErrorContains(t, err, "cannot see")
+	})
+}
+
+// TestACommandsCredentialFromAFileIsAReference: a command's credential kept in
+// a file was a second key, `client.auth.credential_file`, beside
+// `client.auth.credential`, and the file won where both were said. Right is
+// one key, `credential`, a secret of the loader written `${file:/path}` where
+// the credential is kept in a file; `credential_file` is refused at start as
+// any key nothing reads is.
+func TestACommandsCredentialFromAFileIsAReference(t *testing.T) {
+	t.Run("credential_file is a key nothing reads", func(t *testing.T) {
+		err := elsewhereRun(t, "client:\n  auth:\n    credential_file: /run/secrets/roster-key\n", "config")
+		require.ErrorContains(t, err, "client.auth.credential_file: nothing reads this key")
+	})
+
+	t.Run("and credential, written as a reference to a file, signs a command in", func(t *testing.T) {
+		x := require.New(t)
+		b := cliUp(t, "/roster.HolderService/List")
+
+		client := func(at string) string {
+			return "client:\n" +
+				"  addr: " + b.Hers.Client.Addr + "\n" +
+				"  insecure: true\n" +
+				"  auth:\n" +
+				"    scheme: bearer\n" +
+				"    credential: ${file:" + at + "}\n"
+		}
+
+		// With the newline a tool ends the file with, which is not the key's.
+		x.NoError(elsewhereRun(t, client(elsewhereFile(t, b.Token)), "holder", "list"))
+		x.Error(elsewhereRun(t, client(elsewhereFile(t, "rt_NOBODYS")), "holder", "list"),
+			"a key that is nobody's signed in, so the file was not what was sent")
+		x.ErrorContains(elsewhereRun(t, client("/nowhere/at/all"), "holder", "list"), "client.auth.credential")
 	})
 }

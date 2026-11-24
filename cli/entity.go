@@ -736,7 +736,8 @@ func unheard(_ any, _ grpc.ServerStream, info *grpc.StreamServerInfo, _ grpc.Str
 //
 // There is no `--credential` flag and there will not be, for the reason
 // `roster key add` takes no key: an argument is in the shell history and in the
-// process list. `client.auth.credential_file` is what a mounted secret uses.
+// process list. `client.auth.credential: ${file:/path}` is what a mounted
+// secret uses.
 type remote struct{ c *cmd.Config }
 
 func (r remote) Connect(ctx context.Context) (pdcmd.Conn, func(), error) {
