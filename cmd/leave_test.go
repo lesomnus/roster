@@ -505,8 +505,8 @@ func TestAnExchangedTokenCarriesTheCallersSignIn(t *testing.T) {
 	exchanged := func(key string) string {
 		t.Helper()
 		v, err := app.NewDelegationServiceClient(b.Conn).Exchange(bearing(ctx, key), app.DelegationExchangeRequest_builder{
-			Audience: app.HolderRef_builder{Id: app2.Bytes()}.Build(),
-			Methods:  []string{exchange},
+			App:     app.HolderRef_builder{Id: app2.Bytes()}.Build(),
+			Methods: []string{exchange},
 		}.Build())
 		x.NoError(err)
 
