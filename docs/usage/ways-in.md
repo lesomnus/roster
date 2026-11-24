@@ -395,6 +395,7 @@ at the front door. The request is what such a client writes against:
 | `name` | what the key will be called, in the spelling a key's name is kept in; empty is `terminal` |
 | `allow` | the methods it may call, in full: of the app's where `app` names one, of roster's where it does not |
 | `app` | the app the key is for, by its alias in the tenant the request arrived at; absent or empty is a key of roster's |
+| `delegate` | `true`: what is asked for is a delegation issued to `app`, for that app to act as the person at roster, and not a key; `allow` is then roster's methods, and `app` is required |
 
 and answered RFC 8628 §3.2's `device_code`, `user_code`, `verification_uri`,
 `verification_uri_complete`, `expires_in` and `interval`; a poll is `POST
@@ -407,6 +408,8 @@ and answered RFC 8628 §3.2's `device_code`, `user_code`, `verification_uri`,
 | `404` | `no operator here serves this name` | no tenant answers at the name the request arrived at |
 | `400` | `a name and what to allow` | the body is not that JSON |
 | `400` | `allow: which methods this terminal may call` | `allow` is empty |
+| `400` | `app: a delegation is issued to an app; name the one that is to act for you` | `delegate` is said, and `app` is not |
+| `501` | `this deployment does not let an app act for somebody here: delegation.life is not set for this front door` | `delegate` is said, and the front door was handed no `delegation.life` |
 | `503` | `too many terminals are waiting to be approved here; try again in a minute` | a thousand and twenty-four are waiting, with `retry-after: 60` |
 | `500` | `cannot begin` | the front door could not make a code |
 
@@ -418,6 +421,25 @@ that is nobody of the tenant is refused there, `404` in the words a name nobody
 serves is. `TestTheTerminalsBeginningIsWhatTheManualSays`
 holds both tables to `account/device.go`, as `login/contract_test.go` holds
 the Login App's routes to theirs.
+
+**An app may ask to act for the person instead** (`delegate`): what its page
+writes for them -- putting somebody into its group because they pressed the
+button -- it then writes **as them**, through a delegation they approved here
+(§ *One somebody hands an app*). The page they approve at says so, in a
+delegation's words and not a key's: that this app will act as them at roster,
+what it may call, and for how long and until when (`/device/pending` answers
+`delegate` and `life`, in seconds: `delegation.life` as the front door read it
+from its own file). Their yes mints it with `DelegationService/Issue`, as them
+-- held to what they may call at roster, or refused in a delegation's words,
+`403` -- ending that long after the yes, which is what they were told; where
+roster's own `delegation.life` is shorter, roster refuses it and they are told so,
+`409`, and nothing is minted. The poll answers
+`{"token": "rd_…"}` once, as it answers a key, and the app presents it beside
+its own key in `roster-as`. The same switch opens it, `account.terminal`, and
+off it is told so at once, `501`, as a terminal is; and a front door that was
+handed no `delegation.life` offers none, `501` saying so, and still signs a
+terminal in. Anybody may begin one;
+nothing is minted without the person's approval.
 
 > **The other device grant.** A deployment with Hydra in front has a second one,
 > and it is not this: the Login App's `/device` screen, where a person types a code

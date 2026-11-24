@@ -789,7 +789,7 @@ account:
   addr: :8090
   base: https://account.contoso.example
   page: { dir: /usr/share/roster/account }
-  terminal: true                          # `roster sign-in`; off unless said
+  terminal: true                          # `roster sign-in`, and an app asking to act for somebody; off unless said
   # private_hosts: [idp.corp.example]     # a provider off the internet, or in plain http; none unless named
   # deployment_key: left out -- one rk_ made at start, narrowed per request to
   # the holder each tenant nominated. A process of its own names it: ${file:…}
@@ -831,9 +831,14 @@ Hydra's admin API that wants a credential is given it in `login.hydra.header`,
 
 `account.terminal` is **off unless a deployment says so**, and it is the one
 setting in that block that opens a door into an account: it lets a machine with no
-browser ask for a key, approved by the person in a page they are already signed in
-at ([usage/ways-in.md](usage/ways-in.md) § *A terminal, signed in from a browser*).
-Off, those endpoints answer 501 and the page draws no form for them. The blunt
+browser ask for a key, and an app ask to act for somebody at roster (a delegation
+issued to it, `delegate`), each approved by the person in a page they are already
+signed in at ([usage/ways-in.md](usage/ways-in.md) § *A terminal, signed in from a
+browser*). Off, those endpoints answer 501 to both and the page draws no form for
+them. The second also needs the front door to know `delegation.life`, which
+`roster serve` and `roster account serve` always hand it from the file, the
+default a day; a front door handed none offers no delegation, `501` saying so,
+and still signs a terminal in. The blunt
 control is a different thing and turns off more: take `ApiKeyService/Issue` out
 of the tenant's `self-service` role and **no** self-service key can be minted,
 the page's own app passwords included
@@ -1947,6 +1952,12 @@ delegation:
 A later end asked for is refused, saying this bound, and none takes it. It is
 stopped sooner as every delegation of theirs is: a suspension, signing out
 everywhere, an erasure, and the person ending it.
+
+The account app reads the same key from the file it was started with, and
+inside `roster serve` is handed the value the deployment read: it tells
+somebody approving an app's delegation how long it lasts, and mints it to end
+that long after their yes. A front door whose file says longer than roster's is
+refused at the approval, and the person is told so.
 
 A connection bound at the LDAP directory is held to the same rule by the
 directory, which asks roster about whoever bound it every five minutes it

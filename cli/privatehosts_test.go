@@ -23,7 +23,7 @@ func TestAFrontDoorsPrivateHostsAreReadAtStart(t *testing.T) {
 
 	err := serveAccount(ctx, cmd.AccountConfig{
 		Roster: "127.0.0.1:1", Connect: "http://127.0.0.1:1", PrivateHosts: wrong,
-	}, appKeys{})
+	}, 0, appKeys{})
 	x.ErrorContains(err, "account.private_hosts")
 	x.ErrorContains(err, `"https://idp.corp.example/realms/contoso"`)
 

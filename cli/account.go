@@ -165,7 +165,7 @@ func newCmdAccountServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			&flg.Strings{Name: "tenant-key", Brief: "a tenant key, as alias=rt_…; repeat per tenant fronted. Or " + AccountKeyPrefix + "<ALIAS> in the environment"},
 			cfg.BindText(l, &c.Account.DeploymentKey, &flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it: rk_…, or one reference as the whole value, '${file:/run/key}' or '${env:NAME}' in single quotes; instead of --tenant-key"}),
 			cfg.Bind(l, &c.Account.InsecureCookie, &flg.Switch{Name: "insecure-cookie", Brief: "a cookie without Secure, for a page served over plain http in development"}),
-			cfg.Bind(l, &c.Account.Terminal, &flg.Switch{Name: "terminal", Brief: "let a machine with no browser ask for a key here (`roster sign-in`)"}),
+			cfg.Bind(l, &c.Account.Terminal, &flg.Switch{Name: "terminal", Brief: "let a machine with no browser ask for a key here (`roster sign-in`), and an app ask to act for somebody at roster, each approved by the person"}),
 			cfg.BindFunc(l, &c.Account.Seal, &flg.Strings{Name: "seal", Brief: "the key sessions are sealed into the cookie under, 32 bytes base64, or one reference to it as the whole value, '${env:NAME}' or '${file:/path}' in single quotes; repeat to rotate, the first seals. Empty is a key made at start, which is one replica"}, tokensOf),
 		},
 
@@ -208,7 +208,7 @@ func newCmdAccountServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				return errors.New("--roster and --connect (or account.roster and account.connect): where roster speaks gRPC, and where the same server speaks HTTP")
 			}
 
-			return serveAccount(ctx, ac, f)
+			return serveAccount(ctx, ac, c.Delegation.Lives(), f)
 		}),
 	}
 }
@@ -230,14 +230,18 @@ func (f appKeys) none() bool { return f.key == "" && len(f.keys) == 0 }
 
 // serveAccount stands the front door up and answers on it until ctx is done.
 //
-// Told a [cmd.AccountConfig] and the keys read from it, and nothing else,
-// because it is called from two places -- the command above, and `roster
+// Told a [cmd.AccountConfig], the keys read from it and `delegation.life`,
+// and nothing else, because it is called from two places -- the command above, and `roster
 // serve` when `account:` names an address -- and the whole point of the block
 // is that both build the same thing from the same values.
 //
 // It does not build telemetry. Both callers already have; there is one process
 // either way and two would be two providers.
-func serveAccount(ctx context.Context, ac cmd.AccountConfig, f appKeys) error {
+//
+// `life` is `delegation.life` as the file the process started with says it,
+// the key roster reads in the same spelling: what the front door tells
+// somebody approving an app's delegation, and mints it for.
+func serveAccount(ctx context.Context, ac cmd.AccountConfig, life time.Duration, f appKeys) error {
 	// What has a form, held to it before anything is dialled; `roster
 	// serve` asks the same in `cmd.Build`.
 	if err := ac.Meant(); err != nil {
@@ -262,6 +266,7 @@ func serveAccount(ctx context.Context, ac cmd.AccountConfig, f appKeys) error {
 		// app sets one cookie the store does not: a provider flow's state.
 		InsecureCookie: ac.InsecureCookie,
 		Terminal:       ac.Terminal,
+		DelegationLife: life,
 	}
 	if ac.Base != "" {
 		cfg.Base, err = url.Parse(ac.Base)

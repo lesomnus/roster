@@ -892,10 +892,14 @@ const appPasswordMethods = ['/roster.MeService/Get']
  * the whole of the decision: `account/device.go` refuses to mint
  * anything wider than the person approving it, and somebody who cannot see the
  * list cannot be said to have approved it.
+ *
+ * An app may ask the same way to **act as them** at roster (`delegate`), and
+ * then it is no key at all: what is drawn says the app will act as them, in
+ * words of its own, and the yes mints a delegation issued to it.
  */
 function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 	const [code, setCode] = useState(waiting ?? '')
-	const [asked, setAsked] = useState<{ name: string; app: string; methods: string[] } | null>(null)
+	const [asked, setAsked] = useState<{ name: string; app: string; methods: string[]; delegate?: boolean; life?: number } | null>(null)
 	const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
 
 	const look = (v: string): void => {
@@ -904,7 +908,7 @@ function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 		void fetch(`/device/pending?user_code=${encodeURIComponent(v)}`)
 			.then(async (res) =>
 				res.ok
-					? setAsked((await res.json()) as { name: string; app: string; methods: string[] })
+					? setAsked((await res.json()) as { name: string; app: string; methods: string[]; delegate?: boolean; life?: number })
 					: setNote({ ok: false, text: await why(res) }),
 			)
 			.catch(() => setNote({ ok: false, text: 'that could not be looked up' }))
@@ -921,7 +925,14 @@ function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 				}
 				setAsked(null)
 				setCode('')
-				setNote({ ok: true, text: deny ? 'refused, and the terminal has been told' : 'signed in; the terminal has its key' })
+				setNote({
+					ok: true,
+					text: deny
+						? 'refused, and it has been told'
+						: asked?.delegate === true
+							? 'done; the app acts as you at roster until it ends'
+							: 'signed in; the terminal has its key',
+				})
 			})
 			.catch(() => setNote({ ok: false, text: 'that could not be answered' }))
 	}
@@ -944,7 +955,37 @@ function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 					look it up
 				</button>
 			</p>
-			{asked !== null && (
+			{asked !== null && asked.delegate === true && (
+				<>
+					<p className="note">
+						<b className="mono">{asked.app}</b> asks to <b>act as you</b> at roster: what it does there is
+						done as you, and the trail names you. No key is made.
+					</p>
+					<table>
+						<tbody>
+							<tr>
+								<td>as you, it may call</td>
+								<td className="mono">{asked.methods.join(', ')}</td>
+							</tr>
+							<tr>
+								<td>for</td>
+								<td>
+									{lasting(asked.life ?? 0)}, until{' '}
+									{new Date(Date.now() + (asked.life ?? 0) * 1000).toLocaleString()}, unless you end it sooner
+								</td>
+							</tr>
+						</tbody>
+					</table>
+					<p className="acts">
+						<button disabled={!props.may('/roster.DelegationService/Issue')} onClick={() => answer(false)}>
+							let it act as me
+						</button>
+						<button onClick={() => answer(true)}>no</button>
+					</p>
+					{!props.may('/roster.DelegationService/Issue') && <Needs method="/roster.DelegationService/Issue" />}
+				</>
+			)}
+			{asked !== null && asked.delegate !== true && (
 				<>
 					<table>
 						<tbody>
@@ -974,6 +1015,15 @@ function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}
 		</section>
 	)
+}
+
+/** lasting is a life in seconds as somebody reads one: `1 day`, `8 hours`, `30 minutes`. */
+function lasting(seconds: number): string {
+	const say = (n: number, unit: string): string => `${n} ${unit}${n === 1 ? '' : 's'}`
+	if (seconds % 86400 === 0 && seconds > 0) return say(seconds / 86400, 'day')
+	if (seconds % 3600 === 0 && seconds > 0) return say(seconds / 3600, 'hour')
+
+	return say(Math.round(seconds / 60), 'minute')
 }
 
 function Keys(props: {
