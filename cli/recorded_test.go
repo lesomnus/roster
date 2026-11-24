@@ -305,6 +305,7 @@ func TestEveryReadOfSomebodyAtTheBoxIsRecordedOrSaysWhy(t *testing.T) {
 		// identifier, and shows none of those fields.
 		"boundToOthers":       "whether a role is bound to anybody but one holder, by identifier; prints nothing",
 		"ensureBinding":       "finds or makes the binding a provisioner declares, with the labels the command chose; prints nothing of the row",
+		"ensureBindingFor":    "finds or makes the binding of roster's for an app that install writes, by identifier; prints nothing of the row",
 		"ensureNominated":     "finds or makes the nomination a front door declares, with the labels the command chose; prints nothing of the row",
 		"nominationOf":        "the nomination of an app in a tenant, for install and uninstall, which read who it acts as by identifier; prints nothing itself",
 		"installApp":          "makes an app's holder, role, binding and nomination under the name the operator typed, and says which keys borrow through it by identifier; prints nothing of a row",

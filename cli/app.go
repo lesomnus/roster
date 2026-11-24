@@ -21,6 +21,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 )
 
 // NewCmdApp is a roster-hosted app, put into a tenant and taken out of one.
@@ -32,8 +33,9 @@ import (
 // (`proto/app/nomination.proto`, `docs/apps.md`). So putting it into a tenant
 // is four rows there -- the holder, a role of roster's naming what the app asks
 // of roster, the binding, the nomination -- and the app's first grant at
-// itself: a role of the app's naming what it serves (`Role.app`), held by the
-// app and by the people who are to administer it there.
+// itself: a role of the app's naming what it serves (`Role.app`), and roster's
+// verbs for the app (`Binding.app`), each held by the app and by the people who
+// are to administer it there.
 //
 // # Why it is a roster operator's, and a command rather than an RPC
 //
@@ -89,7 +91,7 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 			&flg.String{Name: "tenant", Brief: "the tenant, by alias"},
 			&flg.Strings{Name: "allow", Brief: "what the app may do there, as methods of roster's; repeat it, or comma separate"},
 			&flg.Strings{Name: "serves", Brief: "the app's own methods, as patterns: a role of the app's, held by it and by whoever --administer names"},
-			&flg.Strings{Name: "administer", Brief: "people of the tenant, by alias, who hold what --serves names there and hand it on; repeat it, or comma separate"},
+			&flg.Strings{Name: "administer", Brief: "people of the tenant, by alias, who administer the app: what --serves names, and roster's verbs for the app; repeat it, or comma separate"},
 			&flg.Switch{Name: "adopt", Brief: "use a holder of the app's name that already holds roles, keys or a way to sign in, with all of it"},
 		},
 
@@ -157,6 +159,10 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 // one of roster's naming what roster does not serve -- leaves the holder,
 // which a second run finds holding nothing and takes.
 //
+// A `NAME-app` already there that is not roster's is refused before anything
+// is bound to it, as a `NAME-everything` that is not the app's is: bound, it
+// would hand the app whatever it names at another app.
+//
 // A holder of the app's name that is already there is somebody's, and is used
 // only if it holds nothing but the app's own roles -- which is what a second
 // run finds -- or when `--adopt` says to. Taking it silently was answering the
@@ -171,10 +177,19 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 // `people`, who may then hand the app's methods on there as anybody hands on
 // what they hold. One called so that is already there is left as the tenant
 // has it, when it is the app's, and refused before anything is written when it
-// is roster's or another app's. Nothing of roster's is given by it: binding a role is
-// `BindingService/Add`, which a tenant's administrator holds and the app holds
-// only if `--allow` names it. The tenant's administrators' own role is not
-// written to.
+// is roster's or another app's.
+//
+// # And roster's verbs, for the app
+//
+// Beside it, [core.AppAdministrator] is bound **for the app** to the app's
+// holder and to each of `people`: roster's verbs over the app's roles, the
+// bindings of them, its groups and their memberships, and nothing else of the
+// tenant's. So the app reads and writes what is its own as itself, and its
+// administrators do at roster, binding the app's roles and making a second
+// administrator. The role is the tenant's one of that name, made here the
+// first time it is needed and used as it stands when it names fewer; one
+// naming anything else is refused before anything is written. The tenant's
+// administrators' own role is not written to.
 func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods, own, people []string, adopt bool) ([]string, error) {
 	at := rstr.TenantRef_builder{Alias: z.Ptr(tenant)}.Build()
 	tn, err := s.Ungated.Tenant().Get(ctx, rstr.TenantGetRequest_builder{
@@ -203,6 +218,25 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 	existing, err := roleNamed(ctx, s, at, AppRole(name))
 	if err != nil {
 		return nil, err
+	}
+	if existing != nil {
+		// One that is there is left as the tenant has it -- when it is
+		// roster's. One of an app's bound to the app would hand it whatever
+		// that app's role names there, and not what `--allow` says at roster.
+		if err := appRoleIsRosters(ctx, s, existing, tenant, name); err != nil {
+			return nil, err
+		}
+	}
+	administers, err := roleNamed(ctx, s, at, core.AppAdministrator)
+	if err != nil {
+		return nil, err
+	}
+	if administers != nil && len(own) > 0 {
+		// Used as it stands where it names what an app's administrator may
+		// hold, and refused before anything is written where it names more.
+		if err := administersAnApp(ctx, s, administers, tenant); err != nil {
+			return nil, err
+		}
 	}
 	everything, err := roleNamed(ctx, s, at, EveryRole(name))
 	if err != nil {
@@ -274,6 +308,27 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 				return nil, err
 			}
 			said = append(said, fmt.Sprintf("@%s/%s may hand on %s's methods at @%s/%s through role %s.", tenant, people[i], name, tenant, name, EveryRole(name)))
+		}
+
+		// And roster's verbs for the app, to the app and to the same people.
+		administers, made, err := roleOnce(ctx, s, at, core.AppAdministrator, core.ForAnApp, nil)
+		if err != nil {
+			return nil, err
+		}
+		if made {
+			said = append(said, fmt.Sprintf("%s has role %s, naming the %d method(s) of roster's that reach an app's rows.", tenant, core.AppAdministrator, len(core.ForAnApp)))
+		} else {
+			said = append(said, fmt.Sprintf("%s already has role %s; left as the tenant has it.", tenant, core.AppAdministrator))
+		}
+		if err := ensureBindingFor(ctx, s, administers, who, who); err != nil {
+			return nil, err
+		}
+		said = append(said, fmt.Sprintf("@%s/%s reads and writes what is its own at roster through role %s, for itself.", tenant, name, core.AppAdministrator))
+		for i, v := range admins {
+			if err := ensureBindingFor(ctx, s, administers, v, who); err != nil {
+				return nil, err
+			}
+			said = append(said, fmt.Sprintf("@%s/%s administers @%s/%s at roster through role %s, for @%s/%s.", tenant, people[i], tenant, name, core.AppAdministrator, tenant, name))
 		}
 	}
 
@@ -372,6 +427,79 @@ func everyRoleIsTheApps(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, 
 	return nil
 }
 
+// appRoleIsRosters refuses a role called [AppRole] that is not a role of
+// roster's: one of an app's, which would hand the app's holder what it names
+// at that app and nothing `--allow` says at roster.
+func appRoleIsRosters(ctx context.Context, s *cmd.Server, role []byte, tenant, name string) error {
+	v, err := s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
+		Ref:    rstr.RoleRef_builder{Id: role}.Build(),
+		Select: rstr.RoleSelect_builder{App: rstr.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return err
+	}
+	if len(v.GetApp().GetId()) > 0 {
+		return fmt.Errorf("%s already has a role %s, and it is not roster's", tenant, AppRole(name))
+	}
+
+	return nil
+}
+
+// administersAnApp refuses a tenant's [core.AppAdministrator] naming anything
+// but [core.ForAnApp], which is refused a binding for an app: asked here, before
+// anything is written, rather than by the binding after the holder and the
+// roles are.
+func administersAnApp(ctx context.Context, s *cmd.Server, role []byte, tenant string) error {
+	v, err := s.Ungated.Role().Get(ctx, rstr.RoleGetRequest_builder{
+		Ref:    rstr.RoleRef_builder{Id: role}.Build(),
+		Select: rstr.RoleSelect_builder{Methods: z.Ptr(true), App: rstr.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if err != nil {
+		return err
+	}
+	if len(v.GetApp().GetId()) > 0 {
+		return fmt.Errorf("%s already has a role %s, and it is not roster's", tenant, core.AppAdministrator)
+	}
+	for _, m := range v.GetMethods() {
+		if !slices.Contains(core.ForAnApp, m) {
+			return fmt.Errorf("%s's role %s names %s, and an app's administrators hold it for the app; it may name only what reaches an app's rows (%s)",
+				tenant, core.AppAdministrator, m, strings.Join(core.ForAnApp, ", "))
+		}
+	}
+
+	return nil
+}
+
+// ensureBindingFor is [ensureBinding] for an app (`Binding.app`): `role` bound
+// to `who` for the app `of`, made if there is none.
+func ensureBindingFor(ctx context.Context, s *cmd.Server, role, who, of []byte) error {
+	vs, err := s.Ungated.Binding().List(ctx, rstr.BindingListRequest_builder{
+		Filters: []*rstr.BindingFilter{rstr.BindingFilter_builder{
+			Role:   rstr.RoleRef_builder{Id: role}.Build(),
+			Holder: rstr.HolderRef_builder{Id: who}.Build(),
+		}.Build()},
+	}.Build())
+	if err != nil {
+		return err
+	}
+	for _, v := range vs.GetItems() {
+		if bytes.Equal(v.GetApp().GetId(), of) {
+			return nil
+		}
+	}
+
+	_, err = s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role:   rstr.RoleRef_builder{Id: role}.Build(),
+		Holder: rstr.HolderRef_builder{Id: who}.Build(),
+		App:    rstr.HolderRef_builder{Id: of}.Build(),
+	}.Build())
+	if err != nil && status.Code(err) != codes.AlreadyExists {
+		return err
+	}
+
+	return nil
+}
+
 // aliasesOf is a flag's people, each once: repeated, or comma separated.
 func aliasesOf(vs []string) []string {
 	out := []string{}
@@ -432,8 +560,8 @@ func nominationOf(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, borrow
 // request. A key of the app's that lists methods of its own is the
 // deployment's in every tenant, asks no nomination, and is ended by name.
 //
-// The holder, its roles and their bindings stay -- the role of roster's, and
-// the app's own and whoever it was bound to. The trail names the holder, so it
+// The holder, its roles and their bindings stay -- the role of roster's, the
+// app's own and whoever it was bound to, and roster's verbs for the app. The trail names the holder, so it
 // stays as every holder does, and a role the tenant may have shaped is theirs to
 // erase. A tenant administrator ends the same nomination themselves with
 // `Nomination.Erase`, and needs nothing from a roster operator to do it.

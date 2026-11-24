@@ -106,10 +106,16 @@ bound to the app's holder: methods roster serves, and nothing else. `--serves`
 is the app's own methods, as patterns, in `loft-everything`, **a role of the
 app's** (`Role.app`) bound to the app's holder -- so that it may write, widen
 and bind the roles it ships -- and to each person `--administer` names, by alias,
-who then hold the app's methods at the app and hand them on there. With no
-`--serves` there is no such role, and `--administer` without it is refused; a
-name that is nobody of the tenant is refused before anything is written, and so
-is a `loft-everything` already there that is roster's or another app's.
+who then hold the app's methods at the app and hand them on there. Beside it,
+`app-administrator` -- roster's verbs over what is the app's, made the first
+time it is needed -- is bound **for the app** (`Binding.app`) to the app's
+holder, so it reads and writes what is its own as itself, and to the same
+people, who are then its administrators at roster (§ *An app's
+administrators*). With no `--serves` there is neither, and `--administer`
+without it is refused; a name that is nobody of the tenant is refused before
+anything is written, and so is a `loft-everything` already there that is
+roster's or another app's, a `loft-app` that is not roster's, and an
+`app-administrator` of the tenant's naming more than reaches an app's rows.
 
 It is the roster operator's because of the last two flags. What somebody holds is
 held at an app, and nobody hands out what they do not hold there -- so nobody in
@@ -117,13 +123,13 @@ the tenant holds anything at an app that has just arrived, and nobody could give
 the app's holder its first role there, or themselves the right to manage it. The
 tenant's administrators' own role is not written to: binding a role of the
 app's is `BindingService/Add`, which they hold, and what they bind is held to
-what they hold at the app. From then on the holder's bindings, both roles and
+what they hold at the app. From then on the holder's bindings, its roles and
 the nomination are the tenant's. Installing again leaves a role the tenant
 reshaped as they have it, and puts back a nomination or binding that is gone --
 it is how an operator puts an app back after a tenant ended it, which the tenant
 usually cannot do itself: nominating the app's holder needs what it holds.
 `roster app uninstall --tenant acme loft` ends the nomination, and leaves the
-holder, both roles and their bindings, as it always left the first; the tenant
+holder, its roles and their bindings, as it always left the first; the tenant
 administrator can end the nomination from the user console's *apps* tab. The Login App and the account app do this for themselves at start, in
 every tenant with a name that is not being destroyed -- so for them ending it
 lasts until the next start.
@@ -336,6 +342,8 @@ lined up.
 2. **The people it is to be administered by hold them too** (`--administer`),
    or nobody in the tenant could bind the roles the app writes: binding one is
    a grant at the app, and a tenant's first administrator holds nothing there.
+   And they hold roster's verbs for the app (`app-administrator`), which is
+   what binding one is at roster.
 3. **The app writes with `Role.Add`, and widens with `Role.Widen`.** At its
    own setup -- `loft init` -- each role it ships is added under its alias, as a
    role of its own (`app` is the holder it is), and one already there is the
@@ -409,6 +417,10 @@ write reads the person through the wall as the write it is, and a grant of no
 site reaches the whole tenant. What neither of them holds is a read of the
 tenant's people (`HolderService/List`, `/Search`), so they name somebody they
 were told of.
+
+The first are whoever `roster app install --administer` names, with nothing
+else bound to them; the app's own holder is bound `app-administrator` for
+itself, so the app reads and writes what is its own as itself.
 
 They hand both on as they hold them: `app-administrator` for Loft, and Loft's
 role, to a second person, who can then do the same. What is held for Loft is
