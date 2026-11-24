@@ -320,7 +320,7 @@ func At(deployment app.Server, tenant app.Server) auth.Handler {
 
 			// The key's, so that a stream opened with it ends when it does, as
 			// one answered by [Store] would. Left out, a watch outlived the key.
-			DateExpires: k.Expires,
+			DateExpired: k.Expires,
 		}
 
 		if t := h.GetTenant().GetId(); len(t) > 0 {

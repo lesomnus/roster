@@ -11,7 +11,6 @@ import (
 	nomination "github.com/lesomnus/roster/internal/ent/nomination"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -36,11 +35,14 @@ type NominationServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewNominationServiceServer(db *ent.Client, opts ...Option) rstr.NominationServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return NominationServiceServer{Store: s.Store}
 }
@@ -185,7 +187,10 @@ func (st NominationServiceServer) create(ctx context.Context, req *rstr.Nominati
 }
 
 func (s NominationServiceServer) Add(ctx context.Context, req *rstr.NominationAddRequest) (*rstr.Nomination, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -200,7 +205,7 @@ func (s NominationServiceServer) Add(ctx context.Context, req *rstr.NominationAd
 	}
 
 	var stored *ent.Nomination
-	if snapshotOptions(s.Rec, rstr.NominationService_Add_FullMethodName).Value {
+	if s.images(rstr.NominationService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -226,10 +231,11 @@ func (s NominationServiceServer) Add(ctx context.Context, req *rstr.NominationAd
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.NominationService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.Nomination",
+		By:     rstr.NominationService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -384,6 +390,9 @@ func NominationSelectInit(ctx context.Context, scope Scope, q *ent.NominationQue
 }
 
 func (s NominationServiceServer) Patch(ctx context.Context, req *rstr.NominationPatchRequest) (*rstr.Nomination, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(nominationOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
 		switch ed.Number() {
 		case 9:
@@ -443,6 +452,9 @@ var nominationPatchColumns = entpatch.Columns{
 	1: nomination.FieldId, 2: nomination.TenantColumn, 7: nomination.FieldLabels, 5: nomination.FieldName, 8: nomination.FieldBorrowerId, 9: nomination.ActsAsColumn, 13: nomination.FieldDateUpdated, 14: nomination.FieldDateErased, 15: nomination.FieldDateCreated}
 
 func (s NominationServiceServer) Apply(ctx context.Context, req *rstr.NominationApplyRequest) (*rstr.Nomination, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -470,7 +482,7 @@ func (s NominationServiceServer) apply(ctx context.Context, ref *rstr.Nomination
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -491,7 +503,7 @@ func (s NominationServiceServer) apply(ctx context.Context, ref *rstr.Nomination
 	}
 
 	var previous *rstr.Nomination
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -560,7 +572,8 @@ func (s NominationServiceServer) apply(ctx context.Context, ref *rstr.Nomination
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Nomination",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -577,6 +590,9 @@ func (s NominationServiceServer) apply(ctx context.Context, ref *rstr.Nomination
 }
 
 func (s NominationServiceServer) Erase(ctx context.Context, req *rstr.NominationRef) (*rstr.NominationEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := NominationPick(req)
 	if err != nil {
 		return nil, err
@@ -586,7 +602,7 @@ func (s NominationServiceServer) Erase(ctx context.Context, req *rstr.Nomination
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -597,8 +613,8 @@ func (s NominationServiceServer) Erase(ctx context.Context, req *rstr.Nomination
 
 	var k any
 	var previous *rstr.Nomination
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.NominationService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.NominationService_Erase_FullMethodName)
 		var v *ent.Nomination
 		var err error
 		if images.Previous {
@@ -629,7 +645,8 @@ func (s NominationServiceServer) Erase(ctx context.Context, req *rstr.Nomination
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Nomination",
 			By:       rstr.NominationService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

@@ -8,6 +8,7 @@ package rstr
 
 import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -3130,9 +3131,9 @@ var File_app_credential_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/credential_svc.g.proto\x12\x06roster\x1a\x14app/credential.proto\x1a\x15app/email_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xc8\x03\n" +
-	"\x14CredentialAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x1aapp/credential_svc.g.proto\x12\x06roster\x1a\x14app/credential.proto\x1a\x15app/email_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xd0\x03\n" +
+	"\x14CredentialAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04kind\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12\x1d\n" +
@@ -3146,9 +3147,9 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"q\n" +
 	"\x14CredentialGetRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.CredentialRefR\x03ref\x120\n" +
-	"\x06select\x18\x02 \x01(\v2\x18.roster.CredentialSelectR\x06select\"[\n" +
-	"\rCredentialRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x121\n" +
+	"\x06select\x18\x02 \x01(\v2\x18.roster.CredentialSelectR\x06select\"c\n" +
+	"\rCredentialRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x121\n" +
 	"\x04kind\x18\x02 \x01(\v2\x1b.roster.CredentialRefByKindH\x00R\x04kindB\x05\n" +
 	"\x03key\"h\n" +
 	"\x13CredentialRefByKind\x12)\n" +

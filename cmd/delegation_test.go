@@ -247,7 +247,7 @@ func TestADelegationIsBoundToWhoeverWasGivenIt(t *testing.T) {
 		x.NoError(err)
 		x.True(id.Grant.Allows(get))
 		x.False(id.Grant.IsWhole())
-		x.False(id.DateExpires.IsZero(), "a delegation that never expires is not one")
+		x.False(id.DateExpired.IsZero(), "a delegation that never expires is not one")
 	})
 
 	// A second app, holding its own key, presenting the first one's delegation.

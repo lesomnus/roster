@@ -7,6 +7,7 @@
 package rstr
 
 import (
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1203,23 +1204,23 @@ var File_app_continuation_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_continuation_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1capp/continuation_svc.g.proto\x12\x06roster\x1a\x16app/continuation.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a roster/payday/holder_svc.g.proto\"\xd1\x02\n" +
-	"\x16ContinuationAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x1capp/continuation_svc.g.proto\x12\x06roster\x1a\x16app/continuation.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a roster/payday/holder_svc.g.proto\"\xe1\x02\n" +
+	"\x16ContinuationAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1c\n" +
 	"\tsatisfied\x18\b \x03(\tR\tsatisfied\x12\x1d\n" +
 	"\x06secret\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12\"\n" +
 	"\tissued_to\x18\n" +
-	" \x01(\fB\x05\xaa\x01\x02\b\x02R\bissuedTo\x12\x1d\n" +
+	" \x01(\fB\x05\xaa\x01\x02\b\x02R\bissuedTo\x12%\n" +
 	"\n" +
-	"metered_by\x18\f \x01(\fR\tmeteredBy\x12=\n" +
+	"metered_by\x18\f \x01(\fB\x06\xea\x82\x16\x02\x10@R\tmeteredBy\x12=\n" +
 	"\fdate_expires\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpires\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"w\n" +
 	"\x16ContinuationGetRequest\x12)\n" +
 	"\x03ref\x18\x01 \x01(\v2\x17.roster.ContinuationRefR\x03ref\x122\n" +
-	"\x06select\x18\x02 \x01(\v2\x1a.roster.ContinuationSelectR\x06select\"D\n" +
-	"\x0fContinuationRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x18\n" +
+	"\x06select\x18\x02 \x01(\v2\x1a.roster.ContinuationSelectR\x06select\"L\n" +
+	"\x0fContinuationRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12\x18\n" +
 	"\x06secret\x18\t \x01(\fH\x00R\x06secretB\x05\n" +
 	"\x03key\"\xd0\x02\n" +
 	"\x12ContinuationSelect\x12\x10\n" +

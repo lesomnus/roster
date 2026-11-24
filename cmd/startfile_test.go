@@ -22,6 +22,7 @@ import (
 
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdtest"
+	"github.com/lesomnus/xli/cfg/ref"
 
 	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
@@ -57,6 +58,25 @@ func startedWith(t *testing.T, with func(*cmd.Config)) error {
 // startCertificate is a certificate for 127.0.0.1 and its key, written to
 // files, which serves as the authority for client certificates too.
 type startCertificate struct{ cert, key string }
+
+// startCertificateFile is the value a file writes as `${file:path}`, which is
+// how a block's `tls.cert`, `tls.key` and `tls.client_ca` name a certificate
+// that is kept on the disk.
+func startCertificateFile(t *testing.T, path string) ref.String {
+	t.Helper()
+
+	var v ref.String
+	require.NoError(t, v.SetFile(path))
+
+	return v
+}
+
+// tls is the block's `tls:` that serves this certificate, as files.
+func (c startCertificate) tls(t *testing.T) config.TlsConfig {
+	t.Helper()
+
+	return config.TlsConfig{Cert: startCertificateFile(t, c.cert), Key: startCertificateFile(t, c.key)}
+}
 
 func startCertificateOf(t *testing.T) startCertificate {
 	t.Helper()
@@ -125,9 +145,9 @@ func startableHere(t *testing.T, c cmd.Config) cmd.Config {
 	for _, b := range listenerBlocks(&c) {
 		if b.Tls.Active() {
 			pair := startCertificateOf(t)
-			b.Tls.CertFile, b.Tls.KeyFile = pair.cert, pair.key
-			if b.Tls.ClientCAFile != "" {
-				b.Tls.ClientCAFile = pair.cert
+			b.Tls.Cert, b.Tls.Key = startCertificateFile(t, pair.cert), startCertificateFile(t, pair.key)
+			if !b.Tls.ClientCA.IsZero() {
+				b.Tls.ClientCA = startCertificateFile(t, pair.cert)
 			}
 		}
 	}

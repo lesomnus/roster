@@ -8,6 +8,7 @@ package rstr
 
 import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1903,13 +1904,13 @@ var File_app_nomination_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_nomination_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/nomination_svc.g.proto\x12\x06roster\x1a\x14app/nomination.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\xfc\x02\n" +
-	"\x14NominationAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x1aapp/nomination_svc.g.proto\x12\x06roster\x1a\x14app/nomination.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\x8a\x03\n" +
+	"\x14NominationAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12@\n" +
 	"\x06labels\x18\a \x03(\v2(.roster.NominationAddRequest.LabelsEntryR\x06labels\x12\x19\n" +
-	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12&\n" +
-	"\vborrower_id\x18\b \x01(\fB\x05\xaa\x01\x02\b\x02R\n" +
+	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12,\n" +
+	"\vborrower_id\x18\b \x01(\fB\v\xea\x82\x16\x02\x10@\xaa\x01\x02\b\x02R\n" +
 	"borrowerId\x12*\n" +
 	"\aacts_as\x18\t \x01(\v2\x11.roster.HolderRefR\x06actsAs\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
@@ -1918,14 +1919,14 @@ const file_app_nomination_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"q\n" +
 	"\x14NominationGetRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.NominationRefR\x03ref\x120\n" +
-	"\x06select\x18\x02 \x01(\v2\x18.roster.NominationSelectR\x06select\"g\n" +
-	"\rNominationRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12=\n" +
+	"\x06select\x18\x02 \x01(\v2\x18.roster.NominationSelectR\x06select\"o\n" +
+	"\rNominationRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12=\n" +
 	"\bborrower\x18\x02 \x01(\v2\x1f.roster.NominationRefByBorrowerH\x00R\bborrowerB\x05\n" +
-	"\x03key\"e\n" +
+	"\x03key\"m\n" +
 	"\x17NominationRefByBorrower\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x1f\n" +
-	"\vborrower_id\x18\b \x01(\fR\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12'\n" +
+	"\vborrower_id\x18\b \x01(\fB\x06\xea\x82\x16\x02\x10@R\n" +
 	"borrowerId\"\xb5\x02\n" +
 	"\x10NominationSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +
@@ -1962,11 +1963,11 @@ const file_app_nomination_svc_g_proto_rawDesc = "" +
 	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"]\n" +
 	"\x16NominationListResponse\x12(\n" +
 	"\x05items\x18\x01 \x03(\v2\x12.roster.NominationR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xb3\x01\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xbb\x01\n" +
 	"\x10NominationFilter\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.NominationRefR\x03ref\x12)\n" +
-	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x1f\n" +
-	"\vborrower_id\x18\x03 \x01(\fR\n" +
+	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12'\n" +
+	"\vborrower_id\x18\x03 \x01(\fB\x06\xea\x82\x16\x02\x10@R\n" +
 	"borrowerId\x12*\n" +
 	"\aacts_as\x18\x04 \x01(\v2\x11.roster.HolderRefR\x06actsAs\"x\n" +
 	"\x16NominationWatchRequest\x122\n" +

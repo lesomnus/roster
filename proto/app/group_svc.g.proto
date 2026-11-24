@@ -4,6 +4,7 @@ package roster;
 import "app/group.proto";
 import "app/site_svc.g.proto";
 import "google/protobuf/timestamp.proto";
+import "orm.proto";
 import "patch/patch.proto";
 import "roster/payday/tenant_svc.g.proto";
 
@@ -42,7 +43,7 @@ service GroupExposureService {
 }
 
 message GroupAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   SiteRef site = 3;
   string alias = 4 [features.field_presence = IMPLICIT];
@@ -59,7 +60,7 @@ message GroupGetRequest {
 
 message GroupRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     GroupRefBySlug slug = 4;
   }
 }
@@ -174,7 +175,7 @@ message GroupUpdateRequest {
 }
 
 message GroupExposureAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   GroupRef group = 2;
   string client = 8 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_created = 15;
@@ -187,7 +188,7 @@ message GroupExposureGetRequest {
 
 message GroupExposureRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     GroupExposureRefByCarried carried = 2;
   }
 }

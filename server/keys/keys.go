@@ -246,7 +246,7 @@ func Store(deployment app.Server, tenant app.Server) auth.TokenStore {
 
 			// Carried so that a stream ends when the key does; see
 			// `auth.InterceptorStream`.
-			DateExpires: v.Expires,
+			DateExpired: v.Expires,
 		}
 
 		who := v.Id

@@ -3,6 +3,7 @@ package roster;
 
 import "app/host.proto";
 import "google/protobuf/timestamp.proto";
+import "orm.proto";
 import "patch/patch.proto";
 import "roster/payday/tenant_svc.g.proto";
 
@@ -59,7 +60,7 @@ service HostProofService {
 }
 
 message HostAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   string name = 5 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
@@ -75,7 +76,7 @@ message HostGetRequest {
 
 message HostRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     string name = 5;
   }
 }
@@ -187,7 +188,7 @@ message HostUpdateRequest {
 }
 
 message MailDomainAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   string name = 5 [features.field_presence = IMPLICIT];
   string provider = 9 [features.field_presence = IMPLICIT];
@@ -203,7 +204,7 @@ message MailDomainGetRequest {
 
 message MailDomainRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     MailDomainRefByAt at = 2;
   }
 }
@@ -318,7 +319,7 @@ message MailDomainUpdateRequest {
 }
 
 message HostProofAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   string name = 5 [features.field_presence = IMPLICIT];
   string token = 9 [features.field_presence = IMPLICIT];
@@ -334,7 +335,7 @@ message HostProofGetRequest {
 
 message HostProofRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     HostProofRefByAt at = 2;
   }
 }

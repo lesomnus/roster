@@ -8,6 +8,7 @@ package rstr
 
 import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1541,19 +1542,19 @@ var File_app_phone_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_phone_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x15app/phone_svc.g.proto\x12\x06roster\x1a\x0fapp/phone.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xe9\x01\n" +
-	"\x0fPhoneAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x15app/phone_svc.g.proto\x12\x06roster\x1a\x0fapp/phone.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xf7\x01\n" +
+	"\x0fPhoneAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1d\n" +
 	"\x06number\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\x06number\x12\x19\n" +
-	"\x04kind\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12\"\n" +
-	"\ttenant_id\x18\v \x01(\fB\x05\xaa\x01\x02\b\x02R\btenantId\x12=\n" +
+	"\x04kind\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\x04kind\x12(\n" +
+	"\ttenant_id\x18\v \x01(\fB\v\xea\x82\x16\x02\x10@\xaa\x01\x02\b\x02R\btenantId\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"b\n" +
 	"\x0fPhoneGetRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.PhoneRefR\x03ref\x12+\n" +
-	"\x06select\x18\x02 \x01(\v2\x13.roster.PhoneSelectR\x06select\"W\n" +
-	"\bPhoneRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x122\n" +
+	"\x06select\x18\x02 \x01(\v2\x13.roster.PhoneSelectR\x06select\"_\n" +
+	"\bPhoneRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x122\n" +
 	"\x06number\x18\x02 \x01(\v2\x18.roster.PhoneRefByNumberH\x00R\x06numberB\x05\n" +
 	"\x03key\"i\n" +
 	"\x10PhoneRefByNumber\x12)\n" +

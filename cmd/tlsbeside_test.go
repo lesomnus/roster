@@ -10,7 +10,7 @@ import (
 
 // TestABlockThatAsksForACertificateHasNoPlainPortBesideIt: a listener block's
 // `tls:` is its gRPC listener's alone, and the `http` listener beside it is
-// plain. So a block whose `tls.client_ca_file` requires a certificate of every
+// plain. So a block whose `tls.client_ca` requires a certificate of every
 // caller answered a caller with none on its `http.addr`: the gRPC port refused
 // the handshake, and the same calls, transcoded, answered 401 from the server.
 // The second listener answers whoever the first keeps out, and the two cannot
@@ -24,23 +24,21 @@ func TestABlockThatAsksForACertificateHasNoPlainPortBesideIt(t *testing.T) {
 			err := startedWith(t, func(c *cmd.Config) {
 				b := listenerBlocks(c)[block]
 				b.Addr = "127.0.0.1:0"
-				b.Tls.CertFile = pair.cert
-				b.Tls.KeyFile = pair.key
-				b.Tls.ClientCAFile = pair.cert
+				b.Tls = pair.tls(t)
+				b.Tls.ClientCA = startCertificateFile(t, pair.cert)
 				b.Http.Addr = "127.0.0.1:0"
 				b.Http.AllowWeb = true
 			})
 			x.Error(err, "a certificate asked of every caller, and a plain port beside it")
-			x.Contains(err.Error(), block+".tls.client_ca_file")
+			x.Contains(err.Error(), block+".tls.client_ca")
 			x.Contains(err.Error(), block+".http.addr")
 		})
 	}
 
 	t.Run("a certificate asked, and no plain port", func(t *testing.T) {
 		require.NoError(t, startedWith(t, func(c *cmd.Config) {
-			c.Server.Tls.CertFile = pair.cert
-			c.Server.Tls.KeyFile = pair.key
-			c.Server.Tls.ClientCAFile = pair.cert
+			c.Server.Tls = pair.tls(t)
+			c.Server.Tls.ClientCA = startCertificateFile(t, pair.cert)
 		}))
 	})
 }
@@ -57,8 +55,7 @@ func TestTlsBesideAnHttpPortIsSaidAtStart(t *testing.T) {
 	t.Run("tls and an http port", func(t *testing.T) {
 		x := require.New(t)
 		said := servedSaying(t, func(c *cmd.Config) {
-			c.Server.Tls.CertFile = pair.cert
-			c.Server.Tls.KeyFile = pair.key
+			c.Server.Tls = pair.tls(t)
 			c.Server.Http.Addr = "127.0.0.1:0"
 			c.Server.Http.AllowWeb = true
 		}).lines(t, what)
@@ -70,8 +67,7 @@ func TestTlsBesideAnHttpPortIsSaidAtStart(t *testing.T) {
 
 	t.Run("tls and no http port", func(t *testing.T) {
 		require.Empty(t, servedSaying(t, func(c *cmd.Config) {
-			c.Server.Tls.CertFile = pair.cert
-			c.Server.Tls.KeyFile = pair.key
+			c.Server.Tls = pair.tls(t)
 		}).lines(t, what))
 	})
 

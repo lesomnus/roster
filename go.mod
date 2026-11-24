@@ -40,10 +40,10 @@ require (
 	github.com/lesomnus/mkot/otlp v0.0.0-20261017184153-a69c4c1f08ca
 	github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155
 	github.com/lesomnus/otx/otxgrpc v0.0.0-20261017184159-4cba7a26b155
-	github.com/lesomnus/payday v0.0.0-20261115112200-5a7b6e1a4301
+	github.com/lesomnus/payday v0.0.0-20261123235706-8fbd6edf0f6a
 	github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da
 	github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c
-	github.com/lesomnus/xli/cfg v0.1.3
+	github.com/lesomnus/xli/cfg v0.1.4-0.20261123042429-3e6291b33598
 	github.com/lesomnus/z v0.0.0-20260907061127-c3858eb05878
 	github.com/protobuf-orm/ent v0.0.0-20261024205432-0dd7dadc81bc
 	github.com/protobuf-orm/protobuf-orm v0.0.0-20261017212716-3430237a8656
@@ -107,9 +107,9 @@ require (
 	github.com/petermattis/goid v0.0.0-20260716134002-a9b348f0a2b9 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
 	github.com/protobuf-orm/protobuf-merge v0.0.0-20261009205601-8502fad9e678 // indirect
-	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261115105906-17c600840d81 // indirect
+	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261121161445-42bbeb7810e8 // indirect
 	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20261010065542-f9ac5b66df3e // indirect
-	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20261017215512-5234846ec2e4 // indirect
+	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20261121165649-aa6870b89525 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/tidwall/btree v1.8.1 // indirect
 	github.com/tinylib/msgp v1.6.4 // indirect
@@ -139,7 +139,7 @@ require (
 	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/term v0.48.0 // indirect
 	golang.org/x/text v0.44.0 // indirect
-	golang.org/x/time v0.15.0 // indirect
+	golang.org/x/time v0.16.0 // indirect
 	golang.org/x/tools v0.52.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260928230214-8a89bd6388cc // indirect
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.6.2 // indirect

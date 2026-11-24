@@ -12,7 +12,6 @@ import (
 	groupexposure "github.com/lesomnus/roster/internal/ent/groupexposure"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -36,11 +35,14 @@ type GroupServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewGroupServiceServer(db *ent.Client, opts ...Option) rstr.GroupServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return GroupServiceServer{Store: s.Store}
 }
@@ -184,7 +186,10 @@ func (st GroupServiceServer) create(ctx context.Context, req *rstr.GroupAddReque
 }
 
 func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) (*rstr.Group, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +204,7 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 	}
 
 	var stored *ent.Group
-	if snapshotOptions(s.Rec, rstr.GroupService_Add_FullMethodName).Value {
+	if s.images(rstr.GroupService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -225,10 +230,11 @@ func (s GroupServiceServer) Add(ctx context.Context, req *rstr.GroupAddRequest) 
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.GroupService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.Group",
+		By:     rstr.GroupService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -386,6 +392,9 @@ func GroupSelectInit(ctx context.Context, scope Scope, q *ent.GroupQuery, m *rst
 }
 
 func (s GroupServiceServer) Patch(ctx context.Context, req *rstr.GroupPatchRequest) (*rstr.Group, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(groupOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -435,6 +444,9 @@ var groupPatchColumns = entpatch.Columns{
 	1: group.FieldId, 2: group.TenantColumn, 3: group.SiteColumn, 4: group.FieldAlias, 5: group.FieldName, 6: group.FieldDesc, 7: group.FieldLabels, 13: group.FieldDateUpdated, 14: group.FieldDateErased, 15: group.FieldDateCreated}
 
 func (s GroupServiceServer) Apply(ctx context.Context, req *rstr.GroupApplyRequest) (*rstr.Group, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -462,7 +474,7 @@ func (s GroupServiceServer) apply(ctx context.Context, ref *rstr.GroupRef, doc *
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -483,7 +495,7 @@ func (s GroupServiceServer) apply(ctx context.Context, ref *rstr.GroupRef, doc *
 	}
 
 	var previous *rstr.Group
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -552,7 +564,8 @@ func (s GroupServiceServer) apply(ctx context.Context, ref *rstr.GroupRef, doc *
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Group",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -569,6 +582,9 @@ func (s GroupServiceServer) apply(ctx context.Context, ref *rstr.GroupRef, doc *
 }
 
 func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*rstr.GroupEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := GroupPick(req)
 	if err != nil {
 		return nil, err
@@ -578,7 +594,7 @@ func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*rst
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -589,8 +605,8 @@ func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*rst
 
 	var k any
 	var previous *rstr.Group
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.GroupService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.GroupService_Erase_FullMethodName)
 		var v *ent.Group
 		var err error
 		if images.Previous {
@@ -621,7 +637,8 @@ func (s GroupServiceServer) Erase(ctx context.Context, req *rstr.GroupRef) (*rst
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Group",
 			By:       rstr.GroupService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,
@@ -691,11 +708,14 @@ type GroupExposureServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewGroupExposureServiceServer(db *ent.Client, opts ...Option) rstr.GroupExposureServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return GroupExposureServiceServer{Store: s.Store}
 }
@@ -810,7 +830,10 @@ func (st GroupExposureServiceServer) create(ctx context.Context, req *rstr.Group
 }
 
 func (s GroupExposureServiceServer) Add(ctx context.Context, req *rstr.GroupExposureAddRequest) (*rstr.GroupExposure, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -825,7 +848,7 @@ func (s GroupExposureServiceServer) Add(ctx context.Context, req *rstr.GroupExpo
 	}
 
 	var stored *ent.GroupExposure
-	if snapshotOptions(s.Rec, rstr.GroupExposureService_Add_FullMethodName).Value {
+	if s.images(rstr.GroupExposureService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -851,10 +874,11 @@ func (s GroupExposureServiceServer) Add(ctx context.Context, req *rstr.GroupExpo
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.GroupExposureService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.GroupExposure",
+		By:     rstr.GroupExposureService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -988,6 +1012,9 @@ func GroupExposureSelectInit(ctx context.Context, scope Scope, q *ent.GroupExpos
 }
 
 func (s GroupExposureServiceServer) Patch(ctx context.Context, req *rstr.GroupExposurePatchRequest) (*rstr.GroupExposure, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(groupExposureOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -1037,6 +1064,9 @@ var groupExposurePatchColumns = entpatch.Columns{
 	1: groupexposure.FieldId, 2: groupexposure.GroupColumn, 8: groupexposure.FieldClient, 13: groupexposure.FieldDateUpdated, 14: groupexposure.FieldDateErased, 15: groupexposure.FieldDateCreated}
 
 func (s GroupExposureServiceServer) Apply(ctx context.Context, req *rstr.GroupExposureApplyRequest) (*rstr.GroupExposure, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -1064,7 +1094,7 @@ func (s GroupExposureServiceServer) apply(ctx context.Context, ref *rstr.GroupEx
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1085,7 +1115,7 @@ func (s GroupExposureServiceServer) apply(ctx context.Context, ref *rstr.GroupEx
 	}
 
 	var previous *rstr.GroupExposure
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -1154,7 +1184,8 @@ func (s GroupExposureServiceServer) apply(ctx context.Context, ref *rstr.GroupEx
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.GroupExposure",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -1171,6 +1202,9 @@ func (s GroupExposureServiceServer) apply(ctx context.Context, ref *rstr.GroupEx
 }
 
 func (s GroupExposureServiceServer) Erase(ctx context.Context, req *rstr.GroupExposureRef) (*rstr.GroupExposureEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := GroupExposurePick(req)
 	if err != nil {
 		return nil, err
@@ -1180,7 +1214,7 @@ func (s GroupExposureServiceServer) Erase(ctx context.Context, req *rstr.GroupEx
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1191,8 +1225,8 @@ func (s GroupExposureServiceServer) Erase(ctx context.Context, req *rstr.GroupEx
 
 	var k any
 	var previous *rstr.GroupExposure
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.GroupExposureService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.GroupExposureService_Erase_FullMethodName)
 		var v *ent.GroupExposure
 		var err error
 		if images.Previous {
@@ -1223,7 +1257,8 @@ func (s GroupExposureServiceServer) Erase(ctx context.Context, req *rstr.GroupEx
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.GroupExposure",
 			By:       rstr.GroupExposureService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

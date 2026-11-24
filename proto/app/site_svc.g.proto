@@ -3,6 +3,7 @@ package roster;
 
 import "app/site.proto";
 import "google/protobuf/timestamp.proto";
+import "orm.proto";
 import "patch/patch.proto";
 import "roster/payday/tenant_svc.g.proto";
 
@@ -36,7 +37,7 @@ service SiteService {
 }
 
 message SiteAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   string alias = 4 [features.field_presence = IMPLICIT];
   string name = 5 [features.field_presence = IMPLICIT];
@@ -52,7 +53,7 @@ message SiteGetRequest {
 
 message SiteRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     SiteRefBySlug slug = 4;
   }
 }

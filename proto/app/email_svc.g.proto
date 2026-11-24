@@ -4,6 +4,7 @@ package roster;
 import "app/email.proto";
 import "app/identity_svc.g.proto";
 import "google/protobuf/timestamp.proto";
+import "orm.proto";
 import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
@@ -127,13 +128,16 @@ service EmailService {
 }
 
 message EmailAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   HolderRef holder = 2;
   string address = 8 [features.field_presence = IMPLICIT];
   google.protobuf.Timestamp date_verified = 9;
   IdentityRef vouched_by = 10;
   bytes entered_by = 12;
-  bytes tenant_id = 11 [features.field_presence = IMPLICIT];
+  bytes tenant_id = 11 [
+    (orm.field) = {type: TYPE_UUID},
+    features.field_presence = IMPLICIT
+  ];
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -144,7 +148,7 @@ message EmailGetRequest {
 
 message EmailRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     EmailRefByAddress address = 2;
     EmailRefByAt at = 11;
   }
@@ -156,7 +160,7 @@ message EmailRefByAddress {
 }
 
 message EmailRefByAt {
-  bytes tenant_id = 11;
+  bytes tenant_id = 11 [(orm.field) = {type: TYPE_UUID}];
   string address = 8;
 }
 
