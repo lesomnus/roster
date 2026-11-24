@@ -110,6 +110,9 @@ func (Binding) Fields() []ent.Field {
 		field.Uuid("group_id").
 			Optional().
 			Immutable(),
+		field.Uuid("app_id").
+			Optional().
+			Immutable(),
 	}
 }
 
@@ -131,6 +134,10 @@ func (Binding) Edges() []ent.Edge {
 		edge.To("group", Group.Type).
 			Unique().
 			Field("group_id").
+			Immutable(),
+		edge.To("app", Holder.Type).
+			Unique().
+			Field("app_id").
 			Immutable(),
 	}
 }

@@ -67,7 +67,7 @@ flowchart TB
 it: there is no binding that makes somebody see another customer.
 
 **👤 `Holder` is who.** A credential resolves to one, the trail names one on
-every line, and nineteen foreign keys point at one.
+every line, and twenty foreign keys point at one.
 
 **📍 `Site` is the second axis.** A tenant is the wall between customers and a
 site is the wall inside one -- a factory, a region, an environment. An entity
@@ -365,6 +365,14 @@ one of these*, both-or-neither is refused in `server/core`. The scope is empty
 for the whole tenant or one site. It does not name a team: *the administrator of
 a team manages its members* is a product invariant rather than something to
 configure, and what carries a role for a team is 🏅 `TeamMembership`.
+
+**Or it is for one app** (`app`, the holder the app is answered as): a role of
+roster's bound for an app reaches that app's roles, the bindings of them, its
+groups and their memberships, and nothing else of the tenant's. It narrows as a
+site narrows, and a binding says one of the two or neither. Only a role of
+roster's naming nothing but the verbs that reach an app's rows is bound so, and
+the gate counts it for those alone; a binding of an app's own role says no app.
+It is what an app's administrator holds ([apps.md](apps.md)).
 
 > contoso binds **operator** to alice **within seoul**. She is an operator there
 > -- over seoul's teams and roles, and over the people who are of seoul -- and

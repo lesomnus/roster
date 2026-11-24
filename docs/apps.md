@@ -206,8 +206,9 @@ called -- reading `everywhere` if the app has no sites of its own. An app asks
 about itself, and the answer is of its own roles (`Role.app`): what somebody holds
 at roster, or at another app, is not in it. Naming another app, or `roster`, is
 answered only to a caller who holds `/roster.BindingService/List` across the
-tenant, since it adds up what those lists already answer them -- which an app
-installed with `reach.Methods` does not. `methods` is the gate's union,
+tenant -- or, naming an app, for that app (§ *An app's administrators*) -- since
+it adds up what those lists already answer them, which an app installed with
+`reach.Methods` does not. `methods` is the gate's union,
 which roster's wall then narrows for a grant bound at one site or held in a
 team; an app with no such wall would hand that grant everywhere. `everywhere`
 is the part that needs no narrowing. And a suspended holder reaches nothing:
@@ -354,10 +355,11 @@ role the tenant made wider than the app holds -- a method the app does not hold
 at itself -- is refused a widen, as a patch of it would be, and is the tenant
 administrator's to change, who holds what is in it.
 
-Somebody has to be bound to the first of them. Whoever `--administer` named does
-it in the user console; an app's setup that names its first owner does it
-itself, with `BindingService/Add` in its role of roster's -- a grant like any
-other, and one the app holds at itself. A role of the app's is bound to a person,
+Somebody has to be bound to the first of them. An administrator of the tenant
+does it, or an app's administrator (§ *An app's administrators*), who holds
+`BindingService/Add` for the app and the app's methods at it; an app's setup
+that names its first owner does it itself, with `BindingService/Add` in its
+role of roster's -- a grant like any other, and one the app holds at itself. A role of the app's is bound to a person,
 to a group of the app's, or held in a team (§ *An app's groups*). An app running roster in its own process writes the same
 rows through that roster's own door, and calls `Holders.Recheck` after.
 
@@ -383,8 +385,45 @@ out.
 
 Whoever makes a group manages it, whichever app's it is, and a group's
 managers are as they are for every group: a finer hand than the app's whole.
-What ends the app's holder ends its groups, in the act that ends its roles,
-and a restore of the holder brings back neither.
+What ends the app's holder ends its groups, in the act that ends its roles
+and the bindings for it (§ *An app's administrators*), and a restore of the
+holder brings back none of the three.
+
+### An app's administrators
+
+**An app's administrator holds roster's verbs for that one app**, and what they
+hand out at the app. The first is `app-administrator`, a role of roster's bound
+**for the app** (`Binding.app`): its roles, the bindings of them, its groups
+and their memberships, and nothing else of the tenant's
+([usage/permissions.md](usage/permissions.md) § *Held for one app*). The second
+is a role of the app's naming its methods -- `loft-everything` -- since binding
+one of the app's roles hands out what it names at the app, and nobody hands out
+what they do not hold there.
+
+With both, Loft's administrator makes Loft's roles and groups, binds the one to
+the other and to people, puts people in Loft's groups and takes them out, and
+lists all of it -- and none of another app's or the tenant's, which they are
+refused writing and do not see. They name the people they bind or put in by
+alias or identifier, as a group's manager names the people they put in: the
+write reads the person through the wall as the write it is, and a grant of no
+site reaches the whole tenant. What neither of them holds is a read of the
+tenant's people (`HolderService/List`, `/Search`), so they name somebody they
+were told of.
+
+They hand both on as they hold them: `app-administrator` for Loft, and Loft's
+role, to a second person, who can then do the same. What is held for Loft is
+handed out for Loft and no wider, so they make nobody an administrator across
+the tenant or of another app. The gate counts the binding for those verbs and
+no other: whatever `app-administrator` names, it calls nothing else of
+roster's for them. And it is roster's, so a helpdesk that holds no such verb
+does not reset their password.
+
+`Reaches` at Loft is answered to them, with nothing else bound to them:
+`app-administrator` names `HolderService/Reaches`, and held for Loft alone it
+is answered at Loft and refused at roster and at every other app
+([§ A person calling the app](#a-person-calling-the-app)). What they are told
+of themselves at roster says the verbs among `methods`, names Loft in `apps`,
+and holds none of them in `everywhere`.
 
 ### People's tokens
 

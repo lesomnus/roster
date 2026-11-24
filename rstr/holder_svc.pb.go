@@ -4228,8 +4228,9 @@ type HolderReachesRequest_builder struct {
 
 	Ref *HolderRef
 	// Which app's roles to answer of, and neither is the caller itself: an app
-	// asking what somebody may call at it. A caller asking about another app,
-	// or about roster, holds `/roster.BindingService/List` across the tenant.
+	// asking what somebody may call at it. A caller asking about another app
+	// holds `/roster.BindingService/List` across the tenant or for that app,
+	// and one asking about roster holds it across the tenant.
 
 	// Fields of oneof xxx_hidden_At:
 	// One app, as the holder it is answered as in the tenant.
@@ -4287,6 +4288,7 @@ type HolderReachesResponse struct {
 	xxx_hidden_Sites      [][]byte               `protobuf:"bytes,11,rep,name=sites"`
 	xxx_hidden_EverySite  bool                   `protobuf:"varint,12,opt,name=every_site,json=everySite"`
 	xxx_hidden_Everywhere []string               `protobuf:"bytes,13,rep,name=everywhere"`
+	xxx_hidden_Apps       [][]byte               `protobuf:"bytes,14,rep,name=apps"`
 	unknownFields         protoimpl.UnknownFields
 	sizeCache             protoimpl.SizeCache
 }
@@ -4344,6 +4346,13 @@ func (x *HolderReachesResponse) GetEverywhere() []string {
 	return nil
 }
 
+func (x *HolderReachesResponse) GetApps() [][]byte {
+	if x != nil {
+		return x.xxx_hidden_Apps
+	}
+	return nil
+}
+
 func (x *HolderReachesResponse) SetMethods(v []string) {
 	x.xxx_hidden_Methods = v
 }
@@ -4358,6 +4367,10 @@ func (x *HolderReachesResponse) SetEverySite(v bool) {
 
 func (x *HolderReachesResponse) SetEverywhere(v []string) {
 	x.xxx_hidden_Everywhere = v
+}
+
+func (x *HolderReachesResponse) SetApps(v [][]byte) {
+	x.xxx_hidden_Apps = v
 }
 
 type HolderReachesResponse_builder struct {
@@ -4383,7 +4396,17 @@ type HolderReachesResponse_builder struct {
 	// that has no such wall (its tenants are its customers, not a site of this
 	// one) cannot narrow, and reading `methods` it handed somebody bound at one
 	// site everything, everywhere. This is the part that needs no narrowing.
+	//
+	// Nothing held for one app alone is in it (`Binding.app`): a verb of
+	// roster's held for an app reaches that app's rows and no other, and this
+	// is what is held across the whole tenant.
 	Everywhere []string
+	// The apps a binding of a role of roster's that reaches them is for
+	// (`Binding.app`), as the holders those apps are answered as: what of
+	// `methods` is held for one app is held over that app's rows alone. Each is
+	// said once, in the order of their identifiers, as `sites` is. Of an answer
+	// about roster; at an app there is none, and it is empty.
+	Apps [][]byte
 }
 
 func (b0 HolderReachesResponse_builder) Build() *HolderReachesResponse {
@@ -4394,6 +4417,7 @@ func (b0 HolderReachesResponse_builder) Build() *HolderReachesResponse {
 	x.xxx_hidden_Sites = b.Sites
 	x.xxx_hidden_EverySite = b.EverySite
 	x.xxx_hidden_Everywhere = b.Everywhere
+	x.xxx_hidden_Apps = b.Apps
 	return m0
 }
 
@@ -5807,7 +5831,7 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12%\n" +
 	"\x03app\x18\x02 \x01(\v2\x11.roster.HolderRefH\x00R\x03app\x12\x18\n" +
 	"\x06roster\x18\x03 \x01(\bH\x00R\x06rosterB\x04\n" +
-	"\x02at\"\x8d\x01\n" +
+	"\x02at\"\xa1\x01\n" +
 	"\x15HolderReachesResponse\x12\x18\n" +
 	"\amethods\x18\n" +
 	" \x03(\tR\amethods\x12\x14\n" +
@@ -5816,7 +5840,8 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"every_site\x18\f \x01(\bB\x05\xaa\x01\x02\b\x02R\teverySite\x12\x1e\n" +
 	"\n" +
 	"everywhere\x18\r \x03(\tR\n" +
-	"everywhere\"\xcc\x01\n" +
+	"everywhere\x12\x12\n" +
+	"\x04apps\x18\x0e \x03(\fR\x04apps\"\xcc\x01\n" +
 	"\x13HolderSearchRequest\x12.\n" +
 	"\afilters\x18\x01 \x03(\v2\x14.roster.HolderFilterR\afilters\x12\f\n" +
 	"\x01q\x18\b \x01(\tR\x01q\x12\x1e\n" +

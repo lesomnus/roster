@@ -218,6 +218,13 @@ message MeGetResponse {
   // and somebody who holds nothing is answered no sites and not this.
   bool every_site = 12;
 
+  // The apps a binding of a role of roster's that reaches them is for
+  // (`Binding.app`), as the holders those apps are answered as: what of
+  // `methods` is held for one app is held over that app's rows alone. Each is
+  // said once, in the order of their identifiers, as `sites` is; what
+  // `HolderService.Reaches` answers at roster as `apps`.
+  repeated bytes apps = 19;
+
   // What they may call about **their own account**, and nobody else's: the
   // methods of their tenant's `self-service` role, which everybody of the
   // tenant holds over what is theirs and nobody is bound (`server/core`,

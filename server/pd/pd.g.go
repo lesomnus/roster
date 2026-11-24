@@ -10606,6 +10606,21 @@ func (s gateBinding) admit(ctx context.Context, req *rstr.BindingAddRequest) (*r
 		}
 	}
 
+	if ref := req.GetApp(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Holder", ref, func() error {
+			_, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
 	return req, nil
 }
 
@@ -22149,6 +22164,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				{Number: 3, Name: entBinding.SiteColumn, Type: 64, Nullable: true, Key: 1},
 				{Number: 8, Name: entBinding.HolderColumn, Type: 64, Nullable: true, Key: 1},
 				{Number: 9, Name: entBinding.GroupColumn, Type: 64, Nullable: true, Key: 1},
+				{Number: 10, Name: entBinding.AppColumn, Type: 64, Nullable: true, Key: 1},
 				{Number: 13, Name: entBinding.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
 				{Number: 14, Name: entBinding.FieldDateErased, Type: 65, Nullable: true, Key: 0},
 				{Number: 15, Name: entBinding.FieldDateCreated, Type: 65, Nullable: false, Key: 0},

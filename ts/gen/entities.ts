@@ -119,7 +119,7 @@ export const Binding = {
 	schema: BindingSchema,
 	domain: 18,
 	version: "dateUpdated",
-	refs: [{ field: "role", to: "roster.Role" }, { field: "site", to: "roster.Site" }, { field: "holder", to: "roster.Holder" }, { field: "group", to: "roster.Group" }],
+	refs: [{ field: "role", to: "roster.Role" }, { field: "site", to: "roster.Site" }, { field: "holder", to: "roster.Holder" }, { field: "group", to: "roster.Group" }, { field: "app", to: "roster.Holder" }],
 	key: "id",
 	ids: ["id"],
 	service: BindingService,

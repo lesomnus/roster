@@ -553,7 +553,7 @@ func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) 
 		return nil, err
 	}
 
-	ms, sites, every, err := s.rules.Held(ctx, who, at)
+	ms, sites, apps, every, err := s.rules.Held(ctx, who, at)
 	if err != nil {
 		return nil, err
 	}
@@ -561,6 +561,9 @@ func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) 
 	res := app.HolderReachesResponse_builder{Methods: ms, EverySite: every}
 	for _, k := range sites {
 		res.Sites = append(res.Sites, k.Bytes())
+	}
+	for _, k := range apps {
+		res.Apps = append(res.Apps, k.Bytes())
 	}
 	if s.rules.Everywhere != nil {
 		if res.Everywhere, err = s.rules.Everywhere(ctx, who, at); err != nil {
@@ -578,11 +581,14 @@ func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) 
 // # Who is answered about which app
 //
 // The caller about itself, as anybody was answered before a role said whose
-// it is: the wall, and a role naming the method. About another app, or about
-// roster, whoever holds `BindingService/List` across the tenant, since that
-// is what reads the parts this adds up -- the bindings, and through them the
-// roles -- and an app is answered nothing it could not read. An app installed
-// with `reach.Methods` holds no list, and is answered about itself alone.
+// it is: the wall, and a role naming the method. About another app, whoever
+// holds `BindingService/List` across the tenant or for that app; about
+// roster, across the tenant -- since that is what reads the parts this adds
+// up, the bindings and through them the roles, and an app is answered nothing
+// it could not read. An app installed with `reach.Methods` holds no list, and
+// is answered about itself alone. And somebody who holds `Reaches` itself for
+// one app alone (`Binding.app`) is answered at that app and refused
+// everywhere else, about themselves as an app among them.
 //
 // The deployment's own work is not asked, as nowhere is: a command at the box,
 // what applies a file, the operators' port. With no frame there is nobody to
@@ -606,14 +612,35 @@ func (s coreHolder) reachedAt(ctx context.Context, req *app.HolderReachesRequest
 		if err != nil {
 			return pdid.Nil, err
 		}
-		if k == self {
-			return k, nil
-		}
 		at, asked = k, "app"
+		if k == self {
+			asked = "self"
+		}
 	default:
-		return self, nil
+		at, asked = self, "self"
 	}
 	if s.deployment(ctx) {
+		return at, nil
+	}
+
+	// Held for one app alone (`Binding.app`), `Reaches` is answered at that
+	// app and nowhere else: not at roster, not at another app, and not about
+	// the caller as an app, which is another.
+	apps, sites, whole, err := s.heldFor(ctx, app.HolderService_Reaches_FullMethodName)
+	if err != nil {
+		return pdid.Nil, err
+	}
+	if !whole && len(sites) == 0 && len(apps) > 0 {
+		if at != pdid.Nil && slices.Contains(apps, at) {
+			return at, nil
+		}
+		if asked == "self" {
+			asked = "app"
+		}
+
+		return pdid.Nil, s.reachedNowhere(asked)
+	}
+	if asked == "self" {
 		return at, nil
 	}
 
@@ -628,15 +655,33 @@ func (s coreHolder) reachedAt(ctx context.Context, req *app.HolderReachesRequest
 	if slices.ContainsFunc(held, func(m string) bool { return frame.Covers(m, app.BindingService_List_FullMethodName) }) {
 		return at, nil
 	}
-
-	where := "at roster"
 	if asked == "app" {
-		where = "at another app"
+		// Or for that app (`Binding.app`): its administrator reads the
+		// bindings of its roles, which this adds up. Not at roster, which is
+		// the tenant's whole.
+		mine, err := s.heldForApp(ctx, app.BindingService_List_FullMethodName, at)
+		if err != nil {
+			return pdid.Nil, err
+		}
+		if mine {
+			return at, nil
+		}
 	}
 
-	return pdid.Nil, status.Errorf(codes.PermissionDenied,
-		"%s: what somebody may call %s is answered to whoever holds %s across the tenant, whose lists it adds up; "+
-			"an app asks about itself by naming neither", asked, where, app.BindingService_List_FullMethodName)
+	return pdid.Nil, s.reachedNowhere(asked)
+}
+
+// reachedNowhere is the refusal of a `Reaches` asked at roster or at another
+// app by somebody who may not be answered there.
+func (s coreHolder) reachedNowhere(asked string) error {
+	where, wide := "at roster", "across the tenant"
+	if asked == "app" {
+		where, wide = "at another app", "across the tenant or for that app"
+	}
+
+	return status.Errorf(codes.PermissionDenied,
+		"%s: what somebody may call %s is answered to whoever holds %s %s, whose lists it adds up; "+
+			"an app asks about itself by naming neither", asked, where, app.BindingService_List_FullMethodName, wide)
 }
 
 // SearchPageSize is what a search answers with when it was not told, and

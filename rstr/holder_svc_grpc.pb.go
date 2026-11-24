@@ -195,10 +195,11 @@ type HolderServiceClient interface {
 	// call is held at an app, and the answer is of the roles of one: the app
 	// asking, which is the caller itself, unless the request says `app` or
 	// `roster`. An app asks about itself and is answered as it was. About
-	// another app, or about roster, only a caller who holds
-	// `/roster.BindingService/List` across the tenant is answered: this adds up
-	// what the lists already answer that caller, and an app installed with
-	// `reach.Methods` holds no list.
+	// another app, only a caller who holds `/roster.BindingService/List` across
+	// the tenant or for that app (`Binding.app`) is answered, and about roster
+	// only one who holds it across the tenant: this adds up what the lists
+	// already answer that caller, and an app installed with `reach.Methods`
+	// holds no list.
 	//
 	// # Why it is the policy's function and not a read of the parts
 	//
@@ -735,10 +736,11 @@ type HolderServiceServer interface {
 	// call is held at an app, and the answer is of the roles of one: the app
 	// asking, which is the caller itself, unless the request says `app` or
 	// `roster`. An app asks about itself and is answered as it was. About
-	// another app, or about roster, only a caller who holds
-	// `/roster.BindingService/List` across the tenant is answered: this adds up
-	// what the lists already answer that caller, and an app installed with
-	// `reach.Methods` holds no list.
+	// another app, only a caller who holds `/roster.BindingService/List` across
+	// the tenant or for that app (`Binding.app`) is answered, and about roster
+	// only one who holds it across the tenant: this adds up what the lists
+	// already answer that caller, and an app installed with `reach.Methods`
+	// holds no list.
 	//
 	// # Why it is the policy's function and not a read of the parts
 	//

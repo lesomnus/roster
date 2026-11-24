@@ -39,6 +39,8 @@ type Binding struct {
 	HolderId uuid.UUID `json:"holder_id,omitempty"`
 	// GroupId holds the value of the "group_id" field.
 	GroupId uuid.UUID `json:"group_id,omitempty"`
+	// AppId holds the value of the "app_id" field.
+	AppId uuid.UUID `json:"app_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the BindingQuery when eager-loading is set.
 	Edges        BindingEdges `json:"edges"`
@@ -55,9 +57,11 @@ type BindingEdges struct {
 	Holder *Holder `json:"holder,omitempty"`
 	// Group holds the value of the group edge.
 	Group *Group `json:"group,omitempty"`
+	// App holds the value of the app edge.
+	App *Holder `json:"app,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // RoleOrErr returns the Role value or an error if the edge
@@ -104,6 +108,17 @@ func (e BindingEdges) GroupOrErr() (*Group, error) {
 	return nil, &NotLoadedError{edge: "group"}
 }
 
+// AppOrErr returns the App value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e BindingEdges) AppOrErr() (*Holder, error) {
+	if e.App != nil {
+		return e.App, nil
+	} else if e.loadedTypes[4] {
+		return nil, &NotFoundError{label: holder.Label}
+	}
+	return nil, &NotLoadedError{edge: "app"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Binding) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -113,7 +128,7 @@ func (*Binding) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case binding.FieldDateUpdated, binding.FieldDateErased, binding.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case binding.FieldSiteId, binding.FieldHolderId, binding.FieldGroupId:
+		case binding.FieldSiteId, binding.FieldHolderId, binding.FieldGroupId, binding.FieldAppId:
 			values[i] = new(sql.Null[uuid.UUID])
 		case binding.FieldId, binding.FieldRoleId:
 			values[i] = new(uuid.UUID)
@@ -189,6 +204,12 @@ func (_m *Binding) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.GroupId = value.V
 			}
+		case binding.FieldAppId:
+			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
+				return fmt.Errorf("unexpected type %T for field app_id", values[i])
+			} else if value.Valid {
+				_m.AppId = value.V
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -220,6 +241,11 @@ func (_m *Binding) QueryHolder() *HolderQuery {
 // QueryGroup queries the "group" edge of the Binding entity.
 func (_m *Binding) QueryGroup() *GroupQuery {
 	return NewBindingClient(_m.config).QueryGroup(_m)
+}
+
+// QueryApp queries the "app" edge of the Binding entity.
+func (_m *Binding) QueryApp() *HolderQuery {
+	return NewBindingClient(_m.config).QueryApp(_m)
 }
 
 // Update returns a builder for updating this Binding.
@@ -270,6 +296,9 @@ func (_m *Binding) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("group_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.GroupId))
+	builder.WriteString(", ")
+	builder.WriteString("app_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AppId))
 	builder.WriteByte(')')
 	return builder.String()
 }

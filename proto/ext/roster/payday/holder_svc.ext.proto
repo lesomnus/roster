@@ -151,10 +151,11 @@ service HolderService {
   // call is held at an app, and the answer is of the roles of one: the app
   // asking, which is the caller itself, unless the request says `app` or
   // `roster`. An app asks about itself and is answered as it was. About
-  // another app, or about roster, only a caller who holds
-  // `/roster.BindingService/List` across the tenant is answered: this adds up
-  // what the lists already answer that caller, and an app installed with
-  // `reach.Methods` holds no list.
+  // another app, only a caller who holds `/roster.BindingService/List` across
+  // the tenant or for that app (`Binding.app`) is answered, and about roster
+  // only one who holds it across the tenant: this adds up what the lists
+  // already answer that caller, and an app installed with `reach.Methods`
+  // holds no list.
   //
   // # Why it is the policy's function and not a read of the parts
   //
@@ -482,8 +483,9 @@ message HolderReachesRequest {
   HolderRef ref = 1;
 
   // Which app's roles to answer of, and neither is the caller itself: an app
-  // asking what somebody may call at it. A caller asking about another app,
-  // or about roster, holds `/roster.BindingService/List` across the tenant.
+  // asking what somebody may call at it. A caller asking about another app
+  // holds `/roster.BindingService/List` across the tenant or for that app,
+  // and one asking about roster holds it across the tenant.
   oneof at {
     // One app, as the holder it is answered as in the tenant.
     HolderRef app = 2;
@@ -517,7 +519,18 @@ message HolderReachesResponse {
   // that has no such wall (its tenants are its customers, not a site of this
   // one) cannot narrow, and reading `methods` it handed somebody bound at one
   // site everything, everywhere. This is the part that needs no narrowing.
+  //
+  // Nothing held for one app alone is in it (`Binding.app`): a verb of
+  // roster's held for an app reaches that app's rows and no other, and this
+  // is what is held across the whole tenant.
   repeated string everywhere = 13;
+
+  // The apps a binding of a role of roster's that reaches them is for
+  // (`Binding.app`), as the holders those apps are answered as: what of
+  // `methods` is held for one app is held over that app's rows alone. Each is
+  // said once, in the order of their identifiers, as `sites` is. Of an answer
+  // about roster; at an app there is none, and it is empty.
+  repeated bytes apps = 14;
 }
 
 message HolderSignsInRequest {

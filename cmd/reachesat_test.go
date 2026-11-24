@@ -75,7 +75,7 @@ func TestReachesIsAskedAtAnApp(t *testing.T) {
 
 		_, err = ask(levyan, app.HolderReachesRequest_builder{Ref: her, App: of(loft)}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err))
-		x.Equal("app: what somebody may call at another app is answered to whoever holds /roster.BindingService/List across the tenant, "+
+		x.Equal("app: what somebody may call at another app is answered to whoever holds /roster.BindingService/List across the tenant or for that app, "+
 			"whose lists it adds up; an app asks about itself by naming neither", status.Convert(err).Message())
 	})
 

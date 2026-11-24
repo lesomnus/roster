@@ -23,7 +23,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/role.proto.
  */
 export const file_app_role: GenFile = /*@__PURE__*/
-  fileDesc("Cg5hcHAvcm9sZS5wcm90bxIGcm9zdGVyIqAFCgRSb2xlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESJAoEc2l0ZRgDIAEoCzIMLnJvc3Rlci5TaXRlQgjyghYEOAFAARIVCgVhbGlhcxgEIAEoCUIGqsEWAhgAEhQKBG5hbWUYBSABKAlCBqrBFgIYABIUCgRkZXNjGAYgASgJQgaqwRYCGAASMAoGbGFiZWxzGAcgAygLMhgucm9zdGVyLlJvbGUuTGFiZWxzRW50cnlCBqrBFgIYABIXCgdtZXRob2RzGAggAygJQgaqwRYCGAASJQoDYXBwGAkgASgLMg4ucm9zdGVyLkhvbGRlckII8oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6mgHK/BVTEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY/CA8yOwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUgFChkIpQFCgdCaW5kaW5nEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIiCgRyb2xlGAIgASgLMgwucm9zdGVyLlJvbGVCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEigKBmhvbGRlchgIIAEoCzIOLnJvc3Rlci5Ib2xkZXJCCPKCFgQ4AUABEiYKBWdyb3VwGAkgASgLMg0ucm9zdGVyLkdyb3VwQgjyghYEOAFAARIzCgZsYWJlbHMYByADKAsyGy5yb3N0ZXIuQmluZGluZy5MYWJlbHNFbnRyeUIGqsEWAhgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOr0ByvwVVhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGhcSCWJ5X2hvbGRlchoKCgZob2xkZXIQCBoVEghieV9ncm91cBoJCgVncm91cBAJirsWXwgSMkwKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGgYKBHJvbGUaCAoGaG9sZGVyGgcKBWdyb3VwGgYKBHNpdGUgFChkIg0KC3JvbGUudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_tenant, file_roster_payday_holder, file_app_site, file_app_group, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Cg5hcHAvcm9sZS5wcm90bxIGcm9zdGVyIqAFCgRSb2xlEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABImCgZ0ZW5hbnQYAiABKAsyDi5yb3N0ZXIuVGVuYW50QgbyghYCQAESJAoEc2l0ZRgDIAEoCzIMLnJvc3Rlci5TaXRlQgjyghYEOAFAARIVCgVhbGlhcxgEIAEoCUIGqsEWAhgAEhQKBG5hbWUYBSABKAlCBqrBFgIYABIUCgRkZXNjGAYgASgJQgaqwRYCGAASMAoGbGFiZWxzGAcgAygLMhgucm9zdGVyLlJvbGUuTGFiZWxzRW50cnlCBqrBFgIYABIXCgdtZXRob2RzGAggAygJQgaqwRYCGAASJQoDYXBwGAkgASgLMg4ucm9zdGVyLkhvbGRlckII8oIWBDgBQAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAE6mgHK/BVTEgIQARosEgRwYWdlGgoKBnRlbmFudBACGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAEaHxIEc2x1ZxoJCgVhbGlhcxAEGgoKBnRlbmFudBACMAGKuxY/CA8yOwoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGdGVuYW50GgYKBHNpdGUgFChkIrsFCgdCaW5kaW5nEhcKAmlkGAEgASgMQgvqghYHEEAoAYIBABIiCgRyb2xlGAIgASgLMgwucm9zdGVyLlJvbGVCBvKCFgJAARIkCgRzaXRlGAMgASgLMgwucm9zdGVyLlNpdGVCCPKCFgQ4AUABEigKBmhvbGRlchgIIAEoCzIOLnJvc3Rlci5Ib2xkZXJCCPKCFgQ4AUABEiYKBWdyb3VwGAkgASgLMg0ucm9zdGVyLkdyb3VwQgjyghYEOAFAARIlCgNhcHAYCiABKAsyDi5yb3N0ZXIuSG9sZGVyQgjyghYEOAFAARIzCgZsYWJlbHMYByADKAsyGy5yb3N0ZXIuQmluZGluZy5MYWJlbHNFbnRyeUIGqsEWAhgBEjkKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOKAQASOAoLZGF0ZV9lcmFzZWQYDiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDkgEAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBOr0ByvwVVhICEAEaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGhcSCWJ5X2hvbGRlchoKCgZob2xkZXIQCBoVEghieV9ncm91cBoJCgVncm91cBAJirsWXwgSMkwKEgoQCgxkYXRlX2NyZWF0ZWQQDwoICgYKAmlkEAEaBQoDcmVmGgYKBHJvbGUaCAoGaG9sZGVyGgcKBWdyb3VwGgYKBHNpdGUgFChkIg0KC3JvbGUudGVuYW50QiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_roster_payday_tenant, file_roster_payday_holder, file_app_site, file_app_group, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Role is a named set of RPCs somebody may call.
@@ -258,6 +258,31 @@ export type Binding = Message<"roster.Binding"> & {
    * @generated from field: roster.Group group = 9;
    */
   group?: Group | undefined;
+
+  /**
+   * The app this role of roster's is held for, as the holder that app is
+   * answered as; empty is the tenant's whole.
+   *
+   * # roster's verbs, held for one app
+   *
+   * *This role of roster's, over what is that app's and nothing else*: its
+   * roles, the bindings of them, its groups and their memberships. It is what
+   * an app's administrator holds -- they put people into the app's groups and
+   * bind them the app's roles, and make a second administrator -- and it
+   * narrows as `site` narrows, so the two are not said together.
+   *
+   * Only for a role of roster's that names nothing but the verbs that reach an
+   * app's rows (`server/core`, `ForAnApp`), and the gate counts it for those
+   * alone whatever the role names after (`cmd/policy.go`); a binding of an
+   * app's own role says no app, since the role says it. What is held for one
+   * app is handed out for that app and no wider.
+   *
+   * One of the tenant's and not erased, set when the binding is made and never
+   * after.
+   *
+   * @generated from field: roster.Holder app = 10;
+   */
+  app?: Holder | undefined;
 
   /**
    * Whatever the deployment keeps about this row that the schema does not name.

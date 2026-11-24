@@ -353,6 +353,7 @@ type MeGetResponse struct {
 	xxx_hidden_Methods            []string               `protobuf:"bytes,10,rep,name=methods"`
 	xxx_hidden_Sites              [][]byte               `protobuf:"bytes,11,rep,name=sites"`
 	xxx_hidden_EverySite          bool                   `protobuf:"varint,12,opt,name=every_site,json=everySite"`
+	xxx_hidden_Apps               [][]byte               `protobuf:"bytes,19,rep,name=apps"`
 	xxx_hidden_Own                []string               `protobuf:"bytes,18,rep,name=own"`
 	xxx_hidden_Identities         *[]*SignInIdentity     `protobuf:"bytes,13,rep,name=identities"`
 	xxx_hidden_Credentials        *[]*SignInCredential   `protobuf:"bytes,14,rep,name=credentials"`
@@ -455,6 +456,13 @@ func (x *MeGetResponse) GetEverySite() bool {
 	return false
 }
 
+func (x *MeGetResponse) GetApps() [][]byte {
+	if x != nil {
+		return x.xxx_hidden_Apps
+	}
+	return nil
+}
+
 func (x *MeGetResponse) GetOwn() []string {
 	if x != nil {
 		return x.xxx_hidden_Own
@@ -547,6 +555,10 @@ func (x *MeGetResponse) SetEverySite(v bool) {
 	x.xxx_hidden_EverySite = v
 }
 
+func (x *MeGetResponse) SetApps(v [][]byte) {
+	x.xxx_hidden_Apps = v
+}
+
 func (x *MeGetResponse) SetOwn(v []string) {
 	x.xxx_hidden_Own = v
 }
@@ -613,6 +625,12 @@ type MeGetResponse_builder struct {
 	// site. Empty `sites` is not every site; it is every site only beside this,
 	// and somebody who holds nothing is answered no sites and not this.
 	EverySite bool
+	// The apps a binding of a role of roster's that reaches them is for
+	// (`Binding.app`), as the holders those apps are answered as: what of
+	// `methods` is held for one app is held over that app's rows alone. Each is
+	// said once, in the order of their identifiers, as `sites` is; what
+	// `HolderService.Reaches` answers at roster as `apps`.
+	Apps [][]byte
 	// What they may call about **their own account**, and nobody else's: the
 	// methods of their tenant's `self-service` role, which everybody of the
 	// tenant holds over what is theirs and nobody is bound (`server/core`,
@@ -691,6 +709,7 @@ func (b0 MeGetResponse_builder) Build() *MeGetResponse {
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_Sites = b.Sites
 	x.xxx_hidden_EverySite = b.EverySite
+	x.xxx_hidden_Apps = b.Apps
 	x.xxx_hidden_Own = b.Own
 	x.xxx_hidden_Identities = &b.Identities
 	x.xxx_hidden_Credentials = &b.Credentials
@@ -1469,7 +1488,7 @@ const file_app_me_proto_rawDesc = "" +
 	"\x0fMeLeaveResponse\x12;\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"dateErased\x12A\n" +
-	"\x0edate_forgotten\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\rdateForgotten\"\x86\x04\n" +
+	"\x0edate_forgotten\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\rdateForgotten\"\x9a\x04\n" +
 	"\rMeGetResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\fR\x06tenant\x12\x14\n" +
@@ -1481,7 +1500,8 @@ const file_app_me_proto_rawDesc = "" +
 	" \x03(\tR\amethods\x12\x14\n" +
 	"\x05sites\x18\v \x03(\fR\x05sites\x12\x1d\n" +
 	"\n" +
-	"every_site\x18\f \x01(\bR\teverySite\x12\x10\n" +
+	"every_site\x18\f \x01(\bR\teverySite\x12\x12\n" +
+	"\x04apps\x18\x13 \x03(\fR\x04apps\x12\x10\n" +
 	"\x03own\x18\x12 \x03(\tR\x03own\x126\n" +
 	"\n" +
 	"identities\x18\r \x03(\v2\x16.roster.SignInIdentityR\n" +

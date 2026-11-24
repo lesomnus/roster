@@ -340,6 +340,70 @@ A role that names a site may only be bound in that site.
 being of a site gives somebody no sight of it and nothing to do there. What
 does is a binding made in that site, to them.
 
+## Held for one app
+
+A binding narrows a role of roster's by a site, or **by an app** (`app`, the
+holder the app is answered as) -- never both. Held for an app, it reaches what
+is that app's and nothing else of the tenant's:
+
+- a role whose `app` it is, and a binding of such a role;
+- a binding of a role of roster's that is for that app;
+- a group whose `app` it is (§ *A group*), and a place in such a group.
+
+```sh
+echo '{"role":  {"slug":{"alias":"app-administrator","tenant":{"alias":"newco"}}},
+       "holder":{"slug":{"alias":"alice",            "tenant":{"alias":"newco"}}},
+       "app":   {"slug":{"alias":"loft",             "tenant":{"alias":"newco"}}}}' \
+  | roster --as admin binding add -
+```
+
+That is **an app's administrator**: alice makes Loft's roles and groups, binds
+the one to the other and to people, puts people in and takes them out, lists
+Loft's roles, bindings, groups and members -- and sees nothing of another app's
+or the tenant's, refused writing any of it:
+
+```
+role: you hold /roster.BindingService/Add for @newco/loft, and this binding is not @newco/loft's
+```
+
+What it takes:
+
+- **A role of roster's naming nothing but the verbs that reach an app's rows**:
+  `RoleService`'s `Add`, `Get`, `List`, `Widen`, `Narrow` and `Erase`,
+  `BindingService`'s `Add`, `Get`, `List` and `Erase`, `GroupService`'s `Add`,
+  `Get`, `List`, `Update` and `Erase`, `GroupMembershipService`'s `Add`,
+  `Get`, `List` and `Erase`, and `HolderService/Reaches`, each by its whole
+  name. One naming anything else is
+  refused a binding for an app, as a manager's role naming anything else is.
+  roster makes `app-administrator`, naming these, the first time it is needed
+  (`roster app install`), and a tenant's own of that name naming fewer is used
+  as it stands.
+- **The gate counts it for those verbs and no other**, whatever the role names
+  after it is bound: for anything else of roster's it is as if it were not
+  held.
+- **Each of them is held to the app's rows** unless the caller also holds it
+  across the tenant: a list answers the app's rows, a read of another row is
+  `NotFound`, and a write of one is refused, as above. A role or a group made by
+  somebody who holds `Add` for one app alone is the app's, and is refused
+  without that `app` rather than given it. `Reaches` held for one app alone is
+  answered at that app, and refused at roster and at every other app.
+- **Held for an app and in a site both**, a read is narrowed by both, and
+  answers what both narrow to -- which is less than either alone. It fails
+  closed.
+- **A binding of an app's own role says no app**: the role says whose it is.
+- **What they hand out at the app itself** -- its methods, in a role of the
+  app's -- is a role of the app's bound to them as well (§ *You cannot hand out
+  what you do not hold*).
+
+- **What ends the app's holder ends the bindings for it**, with its roles and
+  its groups, and a restore of the holder brings back none of the three.
+
+`MeService/Get` and `Reaches` at roster say the verbs among `methods`, as the
+gate would let them through -- *may they ever call this* -- and say which apps
+they are held for in `apps`, beside `sites`, each once in the order of their
+identifiers. `everywhere` holds none of them: it is what is held across the
+whole tenant. `Reaches` at that app is answered to them ([apps.md](../apps.md)).
+
 ## A team
 
 A set of people **within a site**, each holding a role in it.
@@ -460,9 +524,15 @@ role.methods: you do not hold "/loft.BookingService/Cancel" at @acme/loft, so yo
 A role of an app's is bound to a person, to a group of that app (§ *A group*),
 or held in a team. It takes no alias roster
 finds a role of its own by -- `self-service`, `group-manager`, `everything`,
-`login-app`, `account`, `scim` -- and it ends with the app: erasing the holder
+`app-administrator`, `login-app`, `account`, `scim` -- and it ends with the app: erasing the holder
 the app is answered as erases the roles of it in the same act, and a restore of
 the holder does not bring them back.
+
+And **for what it is held for** (§ *Held for one app*): what somebody holds
+across the tenant they hand out across it or for any app, and what they hold
+for one app they hand out **for that app** and no wider. So an app's first
+administrator makes a second, and makes nobody anything at another app or
+across the tenant. Taking away is the mirror.
 
 ### A role of roster's names what roster serves
 
@@ -585,7 +655,10 @@ on either side: an account's ways in are roster's, and a person who uses Loft is
 no wider for it than a tenant's administrator who holds nothing there. So
 whoever may write a way into an account may act as that person at an app. What
 is roster's counts wherever it is held: an app's own holder is wider than a
-caller who does not hold what its role at roster names.
+caller who does not hold what its role at roster names. And a verb held for one
+app (§ *Held for one app*) is roster's: an app's administrator is wider than a
+helpdesk that holds no such verb, and no wider than whoever holds it across the
+tenant.
 
 **Three verbs are not held to it, and cannot be. Each is every account of the
 tenant.** A front door -- the app a tenant's people sign in at -- holds nothing

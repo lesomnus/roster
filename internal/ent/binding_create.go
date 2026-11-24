@@ -115,6 +115,20 @@ func (_c *BindingCreate) SetNillableGroupId(v *uuid.UUID) *BindingCreate {
 	return _c
 }
 
+// SetAppId sets the "app_id" field.
+func (_c *BindingCreate) SetAppId(v uuid.UUID) *BindingCreate {
+	_c.mutation.SetAppId(v)
+	return _c
+}
+
+// SetNillableAppId sets the "app_id" field if the given value is not nil.
+func (_c *BindingCreate) SetNillableAppId(v *uuid.UUID) *BindingCreate {
+	if v != nil {
+		_c.SetAppId(*v)
+	}
+	return _c
+}
+
 // SetId sets the "id" field.
 func (_c *BindingCreate) SetId(v uuid.UUID) *BindingCreate {
 	_c.mutation.SetId(v)
@@ -139,6 +153,11 @@ func (_c *BindingCreate) SetHolder(v *Holder) *BindingCreate {
 // SetGroup sets the "group" edge to the Group entity.
 func (_c *BindingCreate) SetGroup(v *Group) *BindingCreate {
 	return _c.SetGroupId(v.Id)
+}
+
+// SetApp sets the "app" edge to the Holder entity.
+func (_c *BindingCreate) SetApp(v *Holder) *BindingCreate {
+	return _c.SetAppId(v.Id)
 }
 
 // Mutation returns the BindingMutation object of the builder.
@@ -320,6 +339,23 @@ func (_c *BindingCreate) createSpec() (*Binding, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.GroupId = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.AppIds(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   binding.AppTable,
+			Columns: []string{binding.AppColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IdSpec: sqlgraph.NewFieldSpec(holder.FieldId, field.TypeUuid),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.AppId = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

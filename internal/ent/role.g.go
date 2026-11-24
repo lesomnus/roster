@@ -76,6 +76,13 @@ func (e *Binding) Proto() *rstr.Binding {
 		r.SetId(v[:])
 		x.SetGroup(r)
 	}
+	if v := e.Edges.App; v != nil {
+		x.SetApp(v.Proto())
+	} else if v := e.AppId; v != *new(uuid.UUID) {
+		r := &rstr.Holder{}
+		r.SetId(v[:])
+		x.SetApp(r)
+	}
 	x.SetLabels(e.Labels)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {

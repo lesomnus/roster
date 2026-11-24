@@ -31,6 +31,8 @@ type Mutation struct {
 	clearedholder bool
 	group         *uuid.UUID
 	clearedgroup  bool
+	app           *uuid.UUID
+	clearedapp    bool
 	predicates    []predicate.Binding
 }
 
@@ -292,6 +294,39 @@ func (m *Mutation) ResetGroupId() {
 	delete(m.clearedFields, FieldGroupId)
 }
 
+// SetAppId sets the "app_id" field.
+func (m *Mutation) SetAppId(u uuid.UUID) {
+	m.app = &u
+	delete(m.clearedFields, FieldAppId)
+}
+
+// AppId returns the value of the "app_id" field in the mutation.
+func (m *Mutation) AppId() (r uuid.UUID, exists bool) {
+	v := m.app
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearAppId clears the value of the "app_id" field.
+func (m *Mutation) ClearAppId() {
+	m.app = nil
+	m.clearedFields[FieldAppId] = struct{}{}
+}
+
+// AppIdCleared returns if the "app_id" field was cleared in this mutation.
+func (m *Mutation) AppIdCleared() bool {
+	_, ok := m.clearedFields[FieldAppId]
+	return ok
+}
+
+// ResetAppId resets all changes to the "app_id" field.
+func (m *Mutation) ResetAppId() {
+	m.app = nil
+	delete(m.clearedFields, FieldAppId)
+}
+
 // ClearRole clears the "role" edge to the Role entity.
 func (m *Mutation) ClearRole() {
 	m.clearedrole = true
@@ -400,6 +435,33 @@ func (m *Mutation) ResetGroup() {
 	m.clearedgroup = false
 }
 
+// ClearApp clears the "app" edge to the Holder entity.
+func (m *Mutation) ClearApp() {
+	m.clearedapp = true
+	m.clearedFields[FieldAppId] = struct{}{}
+}
+
+// AppCleared reports if the "app" edge to the Holder entity was cleared.
+func (m *Mutation) AppCleared() bool {
+	return m.AppIdCleared() || m.clearedapp
+}
+
+// AppIds returns the "app" edge Ids in the mutation.
+// Note that Ids always returns len(Ids) <= 1 for unique edges, and you should use
+// AppId instead. It exists only for internal usage by the builders.
+func (m *Mutation) AppIds() (ids []uuid.UUID) {
+	if id := m.app; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetApp resets all changes to the "app" edge.
+func (m *Mutation) ResetApp() {
+	m.app = nil
+	m.clearedapp = false
+}
+
 // Where appends a list predicates to the Mutation builder.
 func (m *Mutation) Where(ps ...predicate.Binding) {
 	m.predicates = append(m.predicates, ps...)
@@ -434,7 +496,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.labels != nil || m.exprs[FieldLabels] != nil {
 		fields = append(fields, FieldLabels)
 	}
@@ -458,6 +520,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.group != nil {
 		fields = append(fields, FieldGroupId)
+	}
+	if m.app != nil {
+		fields = append(fields, FieldAppId)
 	}
 	return fields
 }
@@ -489,6 +554,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.HolderId()
 	case FieldGroupId:
 		return m.GroupId()
+	case FieldAppId:
+		return m.AppId()
 	}
 	return nil, false
 }
@@ -588,6 +655,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetGroupId(v)
 		return nil
+	case FieldAppId:
+		v, ok := value.(uuid.UUID)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAppId(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Binding field %s", name)
 }
@@ -625,6 +702,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 	case FieldHolderId:
 		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
 	case FieldGroupId:
+		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
+	case FieldAppId:
 		return fmt.Errorf("field %s cannot be assigned an expression: it holds an edge, which is set through the edge", name)
 	default:
 		return fmt.Errorf("unknown Binding field %s", name)
@@ -703,6 +782,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldGroupId) {
 		fields = append(fields, FieldGroupId)
 	}
+	if m.FieldCleared(FieldAppId) {
+		fields = append(fields, FieldAppId)
+	}
 	return fields
 }
 
@@ -734,6 +816,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldGroupId:
 		m.ClearGroupId()
+		return nil
+	case FieldAppId:
+		m.ClearAppId()
 		return nil
 	}
 	return fmt.Errorf("unknown Binding nullable field %s", name)
@@ -767,13 +852,16 @@ func (m *Mutation) ResetField(name string) error {
 	case FieldGroupId:
 		m.ResetGroupId()
 		return nil
+	case FieldAppId:
+		m.ResetAppId()
+		return nil
 	}
 	return fmt.Errorf("unknown Binding field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *Mutation) AddedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.role != nil {
 		edges = append(edges, EdgeRole)
 	}
@@ -785,6 +873,9 @@ func (m *Mutation) AddedEdges() []string {
 	}
 	if m.group != nil {
 		edges = append(edges, EdgeGroup)
+	}
+	if m.app != nil {
+		edges = append(edges, EdgeApp)
 	}
 	return edges
 }
@@ -809,13 +900,17 @@ func (m *Mutation) AddedIds(name string) []ent.Value {
 		if id := m.group; id != nil {
 			return []ent.Value{*id}
 		}
+	case EdgeApp:
+		if id := m.app; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *Mutation) RemovedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	return edges
 }
 
@@ -827,7 +922,7 @@ func (m *Mutation) RemovedIds(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *Mutation) ClearedEdges() []string {
-	edges := make([]string, 0, 4)
+	edges := make([]string, 0, 5)
 	if m.clearedrole {
 		edges = append(edges, EdgeRole)
 	}
@@ -839,6 +934,9 @@ func (m *Mutation) ClearedEdges() []string {
 	}
 	if m.clearedgroup {
 		edges = append(edges, EdgeGroup)
+	}
+	if m.clearedapp {
+		edges = append(edges, EdgeApp)
 	}
 	return edges
 }
@@ -855,6 +953,8 @@ func (m *Mutation) EdgeCleared(name string) bool {
 		return m.clearedholder
 	case EdgeGroup:
 		return m.clearedgroup
+	case EdgeApp:
+		return m.clearedapp
 	}
 	return false
 }
@@ -875,6 +975,9 @@ func (m *Mutation) ClearEdge(name string) error {
 	case EdgeGroup:
 		m.ClearGroup()
 		return nil
+	case EdgeApp:
+		m.ClearApp()
+		return nil
 	}
 	return fmt.Errorf("unknown Binding unique edge %s", name)
 }
@@ -894,6 +997,9 @@ func (m *Mutation) ResetEdge(name string) error {
 		return nil
 	case EdgeGroup:
 		m.ResetGroup()
+		return nil
+	case EdgeApp:
+		m.ResetApp()
 		return nil
 	}
 	return fmt.Errorf("unknown Binding edge %s", name)

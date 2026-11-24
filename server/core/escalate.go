@@ -91,6 +91,15 @@ import (
 // [Core.mayReach] is not: what keeps an account is roster's, and it compares
 // what the two hold at roster alone.
 //
+// # And for one app
+//
+// A role of roster's bound for an app (`Binding.app`) is held for that app:
+// roster's verbs over its rows and nothing else (`forapp.go`). So what is
+// held across the tenant is handed out across it or for any app, and what is
+// held for one app is handed out **for that app**, and no wider: an app's
+// first administrator makes a second, and makes nobody anything at another
+// app or across the tenant. Taking away is the mirror.
+//
 // # Where it is applied, and the one place it is not
 //
 // Every write that changes what the gate will answer for somebody:
@@ -187,10 +196,16 @@ type Holding func(ctx context.Context, who pdid.Id) ([]Grant, error)
 // method's name is no app's, and two apps may both serve one. Flattened, a
 // role of Foo's naming `/x.Svc/Do` was held at Bar as well, and whoever held
 // it at either handed it out at both.
+//
+// `For` is what a grant of roster's is for: the app a binding of a role of
+// roster's names (`Binding.app`), whose rows alone it reaches, and `pdid.Nil`
+// for the tenant's whole. Its `Methods` are then what it counts for, the
+// verbs that reach an app's rows ([HeldForAnApp]).
 type Grant struct {
 	Methods []string
 	Site    pdid.Id
 	App     pdid.Id
+	For     pdid.Id
 }
 
 // mayGrant refuses a caller handing out a method they do not hold.
@@ -211,7 +226,12 @@ type Grant struct {
 // `pdid.Nil` for roster's own. Only what the caller holds at that app counts.
 // What somebody holds at roster hands out nothing at an app, and the other way
 // round: a method is a name, and the same name at two apps is two grants.
-func (s Core) mayGrant(ctx context.Context, field string, methods []string, at, of pdid.Id) error {
+//
+// `to` is what a grant of roster's is being handed out for: an app
+// (`Binding.app`), or `pdid.Nil` for the tenant's whole. What the caller
+// holds across the tenant covers either; what they hold for one app covers
+// that app alone.
+func (s Core) mayGrant(ctx context.Context, field string, methods []string, at, of, to pdid.Id) error {
 	f, ok := frame.From(ctx)
 	if !ok {
 		return nil
@@ -229,7 +249,7 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string, at, 
 		return err
 	}
 
-	reaches := reachingAt(held, at, of)
+	reaches := reachingAt(held, at, of, to)
 	for _, m := range methods {
 		// One of theirs has to cover it **on its own**. Asking whether the
 		// union covers it would let somebody holding every service of a package
@@ -238,7 +258,7 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string, at, 
 		// `frame.Covers`.
 		if !slices.ContainsFunc(reaches, func(v string) bool { return frame.Covers(v, m) }) {
 			return status.Errorf(codes.PermissionDenied,
-				"%s: you do not hold %s %s, so you may not grant it", field, quote.Sent(m), s.whereHeld(ctx, of))
+				"%s: you do not hold %s %s, so you may not grant it", field, quote.Sent(m), s.whereHeld(ctx, of, to))
 		}
 	}
 
@@ -248,11 +268,13 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string, at, 
 // reachingAt is what of somebody's grants reaches the scope `at` at the app
 // `of`: every one made across the tenant, which reaches everywhere, and every
 // one made in that site, which reaches that site alone -- of the roles of that
-// app, and of no other's.
-func reachingAt(held []Grant, at, of pdid.Id) []string {
+// app, and of no other's. And for `to`: a grant held for the tenant's whole
+// reaches what is for any app, and one held for an app reaches that app's
+// alone.
+func reachingAt(held []Grant, at, of, to pdid.Id) []string {
 	var reaches []string
 	for _, g := range held {
-		if g.App != of {
+		if g.App != of || (g.For != pdid.Nil && g.For != to) {
 			continue
 		}
 		if g.Site == pdid.Nil || g.Site == at {
@@ -264,17 +286,20 @@ func reachingAt(held []Grant, at, of pdid.Id) []string {
 }
 
 // whereHeld is where a refusal of the hold rule says the method is not held:
-// `here` at roster, as it always said, and at an app by the holder it is
-// answered as, `at @acme/loft`.
+// `here` at roster, as it always said, at an app by the holder it is answered
+// as, `at @acme/loft`, and for one, `for @acme/loft`.
 //
 // Read through this stack, as the caller reads the holder; one they cannot see
 // is named by its identifier, which is what they wrote or what the role says.
-func (s Core) whereHeld(ctx context.Context, of pdid.Id) string {
-	if of == pdid.Nil {
-		return "here"
+func (s Core) whereHeld(ctx context.Context, of, to pdid.Id) string {
+	switch {
+	case of != pdid.Nil:
+		return "at " + s.appNamed(ctx, of)
+	case to != pdid.Nil:
+		return "for " + s.appNamed(ctx, to)
 	}
 
-	return "at " + s.appNamed(ctx, of)
+	return "here"
 }
 
 // appNamed is how a refusal names an app: `@tenant/alias`, the holder it is
@@ -355,7 +380,7 @@ func (s Core) mayJoin(ctx context.Context, ref *app.GroupRef) error {
 	}
 
 	for _, v := range vs {
-		if err := s.mayGrant(ctx, "group", v.Methods, v.Site, v.App); err != nil {
+		if err := s.mayGrant(ctx, "group", v.Methods, v.Site, v.App, v.For); err != nil {
 			return err
 		}
 	}
@@ -721,6 +746,10 @@ func (s Core) methodsOf(ctx context.Context, ref *app.RoleRef) ([]string, pdid.I
 // app's own holder is wider than a caller who does not hold its role at
 // roster.
 //
+// And a verb held for one app is roster's, held for that app: an app's
+// administrator is wider than somebody who holds no such verb, and no wider
+// than somebody who holds it across the tenant, or for that app.
+//
 // # What is not covered
 //
 // Suspending somebody (D26) is a denial of service rather than an escalation,
@@ -776,7 +805,7 @@ func (s Core) mayReach(ctx context.Context, field string, target pdid.Id) error 
 			continue
 		}
 		for _, m := range g.Methods {
-			if !holdsAt(mine, g.Site, pdid.Nil, m) {
+			if !holdsAt(mine, g.Site, pdid.Nil, g.For, m) {
 				return status.Errorf(codes.PermissionDenied,
 					"%s: they hold %s and you do not, so you may not write their credential", field, m)
 			}
@@ -915,10 +944,11 @@ func (s Core) mayTakeAWayIn(ctx context.Context, field string, holder []byte) er
 // the union covers it would let somebody holding every service of a package
 // stand in for the package, which is true today and wrong the moment a service
 // is added. And it is one of that app's: a method held at roster is not held
-// at an app, whatever it is called.
-func holdsAt(mine []Grant, at, of pdid.Id, m string) bool {
+// at an app, whatever it is called. And held for what `to` is for: across the
+// tenant, or for that app.
+func holdsAt(mine []Grant, at, of, to pdid.Id, m string) bool {
 	for _, h := range mine {
-		if h.App != of {
+		if h.App != of || (h.For != pdid.Nil && h.For != to) {
 			continue
 		}
 		if h.Site != pdid.Nil && h.Site != at {
