@@ -439,6 +439,9 @@ message Holder {
       personal: true
     }
   ];
+
+  // A `string` once, at 8; a number does not change its type.
+  reserved 8;
 }
 
 message Profile {
