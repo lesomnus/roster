@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -70,7 +71,12 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 		v, err := app.NewMeServiceClient(served(t, s)).Get(arrivedAt(ctx, token, front.AtTenant("acme")), app.MeGetRequest_builder{}.Build())
 		x.NoError(err)
 		x.Equal(who.GetId(), v.GetId())
-		x.Equal([]string{"/roster.HolderService/Reaches", "/roster.SyncService/Watch"}, v.GetMethods())
+
+		// What `--allow` names, and roster's verbs over what is its own, which
+		// it holds for itself (`app-administrator`).
+		want := append([]string{"/roster.HolderService/Reaches", "/roster.SyncService/Watch"}, core.ForAnApp...)
+		slices.Sort(want)
+		x.Equal(slices.Compact(want), v.GetMethods())
 	})
 
 	t.Run("and the nomination says which app it is", func(t *testing.T) {
@@ -127,7 +133,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 			Filters: []*app.BindingFilter{app.BindingFilter_builder{Holder: app.HolderRef_builder{Id: who.GetId()}.Build()}.Build()},
 		}.Build())
 		x.NoError(err)
-		x.Len(bs.GetItems(), 2, "installing again bound a role twice: the app holds its role of roster's and its own")
+		x.Len(bs.GetItems(), 3, "installing again bound a role twice: the app holds its role of roster's, its own, and roster's verbs for itself")
 	})
 
 	t.Run("and uninstalling refuses its key there", func(t *testing.T) {

@@ -305,7 +305,9 @@ func (h holding) String() string {
 
 // holdingOf reads what `who` holds, leaving out bindings to `except`: the
 // roles being given, which a second run finds already bound and which are not
-// news.
+// news. And a binding of roster's for `who` itself (`Binding.app`), which is
+// what `roster app install` writes so that an app reads and writes what is its
+// own, and is not news either.
 func holdingOf(ctx context.Context, s *cmd.Server, who []byte, except ...[]byte) (holding, error) {
 	ref := rstr.HolderRef_builder{Id: who}.Build()
 	out := holding{}
@@ -323,6 +325,9 @@ func holdingOf(ctx context.Context, s *cmd.Server, who []byte, except ...[]byte)
 		}
 		for _, v := range vs.GetItems() {
 			r := v.GetRole().GetId()
+			if bytes.Equal(v.GetApp().GetId(), who) {
+				continue
+			}
 			if slices.ContainsFunc(except, func(e []byte) bool { return bytes.Equal(r, e) }) || seen[string(r)] {
 				continue
 			}

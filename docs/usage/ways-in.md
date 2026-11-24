@@ -127,7 +127,7 @@ that holder's bindings: everything a product does for one of your customers.
 A key narrowed to a tenant needs that tenant to have nominated somebody for it,
 which `roster app install --tenant T --allow … NAME` does: the holder, its role,
 the binding and the nomination, once -- and with `--serves`, the app's first
-role at itself ([apps.md](../apps.md)).
+role at itself and roster's verbs for it ([apps.md](../apps.md)).
 
 Something a **tenant** runs -- their CI, their sync job, their own copy of an app
 -- is a holder in their tenant with an `rt_` ([below](#a-tenant-key--rt_)).
