@@ -234,7 +234,7 @@ func TestAFrontDoorsKeysAreMadeWhereTheyAreUsed(t *testing.T) {
 		x.Equal(os.FileMode(0o600), st.Mode().Perm(), "a credential readable by anybody on the box")
 
 		// And the reference a deployment writes resolves to it.
-		got, err := tokenOrRef("file:" + path)
+		got, err := keyAt(t, "${file:"+path+"}").Value()
 		x.NoError(err)
 		x.Equal(made, got)
 	})

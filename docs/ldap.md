@@ -32,7 +32,7 @@ every time).
 roster app install --tenant contoso --allow '<the methods below>' directory
 
 roster ldap serve --roster roster:50051 \
-  --deployment-key file:directory.key \
+  --deployment-key '${file:directory.key}' \
   --tls cert.pem,key.pem --require-tls \
   --listen :389 --listen-tls :636
 ```
@@ -62,7 +62,7 @@ container of its own):
 ldap:
   addr: :389
   bind: key
-  key: file:/run/roster/directory.key
+  key: ${file:/run/roster/directory.key}
 ```
 
 Either way it is a **consumer**, reaching roster over the wire and never past it.

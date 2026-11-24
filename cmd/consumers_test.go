@@ -1,10 +1,13 @@
 package cmd_test
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -77,10 +80,12 @@ func TestServeOpensTheConsumersItIsToldTo(t *testing.T) {
 		"--tenant", "newco", "--holder", "front", "--name", "e2e",
 		"--allow", "/roster.*/*")
 
-	// The block's values are references and not tokens, which is the rule the
-	// file states; the reference is resolved here the way it would be in a
-	// deployment.
-	t.Setenv("ROSTER_TEST_FRONT_KEY", token)
+	// The block as a deployment writes it: the key and the seal kept in files
+	// and named by the loader's references, read as the file is.
+	seal := filepath.Join(t.TempDir(), "seal")
+	x.NoError(os.WriteFile(seal, []byte(base64.StdEncoding.EncodeToString(make([]byte, 32))+"\n"), 0o600))
+	key := filepath.Join(t.TempDir(), "newco.key")
+	x.NoError(os.WriteFile(key, []byte(token+"\n"), 0o600))
 
 	// Each address held: a listener at a port of its own, which `serve` takes
 	// over still listening (`cmd.Held`) rather than binding the port again.
@@ -90,15 +95,17 @@ func TestServeOpensTheConsumersItIsToldTo(t *testing.T) {
 
 	c.Server.ServerConfig = config.ServerConfig{Addr: grpcAddr}
 	c.Server.Http.Addr = httpAddr
-	c.Account = cmd.AccountConfig{
-		Addr:     accountAddr,
-		Insecure: true,
-		Keys:     map[string]string{"newco": "env:ROSTER_TEST_FRONT_KEY"},
-
-		// `roster` and `connect` deliberately left out: in one process they
-		// default to this deployment's own listeners, which is the convenience
-		// the block exists for.
-	}
+	// `roster` and `connect` deliberately left out: in one process they
+	// default to this deployment's own listeners, which is the convenience the
+	// block exists for.
+	file := filepath.Join(t.TempDir(), "roster.yaml")
+	x.NoError(os.WriteFile(file, []byte("account:\n"+
+		"  addr: "+accountAddr+"\n"+
+		"  insecure: true\n"+
+		"  keys:\n"+
+		"    newco: ${file:"+key+"}\n"+
+		"  seal: [\"${file:"+seal+"}\"]\n"), 0o600))
+	c = loadedFrom(t, c, file)
 
 	done := make(chan error, 1)
 	go func() { done <- cli.NewCmdServe(&c).Run(cmd.Held(ctx, grpcL, httpL, accountL), nil) }()

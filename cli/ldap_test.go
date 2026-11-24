@@ -35,7 +35,7 @@ func TestAFlagIsTheSettingItSays(t *testing.T) {
 		"  roster: 127.0.0.1:1\n" +
 		"  key: rk_named\n" +
 		"  keys:\n" +
-		"    newco: env:NOTHING_READS_THIS\n"
+		"    newco: rt_named\n"
 
 	serve := func(t *testing.T, more string, args ...string) error {
 		t.Helper()

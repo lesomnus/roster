@@ -5,6 +5,9 @@ import (
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/lesomnus/xli/cfg"
+	"github.com/lesomnus/xli/cfg/ref"
 )
 
 // The consumers, as configuration.
@@ -39,6 +42,20 @@ import (
 // Nothing is weakened by the shorter answer: in one process the account app
 // still dials roster's own listener, so it is still a caller with a key, still
 // walled, and still unable to import what it must not.
+
+// Token is a key an app holds -- a deployment key, a tenant key, a seal --
+// as the loader holds a secret: the key itself, `${env:NAME}` or
+// `${file:/path}` in the file, and from a variable or a flag the key itself or
+// one reference as the whole value. `roster config` prints a reference as it
+// is written and the key itself as `<redacted>`.
+//
+// The whitespace around it goes, because what wrote a file of one almost
+// certainly ended it with a newline, and nothing at the edges of a key can be
+// part of it.
+//
+// What a file of the loader's says is read once, where the app is built, as a
+// key named any other way was: a key that is replaced takes a restart.
+type Token = cfg.SecretOf[string, cfg.TrimSpaceDecoder]
 
 // AccountConfig is the front door a customer's people sign in at.
 //
@@ -108,11 +125,12 @@ type AccountConfig struct {
 
 	// Keys is one tenant key per tenant fronted, by alias.
 	//
-	// The values are **references** and not tokens: `env:NAME` or
-	// `file:PATH`. A key is a secret and this file is not a place for one.
-	// The environment is the other form, merged with these: one variable per
-	// tenant, `ROSTER_ACCOUNT_KEY_<ALIAS>`. And `--key alias=rt_…` takes a
-	// literal, which is in the process list and says so.
+	// Each a [Token]: a key is a secret and this file is not a place for one,
+	// so a deployment writes where it is kept, `${env:NAME}` or
+	// `${file:/path}`. The environment is the other form, merged with these:
+	// one variable per tenant, `ROSTER_ACCOUNT_KEY_<ALIAS>`, holding the key.
+	// And `--key alias=rt_…` takes the key, which is in the process list and
+	// says so.
 	//
 	// One of this and [AccountConfig.Key]: a tenant running its own copy names
 	// its `rt_` here.
@@ -125,20 +143,21 @@ type AccountConfig struct {
 	// value. A restart is a rotation. `roster account serve` still refuses with
 	// neither, because somebody typed that one and a process whose only job is
 	// the front door has nothing to do without a key.
-	Keys map[string]string `yaml:"keys"`
+	Keys map[string]Token `yaml:"keys"`
 
 	// Key is one deployment key for every tenant fronted, narrowed on each call
 	// to the holder that tenant nominated for it -- the shape the Login App
 	// takes, and the one a roster operator running this for many tenants wants
-	// (#76, `docs/apps.md`). A reference, `env:NAME` or `file:PATH`; `roster
-	// account provision` writes the file. A tenant this app is put into later
-	// is fronted at the first request for one of its names, with no restart.
-	Key string `yaml:"key"`
+	// (#76, `docs/apps.md`). A [Token], written where it is kept:
+	// `${file:/run/roster-account/account.key}` is what `roster account
+	// provision` writes. A tenant this app is put into later is fronted at the
+	// first request for one of its names, with no restart.
+	Key Token `yaml:"key"`
 
-	// Seal is the key sessions are sealed into the cookie under, as `env:NAME`
-	// holding 32 bytes of base64. Repeat to rotate: the first seals and every
-	// one opens. Empty is a key made at start, which is one replica.
-	Seal []string `yaml:"seal"`
+	// Seal is the key sessions are sealed into the cookie under, 32 bytes of
+	// base64, each a [Token]. Repeat to rotate: the first seals and every one
+	// opens. Empty is a key made at start, which is one replica.
+	Seal []Token `yaml:"seal"`
 
 	// Terminal is whether a machine with no browser may ask for a key here:
 	// `roster sign-in` prints a code, somebody types it into this app in a page
@@ -180,14 +199,16 @@ type MailConfig struct {
 	// 587, 465, or 25.
 	Addr string `yaml:"addr"`
 
-	// Username and Password sign in. The password is a **reference** --
-	// `env:NAME` or `file:PATH` -- and never the password itself, which this
-	// file is not a place for: [AccountConfig.Key]'s rule, for the same
-	// reason. The username is either: written as itself, or a reference in
-	// the same words, because some providers' usernames are credentials too
-	// (SES's is derived from an access key). Empty signs in as nobody.
-	Username string `yaml:"username"`
-	Password string `yaml:"password"`
+	// Username and Password sign in. The password is a secret of the loader's
+	// and is written where it is kept, `${env:NAME}` or `${file:/path}`: this
+	// file is not a place for one, [AccountConfig.Key]'s rule for the same
+	// reason, and `roster config` prints one written as itself as
+	// `<redacted>`. The username is a value that may be kept somewhere else
+	// and usually is not: written as itself and printed so, or a reference,
+	// because some providers' usernames are credentials too (SES's is derived
+	// from an access key). Empty signs in as nobody.
+	Username ref.String `yaml:"username"`
+	Password cfg.Secret `yaml:"password"`
 
 	// From is who a message is from: `Contoso <no-reply@contoso.example>`.
 	// An address of a domain the provider was told is yours, so that what it
@@ -274,16 +295,16 @@ type LdapConfig struct {
 	// Insecure dials roster without TLS.
 	Insecure bool `yaml:"insecure"`
 
-	// Keys is one tenant key per tenant fronted, by alias, as `env:NAME`.
+	// Keys is one tenant key per tenant fronted, by alias, each a [Token].
 	// See [AccountConfig.Keys]; `ROSTER_LDAP_KEY_<ALIAS>` is merged with it.
-	Keys map[string]string `yaml:"keys"`
+	Keys map[string]Token `yaml:"keys"`
 
 	// Key is one deployment key instead, answered in each tenant as the holder
 	// that tenant nominated for it -- `roster control key add --allow
 	// /roster.NominationService/List directory`, then `roster app install
-	// directory` per tenant with the directory's role. A reference, `env:NAME` or `file:PATH`.
-	// One of this and Keys (#76).
-	Key string `yaml:"key"`
+	// directory` per tenant with the directory's role. A [Token]. One of this
+	// and Keys (#76).
+	Key Token `yaml:"key"`
 
 	// Bases is a tenant's suffix, by alias. `o=<alias>` where none is given.
 	Bases map[string]string `yaml:"bases"`
@@ -370,8 +391,8 @@ func (c ScimConfig) Meant() error {
 //
 // The third consumer, and the one whose settings are not all roster's -- it has
 // an `hydra` block, because the glue is the glue. Everything else reads like
-// the two above: named is a listener, empty is nowhere, and the keys are
-// references rather than tokens.
+// the two above: named is a listener, empty is nowhere, and the key is written
+// where it is kept.
 type LoginConfig struct {
 	// Addr is where it listens. Empty is nowhere.
 	Addr string `yaml:"addr"`
@@ -386,8 +407,8 @@ type LoginConfig struct {
 	// Hydra is the one thing here that is not roster's.
 	Hydra HydraConfig `yaml:"hydra"`
 
-	// Key is the **one** credential this instance holds, as `env:NAME` or
-	// `file:PATH`, and it is a deployment key (`rk_`).
+	// Key is the **one** credential this instance holds, a [Token], and it is
+	// a deployment key (`rk_`).
 	//
 	// # It was a map, and both maps are gone
 	//
@@ -417,7 +438,7 @@ type LoginConfig struct {
 	// without the file -- kept in memory, which is one replica. It needs the
 	// control plane an `rk_` lives in, and `roster login serve` still refuses
 	// with none, for [AccountConfig.Keys]'s reason.
-	Key string `yaml:"key"`
+	Key Token `yaml:"key"`
 
 	// Base is this app's public origin, which every provider has registered as
 	// the redirect: `https://login.example.com`.
@@ -489,7 +510,7 @@ type LoginConfig struct {
 	// delegation narrowed to `Me.Get` about one person. It was closed at the
 	// redirect for a while, which made every flow after the first hand back a
 	// token with no name and no address in it.
-	Seal []string `yaml:"seal"`
+	Seal []Token `yaml:"seal"`
 
 	// InsecureCookie drops `Secure`, for a page served over plain http in
 	// development. Beside an `https` base it is refused ([secureBeside]).

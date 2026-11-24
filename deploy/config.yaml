@@ -124,7 +124,7 @@ login:
   # afterwards is a thing to rotate. Unlike the per-tenant keys it replaces, it
   # needs no customer to exist -- an `rk_` is the control plane's -- so the first
   # start can mint it.
-  key: file:/run/login/login-app.key
+  key: ${file:/run/login/login-app.key}
   # roster speaks plain gRPC on the pod network, so the app that dials it has
   # to be told that. Without it the handshake fails with *first record does not
   # look like a TLS handshake*, which reads like a certificate problem and is a

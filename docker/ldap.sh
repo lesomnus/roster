@@ -25,5 +25,5 @@ done
 exec roster ldap serve \
 	--listen ":${LDAP_PORT}" \
 	--roster roster:50051 --insecure \
-	--deployment-key "file:${key}" \
+	--deployment-key "\${file:${key}}" \
 	--bind "${LDAP_BIND}" "$@"

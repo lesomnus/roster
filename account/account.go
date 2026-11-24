@@ -313,7 +313,10 @@ var Calls = append([]string{
 
 // EnvSecret resolves `env:NAME` and refuses every other scheme. A second scheme
 // -- a file, a secrets manager -- is a deployment's to add through
-// [Config.Secret]; roster's own vocabulary is this one.
+// [Config.Secret]; roster's own vocabulary for a row's reference is this one.
+// It is the row's own, and not the configuration file's: a value of the file
+// kept somewhere else is the loader's to read, written `${env:NAME}` or
+// `${file:/path}`.
 //
 // Its refusals name **no app**, though this package is one. Three things call
 // it -- the account app, the directory and the Login App -- and a message that

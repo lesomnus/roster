@@ -23,13 +23,13 @@ func TestAFrontDoorsPrivateHostsAreReadAtStart(t *testing.T) {
 
 	err := serveAccount(ctx, cmd.AccountConfig{
 		Roster: "127.0.0.1:1", Connect: "http://127.0.0.1:1", PrivateHosts: wrong,
-	})
+	}, appKeys{})
 	x.ErrorContains(err, "account.private_hosts")
 	x.ErrorContains(err, `"https://idp.corp.example/realms/contoso"`)
 
 	err = serveLogin(ctx, cmd.LoginConfig{
 		Hydra: cmd.HydraConfig{Admin: "http://127.0.0.1:1"}, PrivateHosts: wrong,
-	})
+	}, "")
 	x.ErrorContains(err, "login.private_hosts")
 	x.ErrorContains(err, `"https://idp.corp.example/realms/contoso"`)
 }

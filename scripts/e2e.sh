@@ -259,7 +259,7 @@ up "${E2E_USER}"
 "${work}/roster" --config "${work}/roster.yaml" account serve --listen 127.0.0.1:18090 \
 	--roster 127.0.0.1:18051 --connect http://127.0.0.1:18052 --insecure \
 	--base "${E2E_ACCOUNT}" --static "${__root}/ts/dist/account" \
-	--deployment-key "file:${key}" --insecure-cookie >"${work}/account.log" 2>&1 &
+	--deployment-key "\${file:${key}}" --insecure-cookie >"${work}/account.log" 2>&1 &
 pids+=($!)
 
 up "${E2E_ACCOUNT}/providers"

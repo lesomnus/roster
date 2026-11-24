@@ -31,10 +31,10 @@ func TestAFrontDoorInThisProcessMakesItsOwnKeys(t *testing.T) {
 	// `connect` named, because the rest of the block is about this process's
 	// own listeners and this test has none.
 	c := &cmd.Config{Account: cmd.AccountConfig{Addr: ":0", Connect: "http://127.0.0.1:1"}}
-	ac, err := frontDoor(ctx, c, listening(t), s)
+	_, made, err := frontDoor(ctx, c, listening(t), s)
 	x.NoError(err)
-	x.Empty(ac.Keys, "a key per tenant was made, which #76 replaced")
-	x.True(strings.HasPrefix(ac.Key, keys.PrefixDeployment), "not a deployment key: %q", ac.Key)
+	x.Empty(made.keys, "a key per tenant was made, which #76 replaced")
+	x.True(strings.HasPrefix(made.key, keys.PrefixDeployment), "not a deployment key: %q", made.key)
 
 	t.Run("and a reference that resolves to nothing is still a refusal", func(t *testing.T) {
 		x := require.New(t)
@@ -44,9 +44,9 @@ func TestAFrontDoorInThisProcessMakesItsOwnKeys(t *testing.T) {
 		// is not the one somebody configured.
 		c := &cmd.Config{Account: cmd.AccountConfig{
 			Addr: ":0", Connect: "http://127.0.0.1:1",
-			Keys: map[string]string{"contoso": "env:NOTHING_SET_HERE"},
+			Keys: map[string]cmd.Token{"contoso": keyAt(t, "${file:/nowhere/contoso.key}")},
 		}}
-		_, err := frontDoor(ctx, c, listening(t), s)
+		_, _, err := frontDoor(ctx, c, listening(t), s)
 		x.Error(err)
 		x.ErrorContains(err, "keys.contoso")
 	})
@@ -56,9 +56,9 @@ func TestAFrontDoorInThisProcessMakesItsOwnKeys(t *testing.T) {
 
 		c := &cmd.Config{Account: cmd.AccountConfig{
 			Addr: ":0", Connect: "http://127.0.0.1:1",
-			Key: "env:NOTHING_SET_HERE",
+			Key: keyAt(t, "${file:/nowhere/account.key}"),
 		}}
-		_, err := frontDoor(ctx, c, listening(t), s)
+		_, _, err := frontDoor(ctx, c, listening(t), s)
 		x.ErrorContains(err, "account.key")
 	})
 
@@ -70,10 +70,10 @@ func TestAFrontDoorInThisProcessMakesItsOwnKeys(t *testing.T) {
 		// tenants it is later nominated in for itself.
 		empty := deployment(t)
 		c := &cmd.Config{Account: cmd.AccountConfig{Addr: ":0", Connect: "http://127.0.0.1:1"}}
-		ac, err := frontDoor(ctx, c, listening(t), empty)
+		_, made, err := frontDoor(ctx, c, listening(t), empty)
 		x.NoError(err)
-		x.Empty(ac.Keys)
-		x.True(strings.HasPrefix(ac.Key, keys.PrefixDeployment))
+		x.Empty(made.keys)
+		x.True(strings.HasPrefix(made.key, keys.PrefixDeployment))
 	})
 }
 
