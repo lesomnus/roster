@@ -14,6 +14,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
 )
 
@@ -88,6 +89,21 @@ func TestARestartKeepsEveryCredential(t *testing.T) {
 	// after the restart as they are.
 	boundOnControl(t, ctx, s1, svc.Bytes(), "introspects", "/payday.TokenService/Introspect")
 
+	// And the app it is in newco, which a key of alice's is for: a key is
+	// answered to the app it is for (`TestAKeyIsAnsweredToTheAppItIsFor`), as
+	// the holder the tenant nominated for the service's key.
+	portal := addHolder(t, ctx, s1, newco, "portal")
+	nominates(t, s1, newco, svc, portal)
+	asks, err := s1.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+		Tenant: app.TenantRef_builder{Id: newco.Bytes()}.Build(), Alias: "introspects", Methods: []string{"/payday.TokenService/Introspect"},
+	}.Build())
+	x.NoError(err)
+	_, err = s1.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+		Role: app.RoleRef_builder{Id: asks.GetId()}.Build(), Holder: app.HolderRef_builder{Id: portal.Bytes()}.Build(),
+	}.Build())
+	x.NoError(err)
+	forPortal, _ := keyForApp(t, ctx, s1, alice, portal, "for-portal", "/portal.AssetService/Get")
+
 	// The two stops, written while the first process is alive.
 	_, err = s1.Ungated.Holder().Disable(ctx, app.HolderDisableRequest_builder{
 		Ref: app.HolderRef_builder{Id: bob.Bytes()}.Build(),
@@ -129,8 +145,8 @@ func TestARestartKeepsEveryCredential(t *testing.T) {
 		// plane, which is the port a deployment's own services call.
 		as := metadata.AppendToOutgoingContext(ctx, "authorization", "Bearer "+rk)
 
-		v, err := pdpb.NewTokenServiceClient(dconn).Introspect(as,
-			pdpb.TokenIntrospectRequest_builder{Token: hers}.Build())
+		v, err := pdpb.NewTokenServiceClient(dconn).Introspect(arrivedAt(ctx, rk, front.AtTenant("newco")),
+			pdpb.TokenIntrospectRequest_builder{Token: forPortal}.Build())
 		x.NoError(err, "the deploy signed a production service out")
 		x.Equal(alice.Bytes(), v.GetId(), "about the holder, not the key")
 

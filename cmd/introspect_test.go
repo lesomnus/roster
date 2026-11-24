@@ -1,6 +1,7 @@
 package cmd_test
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -36,14 +37,18 @@ func TestASuspendedPersonIsSuspendedInFrontOfEveryApp(t *testing.T) {
 	const get = "/roster.HolderService/Get"
 
 	for _, tc := range []struct {
-		what  string
-		token func(t *testing.T, b *keyedBuilt) string
+		what string
+		// The token, and the app that asks about it: the one a key is for,
+		// and the one a delegation was issued to.
+		token func(t *testing.T, b *keyedBuilt) (string, context.Context)
 	}{
-		{"a tenant key", func(t *testing.T, b *keyedBuilt) string {
-			return mintFor(t, t.Context(), b, b.Who, "reader", []string{get}, time.Time{})
+		{"a tenant key", func(t *testing.T, b *keyedBuilt) (string, context.Context) {
+			foo := spenderFor(t, t.Context(), b)
+
+			return mintSpent(t, t.Context(), b, b.Who, foo.id, "reader", []string{get}, time.Time{}), foo.as
 		}},
-		{"a delegation", func(t *testing.T, b *keyedBuilt) string {
-			return delegates(t, t.Context(), b, b.Who, []string{get}, time.Hour)
+		{"a delegation", func(t *testing.T, b *keyedBuilt) (string, context.Context) {
+			return delegates(t, t.Context(), b, b.Who, []string{get}, time.Hour), bearing(t.Context(), b.Token)
 		}},
 	} {
 		t.Run(tc.what, func(t *testing.T) {
@@ -51,10 +56,10 @@ func TestASuspendedPersonIsSuspendedInFrontOfEveryApp(t *testing.T) {
 			b := keyFor(t, introspect)
 			ctx := t.Context()
 
-			token := tc.token(t, b)
+			token, as := tc.token(t, b)
 			c := pdpb.NewTokenServiceClient(b.Conn)
 			ask := func() error {
-				_, err := c.Introspect(bearing(ctx, b.Token),
+				_, err := c.Introspect(as,
 					pdpb.TokenIntrospectRequest_builder{Token: token}.Build())
 
 				return err

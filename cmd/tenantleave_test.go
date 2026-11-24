@@ -106,12 +106,20 @@ func TestAClosedTenantLetsNobodyIn(t *testing.T) {
 
 		return res.GetOk()
 	}
-	key := mintFor(t, ctx, b, b.Who, "hers", []string{listHolders}, time.Time{})
+	// A key of hers for an app, asked about by that app, which is who a key
+	// is answered to (`TestAKeyIsAnsweredToTheAppItIsFor`); a delegation by
+	// the app it was issued to.
+	foo := spenderFor(t, ctx, b)
+	key := mintSpent(t, ctx, b, b.Who, foo.id, "hers", []string{"/foo.AssetService/List"}, time.Time{})
 	held := delegates(t, ctx, b, b.Who, []string{listHolders}, time.Hour)
 	listing := mintFor(t, ctx, b, lister, "theirs", []string{listHolders}, time.Time{})
 	tokens := pdpb.NewTokenServiceClient(b.Conn)
 	introspects := func(token string) error {
-		_, err := tokens.Introspect(bearing(ctx, b.Token), pdpb.TokenIntrospectRequest_builder{Token: token}.Build())
+		as := bearing(ctx, b.Token)
+		if token == key {
+			as = foo.as
+		}
+		_, err := tokens.Introspect(as, pdpb.TokenIntrospectRequest_builder{Token: token}.Build())
 
 		return err
 	}
@@ -142,7 +150,9 @@ func TestAClosedTenantLetsNobodyIn(t *testing.T) {
 		x := require.New(t)
 
 		x.Equal(codes.Unauthenticated, status.Code(lists()), "a tenant key outlived its tenant closing")
-		x.Equal(codes.NotFound, status.Code(introspects(key)), "an app in front kept letting them in with a key")
+		// A key is for an app of its own tenant, so the app that asks about it
+		// is of the closed tenant too, and is let in no more than she is.
+		x.Equal(codes.Unauthenticated, status.Code(introspects(key)), "an app in front kept letting them in with a key")
 		x.Equal(codes.NotFound, status.Code(introspects(held)), "and with a delegation")
 	})
 	t.Run("and its name says it is closed", func(t *testing.T) {

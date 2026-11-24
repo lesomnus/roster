@@ -2,6 +2,7 @@ package keys
 
 import (
 	"context"
+	"crypto/subtle"
 	"strings"
 
 	"google.golang.org/grpc/codes"
@@ -29,7 +30,9 @@ import (
 // and nobody introspects them -- they are presented *to* roster, never received
 // by anybody else.
 //
-// This is a product app asking about a token one of **its** users holds. Its
+// This is a product app asking about a token one of **its** users holds --
+// one minted for that app, which is answered to it and to no other
+// ([spentAt]). Its
 // rows are about people, its resolver looks up a holder, and a key identifier
 // handed to it resolves to nobody -- or worse, to a holder it creates on the
 // spot for a row that is not a person. So what crosses here is the holder the
@@ -135,6 +138,11 @@ func (v service) Introspect(ctx context.Context, req *pdpb.TokenIntrospectReques
 			return nil, err
 		}
 	}
+	if strings.HasPrefix(token, PrefixTenant) {
+		if err := spentAt(ctx, k); err != nil {
+			return nil, err
+		}
+	}
 
 	h := k.Holder
 	if h == nil || len(h.GetId()) == 0 {
@@ -162,6 +170,30 @@ func (v service) Introspect(ctx context.Context, req *pdpb.TokenIntrospectReques
 	}
 
 	return res.Build(), nil
+}
+
+// spentAt says whether the caller is the app a tenant's key is for.
+//
+// # A key is answered to the app it is for
+//
+// Any app that could call this was answered whose a key is and what it names,
+// so a key minted for one app was the same key at every app that read the
+// same names (`ApiKey.app`). A key for an app is answered to that app alone:
+// the caller is the holder the key says, by the frame's actor -- the app's own
+// key resolved to it, or a deployment key narrowed to the holder a tenant
+// nominated -- as a delegation is answered only to the caller it was issued
+// to. And a key of roster's own is spent by presenting it to roster, and is
+// answered to no app.
+//
+// Anything else is the answer a token that is none gets, in its one sentence:
+// told apart, it says the string is a real key, and whose app's.
+func spentAt(ctx context.Context, k *bearer) error {
+	f, ok := frame.From(ctx)
+	if !ok || k.ForRoster() || f.Actor.IsZero() || subtle.ConstantTimeCompare(k.App, f.Actor.Bytes()) != 1 {
+		return status.Error(codes.NotFound, "no such token")
+	}
+
+	return nil
 }
 
 // grantOf is what the key was narrowed to, encoded the way payday reads one.

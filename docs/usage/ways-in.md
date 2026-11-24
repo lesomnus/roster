@@ -23,7 +23,7 @@ them*, and what an app does with the answer is the app's.
 | --- | --- | --- | --- |
 | a **password** | an argon2id verifier on a `Credential` row | a person, to your front door | `VouchService.Verify`, here |
 | **`rk_`** deployment key | a control-plane row; presents **as itself**, or -- naming a tenant with `roster-at` -- as the holder that tenant nominated for it | an app you run across tenants | the auth interceptor, every request |
-| **`rt_`** tenant key | a data-plane row; **resolves to its holder** | a customer's script, or their app | the same interceptor |
+| **`rt_`** tenant key | a data-plane row; **resolves to its holder**, and is for roster or for one app | a customer's script, or their app | the same interceptor, for one of roster's; `Introspect`, by the app it is for and nobody else, for an app's |
 | **`rd_`** delegation | short-lived, bound to the key that asked for it | an app, *beside* its own key | the same interceptor |
 | an **identity** | `(tenant, provider, subject)` — an account somewhere else | nobody; it is a fact, not a secret | whoever verified the provider |
 | a **second factor** | TOTP seed, or a WebAuthn credential | a person, after the first factor | `VouchService.Verify` |
@@ -402,6 +402,17 @@ receives it has to ask:
 payday.TokenService/Introspect { token: "rt_…" }
   → who it stands for, and what it was narrowed to
 ```
+
+**A key is answered to the app it is for, and to no other** (§ *A key for an
+app*): the app asking is the holder the key says, by its own key or by a
+deployment key narrowed to the holder its tenant nominated for it, as a
+delegation is answered only to the app it was issued to. Asked by anybody else
+-- another app, the tenant's administrator -- it is answered what a token that
+is none is answered, `NotFound: no such token`, and nothing says it is a key
+or whose. **A key of roster's own is answered to no app**: it is spent by
+presenting it to roster. So a script that calls Loft holds a key minted for
+Loft, and one that calls roster a key of roster's. What is answered is as it
+was: whose it is, the tenant, the key's methods, its dates.
 
 The app asks with **its own** key, which is the whole of the trust decision and is
 per app. Two things about the answer: it is about the **holder** rather than the

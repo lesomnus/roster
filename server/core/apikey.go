@@ -384,16 +384,32 @@ func (s Core) holderNamed(ctx context.Context, alias string) (*app.HolderRef, er
 // it -- meets the rule every write of a way in meets: `mayReach` on the row's
 // holder, self passing, nobody wider than the caller. A read meets
 // [Core.mayReadOf].
+//
+// And a key found by its verifier is read by the app it is for, as a
+// delegation is read by the app it was issued to: that is `Introspect`
+// finding the key an app was presented, which answers it to that app alone
+// (`server/keys`). No port serves a read by the verifier (`cmd`,
+// `NotByVerifier`), so this is that read and no other.
 func (s coreApiKey) Get(ctx context.Context, req *app.ApiKeyGetRequest) (*app.ApiKey, error) {
-	whose, err := s.whose(ctx, req.GetRef())
+	whose, of, err := s.whoseFor(ctx, req.GetRef())
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayReadOf(ctx, "ref", whose); err != nil {
-		return nil, err
+	if !s.spentBy(ctx, req.GetRef(), of) {
+		if err := s.mayReadOf(ctx, "ref", whose); err != nil {
+			return nil, err
+		}
 	}
 
 	return s.ApiKeyServiceServer.Get(ctx, req)
+}
+
+// spentBy is whether a key found by its verifier is read by the app it is
+// for ([coreApiKey.Get]).
+func (s coreApiKey) spentBy(ctx context.Context, ref *app.ApiKeyRef, of pdid.Id) bool {
+	f, ok := frame.From(ctx)
+
+	return ok && len(ref.GetSecret()) > 0 && of != pdid.Nil && !f.Actor.IsZero() && f.Actor == of
 }
 
 func (s coreApiKey) List(ctx context.Context, req *app.ApiKeyListRequest) (*app.ApiKeyListResponse, error) {
@@ -469,16 +485,29 @@ func (s coreApiKey) reaches(ctx context.Context, ref *app.ApiKeyRef) error {
 // that hangs off a holder of the control plane, who is not somebody whose
 // standing is compared or asked -- the control port's own rules stand.
 func (s coreApiKey) whose(ctx context.Context, ref *app.ApiKeyRef) (pdid.Id, error) {
+	whose, _, err := s.whoseFor(ctx, ref)
+
+	return whose, err
+}
+
+// whoseFor is [coreApiKey.whose], and the app the key is for (`ApiKey.app`),
+// [pdid.Nil] for roster's own.
+func (s coreApiKey) whoseFor(ctx context.Context, ref *app.ApiKeyRef) (pdid.Id, pdid.Id, error) {
 	v, err := s.ApiKeyServiceServer.Get(ctx, app.ApiKeyGetRequest_builder{
-		Ref:    ref,
-		Select: app.ApiKeySelect_builder{Holder: app.HolderSelect_builder{}.Build()}.Build(),
+		Ref: ref,
+		Select: app.ApiKeySelect_builder{
+			Holder: app.HolderSelect_builder{}.Build(),
+			App:    app.HolderSelect_builder{}.Build(),
+		}.Build(),
 	}.Build())
 	if err != nil {
-		return pdid.Nil, err
+		return pdid.Nil, pdid.Nil, err
 	}
-	if len(v.GetHolder().GetId()) == 0 {
-		return pdid.Nil, nil
+	of, err := idOr(v.GetApp().GetId())
+	if err != nil || len(v.GetHolder().GetId()) == 0 {
+		return pdid.Nil, of, err
 	}
+	whose, err := pdid.From(v.GetHolder().GetId())
 
-	return pdid.From(v.GetHolder().GetId())
+	return whose, of, err
 }
