@@ -102,6 +102,10 @@ var Owning = []string{
 	app.ApiKeyService_Erase_FullMethodName,
 	app.DelegationService_List_FullMethodName,
 	app.DelegationService_Erase_FullMethodName,
+
+	// And an app handed a delegation of their own, to act as them
+	// (`delegation.go`, [coreDelegation.Issue]).
+	app.DelegationService_Issue_FullMethodName,
 }
 
 // Owned is what of `methods` a role named [Owns] holds: each of [Owning] one

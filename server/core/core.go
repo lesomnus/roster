@@ -109,6 +109,10 @@ type Core struct {
 	// destroying an operator's act and leaves a close undoable until then.
 	restoreWithin time.Duration
 
+	// delegationLife is `delegation.life`: how long a delegation somebody
+	// hands an app may live. Zero is [DelegationLife].
+	delegationLife time.Duration
+
 	// proving is how a tenant's claim on a hostname is checked, and nil is a
 	// deployment that cannot check one.
 	//
@@ -196,6 +200,16 @@ func WithPassword(v Password) Option { return func(s *Core) { s.password = v } }
 // WithRestoreWithin gives the layer `tenant.restore_within`, for
 // `Tenant.Restore` to refuse a close whose grace has run out.
 func WithRestoreWithin(v time.Duration) Option { return func(s *Core) { s.restoreWithin = v } }
+
+// WithDelegationLife gives the layer `delegation.life`, for
+// `Delegation.Issue` to bound what it mints by.
+func WithDelegationLife(v time.Duration) Option { return func(s *Core) { s.delegationLife = v } }
+
+// DelegationLife is how long a delegation somebody hands an app may live
+// where `delegation.life` says nothing: a day. Long enough that an app's page
+// asks once in a working day and not at every write; short enough that a
+// delegation nobody ended is gone by the next.
+const DelegationLife = 24 * time.Hour
 
 // WithProving gives the layer what answers whether a hostname's challenge is
 // published; nil is a deployment that cannot ask. See [Core.proving].
@@ -302,7 +316,18 @@ type Rules struct {
 	// the same. Nil is a stack that cannot say, and the app is then read as
 	// the caller reads one. See [Resident].
 	Resident Resident
+
+	// Calls is whether somebody may call a method at roster at all, as the
+	// gate answers it of them, which what a delegation of theirs names is
+	// asked: it narrows them and adds nothing. Nil is a stack that cannot
+	// say, and such a delegation is refused rather than minted. See [Calls].
+	Calls Calls
 }
+
+// Calls answers nil where `who`, of `tenant`, may call `method` at roster --
+// held through any binding, in a team, through a group, over what is their
+// own, or asked of nobody -- and `PermissionDenied` where they may not.
+type Calls func(ctx context.Context, who, tenant pdid.Id, method string) error
 
 // Resident answers the live holder of `tenant` that `ref` names, by its
 // identifier or by its alias there, and `NotFound` where it names nobody of

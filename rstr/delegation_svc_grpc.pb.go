@@ -27,6 +27,7 @@ const (
 	DelegationService_List_FullMethodName     = "/roster.DelegationService/List"
 	DelegationService_Revoke_FullMethodName   = "/roster.DelegationService/Revoke"
 	DelegationService_Exchange_FullMethodName = "/roster.DelegationService/Exchange"
+	DelegationService_Issue_FullMethodName    = "/roster.DelegationService/Issue"
 )
 
 // DelegationServiceClient is the client API for DelegationService service.
@@ -53,7 +54,8 @@ type DelegationServiceClient interface {
 	// which is `Erase`'s rule (*erasing what is not there succeeds*) and what
 	// keeps the answer from telling whoever holds a found string whether it is
 	// real, whose it is, or still alive. What a caller may rely on is that a
-	// delegation **it** was issued is gone afterwards.
+	// delegation **it** was issued is gone afterwards. A person ends one they
+	// handed an app (`Issue`) by reference, with `Erase`.
 	Revoke(ctx context.Context, in *DelegationRevokeRequest, opts ...grpc.CallOption) (*DelegationRevokeResponse, error)
 	// Exchange is a short-lived token naming the caller, for one other app in the
 	// same tenant to check -- how one roster-hosted app proves who it is to
@@ -85,6 +87,44 @@ type DelegationServiceClient interface {
 	// a call across tenants is not something this can say, and a token for
 	// yourself proves nothing to anybody.
 	Exchange(ctx context.Context, in *DelegationExchangeRequest, opts ...grpc.CallOption) (*DelegationExchangeResponse, error)
+	// Issue is somebody handing an app a delegation of their own, and answers
+	// the token once -- the verb `ApiKeyService/Issue` and
+	// `CredentialService/Issue` are for their rows.
+	//
+	// # What it is for
+	//
+	// An app writes for a person through a delegation that person approved at
+	// roster: it presents its own key in `authorization` and this token in
+	// `roster-as`, and is answered **as the person**, within `methods`. So an
+	// app's page that puts somebody into the app's group because its
+	// administrator pressed the button is answered as that administrator, held
+	// to what they hold, and the trail names them. What an app does for itself
+	// it still does as itself.
+	//
+	// # The rules
+	//
+	// - **Whose**: one's own, and for anybody else the rule every write of a
+	//   way in meets -- nobody writes a way into an account wider than their
+	//   own. It is the person's own act, so the tenant's `self-service` role
+	//   names it.
+	// - **The app**: a holder of the same tenant, not erased, and not the
+	//   person themselves. It is what the token is issued to (`issued_to`), so
+	//   only that app's key presents it, and `TokenService/Introspect` answers
+	//   it to that app alone.
+	// - **The methods**: roster's, each one the person may call at all. The
+	//   delegation narrows what they hold and adds nothing, since a call through
+	//   it is answered as them; a method they hold nowhere is refused, naming
+	//   it.
+	// - **How long**: no later than `delegation.life` from now, a day unless the
+	//   deployment says; none is that bound, and later is refused, saying it.
+	//
+	// It may be called through a delegation, as `ApiKeyService/Issue` is: that
+	// is the road a person has to it from a browser; the app such a call came
+	// through is not handed one by it. Its end, the app ending it (`Revoke`,
+	// with the token), the person ending it (`Erase`, by reference), signing
+	// out everywhere, a suspension and an erasure end it, as they end every
+	// delegation of theirs.
+	Issue(ctx context.Context, in *DelegationIssueRequest, opts ...grpc.CallOption) (*DelegationIssueResponse, error)
 }
 
 type delegationServiceClient struct {
@@ -175,6 +215,16 @@ func (c *delegationServiceClient) Exchange(ctx context.Context, in *DelegationEx
 	return out, nil
 }
 
+func (c *delegationServiceClient) Issue(ctx context.Context, in *DelegationIssueRequest, opts ...grpc.CallOption) (*DelegationIssueResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DelegationIssueResponse)
+	err := c.cc.Invoke(ctx, DelegationService_Issue_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // DelegationServiceServer is the server API for DelegationService service.
 // All implementations must embed UnimplementedDelegationServiceServer
 // for forward compatibility.
@@ -199,7 +249,8 @@ type DelegationServiceServer interface {
 	// which is `Erase`'s rule (*erasing what is not there succeeds*) and what
 	// keeps the answer from telling whoever holds a found string whether it is
 	// real, whose it is, or still alive. What a caller may rely on is that a
-	// delegation **it** was issued is gone afterwards.
+	// delegation **it** was issued is gone afterwards. A person ends one they
+	// handed an app (`Issue`) by reference, with `Erase`.
 	Revoke(context.Context, *DelegationRevokeRequest) (*DelegationRevokeResponse, error)
 	// Exchange is a short-lived token naming the caller, for one other app in the
 	// same tenant to check -- how one roster-hosted app proves who it is to
@@ -231,6 +282,44 @@ type DelegationServiceServer interface {
 	// a call across tenants is not something this can say, and a token for
 	// yourself proves nothing to anybody.
 	Exchange(context.Context, *DelegationExchangeRequest) (*DelegationExchangeResponse, error)
+	// Issue is somebody handing an app a delegation of their own, and answers
+	// the token once -- the verb `ApiKeyService/Issue` and
+	// `CredentialService/Issue` are for their rows.
+	//
+	// # What it is for
+	//
+	// An app writes for a person through a delegation that person approved at
+	// roster: it presents its own key in `authorization` and this token in
+	// `roster-as`, and is answered **as the person**, within `methods`. So an
+	// app's page that puts somebody into the app's group because its
+	// administrator pressed the button is answered as that administrator, held
+	// to what they hold, and the trail names them. What an app does for itself
+	// it still does as itself.
+	//
+	// # The rules
+	//
+	// - **Whose**: one's own, and for anybody else the rule every write of a
+	//   way in meets -- nobody writes a way into an account wider than their
+	//   own. It is the person's own act, so the tenant's `self-service` role
+	//   names it.
+	// - **The app**: a holder of the same tenant, not erased, and not the
+	//   person themselves. It is what the token is issued to (`issued_to`), so
+	//   only that app's key presents it, and `TokenService/Introspect` answers
+	//   it to that app alone.
+	// - **The methods**: roster's, each one the person may call at all. The
+	//   delegation narrows what they hold and adds nothing, since a call through
+	//   it is answered as them; a method they hold nowhere is refused, naming
+	//   it.
+	// - **How long**: no later than `delegation.life` from now, a day unless the
+	//   deployment says; none is that bound, and later is refused, saying it.
+	//
+	// It may be called through a delegation, as `ApiKeyService/Issue` is: that
+	// is the road a person has to it from a browser; the app such a call came
+	// through is not handed one by it. Its end, the app ending it (`Revoke`,
+	// with the token), the person ending it (`Erase`, by reference), signing
+	// out everywhere, a suspension and an erasure end it, as they end every
+	// delegation of theirs.
+	Issue(context.Context, *DelegationIssueRequest) (*DelegationIssueResponse, error)
 	mustEmbedUnimplementedDelegationServiceServer()
 }
 
@@ -264,6 +353,9 @@ func (UnimplementedDelegationServiceServer) Revoke(context.Context, *DelegationR
 }
 func (UnimplementedDelegationServiceServer) Exchange(context.Context, *DelegationExchangeRequest) (*DelegationExchangeResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Exchange not implemented")
+}
+func (UnimplementedDelegationServiceServer) Issue(context.Context, *DelegationIssueRequest) (*DelegationIssueResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Issue not implemented")
 }
 func (UnimplementedDelegationServiceServer) mustEmbedUnimplementedDelegationServiceServer() {}
 func (UnimplementedDelegationServiceServer) testEmbeddedByValue()                           {}
@@ -430,6 +522,24 @@ func _DelegationService_Exchange_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _DelegationService_Issue_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DelegationIssueRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DelegationServiceServer).Issue(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DelegationService_Issue_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DelegationServiceServer).Issue(ctx, req.(*DelegationIssueRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // DelegationService_ServiceDesc is the grpc.ServiceDesc for DelegationService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -468,6 +578,10 @@ var DelegationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Exchange",
 			Handler:    _DelegationService_Exchange_Handler,
+		},
+		{
+			MethodName: "Issue",
+			Handler:    _DelegationService_Issue_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

@@ -12931,6 +12931,14 @@ func (s guardedDelegation) Exchange(ctx context.Context, req *rstr.DelegationExc
 	return s.DelegationServiceServer.Exchange(ctx, req)
 }
 
+func (s guardedDelegation) Issue(ctx context.Context, req *rstr.DelegationIssueRequest) (*rstr.DelegationIssueResponse, error) {
+	if err := gate.Direct(ctx, rstr.DelegationService_Issue_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.DelegationServiceServer.Issue(ctx, req)
+}
+
 // guardedSite enforces method declarations on in-process calls too.
 type guardedSite struct{ rstr.SiteServiceServer }
 
@@ -19506,6 +19514,11 @@ func (s interceptDelegation) Revoke(ctx context.Context, req *rstr.DelegationRev
 func (s interceptDelegation) Exchange(ctx context.Context, req *rstr.DelegationExchangeRequest) (*rstr.DelegationExchangeResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
 		rstr.DelegationService_Exchange_FullMethodName, req, s.DelegationServiceServer.Exchange)
+}
+
+func (s interceptDelegation) Issue(ctx context.Context, req *rstr.DelegationIssueRequest) (*rstr.DelegationIssueResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
+		rstr.DelegationService_Issue_FullMethodName, req, s.DelegationServiceServer.Issue)
 }
 
 func (s Intercept) Site() rstr.SiteServiceServer {

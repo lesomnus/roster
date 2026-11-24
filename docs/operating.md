@@ -1934,6 +1934,20 @@ stream:
 Shorter is a few more reads for each open stream, and nothing else. There is no
 value that leaves a stream unasked.
 
+**A delegation somebody hands an app lives a day at most.** It is what an app's
+page writes for a person with (`DelegationService/Issue`, [usage/ways-in.md](usage/ways-in.md)
+§ *One somebody hands an app*), approved once rather than at every sign-in, so
+its bound is the deployment's:
+
+```yaml
+delegation:
+  life: 24h       # the default. No delegation handed to an app ends later than this from when it is made
+```
+
+A later end asked for is refused, saying this bound, and none takes it. It is
+stopped sooner as every delegation of theirs is: a suspension, signing out
+everywhere, an erasure, and the person ending it.
+
 A connection bound at the LDAP directory is held to the same rule by the
 directory, which asks roster about whoever bound it every five minutes it
 searches in. That number is the directory's own and this setting does not move

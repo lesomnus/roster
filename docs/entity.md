@@ -649,7 +649,9 @@ carried in `roster-as` beside the app's own key in `authorization` -- never
 instead of it. A delegation presented alone is nobody: it says who a call is
 *about* while the caller still has to say who it is. `methods` is an attenuation
 and never a widening; what it may do is the intersection with what that person
-may do.
+may do. Or the person hands an app one of their own
+(`DelegationService/Issue`), issued to that app's holder, which lives up to
+`delegation.life`, a day unless said, so that the app's page writes as them.
 
 > alice signs in at the product contoso serves her, and that app gets an `rd_`
 > valid for minutes. It sends it in `roster-as` **beside** its own key, so the

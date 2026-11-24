@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/delegation_svc.g.proto.
  */
 export const file_app_delegation_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChphcHAvZGVsZWdhdGlvbl9zdmMuZy5wcm90bxIGcm9zdGVyIqsCChREZWxlZ2F0aW9uQWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHbWV0aG9kcxgIIAMoCRIVCgZzZWNyZXQYCSABKAxCBaoBAggCEhgKCWlzc3VlZF90bxgKIAEoDEIFqgECCAISMAoMZGF0ZV9leHBpcmVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI2ChJkYXRlX2F1dGhlbnRpY2F0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiZAoURGVsZWdhdGlvbkdldFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkRlbGVnYXRpb25SZWYSKAoGc2VsZWN0GAIgASgLMhgucm9zdGVyLkRlbGVnYXRpb25TZWxlY3QiPgoNRGVsZWdhdGlvblJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASEAoGc2VjcmV0GAkgASgMSABCBQoDa2V5IuwBChBEZWxlZ2F0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0Eg8KB21ldGhvZHMYCCABKAgSDgoGc2VjcmV0GAkgASgIEhEKCWlzc3VlZF90bxgKIAEoCBIUCgxkYXRlX2V4cGlyZWQYCyABKAgSGgoSZGF0ZV9hdXRoZW50aWNhdGVkGAwgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiigEKFkRlbGVnYXRpb25QYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkRlbGVnYXRpb25SZWYSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiWQoWRGVsZWdhdGlvbkFwcGx5UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuRGVsZWdhdGlvblJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIikKF0RlbGVnYXRpb25FcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKFAQoVRGVsZWdhdGlvbkxpc3RSZXF1ZXN0EikKB2ZpbHRlcnMYASADKAsyGC5yb3N0ZXIuRGVsZWdhdGlvbkZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiUAoWRGVsZWdhdGlvbkxpc3RSZXNwb25zZRIhCgVpdGVtcxgBIAMoCzISLnJvc3Rlci5EZWxlZ2F0aW9uEhMKBG5leHQYAiABKAlCBaoBAggCIlkKEERlbGVnYXRpb25GaWx0ZXISIgoDcmVmGAEgASgLMhUucm9zdGVyLkRlbGVnYXRpb25SZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZiIvChdEZWxlZ2F0aW9uUmV2b2tlUmVxdWVzdBIUCgV0b2tlbhgBIAEoCUIFqgECCAIiGgoYRGVsZWdhdGlvblJldm9rZVJlc3BvbnNlIkwKGURlbGVnYXRpb25FeGNoYW5nZVJlcXVlc3QSHgoDYXBwGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIPCgdtZXRob2RzGAIgAygJImQKGkRlbGVnYXRpb25FeGNoYW5nZVJlc3BvbnNlEhQKBXRva2VuGAEgASgJQgWqAQIIAhIwCgxkYXRlX2V4cGlyZWQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wMqcEChFEZWxlZ2F0aW9uU2VydmljZRI3CgNBZGQSHC5yb3N0ZXIuRGVsZWdhdGlvbkFkZFJlcXVlc3QaEi5yb3N0ZXIuRGVsZWdhdGlvbhI3CgNHZXQSHC5yb3N0ZXIuRGVsZWdhdGlvbkdldFJlcXVlc3QaEi5yb3N0ZXIuRGVsZWdhdGlvbhI7CgVQYXRjaBIeLnJvc3Rlci5EZWxlZ2F0aW9uUGF0Y2hSZXF1ZXN0GhIucm9zdGVyLkRlbGVnYXRpb24SOwoFQXBwbHkSHi5yb3N0ZXIuRGVsZWdhdGlvbkFwcGx5UmVxdWVzdBoSLnJvc3Rlci5EZWxlZ2F0aW9uEj8KBUVyYXNlEhUucm9zdGVyLkRlbGVnYXRpb25SZWYaHy5yb3N0ZXIuRGVsZWdhdGlvbkVyYXNlUmVzcG9uc2USRQoETGlzdBIdLnJvc3Rlci5EZWxlZ2F0aW9uTGlzdFJlcXVlc3QaHi5yb3N0ZXIuRGVsZWdhdGlvbkxpc3RSZXNwb25zZRJLCgZSZXZva2USHy5yb3N0ZXIuRGVsZWdhdGlvblJldm9rZVJlcXVlc3QaIC5yb3N0ZXIuRGVsZWdhdGlvblJldm9rZVJlc3BvbnNlElEKCEV4Y2hhbmdlEiEucm9zdGVyLkRlbGVnYXRpb25FeGNoYW5nZVJlcXVlc3QaIi5yb3N0ZXIuRGVsZWdhdGlvbkV4Y2hhbmdlUmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_delegation, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChphcHAvZGVsZWdhdGlvbl9zdmMuZy5wcm90bxIGcm9zdGVyIqsCChREZWxlZ2F0aW9uQWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHbWV0aG9kcxgIIAMoCRIVCgZzZWNyZXQYCSABKAxCBaoBAggCEhgKCWlzc3VlZF90bxgKIAEoDEIFqgECCAISMAoMZGF0ZV9leHBpcmVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI2ChJkYXRlX2F1dGhlbnRpY2F0ZWQYDCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiZAoURGVsZWdhdGlvbkdldFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkRlbGVnYXRpb25SZWYSKAoGc2VsZWN0GAIgASgLMhgucm9zdGVyLkRlbGVnYXRpb25TZWxlY3QiPgoNRGVsZWdhdGlvblJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASEAoGc2VjcmV0GAkgASgMSABCBQoDa2V5IuwBChBEZWxlZ2F0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0Eg8KB21ldGhvZHMYCCABKAgSDgoGc2VjcmV0GAkgASgIEhEKCWlzc3VlZF90bxgKIAEoCBIUCgxkYXRlX2V4cGlyZWQYCyABKAgSGgoSZGF0ZV9hdXRoZW50aWNhdGVkGAwgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiigEKFkRlbGVnYXRpb25QYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLkRlbGVnYXRpb25SZWYSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiWQoWRGVsZWdhdGlvbkFwcGx5UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuRGVsZWdhdGlvblJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIikKF0RlbGVnYXRpb25FcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKFAQoVRGVsZWdhdGlvbkxpc3RSZXF1ZXN0EikKB2ZpbHRlcnMYASADKAsyGC5yb3N0ZXIuRGVsZWdhdGlvbkZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiUAoWRGVsZWdhdGlvbkxpc3RSZXNwb25zZRIhCgVpdGVtcxgBIAMoCzISLnJvc3Rlci5EZWxlZ2F0aW9uEhMKBG5leHQYAiABKAlCBaoBAggCIlkKEERlbGVnYXRpb25GaWx0ZXISIgoDcmVmGAEgASgLMhUucm9zdGVyLkRlbGVnYXRpb25SZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZiIvChdEZWxlZ2F0aW9uUmV2b2tlUmVxdWVzdBIUCgV0b2tlbhgBIAEoCUIFqgECCAIiGgoYRGVsZWdhdGlvblJldm9rZVJlc3BvbnNlIkwKGURlbGVnYXRpb25FeGNoYW5nZVJlcXVlc3QSHgoDYXBwGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIPCgdtZXRob2RzGAIgAygJImQKGkRlbGVnYXRpb25FeGNoYW5nZVJlc3BvbnNlEhQKBXRva2VuGAEgASgJQgWqAQIIAhIwCgxkYXRlX2V4cGlyZWQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIp4BChZEZWxlZ2F0aW9uSXNzdWVSZXF1ZXN0EiEKBmhvbGRlchgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSHgoDYXBwGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIPCgdtZXRob2RzGAMgAygJEjAKDGRhdGVfZXhwaXJlZBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiVwoXRGVsZWdhdGlvbklzc3VlUmVzcG9uc2USFAoFdG9rZW4YASABKAlCBaoBAggCEiYKCmRlbGVnYXRpb24YAiABKAsyEi5yb3N0ZXIuRGVsZWdhdGlvbjLxBAoRRGVsZWdhdGlvblNlcnZpY2USNwoDQWRkEhwucm9zdGVyLkRlbGVnYXRpb25BZGRSZXF1ZXN0GhIucm9zdGVyLkRlbGVnYXRpb24SNwoDR2V0Ehwucm9zdGVyLkRlbGVnYXRpb25HZXRSZXF1ZXN0GhIucm9zdGVyLkRlbGVnYXRpb24SOwoFUGF0Y2gSHi5yb3N0ZXIuRGVsZWdhdGlvblBhdGNoUmVxdWVzdBoSLnJvc3Rlci5EZWxlZ2F0aW9uEjsKBUFwcGx5Eh4ucm9zdGVyLkRlbGVnYXRpb25BcHBseVJlcXVlc3QaEi5yb3N0ZXIuRGVsZWdhdGlvbhI/CgVFcmFzZRIVLnJvc3Rlci5EZWxlZ2F0aW9uUmVmGh8ucm9zdGVyLkRlbGVnYXRpb25FcmFzZVJlc3BvbnNlEkUKBExpc3QSHS5yb3N0ZXIuRGVsZWdhdGlvbkxpc3RSZXF1ZXN0Gh4ucm9zdGVyLkRlbGVnYXRpb25MaXN0UmVzcG9uc2USSwoGUmV2b2tlEh8ucm9zdGVyLkRlbGVnYXRpb25SZXZva2VSZXF1ZXN0GiAucm9zdGVyLkRlbGVnYXRpb25SZXZva2VSZXNwb25zZRJRCghFeGNoYW5nZRIhLnJvc3Rlci5EZWxlZ2F0aW9uRXhjaGFuZ2VSZXF1ZXN0GiIucm9zdGVyLkRlbGVnYXRpb25FeGNoYW5nZVJlc3BvbnNlEkgKBUlzc3VlEh4ucm9zdGVyLkRlbGVnYXRpb25Jc3N1ZVJlcXVlc3QaHy5yb3N0ZXIuRGVsZWdhdGlvbklzc3VlUmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_delegation, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.DelegationAddRequest
@@ -469,6 +469,79 @@ export const DelegationExchangeResponseSchema: GenMessage<DelegationExchangeResp
   messageDesc(file_app_delegation_svc_g, 13);
 
 /**
+ * @generated from message roster.DelegationIssueRequest
+ */
+export type DelegationIssueRequest = Message<"roster.DelegationIssueRequest"> & {
+  /**
+   * Whose it is: one's own, or somebody whose account the caller may write a
+   * way into. None is refused.
+   *
+   * @generated from field: roster.HolderRef holder = 1;
+   */
+  holder?: HolderRef | undefined;
+
+  /**
+   * The app it is issued to, as the holder that app is answered as in the
+   * tenant of whose it is: the one whose own key presents it. Required.
+   *
+   * @generated from field: roster.HolderRef app = 2;
+   */
+  app?: HolderRef | undefined;
+
+  /**
+   * What it may call: roster's methods, each one the person may call at all.
+   * Required, for `Exchange`'s reason: a delegation that allows nothing opens
+   * no door.
+   *
+   * @generated from field: repeated string methods = 3;
+   */
+  methods: string[];
+
+  /**
+   * When it stops working: no later than `delegation.life` from now. Unset is
+   * that bound.
+   *
+   * @generated from field: google.protobuf.Timestamp date_expired = 4;
+   */
+  dateExpired?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message roster.DelegationIssueRequest.
+ * Use `create(DelegationIssueRequestSchema)` to create a new message.
+ */
+export const DelegationIssueRequestSchema: GenMessage<DelegationIssueRequest> = /*@__PURE__*/
+  messageDesc(file_app_delegation_svc_g, 14);
+
+/**
+ * @generated from message roster.DelegationIssueResponse
+ */
+export type DelegationIssueResponse = Message<"roster.DelegationIssueResponse"> & {
+  /**
+   * The token, and the only time it is ever readable. What is stored is a
+   * hash.
+   *
+   * @generated from field: string token = 1 [features.field_presence = IMPLICIT];
+   */
+  token: string;
+
+  /**
+   * The row, so a page can list it beside the others without asking again.
+   * Its `secret` is cleared like any other answer.
+   *
+   * @generated from field: roster.Delegation delegation = 2;
+   */
+  delegation?: Delegation | undefined;
+};
+
+/**
+ * Describes the message roster.DelegationIssueResponse.
+ * Use `create(DelegationIssueResponseSchema)` to create a new message.
+ */
+export const DelegationIssueResponseSchema: GenMessage<DelegationIssueResponse> = /*@__PURE__*/
+  messageDesc(file_app_delegation_svc_g, 15);
+
+/**
  * @generated from service roster.DelegationService
  */
 export const DelegationService: GenService<{
@@ -541,7 +614,8 @@ export const DelegationService: GenService<{
    * which is `Erase`'s rule (*erasing what is not there succeeds*) and what
    * keeps the answer from telling whoever holds a found string whether it is
    * real, whose it is, or still alive. What a caller may rely on is that a
-   * delegation **it** was issued is gone afterwards.
+   * delegation **it** was issued is gone afterwards. A person ends one they
+   * handed an app (`Issue`) by reference, with `Erase`.
    *
    * @generated from rpc roster.DelegationService.Revoke
    */
@@ -587,6 +661,52 @@ export const DelegationService: GenService<{
     methodKind: "unary";
     input: typeof DelegationExchangeRequestSchema;
     output: typeof DelegationExchangeResponseSchema;
+  },
+  /**
+   * Issue is somebody handing an app a delegation of their own, and answers
+   * the token once -- the verb `ApiKeyService/Issue` and
+   * `CredentialService/Issue` are for their rows.
+   *
+   * # What it is for
+   *
+   * An app writes for a person through a delegation that person approved at
+   * roster: it presents its own key in `authorization` and this token in
+   * `roster-as`, and is answered **as the person**, within `methods`. So an
+   * app's page that puts somebody into the app's group because its
+   * administrator pressed the button is answered as that administrator, held
+   * to what they hold, and the trail names them. What an app does for itself
+   * it still does as itself.
+   *
+   * # The rules
+   *
+   * - **Whose**: one's own, and for anybody else the rule every write of a
+   *   way in meets -- nobody writes a way into an account wider than their
+   *   own. It is the person's own act, so the tenant's `self-service` role
+   *   names it.
+   * - **The app**: a holder of the same tenant, not erased, and not the
+   *   person themselves. It is what the token is issued to (`issued_to`), so
+   *   only that app's key presents it, and `TokenService/Introspect` answers
+   *   it to that app alone.
+   * - **The methods**: roster's, each one the person may call at all. The
+   *   delegation narrows what they hold and adds nothing, since a call through
+   *   it is answered as them; a method they hold nowhere is refused, naming
+   *   it.
+   * - **How long**: no later than `delegation.life` from now, a day unless the
+   *   deployment says; none is that bound, and later is refused, saying it.
+   *
+   * It may be called through a delegation, as `ApiKeyService/Issue` is: that
+   * is the road a person has to it from a browser; the app such a call came
+   * through is not handed one by it. Its end, the app ending it (`Revoke`,
+   * with the token), the person ending it (`Erase`, by reference), signing
+   * out everywhere, a suspension and an erasure end it, as they end every
+   * delegation of theirs.
+   *
+   * @generated from rpc roster.DelegationService.Issue
+   */
+  issue: {
+    methodKind: "unary";
+    input: typeof DelegationIssueRequestSchema;
+    output: typeof DelegationIssueResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_app_delegation_svc_g, 0);
