@@ -43,7 +43,7 @@ restart, and under its new one from then: its people go on binding and
 searching under the old one meanwhile, by password as by app password, since
 every call names the tenant by its identifier.
 A tenant running its own copy gives it that tenant's `rt_` instead,
-`--key contoso=rt_…` or `ROSTER_LDAP_KEY_CONTOSO`.
+`--tenant-key contoso=rt_…` or `ROSTER_LDAP_TENANT_KEY_CONTOSO`.
 
 **A bind holds a connection to one tenant.** One process serving many tenants
 answers each connection as the tenant its bind DN is in: the root DSE names that
@@ -62,7 +62,7 @@ container of its own):
 ldap:
   addr: :389
   bind: key
-  key: ${file:/run/roster/directory.key}
+  deployment_key: ${file:/run/roster/directory.key}
 ```
 
 Either way it is a **consumer**, reaching roster over the wire and never past it.
@@ -381,7 +381,7 @@ administrator carries no such label and is a person.
 What that test cannot see stays in `ou=people`. An app installed by hand
 (`roster app install`, for a Jenkins, say) is a holder like any other, and so
 is the one `roster scim provision` makes for a tenant's directory. And a
-tenant's own copy (`--key`) does not know which holder its key hangs off -- the
+tenant's own copy (`--tenant-key`) does not know which holder its key hangs off -- the
 key names no read that says -- so that holder is listed too. A client that
 imports users filters them out by what the tenant knows of them: a group, or
 `(!(uid=jenkins))`.
@@ -625,7 +625,7 @@ minted by the app's name*).
 | --- | --- |
 | `ldap/` | the package: the tree, the bind, the search, the filter walker. A consumer, held to it by `scripts/test.sh`'s import check, which learns the second directory |
 | `ldap/wire/` | the protocol: one connection's loop, and the handful of messages this process speaks, decoded from and encoded to BER. Nothing in it knows what a holder is |
-| `cli/ldap.go` | `roster ldap serve`: `--listen` (`:389`), `--listen-tls`, `--roster`, `--insecure`, `--deployment-key` (or `--key`/`ROSTER_LDAP_KEY_<ALIAS>` for a tenant's own copy), `--base`, `--bind`, `--tls`, `--require-tls` |
+| `cli/ldap.go` | `roster ldap serve`: `--listen` (`:389`), `--listen-tls`, `--roster`, `--insecure`, `--deployment-key` (or `--tenant-key`/`ROSTER_LDAP_TENANT_KEY_<ALIAS>` for a tenant's own copy), `--base`, `--bind`, `--tls`, `--require-tls` |
 | `docker/ldap.sh`, `compose.yaml` | the `ldap` service beside `account`, on `1389`, its key from the same `customer` one-shot; `LDAP_BIND=either` turns password binds on |
 | `docs/operating.md` | § "One process, or five" -- where the `ldap:` block sits |
 | `docs/usage/ways-in.md` | a paragraph under the tenant key: an app password is a key |
@@ -758,6 +758,6 @@ comment beside what it decides.
 | | | |
 | --- | --- | --- |
 | L0 | the wire | **done** — `ldap/wire`: the loop, simple bind, search, unbind, abandon, StartTLS (and LDAPS as the listener's), WhoAmI, paging, the refusal table. Proved against `go-ldap` as the client and by hand for what it has no call for (abandon); under the race detector |
-| L1 | people | **done** — `ldap/`: the tree above the people, `ou=people` with every attribute in the table (`mail` verified only, disabled absent), bind in all three modes with roster's `ok` as the second-factor rule, search planned into `Holder.Get`/`Holder.Search`/`Email.Get`/`Holder.List` and evaluated off the BER tree, paging on roster's own cursor, `uid` and `mail` found without regard to case. `roster ldap serve` with `--key`/`ROSTER_LDAP_KEY_`, `--base`, `--bind`, `--tls`, `--listen-tls`, `--require-tls`. The import check learned `ldap/`. Eight tests in `ldap/`, one in `cmd/` |
+| L1 | people | **done** — `ldap/`: the tree above the people, `ou=people` with every attribute in the table (`mail` verified only, disabled absent), bind in all three modes with roster's `ok` as the second-factor rule, search planned into `Holder.Get`/`Holder.Search`/`Email.Get`/`Holder.List` and evaluated off the BER tree, paging on roster's own cursor, `uid` and `mail` found without regard to case. `roster ldap serve` with `--tenant-key`/`ROSTER_LDAP_TENANT_KEY_`, `--base`, `--bind`, `--tls`, `--listen-tls`, `--require-tls`. The import check learned `ldap/`. Eight tests in `ldap/`, one in `cmd/` |
 | L2 | groups, teams, sites | **done** — `ou=groups` as `groupOfNames` with `member` the DNs of people in the tree (the disabled are not named), `ou=sites/ou=<site>/ou=teams/cn=<team>` and `ou=teams` under the suffix for a team with no site, `memberOf` on a person from the other end, `(memberOf=…)` planned into one membership list. A subtree search from a suffix or the root pages in stages -- people on roster's cursor, then the groups, then the sites -- carried in the cookie, so a client paging from the root sees every entry of the tenant it is bound in once. `TestGroupsTeamsAndSitesAreTheTree` |
 | L3 | shipped | **done** — the `ldap` compose service on `1389` with its key from `customer.sh`, `operating.md` § "One process, or five", `usage/ways-in.md` on app passwords, `baseline.md` § A directory over LDAP, the account page's *mint an app password* form and its spec, and this file as a description |

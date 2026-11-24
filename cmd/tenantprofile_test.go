@@ -59,7 +59,7 @@ func TestASlackReferenceIsTheDeploymentsToWrite(t *testing.T) {
 
 	t.Run("and not which secret", func(t *testing.T) {
 		x := require.New(t)
-		err := write(admin, app.TenantProfile_builder{Fill: true, SlackSecretRef: "env:ROSTER_LOGIN_KEY"}.Build())
+		err := write(admin, app.TenantProfile_builder{Fill: true, SlackSecretRef: "env:ROSTER_LOGIN_DEPLOYMENT_KEY"}.Build())
 		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
 		x.Empty(profile().GetSlackSecretRef())
 	})

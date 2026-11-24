@@ -127,7 +127,7 @@ login:
   insecure: true
   hydra:
     admin: http://127.0.0.1:9
-  key: \${file:${work}/run/login-app.key}
+  deployment_key: \${file:${work}/run/login-app.key}
   base: https://login.example.test
   remember: 8h
 audit:

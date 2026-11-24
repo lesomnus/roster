@@ -18,7 +18,7 @@ import (
 // name -- the bare output of `openssl rand -base64 32`, which is the likeliest
 // way to get it wrong -- was refused with the whole value in the sentence, and
 // that sentence is the container's log. The refusal says the form, and not
-// what was written. (The flag's half, `--key` of the consumers, is in `cli`.)
+// what was written. (The flag's half, `--tenant-key` of the consumers, is in `cli`.)
 func TestAKeyWrittenWithoutItsNameIsNotSaidBack(t *testing.T) {
 	const bare = "XfYoVszmos0DoMNUOSy1vJfaOLVOrq7x6QiNlqRr0G8="
 
@@ -55,16 +55,16 @@ audit:
   checkpoints: { key: "-----BEGIN PRIVATE KEY-----\nCHECKPOINTKEYSECRET11\n-----END PRIVATE KEY-----" }
   keys: { identity: "AGE-SECRET-KEY-1IDENTITYSECRET12" }
 account:
-  key: "rk_ACCOUNTKEYLITERAL13"
-  keys: { acme: "rt_ACCOUNTKEYSLITERAL14" }
+  deployment_key: "rk_ACCOUNTKEYLITERAL13"
+  tenant_keys: { acme: "rt_ACCOUNTKEYSLITERAL14" }
   seal: ["SEALLITERAL15AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="]
   mail: { addr: "smtp:587", username: "MAILUSER16", password: "MAILPASSWORDLITERAL17" }
 ldap:
-  key: "rk_LDAPKEYLITERAL18"
-  keys: { acme: "rt_LDAPKEYSLITERAL19" }
+  deployment_key: "rk_LDAPKEYLITERAL18"
+  tenant_keys: { acme: "rt_LDAPKEYSLITERAL19" }
   tls: { cert: /x/cert.pem, key: /x/TLSKEYPATH20.pem }
 login:
-  key: "rk_LOGINKEYLITERAL21"
+  deployment_key: "rk_LOGINKEYLITERAL21"
   seal: ["LOGINSEALLITERAL22AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA="]
   hydra: { admin: "http://admin:HYDRAURLPASSWORD23@hydra:4445", header: { Authorization: "Bearer HYDRAHEADERSECRET24" } }
 `), 0o600))

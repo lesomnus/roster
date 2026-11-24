@@ -43,7 +43,7 @@ import (
 //
 // Into a file when `out` names a directory -- `roster account provision`, run
 // beside a process of its own -- and into memory when it does not, which is
-// what `roster serve` asks for when `account.key` and `account.keys` say nothing: a key made at
+// what `roster serve` asks for when `account.deployment_key` and `account.tenant_keys` say nothing: a key made at
 // start, which is one replica, exactly as `account.seal` reads an empty value.
 // Either way the row is a key like any other. It is in the trail, it can be
 // revoked, and a restart is a rotation -- so what a deployment gives up by

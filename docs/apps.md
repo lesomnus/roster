@@ -173,7 +173,7 @@ plane is the roster operator's. It holds one `rt_` per customer that minted one,
 each answering in that customer's tenant alone. That is not a fourth shape, just
 C for each tenant, and it needs nothing from roster that C does not.
 
-The account app and `ldap serve` take `--key alias=rt_…` for exactly this case,
+The account app and `ldap serve` take `--tenant-key alias=rt_…` for exactly this case,
 a tenant running its own copy. Run by a roster operator for everybody they are A,
 each with one deployment key (#76).
 

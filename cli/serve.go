@@ -201,7 +201,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 				// control plane has nowhere to make one (`frontDoor`); no start
 				// will. `roster account serve` still refuses with none.
 				if keys.none() {
-					slog.Warn("account: no key is named -- account.key, account.keys or ROSTER_ACCOUNT_KEY_<ALIAS> -- and there is " +
+					slog.Warn("account: no key is named -- account.deployment_key, account.tenant_keys or " + AccountKeyPrefix + "<ALIAS> -- and there is " +
 						"no control plane to make one on, so the app is not serving; name a tenant key, or a control plane")
 				} else {
 					g.Go(s.Front(func() error { return serveAccount(ctx, ac, keys) }))
@@ -372,21 +372,19 @@ func frontDoor(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server
 		ac.Connect = "http://" + c.Server.Http.Addr
 	}
 
-	if !c.Account.Key.IsZero() {
-		key, err := c.Account.Key.Value()
+	if err := oneWay("account", c.Account.DeploymentKey, c.Account.TenantKeys, AccountKeyPrefix, nil); err != nil {
+		return ac, appKeys{}, err
+	}
+	if !c.Account.DeploymentKey.IsZero() {
+		key, err := c.Account.DeploymentKey.Value()
 		if err != nil {
-			return ac, appKeys{}, fmt.Errorf("account.key: %w", err)
-		}
-		// Handed on beside it, for the app to refuse the two.
-		keys, err := blockKeys(c.Account.Keys)
-		if err != nil {
-			return ac, appKeys{}, err
+			return ac, appKeys{}, fmt.Errorf("account.deployment_key: %w", err)
 		}
 
-		return ac, appKeys{key: key, keys: keys}, nil
+		return ac, appKeys{key: key}, nil
 	}
 
-	keys, err := keysOf(c.Account.Keys, AccountKeyPrefix, nil)
+	keys, err := keysOf(c.Account.TenantKeys, AccountKeyPrefix, nil)
 	switch {
 	case err == nil:
 		return ac, appKeys{keys: keys}, nil
@@ -397,9 +395,9 @@ func frontDoor(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server
 		}
 		token, n, err := provisionAccount(ctx, s, ac.Enrol, "")
 		if err != nil {
-			return ac, appKeys{}, fmt.Errorf("account.key: none named, and making one here: %w", err)
+			return ac, appKeys{}, fmt.Errorf("account.deployment_key: none named, and making one here: %w", err)
 		}
-		slog.Warn(fmt.Sprintf("account: key made at start, fronting %d tenant(s), which is one replica; account.key names one to share", n))
+		slog.Warn(fmt.Sprintf("account: key made at start, fronting %d tenant(s), which is one replica; account.deployment_key names one to share", n))
 
 		return ac, appKeys{key: token}, nil
 
@@ -427,24 +425,24 @@ func loginApp(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server)
 	if gc.Roster == "" {
 		gc.Roster = l.Addr().String()
 	}
-	if gc.Key.IsZero() {
+	if gc.DeploymentKey.IsZero() {
 		if s == nil || s.Control == nil {
 			return gc, "", nil
 		}
 
 		token, borrower, err := provisionKey(ctx, s, "")
 		if err != nil {
-			return gc, "", fmt.Errorf("login.key: none named, and making one here: %w", err)
+			return gc, "", fmt.Errorf("login.deployment_key: none named, and making one here: %w", err)
 		}
 		if _, err := nominate(ctx, s, loginMethodsFor(gc.Enrol), borrower); err != nil {
-			return gc, "", fmt.Errorf("login.key: none named, and making one here: %w", err)
+			return gc, "", fmt.Errorf("login.deployment_key: none named, and making one here: %w", err)
 		}
-		slog.Warn("login: key made at start, which is one replica; login.key names one to share")
+		slog.Warn("login: key made at start, which is one replica; login.deployment_key names one to share")
 
 		return gc, token, nil
 	}
 
-	key, err := gc.Key.Value()
+	key, err := gc.DeploymentKey.Value()
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			// `${file:}` naming a path that is not there, which is a first
@@ -454,7 +452,7 @@ func loginApp(ctx context.Context, c *cmd.Config, l net.Listener, s *cmd.Server)
 			return gc, "", nil
 		}
 
-		return gc, "", fmt.Errorf("login.key: %w", err)
+		return gc, "", fmt.Errorf("login.deployment_key: %w", err)
 	}
 
 	return gc, key, nil
@@ -467,21 +465,19 @@ func directory(c *cmd.Config, l net.Listener) (cmd.LdapConfig, appKeys, error) {
 		lc.Roster = l.Addr().String()
 	}
 
-	if !c.Ldap.Key.IsZero() {
-		key, err := c.Ldap.Key.Value()
+	if err := oneWay("ldap", c.Ldap.DeploymentKey, c.Ldap.TenantKeys, LdapKeyPrefix, nil); err != nil {
+		return lc, appKeys{}, err
+	}
+	if !c.Ldap.DeploymentKey.IsZero() {
+		key, err := c.Ldap.DeploymentKey.Value()
 		if err != nil {
-			return lc, appKeys{}, fmt.Errorf("ldap.key: %w", err)
-		}
-		// Handed on beside it, for the directory to refuse the two.
-		keys, err := blockKeys(c.Ldap.Keys)
-		if err != nil {
-			return lc, appKeys{}, err
+			return lc, appKeys{}, fmt.Errorf("ldap.deployment_key: %w", err)
 		}
 
-		return lc, appKeys{key: key, keys: keys}, nil
+		return lc, appKeys{key: key}, nil
 	}
 
-	keys, err := keysOf(c.Ldap.Keys, LdapKeyPrefix, nil)
+	keys, err := keysOf(c.Ldap.TenantKeys, LdapKeyPrefix, nil)
 	if err != nil {
 		return lc, appKeys{}, err
 	}

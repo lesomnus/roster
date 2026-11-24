@@ -791,23 +791,23 @@ account:
   page: { dir: /usr/share/roster/account }
   terminal: true                          # `roster sign-in`; off unless said
   # private_hosts: [idp.corp.example]     # a provider off the internet, or in plain http; none unless named
-  # key: left out -- one rk_ made at start, narrowed per request to the holder
-  # each tenant nominated. A process of its own names it: ${file:…} from
-  # `roster account provision`. (`keys:` is a tenant running its own copy.)
+  # deployment_key: left out -- one rk_ made at start, narrowed per request to
+  # the holder each tenant nominated. A process of its own names it: ${file:…}
+  # from `roster account provision`. (`tenant_keys:` is a tenant running its own copy.)
 
 ldap:
   addr: :389
   bind: key
-  key: ${file:/run/roster/directory.key}  # `roster --as admin control key add --allow … directory`,
-                                          # and `roster app install … directory` per tenant
+  deployment_key: ${file:/run/roster/directory.key}  # `roster --as admin control key add --allow … directory`,
+                                                     # and `roster app install … directory` per tenant
 
 login:                                    # only with Hydra in front; see login.md
   addr: :8091
   hydra: { admin: http://hydra:4445 }      # an address and no credential; a proxy's goes in hydra.header,
                                           # whose values are never printed
-  # key: left out -- one rk_ made at start, narrowed per request. A process of
-  # its own names it: ${file:…} from `roster login provision`, or the key
-  # itself in ROSTER_LOGIN_KEY
+  # deployment_key: left out -- one rk_ made at start, narrowed per request. A
+  # process of its own names it: ${file:…} from `roster login provision`, or
+  # the key itself in ROSTER_LOGIN_DEPLOYMENT_KEY
 
   consent: skip                           # ask draws a screen instead; a device's flow is always drawn one
   base: https://login.contoso.example     # the origin every connection's redirect is under
@@ -1013,7 +1013,7 @@ already do. `roster serve` opens whichever are named, in the same errgroup as th
 server, so a front door that cannot come up is a start-up failure rather than a
 deployment that is half there.
 
-**And a key unsaid is a key made at start.** `account.key` and `login.key` left
+**And a key unsaid is a key made at start.** `account.deployment_key` and `login.deployment_key` left
 out in one process are the rows `roster account provision` and `roster login
 provision` would have written -- for each app, one `rk_` and, in each tenant with a
 `Host` row, a holder, a role holding exactly what the app calls as itself, one
@@ -1097,15 +1097,15 @@ environment, and only when it was given, so an empty value is a value --
 the flags elsewhere that say a setting: `--hydra` of `roster login doctor` is
 `login.hydra.admin`, `--file` of `roster resources apply` is `resources`, and
 `--archive` of `roster trail read` is `audit.archive`. What is
-not a setting is read as it was: `--key alias=rt_…` and the `--base` of
+not a setting is read as it was: `--tenant-key alias=rt_…` and the `--base` of
 `roster ldap serve` add to the block's map rather than replace it.
 
 **A key is written where it is kept**, `${file:/path}` or `${env:NAME}`, as
 every value kept somewhere else is (the top of this page). A tenant's
 own copy of the account app or the directory is given its `rt_` in one of two
-forms, merged: in the block's `keys`, by alias, or in the environment, one
-variable per tenant holding the key -- `ROSTER_ACCOUNT_KEY_<ALIAS>`,
-`ROSTER_LDAP_KEY_<ALIAS>`. `--key alias=rt_…` takes the key, which is in the
+forms, merged: in the block's `tenant_keys`, by alias, or in the environment,
+one variable per tenant holding the key -- `ROSTER_ACCOUNT_TENANT_KEY_<ALIAS>`,
+`ROSTER_LDAP_TENANT_KEY_<ALIAS>`. `--tenant-key alias=rt_…` takes the key, which is in the
 process list and says so. Do **not** name a `ROSTER_` variable in a reference:
 the configuration loader reads those as the settings of the same name, so
 `${env:ROSTER_LOGIN_SEAL}` is read as `login.seal` itself as well, and one that
@@ -1123,7 +1123,7 @@ roster login provision --out /run/roster-login
 Two halves, and neither takes a list of tenants.
 
 **Once:** one deployment key (`rk_`), on a control-plane holder, written to
-`<out>/login-app.key` -- so `login.key` is `${file:/run/roster-login/login-app.key}`
+`<out>/login-app.key` -- so `login.deployment_key` is `${file:/run/roster-login/login-app.key}`
 and there is no Secret at all. What it allows is what the app calls before a
 flow names a tenant, and nothing else: which tenant a name is
 (`FrontService/WhoseHost`), and the one stream that hears every tenant's

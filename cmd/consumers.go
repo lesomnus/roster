@@ -123,17 +123,17 @@ type AccountConfig struct {
 	// `NO_PROXY` sends direct.
 	PrivateHosts []string `yaml:"private_hosts"`
 
-	// Keys is one tenant key per tenant fronted, by alias.
+	// TenantKeys is one tenant key per tenant fronted, by alias.
 	//
 	// Each a [Token]: a key is a secret and this file is not a place for one,
 	// so a deployment writes where it is kept, `${env:NAME}` or
 	// `${file:/path}`. The environment is the other form, merged with these:
-	// one variable per tenant, `ROSTER_ACCOUNT_KEY_<ALIAS>`, holding the key.
-	// And `--key alias=rt_…` takes the key, which is in the process list and
-	// says so.
+	// one variable per tenant, `ROSTER_ACCOUNT_TENANT_KEY_<ALIAS>`, holding the
+	// key. And `--tenant-key alias=rt_…` takes the key, which is in the process
+	// list and says so.
 	//
-	// One of this and [AccountConfig.Key]: a tenant running its own copy names
-	// its `rt_` here.
+	// One of this and [AccountConfig.DeploymentKey]: a tenant running its own
+	// copy names its `rt_` here.
 	//
 	// **Both empty, inside `roster serve`, is a key made at start**: the rows
 	// `roster account provision` writes -- one deployment key, and in every
@@ -143,16 +143,16 @@ type AccountConfig struct {
 	// value. A restart is a rotation. `roster account serve` still refuses with
 	// neither, because somebody typed that one and a process whose only job is
 	// the front door has nothing to do without a key.
-	Keys map[string]Token `yaml:"keys"`
+	TenantKeys map[string]Token `yaml:"tenant_keys"`
 
-	// Key is one deployment key for every tenant fronted, narrowed on each call
+	// DeploymentKey is one deployment key for every tenant fronted, narrowed on each call
 	// to the holder that tenant nominated for it -- the shape the Login App
 	// takes, and the one a roster operator running this for many tenants wants
 	// (#76, `docs/apps.md`). A [Token], written where it is kept:
 	// `${file:/run/roster-account/account.key}` is what `roster account
 	// provision` writes. A tenant this app is put into later is fronted at the
 	// first request for one of its names, with no restart.
-	Key Token `yaml:"key"`
+	DeploymentKey Token `yaml:"deployment_key"`
 
 	// Seal is the key sessions are sealed into the cookie under, 32 bytes of
 	// base64, each a [Token]. Repeat to rotate: the first seals and every one
@@ -201,7 +201,7 @@ type MailConfig struct {
 
 	// Username and Password sign in. The password is a secret of the loader's
 	// and is written where it is kept, `${env:NAME}` or `${file:/path}`: this
-	// file is not a place for one, [AccountConfig.Key]'s rule for the same
+	// file is not a place for one, [AccountConfig.DeploymentKey]'s rule for the same
 	// reason, and `roster config` prints one written as itself as
 	// `<redacted>`. The username is a value that may be kept somewhere else
 	// and usually is not: written as itself and printed so, or a reference,
@@ -295,16 +295,17 @@ type LdapConfig struct {
 	// Insecure dials roster without TLS.
 	Insecure bool `yaml:"insecure"`
 
-	// Keys is one tenant key per tenant fronted, by alias, each a [Token].
-	// See [AccountConfig.Keys]; `ROSTER_LDAP_KEY_<ALIAS>` is merged with it.
-	Keys map[string]Token `yaml:"keys"`
+	// TenantKeys is one tenant key per tenant fronted, by alias, each a
+	// [Token]. See [AccountConfig.TenantKeys];
+	// `ROSTER_LDAP_TENANT_KEY_<ALIAS>` is merged with it.
+	TenantKeys map[string]Token `yaml:"tenant_keys"`
 
-	// Key is one deployment key instead, answered in each tenant as the holder
+	// DeploymentKey is one deployment key instead, answered in each tenant as the holder
 	// that tenant nominated for it -- `roster control key add --allow
 	// /roster.NominationService/List directory`, then `roster app install
 	// directory` per tenant with the directory's role. A [Token]. One of this
-	// and Keys (#76).
-	Key Token `yaml:"key"`
+	// and TenantKeys (#76).
+	DeploymentKey Token `yaml:"deployment_key"`
 
 	// Bases is a tenant's suffix, by alias. `o=<alias>` where none is given.
 	Bases map[string]string `yaml:"bases"`
@@ -407,8 +408,8 @@ type LoginConfig struct {
 	// Hydra is the one thing here that is not roster's.
 	Hydra HydraConfig `yaml:"hydra"`
 
-	// Key is the **one** credential this instance holds, a [Token], and it is
-	// a deployment key (`rk_`).
+	// DeploymentKey is the **one** credential this instance holds, a [Token],
+	// and it is a deployment key (`rk_`).
 	//
 	// # It was a map, and both maps are gone
 	//
@@ -437,8 +438,8 @@ type LoginConfig struct {
 	// nominations that go with it -- what `roster login provision` writes,
 	// without the file -- kept in memory, which is one replica. It needs the
 	// control plane an `rk_` lives in, and `roster login serve` still refuses
-	// with none, for [AccountConfig.Keys]'s reason.
-	Key Token `yaml:"key"`
+	// with none, for [AccountConfig.TenantKeys]'s reason.
+	DeploymentKey Token `yaml:"deployment_key"`
 
 	// Base is this app's public origin, which every provider has registered as
 	// the redirect: `https://login.example.com`.
