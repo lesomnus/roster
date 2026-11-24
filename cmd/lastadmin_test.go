@@ -231,19 +231,19 @@ func TestTwoWritesCannotBothTakeTheLast(t *testing.T) {
 func TestNobodyTakesAwayWhatARowGaveThem(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)
-	steward := b.grantee(t, ctx, "steward",
+	loft := b.holder(t, ctx, b.Contoso, "loft")
+	steward := b.granteeAt(t, ctx, "steward", loft, []string{
 		app.BindingService_Erase_FullMethodName,
 		app.RoleService_Erase_FullMethodName,
 		app.GroupService_Erase_FullMethodName,
 		app.GroupMembershipService_Erase_FullMethodName,
 		app.TeamMembershipService_Erase_FullMethodName,
-		"/loft.*/*",
-	)
+	}, "/loft.*/*")
 	as := framed(ctx, steward, b.Contoso)
 	victim := b.holder(t, ctx, b.Contoso, "victim")
 
 	wide := b.role(t, ctx, "wide", "/roster.HolderService/Erase")
-	narrow := b.role(t, ctx, "narrow", "/loft.AssetService/Get")
+	narrow := b.roleAtApp(t, ctx, loft, "narrow", "/loft.AssetService/Get")
 
 	// A binding.
 	b.binds(t, victim, wide, nil)

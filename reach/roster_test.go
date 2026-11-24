@@ -34,8 +34,8 @@ import (
 
 // app is the alias of the holder the app acts as in its tenant, and its
 // methods are what `docs/apps.md` says to install it with for this package:
-// [reach.Methods], and the app's own package, which the tenant's
-// administrators are given to hand on (`--administer`).
+// [reach.Methods] at roster, and the app's own package in a role of the app's
+// (`Role.app`) its tenant's administrator holds, to hand on there.
 const app = "relying"
 
 const (
@@ -60,6 +60,10 @@ type external struct {
 	key, admin string
 	acme, beta pdid.Id
 	kim        pdid.Id
+
+	// app is the holder acme answers the app as, whose methods the roles of
+	// the app's name (`Role.app`).
+	app pdid.Id
 
 	// streams says when a stream on a connection [external.dial] made
 	// listens.
@@ -101,12 +105,17 @@ func newExternal(t *testing.T) *external {
 
 	e.key = stdoutOf(t, cli.NewCmdControl(&box), "key", "add", "--narrowed", app)
 	x.NoError(cli.NewCmdApp(&box).Run(ctx, []string{"install", "--tenant", "acme",
-		"--allow", strings.Join(reach.Methods, ","), "--administer", ownMethods, app}))
+		"--allow", strings.Join(reach.Methods, ","), app}))
 	e.admin = stdoutOf(t, cli.NewCmdKey(&box), "add", "--tenant", "acme", "--holder", "admin", "--name", "admin", "--allow", "/roster.*/*")
 
 	e.s, err = cmd.Build(ctx, c)
 	x.NoError(err)
 	t.Cleanup(func() { e.s.Close() })
+
+	// And acme's administrator holds the app's own package at the app, so
+	// that the roles of the app's they write and bind are theirs to.
+	e.app = holderOf(t, e.s, e.acme, app)
+	holdsAtApp(t, e.s, e.acme, e.app, holderOf(t, e.s, e.acme, "admin"), app+"-everything", ownMethods)
 	g, err := e.s.Grpc(ctx, cmd.Config{})
 	x.NoError(err)
 	l, err := net.Listen("tcp", "127.0.0.1:0")
@@ -195,6 +204,7 @@ func (e *external) door(t *testing.T) door {
 	return door{
 		ctx:          auth.BearerProvider(e.admin).Provide(t.Context()),
 		tenant:       e.acme,
+		app:          e.app,
 		addRole:      wire(roles.Add),
 		widen:        wire(roles.Widen),
 		narrow:       wire(roles.Narrow),
@@ -220,6 +230,7 @@ type embedded struct {
 	lis *bufconn.Listener
 	dir pdid.Id
 	kim pdid.Id
+	app pdid.Id
 }
 
 const directory = "home"
@@ -259,6 +270,8 @@ func newEmbedded(t *testing.T) *embedded {
 		Holder: rstr.HolderRef_builder{Id: h.GetId()}.Build(),
 	}.Build())
 	x.NoError(err)
+	e.app, err = pdid.From(h.GetId())
+	x.NoError(err)
 
 	return e
 }
@@ -289,7 +302,7 @@ func (e *embedded) door(t *testing.T) door {
 	u := e.s.Ungated
 
 	return door{
-		ctx: t.Context(), tenant: e.dir,
+		ctx: t.Context(), tenant: e.dir, app: e.app,
 		addRole:      u.Role().Add,
 		widen:        u.Role().Widen,
 		narrow:       u.Role().Narrow,
@@ -306,6 +319,10 @@ type door struct {
 	ctx    context.Context
 	tenant pdid.Id
 
+	// app is the holder the app is answered as there, whose roles [door.role]
+	// writes.
+	app pdid.Id
+
 	addRole      func(context.Context, *rstr.RoleAddRequest) (*rstr.Role, error)
 	widen        func(context.Context, *rstr.RoleWidenRequest) (*rstr.Role, error)
 	narrow       func(context.Context, *rstr.RoleNarrowRequest) (*rstr.Role, error)
@@ -316,11 +333,13 @@ type door struct {
 	disable      func(context.Context, *rstr.HolderDisableRequest) (*rstr.Holder, error)
 }
 
-// role is a role of the tenant's holding `methods`.
+// role is a role of the app's holding `methods`: an app's methods are named
+// in a role of that app (`Role.app`).
 func (d door) role(t *testing.T, alias string, methods ...string) *rstr.RoleRef {
 	t.Helper()
 	v, err := d.addRole(d.ctx, rstr.RoleAddRequest_builder{
 		Tenant: rstr.TenantRef_builder{Id: d.tenant.Bytes()}.Build(), Alias: alias, Methods: methods,
+		App: rstr.HolderRef_builder{Id: d.app.Bytes()}.Build(),
 	}.Build())
 	require.NoError(t, err)
 
@@ -373,6 +392,37 @@ func addPerson(t *testing.T, s *cmd.Server, tenant pdid.Id, alias string) pdid.I
 	require.NoError(t, err)
 
 	return id
+}
+
+// holderOf is somebody of a tenant, by alias, read at the box.
+func holderOf(t *testing.T, s *cmd.Server, tenant pdid.Id, alias string) pdid.Id {
+	t.Helper()
+	v, err := s.Ungated.Holder().Get(t.Context(), rstr.HolderGetRequest_builder{
+		Ref: rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{
+			Alias: &alias, Tenant: rstr.TenantRef_builder{Id: tenant.Bytes()}.Build(),
+		}.Build()}.Build(),
+		Select: rstr.HolderSelect_builder{}.Build(),
+	}.Build())
+	require.NoError(t, err)
+	id, err := pdid.From(v.GetId())
+	require.NoError(t, err)
+
+	return id
+}
+
+// holdsAtApp binds `who` a role of the app `of` naming `methods`, at the box.
+func holdsAtApp(t *testing.T, s *cmd.Server, tenant, of, who pdid.Id, alias string, methods ...string) {
+	t.Helper()
+	ctx := t.Context()
+	r, err := s.Ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: tenant.Bytes()}.Build(), Alias: alias, Methods: methods,
+		App: rstr.HolderRef_builder{Id: of.Bytes()}.Build(),
+	}.Build())
+	require.NoError(t, err)
+	_, err = s.Ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role: rstr.RoleRef_builder{Id: r.GetId()}.Build(), Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
+	}.Build())
+	require.NoError(t, err)
 }
 
 func holders(t *testing.T, c reach.Config) *reach.Holders {

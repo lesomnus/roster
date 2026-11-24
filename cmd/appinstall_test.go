@@ -43,8 +43,8 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 	install := func() error {
 		return cli.NewCmdApp(&c).Run(ctx, []string{"install",
 			"--tenant", "acme",
-			"--allow", "/loft.AssetService/*",
-			"--administer", "/loft.*/*",
+			"--allow", "/roster.HolderService/Reaches,/roster.SyncService/Watch",
+			"--administer", "/roster.HolderService/Reaches",
 			"loft"})
 	}
 	x.NoError(install())
@@ -66,7 +66,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 		v, err := app.NewMeServiceClient(served(t, s)).Get(arrivedAt(ctx, token, front.AtTenant("acme")), app.MeGetRequest_builder{}.Build())
 		x.NoError(err)
 		x.Equal(who.GetId(), v.GetId())
-		x.Equal([]string{"/loft.AssetService/*"}, v.GetMethods())
+		x.Equal([]string{"/roster.HolderService/Reaches", "/roster.SyncService/Watch"}, v.GetMethods())
 	})
 
 	t.Run("and the nomination says which app it is", func(t *testing.T) {
@@ -86,7 +86,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 			Select: app.RoleSelect_builder{Methods: proto.Bool(true)}.Build(),
 		}.Build())
 		x.NoError(err)
-		x.ElementsMatch([]string{core.EveryMethod, "/loft.*/*"}, r.GetMethods())
+		x.ElementsMatch([]string{core.EveryMethod, "/roster.HolderService/Reaches"}, r.GetMethods())
 	})
 
 	// What the tenant decided afterwards stays decided.
@@ -100,7 +100,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 		x.NoError(err)
 		_, err = s.Ungated.Role().Patch(ctx, app.RolePatchRequest_builder{
 			Ref:         app.RoleRef_builder{Id: r.GetId()}.Build(),
-			Methods:     []string{"/loft.AssetService/Get"},
+			Methods:     []string{"/roster.HolderService/Reaches"},
 			DateUpdated: r.GetDateUpdated(),
 		}.Build())
 		x.NoError(err)
@@ -117,7 +117,7 @@ func TestInstallingAnAppIsItsRowsInATenantAndTheRightToManageThem(t *testing.T) 
 			Select: app.RoleSelect_builder{Methods: proto.Bool(true)}.Build(),
 		}.Build())
 		x.NoError(err)
-		x.Equal([]string{"/loft.AssetService/Get"}, got.GetMethods(), "installing again rewrote the tenant's choice")
+		x.Equal([]string{"/roster.HolderService/Reaches"}, got.GetMethods(), "installing again rewrote the tenant's choice")
 
 		bs, err := s.Ungated.Binding().List(ctx, app.BindingListRequest_builder{
 			Filters: []*app.BindingFilter{app.BindingFilter_builder{Holder: app.HolderRef_builder{Id: who.GetId()}.Build()}.Build()},
@@ -164,7 +164,7 @@ func TestInstallingAnAppLeavesARoleCalledAfterItAlone(t *testing.T) {
 	x.NoError(err)
 	at := app.TenantRef_builder{Id: acme.GetId()}.Build()
 	staff, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
-		Tenant: at, Alias: "loft", Methods: []string{"/loft.*/*"},
+		Tenant: at, Alias: "loft", Methods: []string{"/roster.HolderService/Get"},
 	}.Build())
 	x.NoError(err)
 	x.NoError(s.Close())
@@ -222,7 +222,7 @@ func TestInstallingAnAppTakesNoHolderThatIsSomebodys(t *testing.T) {
 	// Somebody called loft, who holds the staff role.
 	loft, err := s.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{Tenant: at, Alias: "loft"}.Build())
 	x.NoError(err)
-	staff, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{Tenant: at, Alias: "staff", Methods: []string{"/loft.*/*"}}.Build())
+	staff, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{Tenant: at, Alias: "staff", Methods: []string{"/roster.HolderService/Get"}}.Build())
 	x.NoError(err)
 	_, err = s.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
 		Role: app.RoleRef_builder{Id: staff.GetId()}.Build(), Holder: app.HolderRef_builder{Id: loft.GetId()}.Build(),

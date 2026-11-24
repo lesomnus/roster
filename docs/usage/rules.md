@@ -144,6 +144,7 @@ group does not write one, whatever it names (`server/core/tenantwide.go`).
 | A role of an app's is bound to a person, or held in a team, and not bound to a group: a group does not say whose it is yet; nor is it a manager's role in a group, which is roster's | `server/core/agree.go`, `server/core/group.go` | `TestARoleOfAnAppIsBoundToAPersonAndNotToAGroup` · `TestAnAppsRoleIsNoManagersRole` |
 | A role of an app's takes no alias roster finds a role of its own by: `self-service`, `group-manager`, `everything`, `login-app`, `account`, `scim` | `server/core/agree.go` | `TestAnAppsRoleTakesNoNameRosterKeeps` |
 | What ends an app's holder ends the roles that are of it: erasing the holder erases them in the same act, a restore brings the holder back and not them, and no road that destroys a holder's row leaves a role behind to be read as roster's | `server/core/takeaway.go` | `TestWhatEndsAnAppsHolderEndsItsRoles` · `TestNoRoadThatDestroysAHolderLeavesARoleOfRosters` |
+| A role of roster's names what roster serves: one naming no method a port of this deployment registers is refused where it is written, at `Add` and `Widen`, at a port and at the box; a role of an app's is taken as written | `server/core/widen.go`, `cmd/serve.go` | `TestARoleOfRostersNamesWhatRosterServes` · `TestWhatRosterServesIsWhatItsPortsRegister` |
 
 ### Nobody hands out what they do not hold
 

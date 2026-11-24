@@ -169,9 +169,9 @@ func TestWhoHoldsEverythingAtOneAppHandsOutThereAndNowhereElse(t *testing.T) {
 	x.Contains(status.Convert(err).Message(), "at @contoso/levyan")
 
 	_, err = roles.Add(as, app.RoleAddRequest_builder{
-		Tenant: tenant, Alias: "roster-cancel", Methods: []string{booking},
+		Tenant: tenant, Alias: "roster-cancel", Methods: []string{"/shared.*/*"},
 	}.Build())
-	x.Equal(codes.PermissionDenied, status.Code(err), "a role of roster's naming the methods held at an app")
+	x.Equal(codes.FailedPrecondition, status.Code(err), "a role of roster's naming the methods held at an app")
 }
 
 // TestAllOfRosterHandsOutNothingAtAnApp.
@@ -482,4 +482,53 @@ func TestNoRoadThatDestroysAHolderLeavesARoleOfRosters(t *testing.T) {
 	left, err := b.Ent.Holder.Query().Where(entholder.TenantId(b.Contoso.Uuid())).Count(ctx)
 	x.NoError(err)
 	x.Equal(people, left, "a holder's row was deleted, which a role's app is not kept against")
+}
+
+// granteeAt is [built.grantee] holding `rosters` at roster and `methods` at
+// the app `of`, each through a role of its own: a role names one app's methods.
+func (b *built) granteeAt(t *testing.T, ctx context.Context, alias string, of pdid.Id, rosters []string, methods ...string) pdid.Id {
+	t.Helper()
+
+	who := b.grantee(t, ctx, alias, rosters...)
+	b.binds(t, who, b.roleAtApp(t, ctx, of, alias+"-at-app", methods...), nil)
+
+	return who
+}
+
+// heldAtApp is somebody of the tenant `in`, bound a role of the app `of`
+// naming `methods`, at the box: what a test served by a process of its own
+// gives somebody at an app.
+func heldAtApp(t *testing.T, s *cmd.Server, in, of, who []byte, alias string, methods ...string) []byte {
+	t.Helper()
+	x := require.New(t)
+	ctx := t.Context()
+
+	r, err := s.Ungated.Role().Add(ctx, app.RoleAddRequest_builder{
+		Tenant:  app.TenantRef_builder{Id: in}.Build(),
+		Alias:   alias,
+		Methods: methods,
+		App:     app.HolderRef_builder{Id: of}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	_, err = s.Ungated.Binding().Add(ctx, app.BindingAddRequest_builder{
+		Role:   app.RoleRef_builder{Id: r.GetId()}.Build(),
+		Holder: app.HolderRef_builder{Id: who}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	return r.GetId()
+}
+
+// appIn is a holder of the tenant `in` an app is answered as, made at the box.
+func appIn(t *testing.T, s *cmd.Server, in []byte, alias string) []byte {
+	t.Helper()
+
+	v, err := s.Ungated.Holder().Add(t.Context(), app.HolderAddRequest_builder{
+		Tenant: app.TenantRef_builder{Id: in}.Build(),
+		Alias:  alias,
+	}.Build())
+	require.NoError(t, err)
+
+	return v.GetId()
 }

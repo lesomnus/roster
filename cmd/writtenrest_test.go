@@ -254,8 +254,13 @@ func TestWhatARoleAndADelegationListHasALength(t *testing.T) {
 		refusedAt(t, err, "methods")
 	})
 
+	// A role of an app's, which is taken as written: these are no methods
+	// roster serves, and a role of roster's is refused them for that first.
+	loft := b.holder(t, ctx, b.Contoso, "loft")
+	b.binds(t, b.ContosoUser, b.roleAtApp(t, ctx, loft, "loft-holders", "/roster.HolderService/*"), nil)
+
 	t.Run("a role widened", func(t *testing.T) {
-		role := b.role(t, ctx, "widened", "/roster.HolderService/Get")
+		role := b.roleAtApp(t, ctx, loft, "widened", "/roster.HolderService/Get")
 		_, err := b.Walled.Role().Widen(admin, app.RoleWidenRequest_builder{
 			Ref: app.RoleRef_builder{Id: role.Bytes()}.Build(), Methods: tooMany,
 		}.Build())
@@ -279,6 +284,7 @@ func TestWhatARoleAndADelegationListHasALength(t *testing.T) {
 				Tenant: at, Alias: fmt.Sprintf("longest-%d", i),
 				Name: strings.Repeat(wide, core.MaxName), Desc: strings.Repeat(wide, core.MaxDesc), Labels: labels,
 				Methods: methodsOf(keys.MaxMethodsSize/keys.MaxMethod, keys.MaxMethod),
+				App:     app.HolderRef_builder{Id: loft.Bytes()}.Build(),
 			}.Build())
 			require.NoError(t, err)
 		}

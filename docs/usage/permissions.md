@@ -395,8 +395,8 @@ checked *is she on the ops team* would be granting something any holder of
 
 A client that can only grant on membership -- an LDAP client reading `memberOf`
 ([ldap.md](../ldap.md)), a relying party reading a token's `groups`
-([login.md](../login.md) § *A relying party that grants on groups*) -- gets a
-guard one of two ways.
+([login.md](../login.md) § *A relying party that grants on groups*) -- gets its
+guard from the group's managers.
 
 **Give the group managers**, and decide who manages it (§ *Its managers*).
 Only they, and whoever may change every group's members, put somebody in; a
@@ -404,27 +404,11 @@ token carries the group only to a client a `GroupExposure` shows it to. The
 membership is then guarded by who may change it, and what it grants is the
 relying party's mapping.
 
-**Or bind the group to a role naming what it grants**, even though no RPC by
-that name exists, and the membership is guarded like a binding:
-
-```sh
-roster --as admin role add @newco/jenkins-admin '{"methods": ["/ext.jenkins.Admin/*"]}'
-
-echo '{"role": {"slug":{"alias":"jenkins-admin","tenant":{"alias":"newco"}}},
-       "group":{"slug":{"alias":"jenkins-admins","tenant":{"alias":"newco"}}}}' \
-  | roster --as admin binding add -
-```
-
-Joining that group is then refused to anybody who does not hold
-`/ext.jenkins.Admin/*` themselves. That includes a tenant's first administrator,
-whose role from `tenant add` is `/roster.*/*` and covers no other app's methods:
-somebody has to be bound the external permission -- or a pattern over it -- before
-they can hand it out, and a roster operator on the admin listener is who starts
-that. The same is true of every app's own methods, `/loft.*/*` included.
-
-The two differ in who may hand the permission out: a group's managers, appointed
-by somebody holding the membership writes across the tenant -- or only somebody
-who holds the permission itself. A team carries neither guard, so map an
+A role naming what the group grants is not a second guard, for now. A role of
+roster's names what roster serves, so `/ext.jenkins.Admin/*` is refused in one
+(§ *A role of roster's names what roster serves*); a role of an app's names
+what it likes, and is bound to a person or held in a team, and to no group
+until a group says whose it is. A team carries no guard at all, so map an
 external permission to a group and never to a team.
 
 ## You cannot hand out what you do not hold
@@ -460,6 +444,19 @@ finds a role of its own by -- `self-service`, `group-manager`, `everything`,
 `login-app`, `account`, `scim` -- and it ends with the app: erasing the holder
 the app is answered as erases the roles of it in the same act, and a restore of
 the holder does not bring them back.
+
+### A role of roster's names what roster serves
+
+A role with no `app` is read by roster's gate and by nothing else, so one that
+names a method no port of this deployment serves would grant nothing anywhere.
+It is refused where it is written -- `Role.Add`, `Role.Widen`, at a port and at
+the box alike -- and said for what it is:
+
+```
+role.methods: "/loft.*/*" names no method of roster's; an app's methods are written in a role of that app (app)
+```
+
+A role of an app's is taken as written: roster does not know an app's methods.
 
 ### And the reason the first role can be written at all
 

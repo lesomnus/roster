@@ -52,6 +52,7 @@ func TestASelectReadsAnEdgeByItsOwnRule(t *testing.T) {
 		Site:    app.SiteRef_builder{Id: south.Bytes()}.Build(),
 		Alias:   "south-secret",
 		Methods: []string{"/ext.payroll.Admin/Run"},
+		App:     app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "payroll").Bytes()}.Build(),
 	}.Build())
 	x.NoError(err)
 	saul := b.holder(t, ctx, b.Contoso, "saul")
