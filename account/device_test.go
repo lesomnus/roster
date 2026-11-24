@@ -257,7 +257,7 @@ func TestTheCommandWalksTheFlowItPrints(t *testing.T) {
 	ctx, stop := context.WithTimeout(t.Context(), 45*time.Second)
 	defer stop()
 
-	key, err := cli.SignIn(ctx, say, cl, d.app.URL, "laptop", []string{"/roster.MeService/Get"})
+	key, err := cli.SignIn(ctx, say, cl, d.app.URL, "laptop", "", []string{"/roster.MeService/Get"})
 	x.NoError(err)
 	x.True(strings.HasPrefix(key, "rt_"), "the command came back with something that is not a key: %q", key)
 	x.GreaterOrEqual(len(polled)+2, 2, "the loop did not poll twice, so a pending answer was never read")
@@ -314,7 +314,7 @@ func TestADeploymentThatDoesNotSignTerminalsInSaysSo(t *testing.T) {
 	// The command says it rather than polling at a door that is not there.
 	_, err := cli.SignIn(t.Context(), func(string, ...any) (int, error) { return 0, nil },
 		&http.Client{Transport: hostIs{name: "contoso.test"}},
-		d.app.URL, "laptop", []string{"/roster.MeService/Get"})
+		d.app.URL, "laptop", "", []string{"/roster.MeService/Get"})
 	x.Error(err)
 	x.Contains(err.Error(), "does not sign terminals in")
 }

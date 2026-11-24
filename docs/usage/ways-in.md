@@ -367,6 +367,58 @@ first one:
   can see who is signed in. `account/device.go` says why roster itself answers
   none of it.
 
+#### For an app
+
+`--app` names the app the key is for (§ *A key for an app*), by its alias in
+the tenant the front door answers for; none is a key of roster's, as above.
+
+```sh
+roster sign-in --at https://account.contoso.example \
+  --app loft --name laptop --allow /loft.AssetService/Get
+```
+
+The person approving is shown the app beside the terminal's name and what it
+asked to be allowed -- it is part of what they approve -- and the key minted is
+for that app: held to what they hold **at that app**, or refused as a terminal
+asking more than its approver holds is; answered to that app at `Introspect`,
+and no credential at roster.
+
+**Anybody may begin one**, as before -- and so an app's own server begins one for
+the person in front of its page, and `loft auth login` does, against the same
+request `roster sign-in` sends. Nothing is minted without the person's approval
+at the front door. The request is what such a client writes against:
+
+`POST /device/begin`, a JSON body of
+
+| field | what it is |
+| --- | --- |
+| `name` | what the key will be called, in the spelling a key's name is kept in; empty is `terminal` |
+| `allow` | the methods it may call, in full: of the app's where `app` names one, of roster's where it does not |
+| `app` | the app the key is for, by its alias in the tenant the request arrived at; absent or empty is a key of roster's |
+
+and answered RFC 8628 §3.2's `device_code`, `user_code`, `verification_uri`,
+`verification_uri_complete`, `expires_in` and `interval`; a poll is `POST
+/device/poll` with `{"device_code": …}`, answered `{"token": …}` once or one of
+§3.5's errors. What `begin` refuses, each in these words:
+
+| status | words | when |
+| --- | --- | --- |
+| `501` | `this deployment does not sign terminals in` | `account.terminal` is off |
+| `404` | `no operator here serves this name` | no tenant answers at the name the request arrived at |
+| `400` | `a name and what to allow` | the body is not that JSON |
+| `400` | `allow: which methods this terminal may call` | `allow` is empty |
+| `503` | `too many terminals are waiting to be approved here; try again in a minute` | a thousand and twenty-four are waiting, with `retry-after: 60` |
+| `500` | `cannot begin` | the front door could not make a code |
+
+**`begin` does not look `app` up**: it takes any well-formed alias and says
+nothing of it, since a request nobody signed would otherwise be told whether a
+name is somebody of the tenant -- and roster does not tell an app's holder from
+a person's. The person approving is shown the name that was asked for, and one
+that is nobody of the tenant is refused there, `404` in the words a name nobody
+serves is. `TestTheTerminalsBeginningIsWhatTheManualSays`
+holds both tables to `account/device.go`, as `login/contract_test.go` holds
+the Login App's routes to theirs.
+
 > **The other device grant.** A deployment with Hydra in front has a second one,
 > and it is not this: the Login App's `/device` screen, where a person types a code
 > a **television** printed so that the device gets an **OAuth token** out of the

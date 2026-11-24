@@ -42,7 +42,8 @@ import (
 // So `--at` is an account app's base URL, and there is no `client.addr` in this
 // command at all. What comes back is an ordinary tenant key: it belongs to the
 // person who approved it, is never wider than they are, and is revoked from the
-// same page as an app password.
+// same page as an app password. With `--app` it is a key for that app
+// (`ApiKey.app`), spent there and refused at roster; without, one of roster's.
 func NewCmdSignIn(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "sign-in",
@@ -56,6 +57,10 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 			&flg.String{
 				Name:  "name",
 				Brief: "what to call this terminal, unique among your keys",
+			},
+			&flg.String{
+				Name:  "app",
+				Brief: "the app the key is for, by its alias in the tenant; none is a key of roster's",
 			},
 			&flg.Strings{
 				Name:  "allow",
@@ -106,7 +111,8 @@ func NewCmdSignIn(c *cmd.Config) *xli.Command {
 			// > key` put the code to type in the file and nothing on the
 			// terminal, and nobody could approve it (#284).
 			say := func(format string, vs ...any) (int, error) { return fmt.Fprintf(cl.ErrWriter, format, vs...) }
-			key, err := SignIn(ctx, say, &http.Client{Timeout: 30 * time.Second}, strings.TrimSuffix(at, "/"), name, allow)
+			of, _ := flg.Find[string](cl, "app")
+			key, err := SignIn(ctx, say, &http.Client{Timeout: 30 * time.Second}, strings.TrimSuffix(at, "/"), name, of, allow)
 			if err != nil {
 				return err
 			}
@@ -167,8 +173,16 @@ type begun struct {
 // `authorization_pending` and nothing notices. `account/device_test.go` drives
 // this against the real front door, so the two are held together by a test rather
 // than by both having been read once.
-func SignIn(ctx context.Context, say func(string, ...any) (int, error), cl *http.Client, at, name string, allow []string) (string, error) {
-	body, err := json.Marshal(map[string]any{"name": name, "allow": allow})
+//
+// `app` is the app the key is for, by its alias in the tenant the front door
+// answers for (`ApiKey.app`), and empty is a key of roster's: then it is not
+// sent, and the request is the one it always was.
+func SignIn(ctx context.Context, say func(string, ...any) (int, error), cl *http.Client, at, name, app string, allow []string) (string, error) {
+	begin := map[string]any{"name": name, "allow": allow}
+	if app != "" {
+		begin["app"] = app
+	}
+	body, err := json.Marshal(begin)
 	if err != nil {
 		return "", err
 	}

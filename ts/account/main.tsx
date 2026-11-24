@@ -888,13 +888,14 @@ const appPasswordMethods = ['/roster.MeService/Get']
  * a QR code carries).
  *
  * What it shows before the button is what the terminal **asked to be allowed**,
- * because that is the whole of the decision: `account/device.go` refuses to mint
+ * and the app the key is for -- roster, where it named none -- because that is
+ * the whole of the decision: `account/device.go` refuses to mint
  * anything wider than the person approving it, and somebody who cannot see the
  * list cannot be said to have approved it.
  */
 function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 	const [code, setCode] = useState(waiting ?? '')
-	const [asked, setAsked] = useState<{ name: string; methods: string[] } | null>(null)
+	const [asked, setAsked] = useState<{ name: string; app: string; methods: string[] } | null>(null)
 	const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
 
 	const look = (v: string): void => {
@@ -903,7 +904,7 @@ function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 		void fetch(`/device/pending?user_code=${encodeURIComponent(v)}`)
 			.then(async (res) =>
 				res.ok
-					? setAsked((await res.json()) as { name: string; methods: string[] })
+					? setAsked((await res.json()) as { name: string; app: string; methods: string[] })
 					: setNote({ ok: false, text: await why(res) }),
 			)
 			.catch(() => setNote({ ok: false, text: 'that could not be looked up' }))
@@ -950,6 +951,10 @@ function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 							<tr>
 								<td>the machine</td>
 								<td className="mono">{asked.name}</td>
+							</tr>
+							<tr>
+								<td>the app</td>
+								<td className="mono">{asked.app === '' ? 'roster' : asked.app}</td>
 							</tr>
 							<tr>
 								<td>it may call</td>

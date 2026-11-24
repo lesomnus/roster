@@ -460,8 +460,10 @@ ApiKeyService/Erase { id: <the key> }                         # and ending one
 key for Loft whoever asks it to. A browser cannot ask roster itself: roster
 takes no token of the issuer's, and its session's cookie is its own host's.
 Ending one is on the trail as Loft's own write. **Minting one is not among
-these**: it is the person's own, held to what they hold at Loft
-([usage/ways-in.md](usage/ways-in.md) § *A key for an app*). A tenant installed before `ApiKeyService`'s verbs
+these**: it is the person's own, held to what they hold at Loft, and approved
+at the front door: a terminal's sign-in names the app, and Loft's own server
+may begin one for the person in front of its page, or `loft auth login` may
+([usage/ways-in.md](usage/ways-in.md) § *For an app*). A tenant installed before `ApiKeyService`'s verbs
 were among these holds an `app-administrator` naming fewer, which is used as
 it stands until somebody widens it.
 
