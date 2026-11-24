@@ -467,27 +467,40 @@ jobs:
   # a browser, and because what it checks -- that the page posts what the
   # server reads -- is what every job above has no way to see.
   #
-  # Nine minutes, three times what it takes: a run that is still going then
-  # is waiting on something that will not answer, and a job with no limit of
-  # its own holds the runner for GitHub's six hours.
+  # Nine minutes for the script, three times what it takes: a run that is
+  # still going then is waiting on something that will not answer, and a job
+  # with no limit of its own holds the runner for GitHub's six hours.
+  #
+  # Nine minutes of roster's, and not of the job: each step that fetches what
+  # nobody here controls -- the checkout, the two toolchains, the packages,
+  # the browser -- has a limit of its own, generous, and spends none of the
+  # script's. On 2026-11-24 the browser's installation took seven of a job's
+  # nine, and the script was cut off with nothing of roster's wrong. The job's
+  # limit is the sum of its steps'.
   e2e:
     runs-on: ubuntu-26.04
-    timeout-minutes: 9
+    timeout-minutes: 59
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 5
       - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        timeout-minutes: 10
         with:
           go-version-file: go.mod
           cache: true
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        timeout-minutes: 5
         with:
           node-version: 26
 
       - run: npm ci
+        timeout-minutes: 10
         working-directory: ts
       - run: npx playwright install --with-deps chromium
+        timeout-minutes: 20
         working-directory: ts
       - run: ./scripts/e2e.sh
+        timeout-minutes: 9
 
   # One OAuth flow through a real Hydra, which is the half the Login App's own
   # tests cannot have: they run against a fake, because what they are about is
@@ -504,21 +517,38 @@ jobs:
   # The compose image is `build`'s binaries copied onto alpine -- `DIST` in
   # `docker-bake.hcl` -- and handed to the script rather than built by it.
   #
-  # Three minutes, three times what it takes, for the reason `e2e` has nine.
+  # Three minutes for the script, three times what it takes, for the reason
+  # `e2e` has nine; and what is fetched has limits of its own, for the reason
+  # it has those: the checkout, the binaries, the base image the dev image is
+  # copied onto, and the images `compose.yaml` runs that are nobody's here,
+  # each fetched before the script starts so that its three minutes are
+  # roster's. The job's limit is the sum of its steps'.
   hydra:
     needs: build
     runs-on: ubuntu-26.04
-    timeout-minutes: 3
+    timeout-minutes: 39
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 5
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        timeout-minutes: 5
         with:
           name: dist
       - run: mkdir dist && tar -xf dist.tar -C dist
+        timeout-minutes: 1
       - run: docker buildx bake -f docker-bake.hcl --set '*.platform=linux/amd64' --load dev
+        timeout-minutes: 10
         env:
           DIST: ./dist
+      # Every image `compose.yaml` names but the one built above, by the names
+      # it gives them, read from it rather than spelt here a second time.
+      - name: the images compose.yaml runs
+        timeout-minutes: 15
+        env:
+          ROSTER_DEV_IMAGE: roster-dev
+        run: docker compose config --images | grep -vx roster-dev | sort -u | xargs -r -n1 docker pull -q
       - run: ./scripts/hydra.sh
+        timeout-minutes: 3
         env:
           ROSTER_DEV_IMAGE: roster-dev
 
@@ -547,16 +577,22 @@ jobs:
   #
   # Both images out of `build`'s binaries, as `hydra` does: the `app` one that is
   # under test, and the `dev` one the walks run in.
+  #
+  # Every step has a limit of its own, and the job's is their sum: what is
+  # fetched spends none of the script's twenty minutes, as in `e2e`.
   cluster:
     needs: build
     runs-on: ubuntu-26.04
-    timeout-minutes: 30
+    timeout-minutes: 51
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        timeout-minutes: 5
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        timeout-minutes: 5
         with:
           name: dist
       - run: mkdir dist && tar -xf dist.tar -C dist
+        timeout-minutes: 1
       # Every step from here that waits on somebody else has a limit of its own,
       # well under the job's -- because the job's is the limit that loses the log
       # (`scripts/cluster.sh`, "And nothing waits without a bound").

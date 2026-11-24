@@ -19,15 +19,17 @@ type workflowFile struct {
 	On          map[string]any    `yaml:"on"`
 	Permissions map[string]string `yaml:"permissions"`
 	Jobs        map[string]struct {
-		RunsOn      string            `yaml:"runs-on"`
-		If          string            `yaml:"if"`
-		Permissions map[string]string `yaml:"permissions"`
-		Steps       []struct {
-			Name string `yaml:"name"`
-			ID   string `yaml:"id"`
-			If   string `yaml:"if"`
-			Uses string `yaml:"uses"`
-			Run  string `yaml:"run"`
+		RunsOn         string            `yaml:"runs-on"`
+		If             string            `yaml:"if"`
+		Permissions    map[string]string `yaml:"permissions"`
+		TimeoutMinutes int               `yaml:"timeout-minutes"`
+		Steps          []struct {
+			Name           string `yaml:"name"`
+			ID             string `yaml:"id"`
+			If             string `yaml:"if"`
+			Uses           string `yaml:"uses"`
+			Run            string `yaml:"run"`
+			TimeoutMinutes int    `yaml:"timeout-minutes"`
 		} `yaml:"steps"`
 	} `yaml:"jobs"`
 }
