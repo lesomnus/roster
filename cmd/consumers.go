@@ -164,11 +164,17 @@ type AccountConfig struct {
 	// they are already signed in at, and the command is handed the key. RFC 8628,
 	// and `account/device.go` says why the flow is in this app and not in roster.
 	//
+	// And whether an app may ask the same way to act for somebody at roster:
+	// begun with `delegate`, the yes mints a delegation issued to the app
+	// (`DelegationService/Issue`) rather than a key. One switch opens both, since
+	// both are a door into an account a person approves at this page.
+	//
 	// **Off unless a deployment says so.** It is a door into an account, and the
 	// narrowest default is what this repository does with those -- `Public` names
 	// nothing and `login.enrol` is `invited`. Off, the endpoints answer 501 the
-	// way the mail flows do when nothing can deliver, so a terminal is told
-	// rather than left polling for fifteen minutes on a code nobody can approve.
+	// way the mail flows do when nothing can deliver, so a terminal -- or an app
+	// asking to act for somebody -- is told rather than left polling for fifteen
+	// minutes on a code nobody can approve.
 	//
 	// The blunt control beside it is not the same thing: granting no role that
 	// names `ApiKey.Issue` turns off **every** self-service key, the page's own

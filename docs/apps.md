@@ -609,6 +609,43 @@ nothing a third party verifies on its own. Hydra v26.2.0 offers no token
 exchange (`grant_types_supported`), and one that did would name the same
 client the access token's `client_id` already does.
 
+### Writing for its administrator, at roster
+
+What Loft's page **writes at roster** because somebody pressed a button --
+erin, Loft's administrator, putting fred into `loft-users` -- Loft writes **as
+erin**, through a delegation she approved at roster, and not as itself. So it is
+held to what erin holds there, as if she had made the call, and the trail names
+her. What Loft does for itself -- its setup, the roles it ships, a key ended
+from its page -- it still does as itself.
+
+```
+loft   ─ POST /device/begin {app: loft, delegate: true, allow: [/roster.GroupMembershipService/Add]} ─▶ account app
+       ◀─ device_code, user_code, verification_uri          (Loft's page sends erin there)
+erin   ─ signed in at the account app, types the code ─▶ "loft will act as you at roster", the methods
+erin   ─ yes ─▶ account app ─ DelegationService/Issue{holder: erin, app: @acme/loft, methods}, as erin ─▶ roster
+loft   ─ POST /device/poll {device_code} ─▶ account app
+       ◀─ {token: rd_…}  (once; erin's, issued to @acme/loft, a day at most: `delegation.life`)
+loft   ─ Bearer <Loft's own key> + roster-as: rd_… ─▶ GroupMembershipService/Add{loft-users, fred}
+       ◀─ answered as erin, held to what erin holds for Loft
+trail  ─ actor erin
+```
+
+- **One approval, for as long as it lives.** Loft keeps the token on its server,
+  never in the browser, beside erin's session at Loft, and asks again when it
+  runs out. Loft ends it with the token (`DelegationService/Revoke`, the
+  app's); erin ends it from her own list (`DelegationService/Erase`, which
+  `self-service` names); signing out everywhere, a suspension and an erasure
+  end it at the next call.
+- **It adds nothing.** It names roster's methods, each one erin may call at all;
+  what is served is what she may do, never wider than her and never Loft's
+  own reach.
+- **Only Loft can spend it**: beside Loft's own key. Another app presenting it,
+  or the token alone, is refused, and `Introspect` answers it to Loft alone.
+- **The switch is `account.terminal`**, which opens a terminal's sign-in and
+  this; anybody may begin one, and nothing is minted without erin's yes
+  ([usage/ways-in.md](usage/ways-in.md) § *For an app* and § *One somebody hands
+  an app*).
+
 ## One client for all three
 
 An app's business logic wants to say *as this tenant, call roster* or *as this

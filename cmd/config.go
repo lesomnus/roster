@@ -28,6 +28,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 	"github.com/lesomnus/payday/rbac/rbacfile"
 
+	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/prove"
 	// The two engines this app runs on, blank-imported here rather than by
@@ -237,6 +238,17 @@ type DelegationConfig struct {
 	// `date_expired` later than this from now is taken, and none is this.
 	// Empty is [core.DelegationLife], a day.
 	Life time.Duration `yaml:"life"`
+}
+
+// Lives is [DelegationConfig.Life] with the default filled in: what roster
+// holds a delegation to, and what a front door is handed to tell the person
+// approving one.
+func (c DelegationConfig) Lives() time.Duration {
+	if c.Life > 0 {
+		return c.Life
+	}
+
+	return core.DelegationLife
 }
 
 // TenantLeaveConfig is a closed tenant's grace, and its alias's after it is

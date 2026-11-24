@@ -204,7 +204,7 @@ func NewCmdServe(c *cmd.Config) *xli.Command {
 					slog.Warn("account: no key is named -- account.deployment_key, account.tenant_keys or " + AccountKeyPrefix + "<ALIAS> -- and there is " +
 						"no control plane to make one on, so the app is not serving; name a tenant key, or a control plane")
 				} else {
-					g.Go(s.Front(func() error { return serveAccount(ctx, ac, keys) }))
+					g.Go(s.Front(func() error { return serveAccount(ctx, ac, c.Delegation.Lives(), keys) }))
 				}
 			}
 			if c.Ldap.Serves() {

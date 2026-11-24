@@ -180,10 +180,20 @@ type Config struct {
 	// something the deployment knows and the request does not.
 	InsecureCookie bool
 
-	// Terminal is whether `roster sign-in` works here: see [cmd.AccountConfig]'s
-	// field of the same name for why it is off unless a deployment says so. Off,
-	// the four `/device` endpoints answer 501 and the page draws nothing.
+	// Terminal is whether `roster sign-in` works here, and an app asking to act
+	// for somebody (`delegate`): see [cmd.AccountConfig]'s field of the same
+	// name for why it is off unless a deployment says so. Off, the four
+	// `/device` endpoints answer 501 and the page draws nothing.
 	Terminal bool
+
+	// DelegationLife is `delegation.life`, read from the file this app was
+	// started with, or handed the value `roster serve` read: how long a
+	// delegation an app asks for at a terminal's sign-in lives. The person
+	// approving is told it, and what is minted ends that long after their
+	// yes. The command always hands it what the file says, the
+	// configuration's default included; zero is a front door that was not
+	// told, and it offers no delegation -- a key, still, as before.
+	DelegationLife time.Duration
 
 	// Static is the page, or nil for a placeholder that says where the API is.
 	Static http.Handler
@@ -238,6 +248,9 @@ var Methods = []string{
 	rstr.CredentialService_Erase_FullMethodName,
 	rstr.DelegationService_List_FullMethodName,
 	rstr.DelegationService_Erase_FullMethodName,
+	// An app asking, at a terminal's sign-in, to act for the person: the
+	// approval mints its delegation as them ([App.deviceDelegate]).
+	rstr.DelegationService_Issue_FullMethodName,
 }
 
 // Calls is what this app calls **as itself**, with the tenant's key, and the

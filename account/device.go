@@ -1,6 +1,7 @@
 package account
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/payday/pdid"
 
@@ -105,6 +107,10 @@ type device struct {
 	name    string   // what the terminal calls itself, for the key's own name
 	app     string   // the app the key is for, by alias in the tenant; empty is roster's
 	methods []string // what it asked to be allowed
+
+	// delegate is that what is asked for is a delegation issued to `app`,
+	// for it to act as the person at roster, and not a key.
+	delegate bool
 
 	// token is the key, once somebody approved it, and is handed over once.
 	token  string
@@ -203,18 +209,27 @@ func (d *devices) row(user, tenant string) (*device, bool) {
 	return v, true
 }
 
+// asking is what a terminal asked for, as the page is told it.
+type asking struct {
+	name     string
+	app      string
+	methods  []string
+	delegate bool
+	expires  time.Time
+}
+
 // waiting is what the terminal a `user_code` names asked for: its name, the
-// app, the methods, and when the code runs out.
-func (d *devices) waiting(user, tenant string) (string, string, []string, time.Time, bool) {
+// app, the methods, whether it is a delegation, and when the code runs out.
+func (d *devices) waiting(user, tenant string) (asking, bool) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	v, ok := d.row(user, tenant)
 	if !ok {
-		return "", "", nil, time.Time{}, false
+		return asking{}, false
 	}
 
-	return v.name, v.app, v.methods, v.expires, true
+	return asking{name: v.name, app: v.app, methods: v.methods, delegate: v.delegate, expires: v.expires}, true
 }
 
 // claim takes the row a `user_code` names for one answer, so that a second
@@ -380,6 +395,14 @@ func (a *App) offered(w http.ResponseWriter) bool {
 // key is for (`ApiKey.app`); none is a key of roster's own, as every key
 // was. Anybody may begin one, as before: nothing is minted without the
 // person's approval, which is held to what they hold at that app.
+//
+// # Or it asks to act for them
+//
+// With `delegate`, what is asked for is a delegation issued to `app`, for that
+// app to act **as the person** at roster (`DelegationService/Issue`), and
+// `allow` is roster's methods: an app's page that writes for its
+// administrator asks this way, and presents what it is handed beside its own
+// key in `roster-as`. So `app` is required, and refused at once without one.
 func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 	if !a.offered(w) {
 		return
@@ -392,9 +415,10 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var in struct {
-		Name  string   `json:"name"`
-		App   string   `json:"app"`
-		Allow []string `json:"allow"`
+		Name     string   `json:"name"`
+		App      string   `json:"app"`
+		Allow    []string `json:"allow"`
+		Delegate bool     `json:"delegate"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<10)).Decode(&in); err != nil {
 		http.Error(w, "a name and what to allow", http.StatusBadRequest)
@@ -406,6 +430,18 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 	// for, and nothing mints a credential that silently does not work.
 	if len(in.Allow) == 0 {
 		http.Error(w, "allow: which methods this terminal may call", http.StatusBadRequest)
+		return
+	}
+	// A front door that was not told how long a delegation lives cannot tell
+	// the person approving one, and it has no default of its own to say: it
+	// is a consumer, and the bound is the deployment's file's. So it offers
+	// none, in the words the switch being off has.
+	if in.Delegate && a.delegationLife() <= 0 {
+		http.Error(w, "this deployment does not let an app act for somebody here: delegation.life is not set for this front door", http.StatusNotImplemented)
+		return
+	}
+	if in.Delegate && strings.TrimSpace(in.App) == "" {
+		http.Error(w, "app: a delegation is issued to an app; name the one that is to act for you", http.StatusBadRequest)
 		return
 	}
 
@@ -440,9 +476,10 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 			// and roster does not tell an app's holder from a person's. The
 			// person approving is shown the name that was asked for, and one
 			// that is nobody is refused there ([App.deviceApprove]).
-			app:     strings.TrimSpace(in.App),
-			methods: in.Allow,
-			expires: time.Now().Add(deviceFor),
+			app:      strings.TrimSpace(in.App),
+			methods:  in.Allow,
+			delegate: in.Delegate,
+			expires:  time.Now().Add(deviceFor),
 		})
 		if full {
 			w.Header().Set("retry-after", "60")
@@ -558,7 +595,7 @@ func (a *App) devicePending(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	name, of, methods, expires, ok := a.devices.waiting(r.URL.Query().Get("user_code"), t.alias)
+	v, ok := a.devices.waiting(r.URL.Query().Get("user_code"), t.alias)
 	if !ok {
 		// A code of another operator's is *no such code* here, which is the same
 		// answer as one that never existed: this front door serves several, and
@@ -572,13 +609,22 @@ func (a *App) devicePending(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	w.Header().Set("cache-control", "no-store")
 	// And the app the key is for, which is part of what they approve: empty
-	// is a key of roster's.
-	_ = json.NewEncoder(w).Encode(map[string]any{
-		"name":    name,
-		"app":     of,
-		"methods": methods,
-		"expires": expires.UTC().Format(time.RFC3339),
-	})
+	// is a key of roster's. And whether it is that app acting as them, which
+	// is not a key at all: a page draws it in words of its own.
+	out := map[string]any{
+		"name":     v.name,
+		"app":      v.app,
+		"methods":  v.methods,
+		"delegate": v.delegate,
+		"expires":  v.expires.UTC().Format(time.RFC3339),
+	}
+	if v.delegate {
+		// How long it would last, in seconds, which is how long the yes
+		// mints it for: the page says for how long, and until when from the
+		// moment it shows it.
+		out["life"] = int(a.delegationLife().Seconds())
+	}
+	_ = json.NewEncoder(w).Encode(out)
 }
 
 // devicePage is where a terminal is told to go: `/device`, with the code in
@@ -671,6 +717,11 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 		name = "terminal"
 	}
 
+	if v.delegate {
+		a.deviceDelegate(w, t, as, who, v, name)
+		return
+	}
+
 	req := rstr.ApiKeyIssueRequest_builder{
 		Holder:  rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Alias:   name,
@@ -711,6 +762,66 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// The terminal's next poll carries this away and the row goes with it.
+	a.devices.settle(v, res.GetToken(), false)
+
+	w.Header().Set("content-type", "application/json")
+	w.Header().Set("cache-control", "no-store")
+	_ = json.NewEncoder(w).Encode(map[string]any{"name": name})
+}
+
+// delegationLife is how long a delegation this app asks for lives, and
+// zero where it was not told: then it offers none ([App.deviceBegin]).
+func (a *App) delegationLife() time.Duration { return a.c.DelegationLife }
+
+// deviceDelegate is the yes to an app asking to act for the person: a
+// delegation issued to that app, minted with `DelegationService/Issue` as
+// them, through the delegation in their session, as a key is minted. Its
+// methods are held to what they may call at roster, and the poll carries the
+// token away once, as it carries a key.
+//
+// # It ends when they were told
+//
+// The page said how long (`life`, `delegation.life` as this app read it), so
+// what is minted says its end -- this yes and that long -- and is not left to
+// roster to choose. Where roster's own bound is shorter, two files that
+// disagree, roster refuses it, and the person is told so here: nothing is
+// minted that lasts other than what they approved.
+func (a *App) deviceDelegate(w http.ResponseWriter, t *tenant, as context.Context, who pdid.Id, v *device, name string) {
+	res, err := a.roster.Delegation().Issue(t.on(as), rstr.DelegationIssueRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
+		App: rstr.HolderRef_builder{Slug: rstr.HolderRefBySlug_builder{
+			Alias:  &v.app,
+			Tenant: rstr.TenantRef_builder{Id: t.id.Bytes()}.Build(),
+		}.Build()}.Build(),
+		Methods:     v.methods,
+		DateExpired: timestamppb.New(time.Now().Add(a.delegationLife())),
+	}.Build())
+	if err != nil {
+		a.devices.settle(v, "", false)
+		fmt.Fprintf(os.Stderr, "account: device approve (a delegation) at %s: %v\n", t.alias, err)
+
+		switch status.Code(err) {
+		case codes.InvalidArgument:
+			if strings.HasPrefix(status.Convert(err).Message(), "date_expired") {
+				http.Error(w, "this front door would let the app act as you for longer than roster allows, so nothing was made; tell whoever runs it", http.StatusConflict)
+				return
+			}
+			if strings.Contains(status.Convert(err).Message()+fmt.Sprint(status.Convert(err).Details()), "came through") {
+				http.Error(w, "the app named is this front door, which does not hand itself a delegation", http.StatusBadRequest)
+				return
+			}
+			http.Error(w, "the app named is you; an app acts for you, and you are not one", http.StatusBadRequest)
+		case codes.PermissionDenied:
+			http.Error(w, "an app cannot be allowed to act as you for more than you may call", http.StatusForbidden)
+		case codes.NotFound:
+			http.Error(w, "no operator here serves this name", http.StatusNotFound)
+		default:
+			http.Error(w, "the delegation could not be made", http.StatusInternalServerError)
+		}
+
+		return
+	}
+
 	a.devices.settle(v, res.GetToken(), false)
 
 	w.Header().Set("content-type", "application/json")
