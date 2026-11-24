@@ -37,7 +37,7 @@
 // gone, and [subjects] says what it was read as once it named nothing.
 //
 // The `Holder` row itself **stays, blank**. Its identifier is referenced --
-// `Audit.actor_id` is it, and twenty foreign keys point at it -- and what makes
+// `Audit.actor_id` is it, and twenty-one foreign keys point at it -- and what makes
 // it personal data is that it resolves to a name. Emptied of the columns that
 // name somebody -- every one the schema declares personal, their picture and
 // what their directory called them among them -- it is a stable pseudonym
@@ -420,9 +420,10 @@ func forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 // it is void, as `Invalidate` does and in the write that brings them back.
 // Now, and taken from nobody, for `Invalidate`'s reason. What comes back is
 // the rows: the name, the ways in, what they may do. Not the roles, the
-// groups and the bindings that were of them as an app (`Role.app`,
-// `Group.app`, `Binding.app`): those were erased with them, as their own act,
-// and stay erased. A key comes back too --
+// groups, the bindings and the keys that were of them as an app (`Role.app`,
+// `Group.app`, `Binding.app`, `ApiKey.app`, whoever's key): those were erased
+// with them, as their own act, and stay erased. A key of their own comes back
+// too --
 // it is not ended by signing somebody out everywhere, on purpose
 // (`holder.ext.proto`, `date_invalidated`) -- and is an operator's to revoke,
 // which they can while its holder is erased.
@@ -869,17 +870,19 @@ func subjects() []subject {
 		// waiting to be a surprise.
 		//
 		// And there is an asymmetry underneath worth knowing about, which
-		// nothing else states: of the twenty foreign keys into `holder`,
+		// nothing else states: of the twenty-one foreign keys into `holder`,
 		// sixteen are `NO ACTION`, and `binding_holder_holder`,
-		// `binding_holder_app`, `role_holder_app` and `group_holder_app` are
-		// `SET NULL` -- see `internal/ent/migrate/schema.go`. Nothing depends
-		// on it today, because an erase is an UPDATE and no `ON DELETE` rule
-		// fires. It would matter the day somebody builds a **hard** erase of a
-		// person: sixteen children would block it, `Binding` would quietly
-		// keep a row whose holder is NULL, and a role, a group or a binding of
-		// the app they were would become one of roster's own or the tenant's
-		// (`Role.app`, `Group.app`, `Binding.app` -- the last a grant across
-		// the tenant). Removing the bindings here is what makes the first
+		// `binding_holder_app`, `role_holder_app`, `group_holder_app` and
+		// `apikey_holder_app` are `SET NULL` -- see
+		// `internal/ent/migrate/schema.go`. Nothing depends on it today,
+		// because an erase is an UPDATE and no `ON DELETE` rule fires. It
+		// would matter the day somebody builds a **hard** erase of a person:
+		// sixteen children would block it, `Binding` would quietly keep a row
+		// whose holder is NULL, and a role, a group, a binding or a key of the
+		// app they were would become one of roster's own or the tenant's
+		// (`Role.app`, `Group.app`, `Binding.app` -- a grant across the tenant
+		// -- and `ApiKey.app`, a key for that app that would be a credential
+		// at roster). Removing the bindings here is what makes the first
 		// irrelevant either way; the rest is the day's to settle.
 		{
 			name: "binding",

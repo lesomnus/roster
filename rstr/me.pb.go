@@ -738,6 +738,8 @@ type SignInKey struct {
 	xxx_hidden_Methods     []string               `protobuf:"bytes,8,rep,name=methods"`
 	xxx_hidden_DateExpired *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_DateUsed    *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_used,json=dateUsed"`
+	xxx_hidden_App         []byte                 `protobuf:"bytes,16,opt,name=app"`
+	xxx_hidden_AppAlias    string                 `protobuf:"bytes,17,opt,name=app_alias,json=appAlias"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -802,6 +804,20 @@ func (x *SignInKey) GetDateUsed() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *SignInKey) GetApp() []byte {
+	if x != nil {
+		return x.xxx_hidden_App
+	}
+	return nil
+}
+
+func (x *SignInKey) GetAppAlias() string {
+	if x != nil {
+		return x.xxx_hidden_AppAlias
+	}
+	return ""
+}
+
 func (x *SignInKey) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -823,6 +839,17 @@ func (x *SignInKey) SetDateExpired(v *timestamppb.Timestamp) {
 
 func (x *SignInKey) SetDateUsed(v *timestamppb.Timestamp) {
 	x.xxx_hidden_DateUsed = v
+}
+
+func (x *SignInKey) SetApp(v []byte) {
+	if v == nil {
+		v = []byte{}
+	}
+	x.xxx_hidden_App = v
+}
+
+func (x *SignInKey) SetAppAlias(v string) {
+	x.xxx_hidden_AppAlias = v
 }
 
 func (x *SignInKey) HasDateExpired() bool {
@@ -863,6 +890,14 @@ type SignInKey_builder struct {
 	// When it was last used, unset for never -- which is the field that answers
 	// *is anything still calling with this* before somebody revokes it.
 	DateUsed *timestamppb.Timestamp
+	// The app it is spent at, as the holder that app is answered as, and empty
+	// for one of roster's own (`ApiKey.app`): which `methods` are of, and
+	// where the key is a credential at all. Said here because this is every key
+	// somebody has, of every app, in one list.
+	App []byte
+	// The app's alias in the tenant, beside `app` as `MeTeam` says `site_alias`
+	// beside `site`: what a screen draws, `@loft`. Empty for a key of roster's.
+	AppAlias string
 }
 
 func (b0 SignInKey_builder) Build() *SignInKey {
@@ -874,6 +909,8 @@ func (b0 SignInKey_builder) Build() *SignInKey {
 	x.xxx_hidden_Methods = b.Methods
 	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_DateUsed = b.DateUsed
+	x.xxx_hidden_App = b.App
+	x.xxx_hidden_AppAlias = b.AppAlias
 	return m0
 }
 
@@ -1509,14 +1546,16 @@ const file_app_me_proto_rawDesc = "" +
 	"\vcredentials\x18\x0e \x03(\v2\x18.roster.SignInCredentialR\vcredentials\x12%\n" +
 	"\x04keys\x18\x0f \x03(\v2\x11.roster.SignInKeyR\x04keys\x12/\n" +
 	"\x13provisioned_through\x18\x10 \x01(\tR\x12provisionedThrough\x12'\n" +
-	"\x06groups\x18\x11 \x03(\v2\x0f.roster.MeGroupR\x06groups\"\xc3\x01\n" +
+	"\x06groups\x18\x11 \x03(\v2\x0f.roster.MeGroupR\x06groups\"\xf2\x01\n" +
 	"\tSignInKey\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x18\n" +
 	"\amethods\x18\b \x03(\tR\amethods\x12=\n" +
 	"\fdate_expired\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\vdateExpired\x127\n" +
 	"\tdate_used\x18\n" +
-	" \x01(\v2\x1a.google.protobuf.TimestampR\bdateUsed\"\x95\x01\n" +
+	" \x01(\v2\x1a.google.protobuf.TimestampR\bdateUsed\x12\x10\n" +
+	"\x03app\x18\x10 \x01(\fR\x03app\x12\x1b\n" +
+	"\tapp_alias\x18\x11 \x01(\tR\bappAlias\"\x95\x01\n" +
 	"\x0eSignInIdentity\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1a\n" +
 	"\bprovider\x18\b \x01(\tR\bprovider\x12\x18\n" +

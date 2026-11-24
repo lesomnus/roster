@@ -45,6 +45,9 @@ func (ApiKey) Fields() []ent.Field {
 			Optional(),
 		field.Uuid("holder_id").
 			Immutable(),
+		field.Uuid("app_id").
+			Optional().
+			Immutable(),
 	}
 }
 
@@ -54,6 +57,10 @@ func (ApiKey) Edges() []ent.Edge {
 			Unique().
 			Field("holder_id").
 			Required().
+			Immutable(),
+		edge.To("app", Holder.Type).
+			Unique().
+			Field("app_id").
 			Immutable(),
 	}
 }

@@ -273,6 +273,35 @@ at all:
 The local CLI is outside both, like every local command -- see
 [cli.md](cli.md) § "Two modes".
 
+### A key for an app
+
+A key says **the app it is spent at** (`ApiKey.app`, the holder that app is
+answered as in the tenant), and none is a key of roster's own -- every key
+above. A key for an app names that app's methods, and is held to what its
+minter holds **at that app**: somebody who holds `/loft.BookingService/Cancel`
+at Loft mints a key for Loft naming it, and is refused the same key for levyan,
+or for roster.
+
+```sh
+roster --as admin key add --tenant newco --holder alice --app loft --allow '/loft.BookingService/Cancel'
+```
+
+`ApiKeyService.Issue` takes `app` the same way, on this plane alone: an `rk_`
+is the deployment's own and is for no app. So does a person minting their own:
+`roster me issue-key --app loft …`, and the account page's form to mint a key,
+which takes the app's alias and leaves it empty for one of roster's. The app is somebody of the key's
+tenant, and nothing more is asked of it.
+
+**It is no credential at roster.** Presented here -- in `authorization`, or
+beside `roster-as` -- a key for an app is refused as a key roster does not have
+is, and nothing says whose it is: its methods are the app's, and a name they
+share with one of roster's (`/roster.HolderService/Erase` written into a key for
+Loft) opens nothing here. What somebody is told of their keys, by `MeService.Get`
+and `HolderService.SignsIn`, says each one's `app`, and its alias in `app_alias`;
+the account page draws it `@loft`, and `roster me get` and `roster key list`
+print `app=@…`, each saying nothing of a key of roster's. What ends the app's
+holder ends the keys that are for it, whoever's they are.
+
 ### A terminal, signed in from a browser
 
 A machine with no browser -- a server over SSH, a container, somebody's laptop on

@@ -25,6 +25,7 @@ type ApiKeyQuery struct {
 	inters     []Interceptor
 	predicates []predicate.ApiKey
 	withHolder *HolderQuery
+	withApp    *HolderQuery
 	modifiers  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
@@ -77,6 +78,28 @@ func (_q *ApiKeyQuery) QueryHolder() *HolderQuery {
 			sqlgraph.From(apikey.Table, apikey.FieldId, selector),
 			sqlgraph.To(holder.Table, holder.FieldId),
 			sqlgraph.Edge(sqlgraph.M2O, false, apikey.HolderTable, apikey.HolderColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryApp chains the current query on the "app" edge.
+func (_q *ApiKeyQuery) QueryApp() *HolderQuery {
+	query := (&HolderClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apikey.Table, apikey.FieldId, selector),
+			sqlgraph.To(holder.Table, holder.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, apikey.AppTable, apikey.AppColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -277,6 +300,7 @@ func (_q *ApiKeyQuery) Clone() *ApiKeyQuery {
 		inters:     append([]Interceptor{}, _q.inters...),
 		predicates: append([]predicate.ApiKey{}, _q.predicates...),
 		withHolder: _q.withHolder.Clone(),
+		withApp:    _q.withApp.Clone(),
 		// clone intermediate query.
 		sql:       _q.sql.Clone(),
 		path:      _q.path,
@@ -292,6 +316,17 @@ func (_q *ApiKeyQuery) WithHolder(opts ...func(*HolderQuery)) *ApiKeyQuery {
 		opt(query)
 	}
 	_q.withHolder = query
+	return _q
+}
+
+// WithApp tells the query-builder to eager-load the nodes that are connected to
+// the "app" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *ApiKeyQuery) WithApp(opts ...func(*HolderQuery)) *ApiKeyQuery {
+	query := (&HolderClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withApp = query
 	return _q
 }
 
@@ -373,8 +408,9 @@ func (_q *ApiKeyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ApiKe
 	var (
 		nodes       = []*ApiKey{}
 		_spec       = _q.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			_q.withHolder != nil,
+			_q.withApp != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -404,6 +440,12 @@ func (_q *ApiKeyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*ApiKe
 			return nil, err
 		}
 	}
+	if query := _q.withApp; query != nil {
+		if err := _q.loadApp(ctx, query, nodes, nil,
+			func(n *ApiKey, e *Holder) { n.Edges.App = e }); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
 }
 
@@ -429,6 +471,35 @@ func (_q *ApiKeyQuery) loadHolder(ctx context.Context, query *HolderQuery, nodes
 		nodes, ok := nodeids[n.Id]
 		if !ok {
 			return fmt.Errorf(`unexpected foreign-key "holder_id" returned %v`, n.Id)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (_q *ApiKeyQuery) loadApp(ctx context.Context, query *HolderQuery, nodes []*ApiKey, init func(*ApiKey), assign func(*ApiKey, *Holder)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*ApiKey)
+	for i := range nodes {
+		fk := nodes[i].AppId
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(holder.IdIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.Id]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "app_id" returned %v`, n.Id)
 		}
 		for i := range nodes {
 			assign(nodes[i], n)
@@ -467,6 +538,9 @@ func (_q *ApiKeyQuery) querySpec() *sqlgraph.QuerySpec {
 		}
 		if _q.withHolder != nil {
 			_spec.Node.AddColumnOnce(apikey.FieldHolderId)
+		}
+		if _q.withApp != nil {
+			_spec.Node.AddColumnOnce(apikey.FieldAppId)
 		}
 	}
 	if ps := _q.predicates; len(ps) > 0 {

@@ -771,6 +771,22 @@ func (c *ApiKeyClient) QueryHolder(_m *ApiKey) *HolderQuery {
 	return query
 }
 
+// QueryApp queries the app edge of a ApiKey.
+func (c *ApiKeyClient) QueryApp(_m *ApiKey) *HolderQuery {
+	query := (&HolderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.Id
+		step := sqlgraph.NewStep(
+			sqlgraph.From(apikey.Table, apikey.FieldId, id),
+			sqlgraph.To(holder.Table, holder.FieldId),
+			sqlgraph.Edge(sqlgraph.M2O, false, apikey.AppTable, apikey.AppColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *ApiKeyClient) Hooks() []Hook {
 	return c.hooks.ApiKey

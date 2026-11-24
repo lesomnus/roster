@@ -140,7 +140,9 @@ test('an app password is a key minted by the app\'s name, shown once', async ({ 
 	const row = page.locator('tr', { has: page.locator('td', { hasText: 'nas' }) })
 	await expect(row).toBeVisible()
 	await expect(row.locator('td.mono')).toHaveText('/roster.MeService/Get')
-	await expect(row.locator('td').nth(2)).toHaveText(/^\d{4}-\d{2}-\d{2}$/)
+	// A key of roster's, which says no app beside its name.
+	await expect(row.locator('td').nth(1)).toHaveText('')
+	await expect(row.locator('td').nth(3)).toHaveText(/^\d{4}-\d{2}-\d{2}$/)
 
 	// And revoked from the same list.
 	await row.locator('button', { hasText: 'revoke' }).click()

@@ -395,8 +395,9 @@ What it takes:
   app's -- is a role of the app's bound to them as well (§ *You cannot hand out
   what you do not hold*).
 
-- **What ends the app's holder ends the bindings for it**, with its roles and
-  its groups, and a restore of the holder brings back none of the three.
+- **What ends the app's holder ends the bindings for it**, with its roles, its
+  groups and the keys for it, whoever's they are, and a restore of the holder
+  brings back none of the four.
 
 `MeService/Get` and `Reaches` at roster say the verbs among `methods`, as the
 gate would let them through -- *may they ever call this* -- and say which apps
@@ -527,6 +528,12 @@ finds a role of its own by -- `self-service`, `group-manager`, `everything`,
 `app-administrator`, `login-app`, `account`, `scim` -- and it ends with the app: erasing the holder
 the app is answered as erases the roles of it in the same act, and a restore of
 the holder does not bring them back.
+
+A key is at an app too (`ApiKey.app`; none is roster's own): its methods are
+the methods of the app it is for, so somebody who holds
+`/loft.BookingService/Cancel` at Loft mints a key for Loft naming it, and is
+refused the same key for levyan or for roster, as above
+([ways-in.md](ways-in.md) § *A key for an app*).
 
 And **for what it is held for** (§ *Held for one app*): what somebody holds
 across the tenant they hand out across it or for any app, and what they hold

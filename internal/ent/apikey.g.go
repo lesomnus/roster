@@ -32,6 +32,13 @@ func (e *ApiKey) Proto() *rstr.ApiKey {
 	if e.DateAuthenticated != nil {
 		x.SetDateAuthenticated(timestamppb.New(*e.DateAuthenticated))
 	}
+	if v := e.Edges.App; v != nil {
+		x.SetApp(v.Proto())
+	} else if v := e.AppId; v != *new(uuid.UUID) {
+		r := &rstr.Holder{}
+		r.SetId(v[:])
+		x.SetApp(r)
+	}
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

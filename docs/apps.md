@@ -393,9 +393,9 @@ out.
 
 Whoever makes a group manages it, whichever app's it is, and a group's
 managers are as they are for every group: a finer hand than the app's whole.
-What ends the app's holder ends its groups, in the act that ends its roles
-and the bindings for it (§ *An app's administrators*), and a restore of the
-holder brings back none of the three.
+What ends the app's holder ends its groups, in the act that ends its roles,
+the bindings for it (§ *An app's administrators*) and the keys for it,
+whoever's they are, and a restore of the holder brings back none of the four.
 
 ### An app's administrators
 

@@ -446,6 +446,7 @@ func ListKeys(ctx context.Context, w io.Writer, at *Server, by Operator) error {
 		vs, err := at.Ent.ApiKey.Query().
 			Where(entapikey.DateErasedIsNil()).
 			WithHolder(func(q *ent.HolderQuery) { q.WithTenant() }).
+			WithApp(func(q *ent.HolderQuery) { q.WithTenant() }).
 			All(ctx)
 		if err != nil {
 			return err
@@ -468,8 +469,18 @@ func ListKeys(ctx context.Context, w io.Writer, at *Server, by Operator) error {
 				used = v.DateUsed.Format(time.RFC3339)
 			}
 
-			fmt.Fprintf(&out, "%s\t@%s/%s\tused=%s\t%s\n",
-				pdid.Id(v.Id), who, v.Alias, used, strings.Join(v.Methods, ","))
+			// And the app it is spent at (`ApiKey.app`), where it is for one:
+			// nothing is said of a key of roster's, as nothing was.
+			of := ""
+			if a := v.Edges.App; a != nil {
+				of = "\tapp=@" + a.Alias
+				if e := a.Edges.Tenant; e != nil {
+					of = "\tapp=@" + e.Alias + "/" + a.Alias
+				}
+			}
+
+			fmt.Fprintf(&out, "%s\t@%s/%s\tused=%s%s\t%s\n",
+				pdid.Id(v.Id), who, v.Alias, used, of, strings.Join(v.Methods, ","))
 		}
 
 		return nil

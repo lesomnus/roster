@@ -115,6 +115,20 @@ func (s ApiKeyServiceServer) image(v *rstr.ApiKey) *rstr.ApiKey {
 			trim(m.Get(f).Message())
 		}
 	}
+	{
+		f := m.Descriptor().Fields().ByNumber(16)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
 	return out
 }
 
@@ -122,7 +136,7 @@ func (s ApiKeyServiceServer) image(v *rstr.ApiKey) *rstr.ApiKey {
 // and what the answer says about its edges. Add and AddMany both write
 // with it, so that an item of an AddMany is the row an Add of it would be.
 func (st ApiKeyServiceServer) create(ctx context.Context, req *rstr.ApiKeyAddRequest) (*ent.ApiKeyCreate, []func(v *rstr.ApiKey), error) {
-	ds := make([]func(v *rstr.ApiKey), 0, 1)
+	ds := make([]func(v *rstr.ApiKey), 0, 2)
 	q := st.Db.ApiKey.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -159,6 +173,16 @@ func (st ApiKeyServiceServer) create(ctx context.Context, req *rstr.ApiKeyAddReq
 	}
 	if req.HasDateAuthenticated() {
 		q.SetDateAuthenticated(req.GetDateAuthenticated().AsTime())
+	}
+	if req.HasApp() {
+		if k, err := HolderGetKey(ctx, st.Db, req.GetApp()); err != nil {
+			return nil, nil, err
+		} else {
+			q.SetAppId(k)
+			ds = append(ds, func(v *rstr.ApiKey) {
+				v.SetApp(rstr.Holder_builder{Id: k[:]}.Build())
+			})
+		}
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
@@ -357,6 +381,21 @@ func ApiKeySelect(ctx context.Context, scope Scope, q *ent.ApiKeyQuery, m *rstr.
 			return err
 		}
 	}
+	if m.HasApp() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
+		q.WithApp(func(q *ent.HolderQuery) {
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetApp())
+		})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -419,7 +458,7 @@ func ApiKeyGetKey(ctx context.Context, db *ent.Client, ref *rstr.ApiKeyRef) (uui
 var apiKeyOrmEntity = ormpatch.MustEntityOf(rstr.File_app_apikey_proto, "ApiKey")
 
 var apiKeyPatchColumns = entpatch.Columns{
-	1: apikey.FieldId, 2: apikey.HolderColumn, 4: apikey.FieldAlias, 6: apikey.FieldDesc, 8: apikey.FieldMethods, 9: apikey.FieldSecret, 10: apikey.FieldDateUsed, 11: apikey.FieldDateExpired, 12: apikey.FieldDateAuthenticated, 13: apikey.FieldDateUpdated, 14: apikey.FieldDateErased, 15: apikey.FieldDateCreated}
+	1: apikey.FieldId, 2: apikey.HolderColumn, 4: apikey.FieldAlias, 6: apikey.FieldDesc, 8: apikey.FieldMethods, 9: apikey.FieldSecret, 10: apikey.FieldDateUsed, 11: apikey.FieldDateExpired, 12: apikey.FieldDateAuthenticated, 16: apikey.AppColumn, 13: apikey.FieldDateUpdated, 14: apikey.FieldDateErased, 15: apikey.FieldDateCreated}
 
 func (s ApiKeyServiceServer) Apply(ctx context.Context, req *rstr.ApiKeyApplyRequest) (*rstr.ApiKey, error) {
 	if s.admission != nil {

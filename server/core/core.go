@@ -295,7 +295,19 @@ type Rules struct {
 	// is a stack that cannot say, and such a word is not taken. See
 	// [TenantOf].
 	TenantOf TenantOf
+
+	// Resident is a holder of a tenant a reference names, read past the wall,
+	// which a key's `app` is asked of: a person minting their own key for an
+	// app does not read the app's row, and it is somebody of their tenant all
+	// the same. Nil is a stack that cannot say, and the app is then read as
+	// the caller reads one. See [Resident].
+	Resident Resident
 }
+
+// Resident answers the live holder of `tenant` that `ref` names, by its
+// identifier or by its alias there, and `NotFound` where it names nobody of
+// that tenant -- erased, of another, or nobody at all, told apart by nothing.
+type Resident func(ctx context.Context, tenant pdid.Id, ref *app.HolderRef) (pdid.Id, error)
 
 // Serves answers whether `pattern` covers at least one method a port of this
 // deployment registers, either plane's: what a role of roster's may name.

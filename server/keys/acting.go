@@ -174,6 +174,12 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 			// failing; [Store] answers it the same way.
 			return auth.Identity{}, unasked(ctx, err)
 		}
+		if !k.ForRoster() {
+			// A key for an app is no credential here, and what a delegation
+			// narrows is a call its key is a credential for: refused as
+			// [Store] refuses it, and as a key roster does not have.
+			return no()
+		}
 
 		raw := k.Id
 		if whose {

@@ -167,7 +167,7 @@ func namedBy(of names, row uuid.UUID) predicate.Holder {
 // [Nobody]. A consent is here though a forget leaves it: one that is there is
 // kept past its account, and one is not begun for somebody who is nobody.
 var naming = map[string]names{
-	app.ApiKeyService_Add_FullMethodName:          {apikey.Table, []string{apikey.HolderColumn}},
+	app.ApiKeyService_Add_FullMethodName:          {apikey.Table, []string{apikey.HolderColumn, apikey.AppColumn}},
 	app.BindingService_Add_FullMethodName:         {binding.Table, []string{binding.HolderColumn, binding.AppColumn}},
 	app.ConsentService_Add_FullMethodName:         {consent.Table, []string{consent.HolderColumn}},
 	app.ContinuationService_Add_FullMethodName:    {continuation.Table, []string{continuation.HolderColumn}},
