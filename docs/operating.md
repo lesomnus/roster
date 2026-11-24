@@ -2115,6 +2115,18 @@ the request -- a line when one signs in and when they sign out, and a few an hou
 while their console is in use -- and it is the last thing anybody wants a clock
 deleting from.
 
+**A line names who did it, and through whom.** `actor_id` and `actor_tenant_id`
+are who the call was answered as. Where it came through a delegation (`roster-as`)
+that is the person, and three more columns say the rest: `caller_id` and
+`caller_tenant_id` the holder whose key presented it -- the app a person handed
+one to, or a front door, which on a deployment key narrowed with `roster-at` is
+the holder that tenant nominated for it -- and `presence` which delegation,
+`roster-as:<its id>`. A deployment key presenting one as itself is named by the
+key's own row, in no tenant (`caller_tenant_id` the nil identifier). A call made
+with no delegation leaves the three NULL. What was answered is the person's: the
+caller is recorded and not asked, since the delegation is what it may do for
+them.
+
 **A line is under the verb its caller asked for, and what the deployment writes
 of itself is under a name of its own.** When a key was last used
 (`ApiKey.date_used`) is written as the key is read, at most once an hour for a
@@ -2798,7 +2810,9 @@ it has left the database**: under a window with an archive a row is in the
 nothing here reads the archive's half yet -- so `retain` is how far back a review
 can look with a command. At the box it is the `access`
 table of each plane, and the entity commands read it like any other: `actor_id`
-and `actor_tenant_id` say who, `tenant_id` whose record it is, `action` the
+and `actor_tenant_id` say who -- for a call through a delegation, the person,
+and nothing of the app that presented it, which is the trail's to say
+([The audit trail](#the-audit-trail)) -- `tenant_id` whose record it is, `action` the
 RPC, `kind` `read`, `write` or `download`, `subjects` whose rows, and `value` an
 `AccessDetail` holding where the call came from and how a read was asked.
 There is **no filter by whom was read**: `subjects` is a list with no index, so

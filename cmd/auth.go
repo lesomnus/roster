@@ -107,8 +107,15 @@ func Resolver(s app.Server, keyrows app.Server) auth.Resolver {
 		// A call made through a delegation carries the delegation as its row,
 		// and the person inside it: see [delegated].
 		var row proto.Message = v
-		if d, ok := keys.Through(id); ok {
-			if row, err = delegated(ctx, s, d, v); err != nil {
+		var by *frame.Principal
+		through, ok := keys.Through(id)
+		if ok {
+			d, err := delegated(ctx, s, through, v)
+			if err != nil {
+				return nil, err
+			}
+			row = d
+			if by, err = presenter(ctx, s, d); err != nil {
 				return nil, err
 			}
 		}
@@ -116,7 +123,27 @@ func Resolver(s app.Server, keyrows app.Server) auth.Resolver {
 		// The grant is not set here. The interceptor takes it from the
 		// credential rather than from whatever a resolver felt like answering,
 		// so a resolver cannot widen a token by forgetting.
-		return frame.New(actor, tenant, frame.Grant{}).WithRow(row), nil
+		served := frame.New(actor, tenant, frame.Grant{}).WithRow(row)
+		if by != nil {
+			// Both parties, and the delegation between them, which is what the
+			// trail writes of the call: the person as the actor, whoever
+			// presented the delegation as the caller, and the delegation as the
+			// reference (`caller_id`, `caller_tenant_id`, `presence`).
+			//
+			// **Recorded and not asked** (`Delegated`, payday#285). The caller
+			// is a front door or an app given nothing of its own for the
+			// person on purpose: what it may do for them is the delegation,
+			// and `keys.Acting` has already held the call to it -- issued to
+			// this caller, these methods, this end -- before anything here was
+			// asked. Asked as a second party it would have to hold everything
+			// its people do through it, and who may do what is the person's,
+			// as it was before the caller was on the frame.
+			served.Caller = by
+			served.Presence = "roster-as:" + through.String()
+			served.Delegated = true
+		}
+
+		return served, nil
 	})
 }
 
@@ -161,6 +188,42 @@ func delegated(ctx context.Context, s app.Server, through pdid.Id, who *app.Hold
 	v.SetHolder(who)
 
 	return v, nil
+}
+
+// presenter is the caller a delegation was presented by: the holder, or the
+// deployment key, it was issued to -- which `keys.Acting` compared with whoever
+// presented it, so `issued_to` is that caller and no claim of the request's.
+//
+// A holder is read with its tenant, past the wall as the person is. A
+// deployment key presenting as itself is no holder of any tenant (`keyed`
+// frames one with none), and is named by the key's row; one narrowed with
+// `roster-at` presents as the holder its tenant nominated, which is that
+// holder here.
+func presenter(ctx context.Context, s app.Server, d *app.Delegation) (*frame.Principal, error) {
+	who, err := pdid.From(d.GetIssuedTo())
+	if err != nil {
+		return nil, fmt.Errorf("%w: a delegation issued to nobody", auth.ErrNoCredential)
+	}
+	if who.Domain() == pd.ApiKeyDomain {
+		return &frame.Principal{Actor: who}, nil
+	}
+
+	h, err := s.Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
+		Select: app.HolderSelect_builder{Tenant: app.TenantSelect_builder{}.Build()}.Build(),
+	}.Build())
+	if status.Code(err) == codes.NotFound {
+		return nil, fmt.Errorf("%w: the caller a delegation was issued to is nobody here", auth.ErrNoCredential)
+	}
+	if err != nil {
+		return nil, err
+	}
+	at, err := pdid.From(h.GetTenant().GetId())
+	if err != nil {
+		return nil, err
+	}
+
+	return &frame.Principal{Actor: who, Tenant: at, Name: h.GetAlias()}, nil
 }
 
 // refOf is the claim as a reference: an identifier when the credential named

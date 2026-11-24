@@ -91,7 +91,9 @@ var readsForAnApp = []string{
 //
 // A call made for somebody by a device or an agent that is somebody too
 // (`frame.Caller`) is narrowed by both, as [frame.NarrowSet] narrows it: by
-// the apps both hold it for, and the sites both reach.
+// the apps both hold it for, and the sites both reach. One made through a
+// delegation (`frame.Frame.Delegated`) is narrowed by the person alone, as
+// `NarrowSet` narrows it too: its caller is recorded and not asked.
 func (x apps) held(ctx context.Context) (of, sites []uuid.UUID, narrow bool, err error) {
 	f, ok := frame.From(ctx)
 	if !ok || f.AsAccount() {
@@ -105,7 +107,9 @@ func (x apps) held(ctx context.Context) (of, sites []uuid.UUID, narrow bool, err
 	}
 
 	of, sites, narrow, err = x.heldBy(ctx, f.Actor, m, said)
-	if err != nil || f.Caller == nil {
+	if err != nil || f.Caller == nil || f.Delegated {
+		// A call through a delegation is the person's alone: its caller is
+		// recorded and not asked, as `frame.NarrowSet` reads it (`cmd.Resolver`).
 		return of, sites, narrow, err
 	}
 
@@ -231,9 +235,10 @@ func (x apps) ApiKeyScope(ctx context.Context) (predicate.ApiKey, error) {
 	if err != nil || !narrow {
 		return nil, err
 	}
-	if f.Caller != nil {
+	if f.Caller != nil && !f.Delegated {
 		// A call made for somebody by a device or an agent is narrowed by
-		// both, as [apps.held] narrows it.
+		// both, as [apps.held] narrows it; one through a delegation is the
+		// person's alone.
 		theirs, by, err := x.keysHeldBy(ctx, f.Caller.Actor, m, said)
 		if err != nil {
 			return nil, err

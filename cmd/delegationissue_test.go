@@ -54,7 +54,7 @@ func issuingAs(ctx context.Context, b *keyedBuilt, who pdid.Id) context.Context 
 //
 // The app presents it beside its own key and is answered as the person,
 // held to what they hold: a write the administrator may make is made, and
-// the trail names them; the same write by somebody who does not hold it
+// the trail names them, the app and the delegation; the same write by somebody who does not hold it
 // there is refused as it would be without the app. Another app presenting
 // the token, and the token alone, are refused.
 func TestSomebodyHandsAnAppADelegationOfTheirOwn(t *testing.T) {
@@ -129,6 +129,12 @@ func TestSomebodyHandsAnAppADelegationOfTheirOwn(t *testing.T) {
 			Only(ctx)
 		x.NoError(err)
 		x.Equal(erin.Uuid(), line.ActorId, "the trail names somebody other than the administrator")
+		x.NotNil(line.CallerId, "the trail names no app")
+		x.Equal(foo.Uuid(), *line.CallerId, "the trail names somebody other than the app")
+		x.NotNil(line.CallerTenantId)
+		x.Equal(b.Contoso.Uuid(), *line.CallerTenantId)
+		x.NotNil(line.Presence)
+		x.Equal("roster-as:"+mustId(t, res.GetDelegation().GetId()).String(), *line.Presence, "the trail names no delegation")
 	})
 
 	t.Run("and the same call by somebody who does not hold the verb there is refused as without the app", func(t *testing.T) {
