@@ -187,9 +187,14 @@ Whatever the shape, a request from a person arrives with one of:
 | an `rt_` of the person's (a script, an app password) | `payday.TokenService/Introspect`; answers the holder, tenant and the key's methods |
 | an `rd_` this app was given | `Introspect`, which answers only the app it was issued to |
 
-and then asks roster what that person may call, with `HolderService/Reaches`,
-and decides with `frame.Covers` against the method being called -- reading
-`everywhere` if the app has no sites of its own. `methods` is the gate's union,
+and then asks roster what that person may call **at the app**, with
+`HolderService/Reaches`, and decides with `frame.Covers` against the method being
+called -- reading `everywhere` if the app has no sites of its own. An app asks
+about itself, and the answer is of its own roles (`Role.app`): what somebody holds
+at roster, or at another app, is not in it. Naming another app, or `roster`, is
+answered only to a caller who holds `/roster.BindingService/List` across the
+tenant, since it adds up what those lists already answer them -- which an app
+installed with `reach.Methods` does not. `methods` is the gate's union,
 which roster's wall then narrows for a grant bound at one site or held in a
 team; an app with no such wall would hand that grant everywhere. `everywhere`
 is the part that needs no narrowing. And a suspended holder reaches nothing:
@@ -246,7 +251,8 @@ s.Spin = append(s.Spin, reaches.Follower("loft.roster-reach"))
 ```
 
 - **`Holders.May` is `Reaches` and `frame.Covers`**, read from `everywhere`:
-  what an app with no sites of its own grants on. `Holders.Reach` hands over
+  what an app with no sites of its own grants on. It is the app asking about
+  itself, so the answer is of the app's own roles, and it names no app. `Holders.Reach` hands over
   the whole answer -- for an app that narrows by sites itself, and for a page
   that draws what somebody may do.
 - **Kept for `standing.HeldTtl`**, half a minute, which is how long a session

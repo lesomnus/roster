@@ -718,7 +718,9 @@ expanded it would show what exists in one binary.
 
 Each list in that answer is in an order a page can rely on. `sites` says each
 site once, in the order of their identifiers, which is the order the sites were
-made in, and `HolderService/Reaches` says the same of somebody else. Teams are
+made in, and `HolderService/Reaches` with `roster` says the same of somebody
+else, to whoever holds `/roster.BindingService/List` across the tenant:
+`roster holder reaches @newco/kim '{"roster": true}'`. Teams are
 in the order of their sites' aliases and then their own, groups of their
 aliases; addresses are the proved ones in the order they were proved and then
 the rest; and how somebody signs in -- accounts, credentials, keys -- is in the

@@ -1,7 +1,6 @@
 package core
 
 import (
-	"bytes"
 	"context"
 	"log/slog"
 	"slices"
@@ -20,7 +19,6 @@ import (
 	sqlpage "github.com/protobuf-orm/ent/dialect/sql/sqlpage"
 
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/portrait"
 )
 
@@ -513,6 +511,14 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 const signsInPage = 100
 
 func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) (*app.HolderReachesResponse, error) {
+	// Which app's roles, asked before anything about the person: a caller
+	// who may not be answered about that app is told so whoever they asked
+	// about.
+	at, err := s.reachedAt(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+
 	v, err := s.HolderServiceServer.Get(ctx, app.HolderGetRequest_builder{
 		Ref: req.GetRef(),
 		Select: app.HolderSelect_builder{
@@ -547,56 +553,90 @@ func (s coreHolder) Reaches(ctx context.Context, req *app.HolderReachesRequest) 
 		return nil, err
 	}
 
-	// What somebody holds is held at an app (`Role.app`). Until a caller says
-	// which app it asks about, this answers what roster's roles give them and
-	// what the roles of the app asking give them, together: roster's, for the
-	// consoles that draw what somebody may do here, and the caller's own, for
-	// an app asking what somebody may call at it. A role of any other app's
-	// is not in it.
-	ats := []pdid.Id{pdid.Nil}
-	if f, ok := frame.From(ctx); ok && f.Actor != pdid.Nil && f.Actor.Domain() == pd.HolderDomain {
-		ats = append(ats, f.Actor)
+	ms, sites, every, err := s.rules.Held(ctx, who, at)
+	if err != nil {
+		return nil, err
 	}
 
-	res := app.HolderReachesResponse_builder{}
-	for _, at := range ats {
-		ms, sites, every, err := s.rules.Held(ctx, who, at)
-		if err != nil {
+	res := app.HolderReachesResponse_builder{Methods: ms, EverySite: every}
+	for _, k := range sites {
+		res.Sites = append(res.Sites, k.Bytes())
+	}
+	if s.rules.Everywhere != nil {
+		if res.Everywhere, err = s.rules.Everywhere(ctx, who, at); err != nil {
 			return nil, err
 		}
-
-		res.Methods = union(res.Methods, ms)
-		res.EverySite = res.EverySite || every
-		for _, k := range sites {
-			if !slices.ContainsFunc(res.Sites, func(b []byte) bool { return bytes.Equal(b, k.Bytes()) }) {
-				res.Sites = append(res.Sites, k.Bytes())
-			}
-		}
-		if s.rules.Everywhere != nil {
-			es, err := s.rules.Everywhere(ctx, who, at)
-			if err != nil {
-				return nil, err
-			}
-			res.Everywhere = union(res.Everywhere, es)
-		}
 	}
-	slices.SortFunc(res.Sites, bytes.Compare)
 
 	return res.Build(), nil
 }
 
-// union is `a` and each of `b` it does not have, in the order of their
-// spelling.
-func union(a, b []string) []string {
-	out := slices.Clone(a)
-	for _, v := range b {
-		if !slices.Contains(out, v) {
-			out = append(out, v)
-		}
+// reachedAt is the app a `Reaches` is answered at: the one the request names,
+// roster's own ([pdid.Nil]) where it says `roster`, and the caller itself
+// where it says neither -- an app asking what somebody may call at it.
+//
+// # Who is answered about which app
+//
+// The caller about itself, as anybody was answered before a role said whose
+// it is: the wall, and a role naming the method. About another app, or about
+// roster, whoever holds `BindingService/List` across the tenant, since that
+// is what reads the parts this adds up -- the bindings, and through them the
+// roles -- and an app is answered nothing it could not read. An app installed
+// with `reach.Methods` holds no list, and is answered about itself alone.
+//
+// The deployment's own work is not asked, as nowhere is: a command at the box,
+// what applies a file, the operators' port. With no frame there is nobody to
+// be the caller, and neither is roster's.
+func (s coreHolder) reachedAt(ctx context.Context, req *app.HolderReachesRequest) (pdid.Id, error) {
+	f, framed := frame.From(ctx)
+	self := pdid.Nil
+	if framed {
+		self = f.Actor
 	}
-	slices.Sort(out)
 
-	return out
+	var (
+		at    pdid.Id
+		asked string
+	)
+	switch {
+	case req.GetRoster():
+		at, asked = pdid.Nil, "roster"
+	case req.GetApp() != nil:
+		k, err := s.holderOf(ctx, req.GetApp())
+		if err != nil {
+			return pdid.Nil, err
+		}
+		if k == self {
+			return k, nil
+		}
+		at, asked = k, "app"
+	default:
+		return self, nil
+	}
+	if s.deployment(ctx) {
+		return at, nil
+	}
+
+	if s.rules.Everywhere == nil {
+		return pdid.Nil, status.Error(codes.PermissionDenied,
+			"this server cannot say what you hold across the tenant, so it will not answer about anybody but yourself")
+	}
+	held, err := s.rules.Everywhere(ctx, f.Actor, pdid.Nil)
+	if err != nil {
+		return pdid.Nil, err
+	}
+	if slices.ContainsFunc(held, func(m string) bool { return frame.Covers(m, app.BindingService_List_FullMethodName) }) {
+		return at, nil
+	}
+
+	where := "at roster"
+	if asked == "app" {
+		where = "at another app"
+	}
+
+	return pdid.Nil, status.Errorf(codes.PermissionDenied,
+		"%s: what somebody may call %s is answered to whoever holds %s across the tenant, whose lists it adds up; "+
+			"an app asks about itself by naming neither", asked, where, app.BindingService_List_FullMethodName)
 }
 
 // SearchPageSize is what a search answers with when it was not told, and

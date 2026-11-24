@@ -134,7 +134,7 @@ func TestWhereSomebodyReachesIsSaidOnceAndInOrder(t *testing.T) {
 	x.Equal(want, me.GetSites(), "a site was said once for each grant that names it")
 
 	reaches, err := app.NewHolderServiceClient(conn).Reaches(admin, app.HolderReachesRequest_builder{
-		Ref: app.HolderRef_builder{Id: kim.Bytes()}.Build(),
+		Ref: app.HolderRef_builder{Id: kim.Bytes()}.Build(), Roster: ptrTo(true),
 	}.Build())
 	x.NoError(err)
 	x.Equal(want, reaches.GetSites())

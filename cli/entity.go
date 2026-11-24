@@ -408,7 +408,7 @@ func overlays(t *pdcmd.Tree) {
 		{"holder/enable", "roster.HolderService.Enable", "let a disabled somebody back in"},
 		{"holder/invalidate", "roster.HolderService.Invalidate", "void everything issued to somebody before now"},
 		{"holder/signs-in", "roster.HolderService.SignsIn", "how somebody signs in: identities, credentials, keys"},
-		{"holder/reaches", "roster.HolderService.Reaches", "what somebody may call, from every role they hold"},
+		{"holder/reaches", "roster.HolderService.Reaches", "what somebody may call at an app, from its roles; {\"roster\": true} for roster's"},
 		{"holder/search", "roster.HolderService.Search", "find people by a fragment of a name or alias, a department, an employee number"},
 		{"holder/portray", "roster.HolderService.Portray", "keep an image as somebody's picture, or take theirs away; roster makes the sizes"},
 		{"holder/fill", "roster.HolderService.Fill", "write a name or a picture where somebody's profile has none, and nothing else"},

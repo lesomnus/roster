@@ -315,13 +315,13 @@ func TestATeamErasedIsHeardByEverybodyOnIt(t *testing.T) {
 
 	holders := app.NewHolderServiceClient(r.conn)
 	ref := app.HolderRef_builder{Id: lead.Bytes()}.Build()
-	before, err := holders.Reaches(r.as, app.HolderReachesRequest_builder{Ref: ref}.Build())
+	before, err := holders.Reaches(r.as, app.HolderReachesRequest_builder{Ref: ref, Roster: ptrTo(true)}.Build())
 	x.NoError(err)
 	x.Contains(before.GetMethods(), "/roster.HolderService/Get")
 
 	_, err = app.NewTeamServiceClient(r.conn).Erase(r.as, teamRef)
 	x.NoError(err)
-	after, err := holders.Reaches(r.as, app.HolderReachesRequest_builder{Ref: ref}.Build())
+	after, err := holders.Reaches(r.as, app.HolderReachesRequest_builder{Ref: ref, Roster: ptrTo(true)}.Build())
 	x.NoError(err)
 	x.NotContains(after.GetMethods(), "/roster.HolderService/Get", "the team's role is still held")
 
@@ -377,7 +377,11 @@ func TestAFollowerInASiteIsToldOfAGrantMadeAcrossTheTenant(t *testing.T) {
 
 	as := asOverTheWire(ctx, follower)
 	c := syncing(t, as, conn, canary)
-	staff := app.RoleRef_builder{Id: b.role(t, ctx, "staff", "/roster.EmailService/List").Bytes()}.Build()
+
+	// A role of the follower's own, which it asks `Reaches` about as itself,
+	// and which the tenant's administrator holds there to bind.
+	staff := app.RoleRef_builder{Id: b.roleAtApp(t, ctx, follower, "staff", "/an-app.EmailService/List").Bytes()}.Build()
+	b.binds(t, b.ContosoUser, b.roleAtApp(t, ctx, follower, "an-app-everything", "/an-app.*/*"), nil)
 	bindings := app.NewBindingServiceClient(conn)
 
 	t.Run("somebody of its site", func(t *testing.T) {
@@ -388,7 +392,7 @@ func TestAFollowerInASiteIsToldOfAGrantMadeAcrossTheTenant(t *testing.T) {
 
 		got, err := app.NewHolderServiceClient(conn).Reaches(as, app.HolderReachesRequest_builder{Ref: ref}.Build())
 		x.NoError(err)
-		x.Contains(got.GetMethods(), "/roster.EmailService/List", "the follower is answered what the grant added")
+		x.Contains(got.GetMethods(), "/an-app.EmailService/List", "the follower is answered what the grant added")
 
 		heard := syncReachOf(caughtUp(t, as, conn, c, canary), dana)
 		x.Len(heard, 1, "a follower bound in a site was not told of a grant made across the tenant to somebody it sees")
