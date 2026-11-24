@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"errors"
 	"fmt"
 	"github.com/lesomnus/roster/cmd"
@@ -125,6 +126,9 @@ func newCmdLdapServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 // certPair is `--tls cert.pem,key.pem`, as the `ldap.tls` block it sets whole.
 // Empty is an empty block, which is what `--tls=` asks for: no certificate,
 // whatever the file named.
+//
+// Two paths, because a flag names files as a shell does; each is set as a
+// reference to its file, so that `roster config` shows where they are.
 func certPair(v string) (cmd.TlsConfig, error) {
 	if v == "" {
 		return cmd.TlsConfig{}, nil
@@ -135,7 +139,47 @@ func certPair(v string) (cmd.TlsConfig, error) {
 		return cmd.TlsConfig{}, fmt.Errorf("%q: cert.pem,key.pem", v)
 	}
 
-	return cmd.TlsConfig{Cert: certFile, Key: keyFile}, nil
+	var c cmd.TlsConfig
+	if err := c.Cert.SetFile(certFile); err != nil {
+		return cmd.TlsConfig{}, err
+	}
+	if err := c.Key.SetFile(keyFile); err != nil {
+		return cmd.TlsConfig{}, err
+	}
+
+	return c, nil
+}
+
+// directoryCertificate is `ldap.tls` as the listener's certificate, read now.
+//
+// Each refusal names the keys as the file writes them, with the flag beside
+// them, and none says what a key holds: one of them is a private key, and the
+// value may be the PEM itself.
+func directoryCertificate(c cmd.TlsConfig) (tls.Certificate, error) {
+	switch {
+	case c.Cert.IsZero():
+		return tls.Certificate{}, errors.New("ldap.tls.cert (--tls): ldap.tls.key is named, and no certificate beside it. name both, or neither")
+	case c.Key.IsZero():
+		return tls.Certificate{}, errors.New("ldap.tls.key (--tls): ldap.tls.cert is named, and no key beside it. name both, or neither")
+	}
+
+	cert, err := c.Cert.Value()
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("ldap.tls.cert (--tls): %w", err)
+	}
+	key, err := c.Key.Value()
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("ldap.tls.key (--tls): %w", err)
+	}
+	if !x509.NewCertPool().AppendCertsFromPEM([]byte(cert)) {
+		return tls.Certificate{}, errors.New("ldap.tls.cert (--tls): holds no certificate")
+	}
+	pair, err := tls.X509KeyPair([]byte(cert), []byte(key))
+	if err != nil {
+		return tls.Certificate{}, fmt.Errorf("ldap.tls.cert, ldap.tls.key (--tls): not a certificate and its key: %w", err)
+	}
+
+	return pair, nil
 }
 
 // serveLdap answers LDAP until ctx is done.
@@ -162,12 +206,9 @@ func serveLdap(ctx context.Context, lc cmd.LdapConfig, f appKeys) error {
 
 	var tlsConfig *tls.Config
 	if lc.Tls.IsSet() {
-		if lc.Tls.Cert == "" || lc.Tls.Key == "" {
-			return errors.New("ldap.tls (--tls): both a cert and a key")
-		}
-		cert, err := tls.LoadX509KeyPair(lc.Tls.Cert, lc.Tls.Key)
+		cert, err := directoryCertificate(lc.Tls)
 		if err != nil {
-			return fmt.Errorf("ldap.tls (--tls): %w", err)
+			return err
 		}
 		tlsConfig = &tls.Config{Certificates: []tls.Certificate{cert}}
 	}

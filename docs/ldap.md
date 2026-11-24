@@ -74,6 +74,23 @@ is that, as a script.
 plain TCP is. Offer StartTLS with `--tls`, LDAPS with `--listen-tls`, or terminate
 TLS in front and pass the plain port on a private network.
 
+`--tls cert.pem,key.pem` names two files, as a shell does. In the block the
+certificate is a value of the file, as a listener's `tls:` is:
+`${file:/path}`, `${env:NAME}` or the PEM itself, read when the listener is
+built, so a certificate that is replaced takes a restart. `roster config`
+shows `ldap.tls.cert` and leaves `ldap.tls.key` out.
+
+```yaml
+ldap:
+  tls:
+    cert: ${file:/run/roster/tls/tls.crt}
+    key: ${file:/run/roster/tls/tls.key}
+```
+
+Half a pair is refused at start naming both keys, and a pair that does not
+match, or a value that holds no certificate, naming the key and never what it
+holds.
+
 ```sh
 ldapsearch -H ldap://localhost:1389 -x \
   -D uid=erin,ou=people,o=contoso -w rt_… \
