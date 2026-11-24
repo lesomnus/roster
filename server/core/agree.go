@@ -454,6 +454,17 @@ func (s coreGroupMembership) Add(ctx context.Context, req *app.GroupMembershipAd
 	if err := s.mayChangeGroup(ctx, app.GroupMembershipService_Add_FullMethodName, req.GetGroup()); err != nil {
 		return nil, err
 	}
+	// And let through by a grant in a site for a group that is not the app's,
+	// whoever is put in is that grant's to see ([Core.reachedInASite]).
+	of, err := s.appOfGroup(ctx, req.GetGroup())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.reachedInASite(ctx, app.GroupMembershipService_Add_FullMethodName, of,
+		func(ctx context.Context) error { _, err := s.tenantOfHolder(ctx, req.GetHolder()); return err },
+	); err != nil {
+		return nil, err
+	}
 
 	// And what being in that group hands them, which is every binding written
 	// to it -- the other half of the write `Binding.Add` already asks about.
@@ -975,7 +986,13 @@ func (s coreBinding) Add(ctx context.Context, req *app.BindingAddRequest) (*app.
 	if row == pdid.Nil {
 		row = to
 	}
-	if err := s.mayWriteOfApp(ctx, "role", app.BindingService_Add_FullMethodName, "binding", row, at); err != nil {
+	// Let through by a grant in a site, the role and whoever it is bound to are
+	// that grant's to see as well.
+	if err := s.mayWriteOfApp(ctx, "role", app.BindingService_Add_FullMethodName, "binding", row, at,
+		func(ctx context.Context) error { _, err := s.tenantOfRole(ctx, req.GetRole()); return err },
+		func(ctx context.Context) error { _, err := s.tenantOfHolder(ctx, holder); return err },
+		func(ctx context.Context) error { _, err := s.tenantOfGroup(ctx, group); return err },
+	); err != nil {
 		return nil, err
 	}
 	if err := s.mayGrant(ctx, "role", ms, at, of, to); err != nil {

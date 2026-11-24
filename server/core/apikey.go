@@ -543,7 +543,20 @@ func (s coreApiKey) reaches(ctx context.Context, ref *app.ApiKeyRef) error {
 		}
 	}
 	if err := s.mayWriteOfApp(ctx, "ref", app.ApiKeyService_Erase_FullMethodName, "key", of, pdid.Nil); err != nil {
-		return err
+		// Or what they hold in a site reaches it: a key is in no site, and
+		// such a grant reaches it by its holder, read as that grant alone
+		// reads it ([Core.byASiteAlone]). Reaching it by neither is the
+		// refusal above.
+		if status.Code(err) != codes.PermissionDenied {
+			return err
+		}
+		_, sites, _, herr := s.heldFor(ctx, app.ApiKeyService_Erase_FullMethodName)
+		if herr != nil {
+			return herr
+		}
+		if len(sites) == 0 || s.byASiteAlone(ctx, func(ctx context.Context) error { _, _, err := s.whoseFor(ctx, ref); return err }) != nil {
+			return err
+		}
 	}
 
 	return s.mayReach(ctx, "ref", holder)

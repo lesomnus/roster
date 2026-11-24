@@ -390,9 +390,13 @@ What it takes:
   somebody who holds `Add` for one app alone is the app's, and is refused
   without that `app` rather than given it. `Reaches` held for one app alone is
   answered at that app, and refused at roster and at every other app.
-- **Held for an app and in a site both**, a read is narrowed by both, and
-  answers what both narrow to -- which is less than either alone. It fails
-  closed.
+- **Held for an app and in a site both**, they are two grants, and each
+  reaches what it reaches: a list answers the rows of that site and the rows
+  of that app, each once, and a write is let through where either reaches the
+  row. Neither reaches past itself by the other: a binding of the site's role
+  to somebody who is not of the site is `NotFound`, as it is to the grant in
+  the site alone, and a row that is neither the site's nor the app's is
+  refused as above.
 - **A binding of an app's own role says no app**: the role says whose it is.
 - **What they hand out at the app itself** -- its methods, in a role of the
   app's -- is a role of the app's bound to them as well (§ *You cannot hand out
