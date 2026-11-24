@@ -88,15 +88,15 @@ func TestLdapServeIsToldEverything(t *testing.T) {
 	roster := b.Hers.Client.Addr
 	key := "newco=" + b.Token
 
-	x.ErrorContains(serve("--insecure", "--key", key), "--roster")
-	x.ErrorContains(serve("--roster", roster, "--insecure"), "--key")
-	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", "newco"), "alias=token")
-	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", key, "--bind", "maybe"), "--bind")
-	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", key, "--base", "newco"), "--base")
-	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", key, "--listen-tls", ":0"), "--tls")
-	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", key, "--require-tls"), "--tls")
-	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", key, "--base", "other=o=other"), "no key or nomination for it")
-	x.ErrorContains(serve("--roster", roster, "--insecure", "--key", "other="+b.Token), "cannot see",
+	x.ErrorContains(serve("--insecure", "--tenant-key", key), "--roster")
+	x.ErrorContains(serve("--roster", roster, "--insecure"), "--tenant-key")
+	x.ErrorContains(serve("--roster", roster, "--insecure", "--tenant-key", "newco"), "alias=token")
+	x.ErrorContains(serve("--roster", roster, "--insecure", "--tenant-key", key, "--bind", "maybe"), "--bind")
+	x.ErrorContains(serve("--roster", roster, "--insecure", "--tenant-key", key, "--base", "newco"), "--base")
+	x.ErrorContains(serve("--roster", roster, "--insecure", "--tenant-key", key, "--listen-tls", ":0"), "--tls")
+	x.ErrorContains(serve("--roster", roster, "--insecure", "--tenant-key", key, "--require-tls"), "--tls")
+	x.ErrorContains(serve("--roster", roster, "--insecure", "--tenant-key", key, "--base", "other=o=other"), "no key or nomination for it")
+	x.ErrorContains(serve("--roster", roster, "--insecure", "--tenant-key", "other="+b.Token), "cannot see",
 		"a key for one tenant was taken as another's")
 
 	// bob's app password: a key on his own row, `Me.Get` and nothing else.

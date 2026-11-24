@@ -40,8 +40,9 @@ func NewCmdLdap(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	}
 }
 
-// LdapKeyPrefix is the environment form of `--key`: `ROSTER_LDAP_KEY_<ALIAS>`.
-const LdapKeyPrefix = "ROSTER_LDAP_KEY_"
+// LdapKeyPrefix is the environment form of `--tenant-key`:
+// `ROSTER_LDAP_TENANT_KEY_<ALIAS>`.
+const LdapKeyPrefix = "ROSTER_LDAP_TENANT_KEY_"
 
 func newCmdLdapServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	return &xli.Command{
@@ -56,8 +57,8 @@ func newCmdLdapServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			cfg.Bind(l, &c.Ldap.AddrTls, &flg.String{Name: "listen-tls", Brief: "where to speak LDAPS; needs --tls"}),
 			cfg.Bind(l, &c.Ldap.Roster, &flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"}),
 			cfg.Bind(l, &c.Ldap.Insecure, &flg.Switch{Name: "insecure", Brief: "dial roster without TLS"}),
-			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per tenant fronted. Or " + LdapKeyPrefix + "<ALIAS> in the environment"},
-			cfg.BindText(l, &c.Ldap.Key, &flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it: rk_…, or one reference as the whole value, '${file:/run/key}' or '${env:NAME}' in single quotes; instead of --key"}),
+			&flg.Strings{Name: "tenant-key", Brief: "a tenant key, as alias=rt_…; repeat per tenant fronted. Or " + LdapKeyPrefix + "<ALIAS> in the environment"},
+			cfg.BindText(l, &c.Ldap.DeploymentKey, &flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it: rk_…, or one reference as the whole value, '${file:/run/key}' or '${env:NAME}' in single quotes; instead of --tenant-key"}),
 			&flg.Strings{Name: "base", Brief: "a tenant's suffix, as alias=dc=…; o=<alias> if not given"},
 			cfg.Bind(l, &c.Ldap.Bind, &flg.String{Name: "bind", Brief: "what a bind's password may be: key (an app password the person minted; the default), password (their own), either"}),
 			cfg.BindFunc(l, &c.Ldap.Tls, &flg.String{Name: "tls", Brief: "this server's certificate and key, as cert.pem,key.pem; offers StartTLS and enables --listen-tls"}, certPair),
@@ -89,20 +90,20 @@ func newCmdLdapServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				}
 			}
 
+			// `--tenant-key` is merged with the block and the environment by
+			// [keysOf], so it is read here and not bound either.
+			given, _ := flg.Find[[]string](cl, "tenant-key")
+			if err := oneWay("ldap", lc.DeploymentKey, lc.TenantKeys, LdapKeyPrefix, given); err != nil {
+				return err
+			}
+
 			var f appKeys
-			if !lc.Key.IsZero() {
-				if f.key, err = lc.Key.Value(); err != nil {
-					return fmt.Errorf("--deployment-key (ldap.key): %w", err)
-				}
-				// Handed on beside it, for the directory to refuse the two.
-				if f.keys, err = blockKeys(lc.Keys); err != nil {
-					return err
+			if !lc.DeploymentKey.IsZero() {
+				if f.key, err = lc.DeploymentKey.Value(); err != nil {
+					return fmt.Errorf("--deployment-key (ldap.deployment_key): %w", err)
 				}
 			} else {
-				// `--key` is merged with the block and the environment by
-				// [keysOf], so it is read here and not bound either.
-				given, _ := flg.Find[[]string](cl, "key")
-				if f.keys, err = keysOf(lc.Keys, LdapKeyPrefix, given); err != nil {
+				if f.keys, err = keysOf(lc.TenantKeys, LdapKeyPrefix, given); err != nil {
 					return err
 				}
 			}

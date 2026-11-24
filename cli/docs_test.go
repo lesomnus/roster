@@ -329,7 +329,7 @@ func TestTheDocumentationNamesVariablesThatAreRead(t *testing.T) {
 	}
 	x.Greater(len(have), 50, "the loader named nothing")
 
-	perAlias := []string{"ROSTER_ACCOUNT_KEY_", "ROSTER_LDAP_KEY_"}
+	perAlias := []string{"ROSTER_ACCOUNT_TENANT_KEY_", "ROSTER_LDAP_TENANT_KEY_"}
 
 	// And what something in this tree reads for itself. `ROSTER_ROOT_PASSWORD` is
 	// the image's entrypoint, not a field, and a deployment copies it out of the

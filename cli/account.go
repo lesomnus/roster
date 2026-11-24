@@ -96,14 +96,14 @@ func NewCmdAccount(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 // A process of its own reads what this writes:
 //
 //	account:
-//	  key: ${file:/run/roster-account/account.key}
+//	  deployment_key: ${file:/run/roster-account/account.key}
 //
-// Inside `roster serve` nothing runs this. `account.keys` left empty is the
+// Inside `roster serve` nothing runs this. `account.tenant_keys` left empty is the
 // same rows and a key made at start, in memory, which is one replica.
 func newCmdAccountProvision(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "provision",
-		Brief: "mint the account app's deployment key into a directory, and nominate it in every tenant with a name, for `account.key: ${file:…}`",
+		Brief: "mint the account app's deployment key into a directory, and nominate it in every tenant with a name, for `account.deployment_key: ${file:…}`",
 
 		Flags: flg.Flags{
 			&flg.String{Name: "out", Brief: "the directory to write account.key into; /run/roster-account if empty"},
@@ -153,7 +153,7 @@ func newCmdAccountServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 		Brief: "serve the sign-in page and the account screens, fronting roster",
 
 		// Those in `cfg.Bind` are `account:`'s settings; see [NewCmdAccount].
-		// `--key` is not one, and the handler says why.
+		// `--tenant-key` is not one, and the handler says why.
 		Flags: flg.Flags{
 			cfg.Bind(l, &c.Account.Addr, &flg.String{Name: "listen", Brief: "where to listen; :8090 if empty"}),
 			cfg.Bind(l, &c.Account.Roster, &flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"}),
@@ -162,8 +162,8 @@ func newCmdAccountServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			cfg.Bind(l, &c.Account.Base, &flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect"}),
 			cfg.Bind(l, &c.Account.Page.Dir, &flg.String{Name: "static", Brief: "a directory to serve as the page; empty serves none"}),
 			cfg.Bind(l, &c.Account.Enrol, &flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"}),
-			&flg.Strings{Name: "key", Brief: "a tenant key, as alias=rt_…; repeat per tenant fronted. Or ROSTER_ACCOUNT_KEY_<ALIAS> in the environment"},
-			cfg.BindText(l, &c.Account.Key, &flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it: rk_…, or one reference as the whole value, '${file:/run/key}' or '${env:NAME}' in single quotes; instead of --key"}),
+			&flg.Strings{Name: "tenant-key", Brief: "a tenant key, as alias=rt_…; repeat per tenant fronted. Or " + AccountKeyPrefix + "<ALIAS> in the environment"},
+			cfg.BindText(l, &c.Account.DeploymentKey, &flg.String{Name: "deployment-key", Brief: "one deployment key for every tenant that nominated it: rk_…, or one reference as the whole value, '${file:/run/key}' or '${env:NAME}' in single quotes; instead of --tenant-key"}),
 			cfg.Bind(l, &c.Account.InsecureCookie, &flg.Switch{Name: "insecure-cookie", Brief: "a cookie without Secure, for a page served over plain http in development"}),
 			cfg.Bind(l, &c.Account.Terminal, &flg.Switch{Name: "terminal", Brief: "let a machine with no browser ask for a key here (`roster sign-in`)"}),
 			cfg.BindFunc(l, &c.Account.Seal, &flg.Strings{Name: "seal", Brief: "the key sessions are sealed into the cookie under, 32 bytes base64, or one reference to it as the whole value, '${env:NAME}' or '${file:/path}' in single quotes; repeat to rotate, the first seals. Empty is a key made at start, which is one replica"}, tokensOf),
@@ -185,21 +185,21 @@ func newCmdAccountServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 				ac.Addr = ":8090"
 			}
 
+			// `--tenant-key` is one per tenant and merged with the block's
+			// rather than replacing them, so it is read here rather than
+			// bound. See [keysOf].
+			given, _ := flg.Find[[]string](cl, "tenant-key")
+			if err := oneWay("account", ac.DeploymentKey, ac.TenantKeys, AccountKeyPrefix, given); err != nil {
+				return err
+			}
+
 			var f appKeys
-			if !ac.Key.IsZero() {
-				if f.key, err = ac.Key.Value(); err != nil {
-					return fmt.Errorf("--deployment-key (account.key): %w", err)
-				}
-				// Handed on beside it, for the app to refuse the two.
-				if f.keys, err = blockKeys(ac.Keys); err != nil {
-					return err
+			if !ac.DeploymentKey.IsZero() {
+				if f.key, err = ac.DeploymentKey.Value(); err != nil {
+					return fmt.Errorf("--deployment-key (account.deployment_key): %w", err)
 				}
 			} else {
-				// `--key` is one per tenant and merged with the block's rather
-				// than replacing them, so it is read here rather than bound.
-				// See [keysOf].
-				given, _ := flg.Find[[]string](cl, "key")
-				if f.keys, err = keysOf(ac.Keys, AccountKeyPrefix, given); err != nil {
+				if f.keys, err = keysOf(ac.TenantKeys, AccountKeyPrefix, given); err != nil {
 					return err
 				}
 			}
@@ -213,9 +213,9 @@ func newCmdAccountServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 	}
 }
 
-// AccountKeyPrefix is the environment form of `--key`:
-// `ROSTER_ACCOUNT_KEY_<ALIAS>`.
-const AccountKeyPrefix = "ROSTER_ACCOUNT_KEY_"
+// AccountKeyPrefix is the environment form of `--tenant-key`:
+// `ROSTER_ACCOUNT_TENANT_KEY_<ALIAS>`.
+const AccountKeyPrefix = "ROSTER_ACCOUNT_TENANT_KEY_"
 
 // appKeys is the key an app fronts its tenants with, read: one deployment
 // key, or one tenant key per tenant by alias. The tokens, and not where they
@@ -446,22 +446,34 @@ func sealOf(who string, seals []cmd.Token) (*authsession.Sealed, error) {
 	return authsession.NewSealed(keys...)
 }
 
-// blockKeys is the block's tenant keys, read, by alias; nil for none.
-func blockKeys(block map[string]cmd.Token) (map[string]string, error) {
-	if len(block) == 0 {
-		return nil, nil
+// oneWay refuses a deployment key beside tenant keys, from the block, the
+// flag or the environment: one way to front tenants (#76).
+//
+// Here, where the block and the flags are read and before the app is built,
+// so that it is said in the file's words and the flags'. The app's own
+// library refuses the two as well, in its Go names, for a caller in Go; a
+// `--tenant-key` beside `--deployment-key` was not refused at all, but
+// dropped. `block` is `account` or `ldap`.
+func oneWay(block string, deployment cmd.Token, tenants map[string]cmd.Token, prefix string, given []string) error {
+	if deployment.IsZero() {
+		return nil
 	}
 
-	out := map[string]string{}
-	for alias, t := range block {
-		v, err := t.Value()
-		if err != nil {
-			return nil, fmt.Errorf("keys.%s: %w", alias, err)
+	where := ""
+	if len(tenants) == 0 && len(given) == 0 {
+		for _, kv := range os.Environ() {
+			name, value, _ := strings.Cut(kv, "=")
+			if alias, ok := strings.CutPrefix(name, prefix); ok && alias != "" && value != "" {
+				where = ", given here by " + prefix + "<ALIAS> in the environment"
+				break
+			}
 		}
-		out[strings.ToLower(alias)] = v
+		if where == "" {
+			return nil
+		}
 	}
 
-	return out, nil
+	return fmt.Errorf("%[1]s.deployment_key (--deployment-key) and %[1]s.tenant_keys (--tenant-key)%[2]s: one way to front tenants, not two", block, where)
 }
 
 // errNoKeys is [keysOf] finding nothing in any of the three places: a refusal
@@ -474,8 +486,8 @@ var errNoKeys = errors.New("no tenant key")
 //     kept because a configuration file is committed and a key is a secret;
 //   - `<PREFIX><ALIAS>` in the environment, which is the key, and is the
 //     shape a container or a compose file already has;
-//   - `--key alias=token`, which is the key in the process list and is
-//     documented as such.
+//   - `--tenant-key alias=token`, which is the key in the process list and
+//     is documented as such.
 //
 // Merged in that order, so the more specific wins. Not one replacing another:
 // a deployment with two operators in the file and a third being tried at the
@@ -485,12 +497,13 @@ var errNoKeys = errors.New("no tenant key")
 // variable to one field and this is a variable per alias -- which is why
 // `cfg.Reads` has to be told the prefix is not a typo (`cli.go`).
 func keysOf(block map[string]cmd.Token, prefix string, given []string) (map[string]string, error) {
-	out, err := blockKeys(block)
-	if err != nil {
-		return nil, err
-	}
-	if out == nil {
-		out = map[string]string{}
+	out := map[string]string{}
+	for alias, t := range block {
+		v, err := t.Value()
+		if err != nil {
+			return nil, fmt.Errorf("tenant_keys.%s: %w", alias, err)
+		}
+		out[strings.ToLower(alias)] = v
 	}
 	for _, kv := range os.Environ() {
 		name, value, ok := strings.Cut(kv, "=")
@@ -507,13 +520,13 @@ func keysOf(block map[string]cmd.Token, prefix string, given []string) (map[stri
 		alias, token, ok := strings.Cut(v, "=")
 		if !ok || alias == "" || token == "" {
 			// Not said back: what is given here is a token.
-			return nil, invocation(errors.New("--key: a key is given as alias=token, and one is not; it is not said back, " +
+			return nil, invocation(errors.New("--tenant-key: a key is given as alias=token, and one is not; it is not said back, " +
 				"since what is given there is the token"))
 		}
 		out[strings.ToLower(alias)] = token
 	}
 	if len(out) == 0 {
-		return nil, fmt.Errorf("%w: --key alias=rt_… (or %s<ALIAS>, or the `keys` block): one tenant key per tenant this fronts", errNoKeys, prefix)
+		return nil, fmt.Errorf("%w: --tenant-key alias=rt_… (or %s<ALIAS>, or tenant_keys in the block): one tenant key per tenant this fronts", errNoKeys, prefix)
 	}
 
 	return out, nil

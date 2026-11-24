@@ -68,12 +68,13 @@ import (
 // field of this `c` and no other, which is why both are handed over.
 func Cmd(c *cmd.Config) *xli.Command {
 	l := cfg.New(cmd.Name, c,
-		// `ROSTER_ACCOUNT_KEY_<ALIAS>` and the one beside it are read by the
-		// consumers themselves (`keysOf`), not by the loader, and are not
+		// `ROSTER_ACCOUNT_TENANT_KEY_<ALIAS>` and the one beside it are read by
+		// the consumers themselves (`keysOf`), not by the loader, and are not
 		// typos. Anything else beginning `ROSTER_` that no field answers to is
 		// reported, which is what a typo looks like. The Login App holds one
-		// key, an ordinary field the loader reads (`ROSTER_LOGIN_KEY`).
-		cfg.Reads("ACCOUNT_KEY_", "LDAP_KEY_"),
+		// key, an ordinary field the loader reads
+		// (`ROSTER_LOGIN_DEPLOYMENT_KEY`).
+		cfg.Reads("ACCOUNT_TENANT_KEY_", "LDAP_TENANT_KEY_"),
 	)
 
 	// `version` needs no configuration, and is what somebody runs to ask a

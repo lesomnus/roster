@@ -16,7 +16,7 @@ import (
 //
 // `login serve --key` was the deployment's key, where `account serve` and
 // `ldap serve` call that `--deployment-key` and a tenant's `alias=rt_…`
-// `--key`; `app install --role` took methods, which eight other commands take
+// `--key` (`--tenant-key` now); `app install --role` took methods, which eight other commands take
 // as `--allow`; `--in` was the archive's directory on four `trail` commands
 // and `prune --to` on the fifth, where `--in` is how a request is read on
 // every entity command; and `key revoke --id` took the key that `me
@@ -58,7 +58,7 @@ func TestFourFlagsSayWhatTheOthersSay(t *testing.T) {
 		}{
 			// Each refused for what its value is, which only a flag the
 			// command reads can be.
-			{[]string{"login", "serve", "--roster", "roster:50051", "--deployment-key", "rt_x"}, "login.key (--deployment-key): a deployment key"},
+			{[]string{"login", "serve", "--roster", "roster:50051", "--deployment-key", "rt_x"}, "login.deployment_key (--deployment-key): a deployment key"},
 			{[]string{"app", "install", "--tenant", "newco", "--allow", "not-a-method", "loft"}, "--allow not-a-method: not a method"},
 			{[]string{"app", "install", "--tenant", "newco", "loft"}, "--allow: what the app may do"},
 			{[]string{"trail", "purge", "--older-than", "1h", "--archive", other}, "--archive: " + other + " is not audit.archive"},

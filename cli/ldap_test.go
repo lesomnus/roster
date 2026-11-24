@@ -27,15 +27,15 @@ import (
 // is what takes it away -- or, absent, does not.
 func TestAFlagIsTheSettingItSays(t *testing.T) {
 	// As much of `ldap:` as the command needs to get past its own checks, and
-	// `key` and `keys` both, which the directory refuses before it dials
-	// anything (`ldap.New`). So that refusal is how a run says it got through
-	// every check a flag here takes part in.
-	const through = "one way to front tenants, not two"
+	// a roster where nothing answers: the directory's first call there, which
+	// asks which tenants nominated its key, comes after every check. So that
+	// failing is how a run says it got through every check a flag here takes
+	// part in.
+	const through = "which tenants nominated this directory's key"
 	block := "ldap:\n" +
 		"  roster: 127.0.0.1:1\n" +
-		"  key: rk_named\n" +
-		"  keys:\n" +
-		"    newco: rt_named\n"
+		"  insecure: true\n" +
+		"  deployment_key: rk_named\n"
 
 	serve := func(t *testing.T, more string, args ...string) error {
 		t.Helper()

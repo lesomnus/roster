@@ -7,7 +7,7 @@ import (
 )
 
 // TestAKeyWrittenWithoutItsNameIsNotSaidBack, the flag's half
-// of the test of that name in `cmd`: `--key 'acme:rt_…'`, a
+// of the test of that name in `cmd`: `--tenant-key 'acme:rt_…'`, a
 // colon for the equals sign, answered with the whole token in the sentence,
 // into whatever keeps the process's standard error. It says the form.
 func TestAKeyWrittenWithoutItsNameIsNotSaidBack(t *testing.T) {

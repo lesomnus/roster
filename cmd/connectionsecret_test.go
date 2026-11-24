@@ -70,7 +70,7 @@ func TestAConnectionsSecretGoesWhereTheDeploymentSays(t *testing.T) {
 
 	t.Run("and one naming a secret is not", func(t *testing.T) {
 		x := require.New(t)
-		err := add(admin, "mine", "https://idp.attacker.example", "env:ROSTER_LOGIN_KEY")
+		err := add(admin, "mine", "https://idp.attacker.example", "env:ROSTER_LOGIN_DEPLOYMENT_KEY")
 		x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
 	})
 

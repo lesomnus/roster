@@ -89,8 +89,8 @@ func bearing(ctx context.Context, token string) context.Context {
 }
 
 // TestAFrontDoorsKeysAreMadeWhereTheyAreUsed is `roster account provision`,
-// and the half of it `roster serve` runs at start when `account.key` and
-// `account.keys` say nothing.
+// and the half of it `roster serve` runs at start when
+// `account.deployment_key` and `account.tenant_keys` say nothing.
 //
 // A front door's key was a runbook step: a holder, a role with the right
 // thirty methods, a binding, `roster key add`, and the token carried into the

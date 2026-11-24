@@ -66,7 +66,7 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			cfg.Bind(l, &c.Login.Roster, &flg.String{Name: "roster", Brief: "roster's data plane, gRPC: host:port"}),
 			cfg.Bind(l, &c.Login.Insecure, &flg.Switch{Name: "insecure", Brief: "dial roster without TLS"}),
 			cfg.Bind(l, &c.Login.Hydra.Admin, &flg.String{Name: "hydra", Brief: "Hydra's admin API, e.g. http://hydra:4445. Private: anybody who reaches it can sign anybody in as anybody"}),
-			cfg.BindText(l, &c.Login.Key, &flg.String{Name: "deployment-key", Brief: "this app's one deployment key: rk_…, or one reference as the whole value, '${file:/run/key}' or '${env:NAME}' in single quotes"}),
+			cfg.BindText(l, &c.Login.DeploymentKey, &flg.String{Name: "deployment-key", Brief: "this app's one deployment key: rk_…, or one reference as the whole value, '${file:/run/key}' or '${env:NAME}' in single quotes"}),
 			cfg.Bind(l, &c.Login.Consent, &flg.String{Name: "consent", Brief: "what the consent hop does: skip (grant what the client asked for; the default) or ask (draw a screen)"}),
 			cfg.Bind(l, &c.Login.Base, &flg.String{Name: "base", Brief: "this app's public origin, registered with every provider as the redirect. One for the whole app"}),
 			cfg.Bind(l, &c.Login.Enrol, &flg.String{Name: "enrol", Brief: "who a provider may sign in: invited (only somebody already linked), expected (somebody entered by address), enrolling (anybody)"}),
@@ -92,12 +92,12 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			// come up, so the customer could never be made. An `rk_` is the
 			// **control plane's** and needs no customer to exist, so it can be
 			// minted on an empty deployment and there is no cycle to break.
-			if lc.Key.IsZero() {
-				return errors.New("--deployment-key (or login.key): this app's one deployment key")
+			if lc.DeploymentKey.IsZero() {
+				return errors.New("--deployment-key (or login.deployment_key): this app's one deployment key")
 			}
-			key, err := lc.Key.Value()
+			key, err := lc.DeploymentKey.Value()
 			if err != nil {
-				return fmt.Errorf("login.key: %w", err)
+				return fmt.Errorf("login.deployment_key: %w", err)
 			}
 			// A **deployment** key, and an `rt_` is refused at start rather
 			// than at somebody's first sign-in.
@@ -110,7 +110,7 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 			// fact `server/keys` owns and that app may import no server package
 			// but `server/front`.
 			if !strings.HasPrefix(key, keys.PrefixDeployment) {
-				return fmt.Errorf("login.key (--deployment-key): a deployment key (%s…), and this is not one",
+				return fmt.Errorf("login.deployment_key (--deployment-key): a deployment key (%s…), and this is not one",
 					keys.PrefixDeployment)
 			}
 
@@ -135,7 +135,7 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 // cannot exist before this deployment has run once: minting one takes a tenant,
 // and a customer is made afterwards. So a deployment either does it by hand and
 // keeps the answer in a Secret, or runs this beside the process -- in the same
-// pod, on the same volume, before the server -- and points `login.key` at the
+// pod, on the same volume, before the server -- and points `login.deployment_key` at the
 // file it writes.
 //
 // The second is better than a Secret and not only shorter. The key never leaves
@@ -167,7 +167,7 @@ func newCmdLoginServe(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command {
 func newCmdLoginProvision(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "provision",
-		Brief: "mint this deployment's own Login App key into a file, for `login.key: ${file:…}`",
+		Brief: "mint this deployment's own Login App key into a file, for `login.deployment_key: ${file:…}`",
 
 		Flags: flg.Flags{
 			&flg.String{Name: "out", Brief: "the directory to write login-app.key into; /run/roster-login if empty"},

@@ -102,7 +102,7 @@ func TestServeOpensTheConsumersItIsToldTo(t *testing.T) {
 	x.NoError(os.WriteFile(file, []byte("account:\n"+
 		"  addr: "+accountAddr+"\n"+
 		"  insecure: true\n"+
-		"  keys:\n"+
+		"  tenant_keys:\n"+
 		"    newco: ${file:"+key+"}\n"+
 		"  seal: [\"${file:"+seal+"}\"]\n"), 0o600))
 	c = loadedFrom(t, c, file)

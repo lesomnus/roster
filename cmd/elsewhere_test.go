@@ -50,15 +50,15 @@ func TestAValueKeptSomewhereElseIsWrittenAsTheLoaderWritesIt(t *testing.T) {
 
 	t.Run("the old words are refused, saying how to write one", func(t *testing.T) {
 		for key, file := range map[string]string{
-			"account.key":           "account:\n  key: env:" + old + "\n",
-			"account.keys.acme":     "account:\n  keys:\n    acme: env:" + old + "\n",
-			"account.seal[0]":       "account:\n  seal: [env:" + old + "]\n",
-			"account.mail.username": "account:\n  mail:\n    username: env:" + old + "\n",
-			"account.mail.password": "account:\n  mail:\n    password: env:" + old + "\n",
-			"ldap.key":              "ldap:\n  key: env:" + old + "\n",
-			"ldap.keys.acme":        "ldap:\n  keys:\n    acme: env:" + old + "\n",
-			"login.key":             "login:\n  key: env:" + old + "\n",
-			"login.seal[0]":         "login:\n  seal: [env:" + old + "]\n",
+			"account.deployment_key":   "account:\n  deployment_key: env:" + old + "\n",
+			"account.tenant_keys.acme": "account:\n  tenant_keys:\n    acme: env:" + old + "\n",
+			"account.seal[0]":          "account:\n  seal: [env:" + old + "]\n",
+			"account.mail.username":    "account:\n  mail:\n    username: env:" + old + "\n",
+			"account.mail.password":    "account:\n  mail:\n    password: env:" + old + "\n",
+			"ldap.deployment_key":      "ldap:\n  deployment_key: env:" + old + "\n",
+			"ldap.tenant_keys.acme":    "ldap:\n  tenant_keys:\n    acme: env:" + old + "\n",
+			"login.deployment_key":     "login:\n  deployment_key: env:" + old + "\n",
+			"login.seal[0]":            "login:\n  seal: [env:" + old + "]\n",
 		} {
 			err := elsewhereRun(t, file, "config")
 			require.ErrorContains(t, err, key+`: "env:`+old+`" would be taken as it is; a reference is written ${env:`+old+`}`, key)
@@ -71,7 +71,7 @@ func TestAValueKeptSomewhereElseIsWrittenAsTheLoaderWritesIt(t *testing.T) {
 
 		// Past the key and the prefix it is held to, to the next thing the
 		// command was not told: the key read is the file's, a deployment key.
-		x.ErrorContains(elsewhereRun(t, "login:\n  roster: 127.0.0.1:1\n  key: ${file:"+at+"}\n", "login", "serve"),
+		x.ErrorContains(elsewhereRun(t, "login:\n  roster: 127.0.0.1:1\n  deployment_key: ${file:"+at+"}\n", "login", "serve"),
 			"login.hydra.admin (--hydra)")
 
 		// And from the flag, one reference as the whole value.
@@ -80,7 +80,7 @@ func TestAValueKeptSomewhereElseIsWrittenAsTheLoaderWritesIt(t *testing.T) {
 
 		// What it names, read: an `rt_` is still not this app's.
 		at = elsewhereFile(t, "rt_ELSEWHERE")
-		x.ErrorContains(elsewhereRun(t, "login:\n  roster: 127.0.0.1:1\n  key: ${file:"+at+"}\n", "login", "serve"),
+		x.ErrorContains(elsewhereRun(t, "login:\n  roster: 127.0.0.1:1\n  deployment_key: ${file:"+at+"}\n", "login", "serve"),
 			"a deployment key")
 	})
 
@@ -97,7 +97,7 @@ func TestAValueKeptSomewhereElseIsWrittenAsTheLoaderWritesIt(t *testing.T) {
 
 		// newco's key named for another tenant: refused by the directory as a
 		// key that cannot see it, which only the token itself can be.
-		err := elsewhereRun(t, "ldap:\n  roster: "+b.Hers.Client.Addr+"\n  insecure: true\n  keys:\n    other: ${file:"+at+"}\n",
+		err := elsewhereRun(t, "ldap:\n  roster: "+b.Hers.Client.Addr+"\n  insecure: true\n  tenant_keys:\n    other: ${file:"+at+"}\n",
 			"ldap", "serve")
 		require.ErrorContains(t, err, "cannot see")
 	})

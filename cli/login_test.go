@@ -46,7 +46,7 @@ func TestAFirstStartWithNoKeyYetStillComesUp(t *testing.T) {
 	t.Run("a file that is not there yet leaves the app off", func(t *testing.T) {
 		x := require.New(t)
 
-		c := &cmd.Config{Login: cmd.LoginConfig{Key: keyAt(t, "${file:"+there+"}")}}
+		c := &cmd.Config{Login: cmd.LoginConfig{DeploymentKey: keyAt(t, "${file:"+there+"}")}}
 		_, got, err := loginApp(t.Context(), c, listening(t), nil)
 		x.NoError(err)
 		x.Empty(got, "a key that is not written yet is not a deployment that fails to start")
@@ -57,7 +57,7 @@ func TestAFirstStartWithNoKeyYetStillComesUp(t *testing.T) {
 
 		x.NoError(os.WriteFile(there, []byte("rk_written\n"), 0o600))
 
-		c := &cmd.Config{Login: cmd.LoginConfig{Key: keyAt(t, "${file:"+there+"}")}}
+		c := &cmd.Config{Login: cmd.LoginConfig{DeploymentKey: keyAt(t, "${file:"+there+"}")}}
 		_, got, err := loginApp(t.Context(), c, listening(t), nil)
 		x.NoError(err)
 		x.Equal("rk_written", got, "the token and not the reference: the app is handed the thing")
@@ -68,10 +68,10 @@ func TestAFirstStartWithNoKeyYetStillComesUp(t *testing.T) {
 	t.Run("a file that cannot be read still refuses", func(t *testing.T) {
 		x := require.New(t)
 
-		c := &cmd.Config{Login: cmd.LoginConfig{Key: keyAt(t, "${file:"+dir+"}")}}
+		c := &cmd.Config{Login: cmd.LoginConfig{DeploymentKey: keyAt(t, "${file:"+dir+"}")}}
 		_, _, err := loginApp(t.Context(), c, listening(t), nil)
 		x.Error(err)
-		x.ErrorContains(err, "login.key")
+		x.ErrorContains(err, "login.deployment_key")
 	})
 
 	// And the shape that replaces the file for a deployment that runs the app

@@ -13,9 +13,10 @@ import (
 	"github.com/lesomnus/roster/server/keys"
 )
 
-// TestAFrontDoorInThisProcessMakesItsOwnKeys is `account.key` and `account.keys` left empty
-// inside `roster serve`: the rows `roster account provision` writes, and the
-// key in memory rather than in a file, which is one replica.
+// TestAFrontDoorInThisProcessMakesItsOwnKeys is `account.deployment_key` and
+// `account.tenant_keys` left empty inside `roster serve`: the rows `roster
+// account provision` writes, and the key in memory rather than in a file,
+// which is one replica.
 //
 // What a deployment gives up by writing nothing down is only what a rotation
 // costs -- the account page asks everybody to sign in again after a restart --
@@ -44,11 +45,11 @@ func TestAFrontDoorInThisProcessMakesItsOwnKeys(t *testing.T) {
 		// is not the one somebody configured.
 		c := &cmd.Config{Account: cmd.AccountConfig{
 			Addr: ":0", Connect: "http://127.0.0.1:1",
-			Keys: map[string]cmd.Token{"contoso": keyAt(t, "${file:/nowhere/contoso.key}")},
+			TenantKeys: map[string]cmd.Token{"contoso": keyAt(t, "${file:/nowhere/contoso.key}")},
 		}}
 		_, _, err := frontDoor(ctx, c, listening(t), s)
 		x.Error(err)
-		x.ErrorContains(err, "keys.contoso")
+		x.ErrorContains(err, "tenant_keys.contoso")
 	})
 
 	t.Run("and a key named is a reference that has to resolve", func(t *testing.T) {
@@ -56,10 +57,24 @@ func TestAFrontDoorInThisProcessMakesItsOwnKeys(t *testing.T) {
 
 		c := &cmd.Config{Account: cmd.AccountConfig{
 			Addr: ":0", Connect: "http://127.0.0.1:1",
-			Key: keyAt(t, "${file:/nowhere/account.key}"),
+			DeploymentKey: keyAt(t, "${file:/nowhere/account.key}"),
 		}}
 		_, _, err := frontDoor(ctx, c, listening(t), s)
-		x.ErrorContains(err, "account.key")
+		x.ErrorContains(err, "account.deployment_key")
+	})
+
+	t.Run("and both kinds of key are refused in the file's words", func(t *testing.T) {
+		c := &cmd.Config{
+			Account: cmd.AccountConfig{
+				Addr: ":0", Connect: "http://127.0.0.1:1",
+				DeploymentKey: keyAt(t, "rk_x"), TenantKeys: map[string]cmd.Token{"contoso": keyAt(t, "rt_x")},
+			},
+			Ldap: cmd.LdapConfig{DeploymentKey: keyAt(t, "rk_x"), TenantKeys: map[string]cmd.Token{"contoso": keyAt(t, "rt_x")}},
+		}
+		_, _, err := frontDoor(ctx, c, listening(t), s)
+		require.ErrorContains(t, err, "account.deployment_key (--deployment-key) and account.tenant_keys (--tenant-key): one way to front tenants, not two")
+		_, _, err = directory(c, listening(t))
+		require.ErrorContains(t, err, "ldap.deployment_key (--deployment-key) and ldap.tenant_keys (--tenant-key): one way to front tenants, not two")
 	})
 
 	t.Run("and nobody to front yet still makes the key", func(t *testing.T) {
