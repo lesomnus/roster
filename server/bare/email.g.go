@@ -11,7 +11,6 @@ import (
 	email "github.com/lesomnus/roster/internal/ent/email"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -36,11 +35,14 @@ type EmailServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewEmailServiceServer(db *ent.Client, opts ...Option) rstr.EmailServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return EmailServiceServer{Store: s.Store}
 }
@@ -190,7 +192,10 @@ func (st EmailServiceServer) create(ctx context.Context, req *rstr.EmailAddReque
 }
 
 func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) (*rstr.Email, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -205,7 +210,7 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 	}
 
 	var stored *ent.Email
-	if snapshotOptions(s.Rec, rstr.EmailService_Add_FullMethodName).Value {
+	if s.images(rstr.EmailService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -231,10 +236,11 @@ func (s EmailServiceServer) Add(ctx context.Context, req *rstr.EmailAddRequest) 
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.EmailService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.Email",
+		By:     rstr.EmailService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -392,6 +398,9 @@ func EmailSelectInit(ctx context.Context, scope Scope, q *ent.EmailQuery, m *rst
 }
 
 func (s EmailServiceServer) Patch(ctx context.Context, req *rstr.EmailPatchRequest) (*rstr.Email, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(emailOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
 		switch ed.Number() {
 		case 10:
@@ -451,6 +460,9 @@ var emailPatchColumns = entpatch.Columns{
 	1: email.FieldId, 2: email.HolderColumn, 8: email.FieldAddress, 9: email.FieldDateVerified, 10: email.VouchedByColumn, 12: email.FieldEnteredBy, 11: email.FieldTenantId, 13: email.FieldDateUpdated, 14: email.FieldDateErased, 15: email.FieldDateCreated}
 
 func (s EmailServiceServer) Apply(ctx context.Context, req *rstr.EmailApplyRequest) (*rstr.Email, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -478,7 +490,7 @@ func (s EmailServiceServer) apply(ctx context.Context, ref *rstr.EmailRef, doc *
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -499,7 +511,7 @@ func (s EmailServiceServer) apply(ctx context.Context, ref *rstr.EmailRef, doc *
 	}
 
 	var previous *rstr.Email
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -568,7 +580,8 @@ func (s EmailServiceServer) apply(ctx context.Context, ref *rstr.EmailRef, doc *
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Email",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -585,6 +598,9 @@ func (s EmailServiceServer) apply(ctx context.Context, ref *rstr.EmailRef, doc *
 }
 
 func (s EmailServiceServer) Erase(ctx context.Context, req *rstr.EmailRef) (*rstr.EmailEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := EmailPick(req)
 	if err != nil {
 		return nil, err
@@ -594,7 +610,7 @@ func (s EmailServiceServer) Erase(ctx context.Context, req *rstr.EmailRef) (*rst
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -605,8 +621,8 @@ func (s EmailServiceServer) Erase(ctx context.Context, req *rstr.EmailRef) (*rst
 
 	var k any
 	var previous *rstr.Email
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.EmailService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.EmailService_Erase_FullMethodName)
 		var v *ent.Email
 		var err error
 		if images.Previous {
@@ -637,7 +653,8 @@ func (s EmailServiceServer) Erase(ctx context.Context, req *rstr.EmailRef) (*rst
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Email",
 			By:       rstr.EmailService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

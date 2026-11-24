@@ -9,7 +9,6 @@ import (
 	continuation "github.com/lesomnus/roster/internal/ent/continuation"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -31,11 +30,14 @@ type ContinuationServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewContinuationServiceServer(db *ent.Client, opts ...Option) rstr.ContinuationServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return ContinuationServiceServer{Store: s.Store}
 }
@@ -164,7 +166,10 @@ func (st ContinuationServiceServer) create(ctx context.Context, req *rstr.Contin
 }
 
 func (s ContinuationServiceServer) Add(ctx context.Context, req *rstr.ContinuationAddRequest) (*rstr.Continuation, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -179,7 +184,7 @@ func (s ContinuationServiceServer) Add(ctx context.Context, req *rstr.Continuati
 	}
 
 	var stored *ent.Continuation
-	if snapshotOptions(s.Rec, rstr.ContinuationService_Add_FullMethodName).Value {
+	if s.images(rstr.ContinuationService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -205,10 +210,11 @@ func (s ContinuationServiceServer) Add(ctx context.Context, req *rstr.Continuati
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.ContinuationService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.Continuation",
+		By:     rstr.ContinuationService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -354,6 +360,9 @@ func ContinuationSelectInit(ctx context.Context, scope Scope, q *ent.Continuatio
 }
 
 func (s ContinuationServiceServer) Erase(ctx context.Context, req *rstr.ContinuationRef) (*rstr.ContinuationEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := ContinuationPick(req)
 	if err != nil {
 		return nil, err
@@ -363,7 +372,7 @@ func (s ContinuationServiceServer) Erase(ctx context.Context, req *rstr.Continua
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -374,8 +383,8 @@ func (s ContinuationServiceServer) Erase(ctx context.Context, req *rstr.Continua
 
 	var k any
 	var previous *rstr.Continuation
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.ContinuationService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.ContinuationService_Erase_FullMethodName)
 		var v *ent.Continuation
 		var err error
 		if images.Previous {
@@ -406,7 +415,8 @@ func (s ContinuationServiceServer) Erase(ctx context.Context, req *rstr.Continua
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Continuation",
 			By:       rstr.ContinuationService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

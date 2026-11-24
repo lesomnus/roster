@@ -2,6 +2,7 @@ edition = "2023";
 package roster;
 
 import "app/session.proto";
+import "orm.proto";
 import "roster/payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -20,7 +21,7 @@ message SessionGetRequest {
 
 message SessionRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     bytes secret = 9;
   }
 }

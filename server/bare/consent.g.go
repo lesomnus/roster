@@ -11,7 +11,6 @@ import (
 	consent "github.com/lesomnus/roster/internal/ent/consent"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -35,11 +34,14 @@ type ConsentServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewConsentServiceServer(db *ent.Client, opts ...Option) rstr.ConsentServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return ConsentServiceServer{Store: s.Store}
 }
@@ -170,7 +172,10 @@ func (st ConsentServiceServer) create(ctx context.Context, req *rstr.ConsentAddR
 }
 
 func (s ConsentServiceServer) Add(ctx context.Context, req *rstr.ConsentAddRequest) (*rstr.Consent, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +190,7 @@ func (s ConsentServiceServer) Add(ctx context.Context, req *rstr.ConsentAddReque
 	}
 
 	var stored *ent.Consent
-	if snapshotOptions(s.Rec, rstr.ConsentService_Add_FullMethodName).Value {
+	if s.images(rstr.ConsentService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -211,10 +216,11 @@ func (s ConsentServiceServer) Add(ctx context.Context, req *rstr.ConsentAddReque
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.ConsentService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.Consent",
+		By:     rstr.ConsentService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -372,6 +378,9 @@ func ConsentSelectInit(ctx context.Context, scope Scope, q *ent.ConsentQuery, m 
 }
 
 func (s ConsentServiceServer) Patch(ctx context.Context, req *rstr.ConsentPatchRequest) (*rstr.Consent, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(consentOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -421,6 +430,9 @@ var consentPatchColumns = entpatch.Columns{
 	1: consent.FieldId, 2: consent.HolderColumn, 8: consent.FieldApp, 9: consent.FieldScope, 10: consent.FieldDocument, 11: consent.FieldTenantId, 12: consent.FieldVersion, 16: consent.FieldAct, 17: consent.FieldOptional, 18: consent.FieldClient, 19: consent.FieldSeq, 13: consent.FieldDateUpdated, 14: consent.FieldDateErased, 15: consent.FieldDateCreated}
 
 func (s ConsentServiceServer) Apply(ctx context.Context, req *rstr.ConsentApplyRequest) (*rstr.Consent, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -448,7 +460,7 @@ func (s ConsentServiceServer) apply(ctx context.Context, ref *rstr.ConsentRef, d
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -469,7 +481,7 @@ func (s ConsentServiceServer) apply(ctx context.Context, ref *rstr.ConsentRef, d
 	}
 
 	var previous *rstr.Consent
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -538,7 +550,8 @@ func (s ConsentServiceServer) apply(ctx context.Context, ref *rstr.ConsentRef, d
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Consent",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -555,6 +568,9 @@ func (s ConsentServiceServer) apply(ctx context.Context, ref *rstr.ConsentRef, d
 }
 
 func (s ConsentServiceServer) Erase(ctx context.Context, req *rstr.ConsentRef) (*rstr.ConsentEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := ConsentPick(req)
 	if err != nil {
 		return nil, err
@@ -564,7 +580,7 @@ func (s ConsentServiceServer) Erase(ctx context.Context, req *rstr.ConsentRef) (
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -575,8 +591,8 @@ func (s ConsentServiceServer) Erase(ctx context.Context, req *rstr.ConsentRef) (
 
 	var k any
 	var previous *rstr.Consent
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.ConsentService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.ConsentService_Erase_FullMethodName)
 		var v *ent.Consent
 		var err error
 		if images.Previous {
@@ -607,7 +623,8 @@ func (s ConsentServiceServer) Erase(ctx context.Context, req *rstr.ConsentRef) (
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Consent",
 			By:       rstr.ConsentService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

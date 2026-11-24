@@ -8,6 +8,7 @@ package rstr
 
 import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -4840,17 +4841,17 @@ var File_app_membership_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/membership_svc.g.proto\x12\x06roster\x1a\x15app/group_svc.g.proto\x1a\x14app/membership.proto\x1a\x14app/role_svc.g.proto\x1a\x14app/site_svc.g.proto\x1a\x14app/team_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xb9\x01\n" +
-	"\x18SiteMembershipAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x1aapp/membership_svc.g.proto\x12\x06roster\x1a\x15app/group_svc.g.proto\x1a\x14app/membership.proto\x1a\x14app/role_svc.g.proto\x1a\x14app/site_svc.g.proto\x1a\x14app/team_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xc1\x01\n" +
+	"\x18SiteMembershipAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
 	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"}\n" +
 	"\x18SiteMembershipGetRequest\x12+\n" +
 	"\x03ref\x18\x01 \x01(\v2\x19.roster.SiteMembershipRefR\x03ref\x124\n" +
-	"\x06select\x18\x02 \x01(\v2\x1c.roster.SiteMembershipSelectR\x06select\"i\n" +
-	"\x11SiteMembershipRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12;\n" +
+	"\x06select\x18\x02 \x01(\v2\x1c.roster.SiteMembershipSelectR\x06select\"q\n" +
+	"\x11SiteMembershipRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12;\n" +
 	"\x06member\x18\x02 \x01(\v2!.roster.SiteMembershipRefByMemberH\x00R\x06memberB\x05\n" +
 	"\x03key\"k\n" +
 	"\x19SiteMembershipRefByMember\x12)\n" +
@@ -4893,18 +4894,18 @@ const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\x17SiteMembershipWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12,\n" +
 	"\x05value\x18\x02 \x01(\v2\x16.roster.SiteMembershipR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xde\x01\n" +
-	"\x18TeamMembershipAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xe6\x01\n" +
+	"\x18TeamMembershipAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
 	"\x04team\x18\b \x01(\v2\x0f.roster.TeamRefR\x04team\x12#\n" +
 	"\x04role\x18\t \x01(\v2\x0f.roster.RoleRefR\x04role\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"}\n" +
 	"\x18TeamMembershipGetRequest\x12+\n" +
 	"\x03ref\x18\x01 \x01(\v2\x19.roster.TeamMembershipRefR\x03ref\x124\n" +
-	"\x06select\x18\x02 \x01(\v2\x1c.roster.TeamMembershipSelectR\x06select\"i\n" +
-	"\x11TeamMembershipRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12;\n" +
+	"\x06select\x18\x02 \x01(\v2\x1c.roster.TeamMembershipSelectR\x06select\"q\n" +
+	"\x11TeamMembershipRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12;\n" +
 	"\x06member\x18\x02 \x01(\v2!.roster.TeamMembershipRefByMemberH\x00R\x06memberB\x05\n" +
 	"\x03key\"k\n" +
 	"\x19TeamMembershipRefByMember\x12)\n" +
@@ -4950,18 +4951,18 @@ const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\x17TeamMembershipWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12,\n" +
 	"\x05value\x18\x02 \x01(\v2\x16.roster.TeamMembershipR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xe2\x01\n" +
-	"\x19GroupMembershipAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action\"\xea\x01\n" +
+	"\x19GroupMembershipAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12&\n" +
 	"\x05group\x18\b \x01(\v2\x10.roster.GroupRefR\x05group\x12#\n" +
 	"\x04role\x18\t \x01(\v2\x0f.roster.RoleRefR\x04role\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"\x80\x01\n" +
 	"\x19GroupMembershipGetRequest\x12,\n" +
 	"\x03ref\x18\x01 \x01(\v2\x1a.roster.GroupMembershipRefR\x03ref\x125\n" +
-	"\x06select\x18\x02 \x01(\v2\x1d.roster.GroupMembershipSelectR\x06select\"k\n" +
-	"\x12GroupMembershipRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12<\n" +
+	"\x06select\x18\x02 \x01(\v2\x1d.roster.GroupMembershipSelectR\x06select\"s\n" +
+	"\x12GroupMembershipRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12<\n" +
 	"\x06member\x18\x02 \x01(\v2\".roster.GroupMembershipRefByMemberH\x00R\x06memberB\x05\n" +
 	"\x03key\"o\n" +
 	"\x1aGroupMembershipRefByMember\x12)\n" +

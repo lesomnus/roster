@@ -3,6 +3,7 @@ package roster;
 
 import "app/identity.proto";
 import "google/protobuf/timestamp.proto";
+import "orm.proto";
 import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
@@ -73,11 +74,14 @@ service IdentityService {
 }
 
 message IdentityAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   HolderRef holder = 2;
   string provider = 8 [features.field_presence = IMPLICIT];
   string subject = 9 [features.field_presence = IMPLICIT];
-  bytes tenant_id = 10 [features.field_presence = IMPLICIT];
+  bytes tenant_id = 10 [
+    (orm.field) = {type: TYPE_UUID},
+    features.field_presence = IMPLICIT
+  ];
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -88,13 +92,13 @@ message IdentityGetRequest {
 
 message IdentityRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     IdentityRefBySubject subject = 10;
   }
 }
 
 message IdentityRefBySubject {
-  bytes tenant_id = 10;
+  bytes tenant_id = 10 [(orm.field) = {type: TYPE_UUID}];
   string provider = 8;
   string subject = 9;
 }
@@ -183,7 +187,7 @@ message IdentityListResponse {
 message IdentityFilter {
   IdentityRef ref = 1;
   HolderRef holder = 2;
-  bytes tenant_id = 3;
+  bytes tenant_id = 3 [(orm.field) = {type: TYPE_UUID}];
 }
 
 message IdentityWatchRequest {

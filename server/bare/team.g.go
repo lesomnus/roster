@@ -11,7 +11,6 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	team "github.com/lesomnus/roster/internal/ent/team"
 	rstr "github.com/lesomnus/roster/rstr"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -35,11 +34,14 @@ type TeamServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewTeamServiceServer(db *ent.Client, opts ...Option) rstr.TeamServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return TeamServiceServer{Store: s.Store}
 }
@@ -180,7 +182,10 @@ func (st TeamServiceServer) create(ctx context.Context, req *rstr.TeamAddRequest
 }
 
 func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*rstr.Team, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +200,7 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 	}
 
 	var stored *ent.Team
-	if snapshotOptions(s.Rec, rstr.TeamService_Add_FullMethodName).Value {
+	if s.images(rstr.TeamService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -221,10 +226,11 @@ func (s TeamServiceServer) Add(ctx context.Context, req *rstr.TeamAddRequest) (*
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.TeamService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.Team",
+		By:     rstr.TeamService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -379,6 +385,9 @@ func TeamSelectInit(ctx context.Context, scope Scope, q *ent.TeamQuery, m *rstr.
 }
 
 func (s TeamServiceServer) Patch(ctx context.Context, req *rstr.TeamPatchRequest) (*rstr.Team, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(teamOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -428,6 +437,9 @@ var teamPatchColumns = entpatch.Columns{
 	1: team.FieldId, 2: team.TenantColumn, 3: team.SiteColumn, 4: team.FieldAlias, 5: team.FieldName, 6: team.FieldDesc, 13: team.FieldDateUpdated, 14: team.FieldDateErased, 15: team.FieldDateCreated}
 
 func (s TeamServiceServer) Apply(ctx context.Context, req *rstr.TeamApplyRequest) (*rstr.Team, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -455,7 +467,7 @@ func (s TeamServiceServer) apply(ctx context.Context, ref *rstr.TeamRef, doc *pa
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -476,7 +488,7 @@ func (s TeamServiceServer) apply(ctx context.Context, ref *rstr.TeamRef, doc *pa
 	}
 
 	var previous *rstr.Team
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -545,7 +557,8 @@ func (s TeamServiceServer) apply(ctx context.Context, ref *rstr.TeamRef, doc *pa
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Team",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -562,6 +575,9 @@ func (s TeamServiceServer) apply(ctx context.Context, ref *rstr.TeamRef, doc *pa
 }
 
 func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*rstr.TeamEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := TeamPick(req)
 	if err != nil {
 		return nil, err
@@ -571,7 +587,7 @@ func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*rstr.
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -582,8 +598,8 @@ func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*rstr.
 
 	var k any
 	var previous *rstr.Team
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.TeamService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.TeamService_Erase_FullMethodName)
 		var v *ent.Team
 		var err error
 		if images.Previous {
@@ -614,7 +630,8 @@ func (s TeamServiceServer) Erase(ctx context.Context, req *rstr.TeamRef) (*rstr.
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Team",
 			By:       rstr.TeamService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

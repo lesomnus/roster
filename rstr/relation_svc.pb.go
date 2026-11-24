@@ -8,6 +8,7 @@ package rstr
 
 import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1477,22 +1478,22 @@ var File_app_relation_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_relation_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18app/relation_svc.g.proto\x12\x06roster\x1a\x12app/relation.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xd6\x02\n" +
-	"\x12RelationAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x18app/relation_svc.g.proto\x12\x06roster\x1a\x12app/relation.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xe4\x02\n" +
+	"\x12RelationAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12>\n" +
 	"\x06labels\x18\a \x03(\v2&.roster.RelationAddRequest.LabelsEntryR\x06labels\x12'\n" +
-	"\x05other\x18\b \x01(\v2\x11.roster.HolderRefR\x05other\x12\"\n" +
-	"\ttenant_id\x18\v \x01(\fB\x05\xaa\x01\x02\b\x02R\btenantId\x12=\n" +
+	"\x05other\x18\b \x01(\v2\x11.roster.HolderRefR\x05other\x12(\n" +
+	"\ttenant_id\x18\v \x01(\fB\v\xea\x82\x16\x02\x10@\xaa\x01\x02\b\x02R\btenantId\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"k\n" +
 	"\x12RelationGetRequest\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.roster.RelationRefR\x03ref\x12.\n" +
-	"\x06select\x18\x02 \x01(\v2\x16.roster.RelationSelectR\x06select\"W\n" +
-	"\vRelationRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12/\n" +
+	"\x06select\x18\x02 \x01(\v2\x16.roster.RelationSelectR\x06select\"_\n" +
+	"\vRelationRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12/\n" +
 	"\x04pair\x18\x02 \x01(\v2\x19.roster.RelationRefByPairH\x00R\x04pairB\x05\n" +
 	"\x03key\"g\n" +
 	"\x11RelationRefByPair\x12)\n" +

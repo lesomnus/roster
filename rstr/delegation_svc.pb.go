@@ -8,6 +8,7 @@ package rstr
 
 import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1730,9 +1731,9 @@ var File_app_delegation_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_delegation_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/delegation_svc.g.proto\x12\x06roster\x1a\x14app/delegation.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xf7\x02\n" +
-	"\x14DelegationAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x1aapp/delegation_svc.g.proto\x12\x06roster\x1a\x14app/delegation.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xff\x02\n" +
+	"\x14DelegationAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x18\n" +
 	"\amethods\x18\b \x03(\tR\amethods\x12\x1d\n" +
 	"\x06secret\x18\t \x01(\fB\x05\xaa\x01\x02\b\x02R\x06secret\x12\"\n" +
@@ -1743,9 +1744,9 @@ const file_app_delegation_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"q\n" +
 	"\x14DelegationGetRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.DelegationRefR\x03ref\x120\n" +
-	"\x06select\x18\x02 \x01(\v2\x18.roster.DelegationSelectR\x06select\"B\n" +
-	"\rDelegationRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x18\n" +
+	"\x06select\x18\x02 \x01(\v2\x18.roster.DelegationSelectR\x06select\"J\n" +
+	"\rDelegationRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12\x18\n" +
 	"\x06secret\x18\t \x01(\fH\x00R\x06secretB\x05\n" +
 	"\x03key\"\xda\x02\n" +
 	"\x10DelegationSelect\x12\x10\n" +

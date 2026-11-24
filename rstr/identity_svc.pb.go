@@ -8,6 +8,7 @@ package rstr
 
 import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -2075,26 +2076,26 @@ var File_app_identity_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18app/identity_svc.g.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xf6\x01\n" +
-	"\x12IdentityAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x18app/identity_svc.g.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\x84\x02\n" +
+	"\x12IdentityAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12!\n" +
 	"\bprovider\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\bprovider\x12\x1f\n" +
-	"\asubject\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\asubject\x12\"\n" +
+	"\asubject\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\asubject\x12(\n" +
 	"\ttenant_id\x18\n" +
-	" \x01(\fB\x05\xaa\x01\x02\b\x02R\btenantId\x12=\n" +
+	" \x01(\fB\v\xea\x82\x16\x02\x10@\xaa\x01\x02\b\x02R\btenantId\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"k\n" +
 	"\x12IdentityGetRequest\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12.\n" +
-	"\x06select\x18\x02 \x01(\v2\x16.roster.IdentitySelectR\x06select\"`\n" +
-	"\vIdentityRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x128\n" +
+	"\x06select\x18\x02 \x01(\v2\x16.roster.IdentitySelectR\x06select\"h\n" +
+	"\vIdentityRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x128\n" +
 	"\asubject\x18\n" +
 	" \x01(\v2\x1c.roster.IdentityRefBySubjectH\x00R\asubjectB\x05\n" +
-	"\x03key\"i\n" +
-	"\x14IdentityRefBySubject\x12\x1b\n" +
+	"\x03key\"q\n" +
+	"\x14IdentityRefBySubject\x12#\n" +
 	"\ttenant_id\x18\n" +
-	" \x01(\fR\btenantId\x12\x1a\n" +
+	" \x01(\fB\x06\xea\x82\x16\x02\x10@R\btenantId\x12\x1a\n" +
 	"\bprovider\x18\b \x01(\tR\bprovider\x12\x18\n" +
 	"\asubject\x18\t \x01(\tR\asubject\"\x8a\x02\n" +
 	"\x0eIdentitySelect\x12\x10\n" +
@@ -2126,11 +2127,11 @@ const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"Y\n" +
 	"\x14IdentityListResponse\x12&\n" +
 	"\x05items\x18\x01 \x03(\v2\x10.roster.IdentityR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x7f\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x87\x01\n" +
 	"\x0eIdentityFilter\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1b\n" +
-	"\ttenant_id\x18\x03 \x01(\fR\btenantId\"t\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12#\n" +
+	"\ttenant_id\x18\x03 \x01(\fB\x06\xea\x82\x16\x02\x10@R\btenantId\"t\n" +
 	"\x14IdentityWatchRequest\x120\n" +
 	"\afilters\x18\x01 \x03(\v2\x16.roster.IdentityFilterR\afilters\x12*\n" +
 	"\rskip_snapshot\x18\x02 \x01(\bB\x05\xaa\x01\x02\b\x02R\fskipSnapshot\"H\n" +

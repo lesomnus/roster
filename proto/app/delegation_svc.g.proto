@@ -3,6 +3,7 @@ package roster;
 
 import "app/delegation.proto";
 import "google/protobuf/timestamp.proto";
+import "orm.proto";
 import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
@@ -64,7 +65,7 @@ service DelegationService {
 }
 
 message DelegationAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   HolderRef holder = 2;
   repeated string methods = 8;
   bytes secret = 9 [features.field_presence = IMPLICIT];
@@ -81,7 +82,7 @@ message DelegationGetRequest {
 
 message DelegationRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     bytes secret = 9;
   }
 }

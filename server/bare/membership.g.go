@@ -13,7 +13,6 @@ import (
 	sitemembership "github.com/lesomnus/roster/internal/ent/sitemembership"
 	teammembership "github.com/lesomnus/roster/internal/ent/teammembership"
 	rstr "github.com/lesomnus/roster/rstr"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -38,11 +37,14 @@ type SiteMembershipServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewSiteMembershipServiceServer(db *ent.Client, opts ...Option) rstr.SiteMembershipServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return SiteMembershipServiceServer{Store: s.Store}
 }
@@ -178,7 +180,10 @@ func (st SiteMembershipServiceServer) create(ctx context.Context, req *rstr.Site
 }
 
 func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMembershipAddRequest) (*rstr.SiteMembership, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -193,7 +198,7 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 	}
 
 	var stored *ent.SiteMembership
-	if snapshotOptions(s.Rec, rstr.SiteMembershipService_Add_FullMethodName).Value {
+	if s.images(rstr.SiteMembershipService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -219,10 +224,11 @@ func (s SiteMembershipServiceServer) Add(ctx context.Context, req *rstr.SiteMemb
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.SiteMembershipService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.SiteMembership",
+		By:     rstr.SiteMembershipService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -368,6 +374,9 @@ func SiteMembershipSelectInit(ctx context.Context, scope Scope, q *ent.SiteMembe
 }
 
 func (s SiteMembershipServiceServer) Patch(ctx context.Context, req *rstr.SiteMembershipPatchRequest) (*rstr.SiteMembership, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(siteMembershipOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -417,6 +426,9 @@ var siteMembershipPatchColumns = entpatch.Columns{
 	1: sitemembership.FieldId, 2: sitemembership.HolderColumn, 3: sitemembership.SiteColumn, 13: sitemembership.FieldDateUpdated, 14: sitemembership.FieldDateErased, 15: sitemembership.FieldDateCreated}
 
 func (s SiteMembershipServiceServer) Apply(ctx context.Context, req *rstr.SiteMembershipApplyRequest) (*rstr.SiteMembership, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -444,7 +456,7 @@ func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *rstr.SiteMe
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -465,7 +477,7 @@ func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *rstr.SiteMe
 	}
 
 	var previous *rstr.SiteMembership
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -534,7 +546,8 @@ func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *rstr.SiteMe
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.SiteMembership",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -551,6 +564,9 @@ func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *rstr.SiteMe
 }
 
 func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMembershipRef) (*rstr.SiteMembershipEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := SiteMembershipPick(req)
 	if err != nil {
 		return nil, err
@@ -560,7 +576,7 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMe
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -571,8 +587,8 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMe
 
 	var k any
 	var previous *rstr.SiteMembership
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.SiteMembershipService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.SiteMembershipService_Erase_FullMethodName)
 		var v *ent.SiteMembership
 		var err error
 		if images.Previous {
@@ -603,7 +619,8 @@ func (s SiteMembershipServiceServer) Erase(ctx context.Context, req *rstr.SiteMe
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.SiteMembership",
 			By:       rstr.SiteMembershipService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,
@@ -677,11 +694,14 @@ type TeamMembershipServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewTeamMembershipServiceServer(db *ent.Client, opts ...Option) rstr.TeamMembershipServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return TeamMembershipServiceServer{Store: s.Store}
 }
@@ -841,7 +861,10 @@ func (st TeamMembershipServiceServer) create(ctx context.Context, req *rstr.Team
 }
 
 func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMembershipAddRequest) (*rstr.TeamMembership, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -856,7 +879,7 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 	}
 
 	var stored *ent.TeamMembership
-	if snapshotOptions(s.Rec, rstr.TeamMembershipService_Add_FullMethodName).Value {
+	if s.images(rstr.TeamMembershipService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -882,10 +905,11 @@ func (s TeamMembershipServiceServer) Add(ctx context.Context, req *rstr.TeamMemb
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.TeamMembershipService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.TeamMembership",
+		By:     rstr.TeamMembershipService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -1046,6 +1070,9 @@ func TeamMembershipSelectInit(ctx context.Context, scope Scope, q *ent.TeamMembe
 }
 
 func (s TeamMembershipServiceServer) Patch(ctx context.Context, req *rstr.TeamMembershipPatchRequest) (*rstr.TeamMembership, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(teamMembershipOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
 		switch ed.Number() {
 		case 9:
@@ -1105,6 +1132,9 @@ var teamMembershipPatchColumns = entpatch.Columns{
 	1: teammembership.FieldId, 2: teammembership.HolderColumn, 8: teammembership.TeamColumn, 9: teammembership.RoleColumn, 13: teammembership.FieldDateUpdated, 14: teammembership.FieldDateErased, 15: teammembership.FieldDateCreated}
 
 func (s TeamMembershipServiceServer) Apply(ctx context.Context, req *rstr.TeamMembershipApplyRequest) (*rstr.TeamMembership, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -1132,7 +1162,7 @@ func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *rstr.TeamMe
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1153,7 +1183,7 @@ func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *rstr.TeamMe
 	}
 
 	var previous *rstr.TeamMembership
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -1222,7 +1252,8 @@ func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *rstr.TeamMe
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.TeamMembership",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -1239,6 +1270,9 @@ func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *rstr.TeamMe
 }
 
 func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMembershipRef) (*rstr.TeamMembershipEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := TeamMembershipPick(req)
 	if err != nil {
 		return nil, err
@@ -1248,7 +1282,7 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMe
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1259,8 +1293,8 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMe
 
 	var k any
 	var previous *rstr.TeamMembership
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.TeamMembershipService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.TeamMembershipService_Erase_FullMethodName)
 		var v *ent.TeamMembership
 		var err error
 		if images.Previous {
@@ -1291,7 +1325,8 @@ func (s TeamMembershipServiceServer) Erase(ctx context.Context, req *rstr.TeamMe
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.TeamMembership",
 			By:       rstr.TeamMembershipService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,
@@ -1365,11 +1400,14 @@ type GroupMembershipServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewGroupMembershipServiceServer(db *ent.Client, opts ...Option) rstr.GroupMembershipServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return GroupMembershipServiceServer{Store: s.Store}
 }
@@ -1529,7 +1567,10 @@ func (st GroupMembershipServiceServer) create(ctx context.Context, req *rstr.Gro
 }
 
 func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMembershipAddRequest) (*rstr.GroupMembership, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1544,7 +1585,7 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 	}
 
 	var stored *ent.GroupMembership
-	if snapshotOptions(s.Rec, rstr.GroupMembershipService_Add_FullMethodName).Value {
+	if s.images(rstr.GroupMembershipService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -1570,10 +1611,11 @@ func (s GroupMembershipServiceServer) Add(ctx context.Context, req *rstr.GroupMe
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.GroupMembershipService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.GroupMembership",
+		By:     rstr.GroupMembershipService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -1734,6 +1776,9 @@ func GroupMembershipSelectInit(ctx context.Context, scope Scope, q *ent.GroupMem
 }
 
 func (s GroupMembershipServiceServer) Patch(ctx context.Context, req *rstr.GroupMembershipPatchRequest) (*rstr.GroupMembership, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(groupMembershipOrmEntity, req.ProtoReflect(), func(ed graph.Edge, ref protoreflect.Message) (protoreflect.Value, error) {
 		switch ed.Number() {
 		case 9:
@@ -1793,6 +1838,9 @@ var groupMembershipPatchColumns = entpatch.Columns{
 	1: groupmembership.FieldId, 2: groupmembership.HolderColumn, 8: groupmembership.GroupColumn, 9: groupmembership.RoleColumn, 13: groupmembership.FieldDateUpdated, 14: groupmembership.FieldDateErased, 15: groupmembership.FieldDateCreated}
 
 func (s GroupMembershipServiceServer) Apply(ctx context.Context, req *rstr.GroupMembershipApplyRequest) (*rstr.GroupMembership, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -1820,7 +1868,7 @@ func (s GroupMembershipServiceServer) apply(ctx context.Context, ref *rstr.Group
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1841,7 +1889,7 @@ func (s GroupMembershipServiceServer) apply(ctx context.Context, ref *rstr.Group
 	}
 
 	var previous *rstr.GroupMembership
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -1910,7 +1958,8 @@ func (s GroupMembershipServiceServer) apply(ctx context.Context, ref *rstr.Group
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.GroupMembership",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -1927,6 +1976,9 @@ func (s GroupMembershipServiceServer) apply(ctx context.Context, ref *rstr.Group
 }
 
 func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.GroupMembershipRef) (*rstr.GroupMembershipEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := GroupMembershipPick(req)
 	if err != nil {
 		return nil, err
@@ -1936,7 +1988,7 @@ func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.Group
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1947,8 +1999,8 @@ func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.Group
 
 	var k any
 	var previous *rstr.GroupMembership
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.GroupMembershipService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.GroupMembershipService_Erase_FullMethodName)
 		var v *ent.GroupMembership
 		var err error
 		if images.Previous {
@@ -1979,7 +2031,8 @@ func (s GroupMembershipServiceServer) Erase(ctx context.Context, req *rstr.Group
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.GroupMembership",
 			By:       rstr.GroupMembershipService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

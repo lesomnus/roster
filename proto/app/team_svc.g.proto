@@ -4,6 +4,7 @@ package roster;
 import "app/site_svc.g.proto";
 import "app/team.proto";
 import "google/protobuf/timestamp.proto";
+import "orm.proto";
 import "patch/patch.proto";
 import "roster/payday/tenant_svc.g.proto";
 
@@ -37,7 +38,7 @@ service TeamService {
 }
 
 message TeamAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   SiteRef site = 3;
   string alias = 4 [features.field_presence = IMPLICIT];
@@ -53,7 +54,7 @@ message TeamGetRequest {
 
 message TeamRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     TeamRefBySlug slug = 4;
   }
 }

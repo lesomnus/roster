@@ -11,7 +11,6 @@ import (
 	holder "github.com/lesomnus/roster/internal/ent/holder"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -35,11 +34,14 @@ type HolderServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewHolderServiceServer(db *ent.Client, opts ...Option) rstr.HolderServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return HolderServiceServer{Store: s.Store}
 }
@@ -184,7 +186,10 @@ func (st HolderServiceServer) create(ctx context.Context, req *rstr.HolderAddReq
 }
 
 func (s HolderServiceServer) Add(ctx context.Context, req *rstr.HolderAddRequest) (*rstr.Holder, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -199,7 +204,7 @@ func (s HolderServiceServer) Add(ctx context.Context, req *rstr.HolderAddRequest
 	}
 
 	var stored *ent.Holder
-	if snapshotOptions(s.Rec, rstr.HolderService_Add_FullMethodName).Value {
+	if s.images(rstr.HolderService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -225,10 +230,11 @@ func (s HolderServiceServer) Add(ctx context.Context, req *rstr.HolderAddRequest
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.HolderService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.Holder",
+		By:     rstr.HolderService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -398,6 +404,9 @@ func HolderSelectInit(ctx context.Context, scope Scope, q *ent.HolderQuery, m *r
 }
 
 func (s HolderServiceServer) Patch(ctx context.Context, req *rstr.HolderPatchRequest) (*rstr.Holder, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(holderOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -447,6 +456,9 @@ var holderPatchColumns = entpatch.Columns{
 	1: holder.FieldId, 2: holder.TenantColumn, 4: holder.FieldAlias, 5: holder.FieldName, 6: holder.FieldDesc, 7: holder.FieldLabels, 13: holder.FieldDateUpdated, 14: holder.FieldDateErased, 15: holder.FieldDateCreated, 9: holder.FieldProfile, 10: holder.FieldData, 11: holder.FieldDateInvalidated, 12: holder.FieldDateDisabled, 20: holder.FieldDirectoryStanding, 16: holder.FieldPortrait, 17: holder.FieldDirectorySubject, 18: holder.FieldDirectoryAddress, 19: holder.FieldDirectoryName}
 
 func (s HolderServiceServer) Apply(ctx context.Context, req *rstr.HolderApplyRequest) (*rstr.Holder, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -474,7 +486,7 @@ func (s HolderServiceServer) apply(ctx context.Context, ref *rstr.HolderRef, doc
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -495,7 +507,7 @@ func (s HolderServiceServer) apply(ctx context.Context, ref *rstr.HolderRef, doc
 	}
 
 	var previous *rstr.Holder
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -564,7 +576,8 @@ func (s HolderServiceServer) apply(ctx context.Context, ref *rstr.HolderRef, doc
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Holder",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -581,6 +594,9 @@ func (s HolderServiceServer) apply(ctx context.Context, ref *rstr.HolderRef, doc
 }
 
 func (s HolderServiceServer) Erase(ctx context.Context, req *rstr.HolderRef) (*rstr.HolderEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := HolderPick(req)
 	if err != nil {
 		return nil, err
@@ -590,7 +606,7 @@ func (s HolderServiceServer) Erase(ctx context.Context, req *rstr.HolderRef) (*r
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -601,8 +617,8 @@ func (s HolderServiceServer) Erase(ctx context.Context, req *rstr.HolderRef) (*r
 
 	var k any
 	var previous *rstr.Holder
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.HolderService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.HolderService_Erase_FullMethodName)
 		var v *ent.Holder
 		var err error
 		if images.Previous {
@@ -633,7 +649,8 @@ func (s HolderServiceServer) Erase(ctx context.Context, req *rstr.HolderRef) (*r
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Holder",
 			By:       rstr.HolderService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

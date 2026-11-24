@@ -3,6 +3,7 @@ package roster;
 
 import "app/phone.proto";
 import "google/protobuf/timestamp.proto";
+import "orm.proto";
 import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
@@ -24,11 +25,14 @@ service PhoneService {
 }
 
 message PhoneAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   HolderRef holder = 2;
   string number = 8 [features.field_presence = IMPLICIT];
   string kind = 9 [features.field_presence = IMPLICIT];
-  bytes tenant_id = 11 [features.field_presence = IMPLICIT];
+  bytes tenant_id = 11 [
+    (orm.field) = {type: TYPE_UUID},
+    features.field_presence = IMPLICIT
+  ];
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -39,7 +43,7 @@ message PhoneGetRequest {
 
 message PhoneRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     PhoneRefByNumber number = 2;
   }
 }

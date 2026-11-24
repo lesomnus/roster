@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/outbox.proto.
  */
 export const file_roster_payday_outbox: GenFile = /*@__PURE__*/
-  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L291dGJveC5wcm90bxIGcm9zdGVyIpUCCgZPdXRib3gSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhkKCXRlbmFudF9pZBgCIAEoDEIG6oIWAhBAEhgKCGFjdG9yX2lkGAggASgMQgbqghYCEEASDgoGbWV0aG9kGAkgASgJEgoKAmJ5GAogASgJEhkKCW9iamVjdF9pZBgLIAEoDEIG6oIWAhBAEg0KBXBhdGNoGAwgASgMEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIVCgVldmVudBgQIAEoDEIG6oIWAjgBOiPK/BURGg8SBXF1ZXVlGgYKAmlkEAGKuxYKCARCAgoASAQqAEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Chpyb3N0ZXIvcGF5ZGF5L291dGJveC5wcm90bxIGcm9zdGVyIsUCCgZPdXRib3gSFwoCaWQYASABKAxCC+qCFgcQQCgBggEAEhkKCXRlbmFudF9pZBgCIAEoDEIG6oIWAhBAEhgKCGFjdG9yX2lkGAggASgMQgbqghYCEEASDgoGbWV0aG9kGAkgASgJEgoKAmJ5GAogASgJEhkKCW9iamVjdF9pZBgLIAEoDEIG6oIWAhBAEg0KBXBhdGNoGAwgASgMEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBABIVCgVldmVudBgQIAEoDEIG6oIWAjgBEhYKBnJvdXRlcxgRIAEoDEIG6oIWAjgBEhYKBnNpZ25hbBgSIAEoDEIG6oIWAjgBOiPK/BURGg8SBXF1ZXVlGgYKAmlkEAGKuxYKCARCAgoASAQqAEImWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCAJiCGVkaXRpb25zcOgH", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Outbox is a write that has to be published even if this process does not
@@ -131,6 +131,20 @@ export type Outbox = Message<"roster.Outbox"> & {
    * @generated from field: bytes event = 16;
    */
   event: Uint8Array;
+
+  /**
+   * Internal routing metadata captured with the write. Absent routes on old
+   * rows mean unknown scope and must use broad delivery. Signal carries only
+   * invalidation metadata, never request credentials or mutation patches.
+   *
+   * @generated from field: bytes routes = 17;
+   */
+  routes: Uint8Array;
+
+  /**
+   * @generated from field: bytes signal = 18;
+   */
+  signal: Uint8Array;
 };
 
 /**

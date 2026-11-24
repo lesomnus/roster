@@ -3,6 +3,7 @@ package roster;
 
 import "app/consent.proto";
 import "google/protobuf/timestamp.proto";
+import "orm.proto";
 import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
@@ -44,12 +45,18 @@ service ConsentService {
 }
 
 message ConsentAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   HolderRef holder = 2;
-  bytes app = 8 [features.field_presence = IMPLICIT];
+  bytes app = 8 [
+    (orm.field) = {type: TYPE_UUID},
+    features.field_presence = IMPLICIT
+  ];
   string scope = 9 [features.field_presence = IMPLICIT];
   string document = 10 [features.field_presence = IMPLICIT];
-  bytes tenant_id = 11 [features.field_presence = IMPLICIT];
+  bytes tenant_id = 11 [
+    (orm.field) = {type: TYPE_UUID},
+    features.field_presence = IMPLICIT
+  ];
   string version = 12 [features.field_presence = IMPLICIT];
   ConsentAct act = 16 [features.field_presence = IMPLICIT];
   bool optional = 17 [features.field_presence = IMPLICIT];
@@ -65,14 +72,14 @@ message ConsentGetRequest {
 
 message ConsentRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     ConsentRefByActs acts = 2;
   }
 }
 
 message ConsentRefByActs {
   HolderRef holder = 2;
-  bytes app = 8;
+  bytes app = 8 [(orm.field) = {type: TYPE_UUID}];
   string scope = 9;
   string document = 10;
   string version = 12;
@@ -167,7 +174,7 @@ message ConsentListResponse {
 message ConsentFilter {
   ConsentRef ref = 1;
   HolderRef holder = 2;
-  bytes app = 3;
+  bytes app = 3 [(orm.field) = {type: TYPE_UUID}];
   string scope = 4;
   string document = 5;
   string version = 6;

@@ -11,7 +11,6 @@ import (
 	credential "github.com/lesomnus/roster/internal/ent/credential"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -35,11 +34,14 @@ type CredentialServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewCredentialServiceServer(db *ent.Client, opts ...Option) rstr.CredentialServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return CredentialServiceServer{Store: s.Store}
 }
@@ -167,7 +169,10 @@ func (st CredentialServiceServer) create(ctx context.Context, req *rstr.Credenti
 }
 
 func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAddRequest) (*rstr.Credential, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +187,7 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAd
 	}
 
 	var stored *ent.Credential
-	if snapshotOptions(s.Rec, rstr.CredentialService_Add_FullMethodName).Value {
+	if s.images(rstr.CredentialService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -208,10 +213,11 @@ func (s CredentialServiceServer) Add(ctx context.Context, req *rstr.CredentialAd
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.CredentialService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.Credential",
+		By:     rstr.CredentialService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -366,6 +372,9 @@ func CredentialSelectInit(ctx context.Context, scope Scope, q *ent.CredentialQue
 }
 
 func (s CredentialServiceServer) Patch(ctx context.Context, req *rstr.CredentialPatchRequest) (*rstr.Credential, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(credentialOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -415,6 +424,9 @@ var credentialPatchColumns = entpatch.Columns{
 	1: credential.FieldId, 2: credential.HolderColumn, 5: credential.FieldName, 8: credential.FieldKind, 9: credential.FieldSecret, 10: credential.FieldFailures, 11: credential.FieldDateUnlocked, 12: credential.FieldDateRotated, 16: credential.FieldLastStep, 17: credential.FieldPrevious, 13: credential.FieldDateUpdated, 14: credential.FieldDateErased, 15: credential.FieldDateCreated}
 
 func (s CredentialServiceServer) Apply(ctx context.Context, req *rstr.CredentialApplyRequest) (*rstr.Credential, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -442,7 +454,7 @@ func (s CredentialServiceServer) apply(ctx context.Context, ref *rstr.Credential
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -463,7 +475,7 @@ func (s CredentialServiceServer) apply(ctx context.Context, ref *rstr.Credential
 	}
 
 	var previous *rstr.Credential
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -532,7 +544,8 @@ func (s CredentialServiceServer) apply(ctx context.Context, ref *rstr.Credential
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Credential",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -549,6 +562,9 @@ func (s CredentialServiceServer) apply(ctx context.Context, ref *rstr.Credential
 }
 
 func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.CredentialRef) (*rstr.CredentialEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := CredentialPick(req)
 	if err != nil {
 		return nil, err
@@ -558,7 +574,7 @@ func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.Credential
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -569,8 +585,8 @@ func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.Credential
 
 	var k any
 	var previous *rstr.Credential
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.CredentialService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.CredentialService_Erase_FullMethodName)
 		var v *ent.Credential
 		var err error
 		if images.Previous {
@@ -601,7 +617,8 @@ func (s CredentialServiceServer) Erase(ctx context.Context, req *rstr.Credential
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Credential",
 			By:       rstr.CredentialService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

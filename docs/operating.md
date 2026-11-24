@@ -3436,7 +3436,7 @@ roster:
   addr: roster:50051
   token: ${PRODUCT_ROSTER_TOKEN}     # the app's own variable, not one of roster's
   tls:
-    ca_file: /etc/ssl/private-ca.pem
+    ca: ${file:/etc/ssl/private-ca.pem}
 ```
 
 Nothing written down is plaintext, and it warns once. Serving TLS is the
@@ -3450,7 +3450,7 @@ their own: each is always behind one.
 -- `server.http`, `control.http`, `admin.http` -- is plain whatever the block
 says, and is for a terminator in front that holds the certificate; `serve`
 says so once as it starts, for each block that says both. A block whose
-`tls.client_ca_file` asks every caller for a certificate and that names an
+`tls.client_ca` asks every caller for a certificate and that names an
 `http.addr` is refused at start: the plain port would answer whoever the
 certificate keeps out.
 

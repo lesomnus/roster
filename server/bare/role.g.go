@@ -12,7 +12,6 @@ import (
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	role "github.com/lesomnus/roster/internal/ent/role"
 	rstr "github.com/lesomnus/roster/rstr"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -36,11 +35,14 @@ type RoleServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewRoleServiceServer(db *ent.Client, opts ...Option) rstr.RoleServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return RoleServiceServer{Store: s.Store}
 }
@@ -187,7 +189,10 @@ func (st RoleServiceServer) create(ctx context.Context, req *rstr.RoleAddRequest
 }
 
 func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*rstr.Role, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +207,7 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 	}
 
 	var stored *ent.Role
-	if snapshotOptions(s.Rec, rstr.RoleService_Add_FullMethodName).Value {
+	if s.images(rstr.RoleService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -228,10 +233,11 @@ func (s RoleServiceServer) Add(ctx context.Context, req *rstr.RoleAddRequest) (*
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.RoleService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.Role",
+		By:     rstr.RoleService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -392,6 +398,9 @@ func RoleSelectInit(ctx context.Context, scope Scope, q *ent.RoleQuery, m *rstr.
 }
 
 func (s RoleServiceServer) Patch(ctx context.Context, req *rstr.RolePatchRequest) (*rstr.Role, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(roleOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -441,6 +450,9 @@ var rolePatchColumns = entpatch.Columns{
 	1: role.FieldId, 2: role.TenantColumn, 3: role.SiteColumn, 4: role.FieldAlias, 5: role.FieldName, 6: role.FieldDesc, 7: role.FieldLabels, 8: role.FieldMethods, 13: role.FieldDateUpdated, 14: role.FieldDateErased, 15: role.FieldDateCreated}
 
 func (s RoleServiceServer) Apply(ctx context.Context, req *rstr.RoleApplyRequest) (*rstr.Role, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -468,7 +480,7 @@ func (s RoleServiceServer) apply(ctx context.Context, ref *rstr.RoleRef, doc *pa
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -489,7 +501,7 @@ func (s RoleServiceServer) apply(ctx context.Context, ref *rstr.RoleRef, doc *pa
 	}
 
 	var previous *rstr.Role
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -558,7 +570,8 @@ func (s RoleServiceServer) apply(ctx context.Context, ref *rstr.RoleRef, doc *pa
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Role",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -575,6 +588,9 @@ func (s RoleServiceServer) apply(ctx context.Context, ref *rstr.RoleRef, doc *pa
 }
 
 func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*rstr.RoleEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := RolePick(req)
 	if err != nil {
 		return nil, err
@@ -584,7 +600,7 @@ func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*rstr.
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -595,8 +611,8 @@ func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*rstr.
 
 	var k any
 	var previous *rstr.Role
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.RoleService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.RoleService_Erase_FullMethodName)
 		var v *ent.Role
 		var err error
 		if images.Previous {
@@ -627,7 +643,8 @@ func (s RoleServiceServer) Erase(ctx context.Context, req *rstr.RoleRef) (*rstr.
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Role",
 			By:       rstr.RoleService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,
@@ -697,11 +714,14 @@ type BindingServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewBindingServiceServer(db *ent.Client, opts ...Option) rstr.BindingServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return BindingServiceServer{Store: s.Store}
 }
@@ -890,7 +910,10 @@ func (st BindingServiceServer) create(ctx context.Context, req *rstr.BindingAddR
 }
 
 func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddRequest) (*rstr.Binding, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -905,7 +928,7 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 	}
 
 	var stored *ent.Binding
-	if snapshotOptions(s.Rec, rstr.BindingService_Add_FullMethodName).Value {
+	if s.images(rstr.BindingService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -931,10 +954,11 @@ func (s BindingServiceServer) Add(ctx context.Context, req *rstr.BindingAddReque
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.BindingService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.Binding",
+		By:     rstr.BindingService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -1113,6 +1137,9 @@ func BindingSelectInit(ctx context.Context, scope Scope, q *ent.BindingQuery, m 
 }
 
 func (s BindingServiceServer) Patch(ctx context.Context, req *rstr.BindingPatchRequest) (*rstr.Binding, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(bindingOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -1162,6 +1189,9 @@ var bindingPatchColumns = entpatch.Columns{
 	1: binding.FieldId, 2: binding.RoleColumn, 3: binding.SiteColumn, 8: binding.HolderColumn, 9: binding.GroupColumn, 7: binding.FieldLabels, 13: binding.FieldDateUpdated, 14: binding.FieldDateErased, 15: binding.FieldDateCreated}
 
 func (s BindingServiceServer) Apply(ctx context.Context, req *rstr.BindingApplyRequest) (*rstr.Binding, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -1189,7 +1219,7 @@ func (s BindingServiceServer) apply(ctx context.Context, ref *rstr.BindingRef, d
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1210,7 +1240,7 @@ func (s BindingServiceServer) apply(ctx context.Context, ref *rstr.BindingRef, d
 	}
 
 	var previous *rstr.Binding
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -1279,7 +1309,8 @@ func (s BindingServiceServer) apply(ctx context.Context, ref *rstr.BindingRef, d
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Binding",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -1296,6 +1327,9 @@ func (s BindingServiceServer) apply(ctx context.Context, ref *rstr.BindingRef, d
 }
 
 func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (*rstr.BindingEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := BindingPick(req)
 	if err != nil {
 		return nil, err
@@ -1305,7 +1339,7 @@ func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1316,8 +1350,8 @@ func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (
 
 	var k any
 	var previous *rstr.Binding
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.BindingService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.BindingService_Erase_FullMethodName)
 		var v *ent.Binding
 		var err error
 		if images.Previous {
@@ -1348,7 +1382,8 @@ func (s BindingServiceServer) Erase(ctx context.Context, req *rstr.BindingRef) (
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Binding",
 			By:       rstr.BindingService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

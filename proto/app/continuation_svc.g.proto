@@ -3,6 +3,7 @@ package roster;
 
 import "app/continuation.proto";
 import "google/protobuf/timestamp.proto";
+import "orm.proto";
 import "roster/payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -19,12 +20,12 @@ service ContinuationService {
 }
 
 message ContinuationAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   HolderRef holder = 2;
   repeated string satisfied = 8;
   bytes secret = 9 [features.field_presence = IMPLICIT];
   bytes issued_to = 10 [features.field_presence = IMPLICIT];
-  bytes metered_by = 12;
+  bytes metered_by = 12 [(orm.field) = {type: TYPE_UUID}];
   google.protobuf.Timestamp date_expires = 11;
   google.protobuf.Timestamp date_created = 15;
 }
@@ -36,7 +37,7 @@ message ContinuationGetRequest {
 
 message ContinuationRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     bytes secret = 9;
   }
 }

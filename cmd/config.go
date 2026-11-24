@@ -670,26 +670,29 @@ type listenerBlock struct {
 // and `serve` says so ([Server.plain]).
 func plainBesideCertificate(c Config) error {
 	for _, b := range c.listeners() {
-		if b.Tls.ClientCAFile == "" || b.Http.Addr == "" {
+		if b.Tls.ClientCA.IsZero() || b.Http.Addr == "" {
 			continue
 		}
 
-		return fmt.Errorf("%[1]s.tls.client_ca_file: asks every caller of %[1]s.addr for a certificate, and %[1]s.http.addr "+
+		return fmt.Errorf("%[1]s.tls.client_ca: asks every caller of %[1]s.addr for a certificate, and %[1]s.http.addr "+
 			"beside it is plain -- tls: is the gRPC listener's alone -- so it would answer whoever the first keeps out. "+
-			"take %[1]s.http.addr out, or put a proxy that asks for the certificate in front of it and take client_ca_file out", b.key)
+			"take %[1]s.http.addr out, or put a proxy that asks for the certificate in front of it and take client_ca out", b.key)
 	}
 
 	return nil
 }
 
 // certificates refuses a listener block's certificate that cannot be read,
-// naming the key: both `cert_file` and `key_file` or neither, and each a file
-// that can be read.
+// naming the key: both `cert` and `key` or neither, each a value that can be
+// read and the two a certificate and its key, and `client_ca` one that holds a
+// certificate.
 //
 // payday reads them where the block's gRPC server is made, which `serve` does
 // after the resources are applied, the port is bound and the loops have
-// started, and says `tls: both cert_file and key_file must be set` with
-// nothing to say which of three blocks.
+// started, and says `tls: both cert and key must be set` with nothing to say
+// which of three blocks. So they are read here first, as payday will read
+// them: a `${file:}` is the file as it is now. No refusal repeats what a key
+// holds, since one of them is a private key.
 func certificates(c Config) error {
 	for _, b := range c.listeners() {
 		t := b.Tls
@@ -697,33 +700,33 @@ func certificates(c Config) error {
 			continue
 		}
 		switch {
-		case t.CertFile == "" && t.KeyFile == "":
-			return fmt.Errorf("%[1]s.tls.cert_file: %[1]s.tls says TLS, and names neither cert_file nor key_file. "+
+		case t.Cert.IsZero() && t.Key.IsZero():
+			return fmt.Errorf("%[1]s.tls.cert: %[1]s.tls says TLS, and names neither cert nor key. "+
 				"name both, or take the block out", b.key)
-		case t.CertFile == "":
-			return fmt.Errorf("%[1]s.tls.cert_file: %[1]s.tls.key_file is named, and no certificate beside it. name both, or neither", b.key)
-		case t.KeyFile == "":
-			return fmt.Errorf("%[1]s.tls.key_file: %[1]s.tls.cert_file is named, and no key beside it. name both, or neither", b.key)
+		case t.Cert.IsZero():
+			return fmt.Errorf("%[1]s.tls.cert: %[1]s.tls.key is named, and no certificate beside it. name both, or neither", b.key)
+		case t.Key.IsZero():
+			return fmt.Errorf("%[1]s.tls.key: %[1]s.tls.cert is named, and no key beside it. name both, or neither", b.key)
 		}
 
-		cert, err := os.ReadFile(t.CertFile)
+		cert, err := t.Cert.Value()
 		if err != nil {
-			return fmt.Errorf("%s.tls.cert_file: %w", b.key, err)
+			return fmt.Errorf("%s.tls.cert: %w", b.key, err)
 		}
-		key, err := os.ReadFile(t.KeyFile)
+		key, err := t.Key.Value()
 		if err != nil {
-			return fmt.Errorf("%s.tls.key_file: %w", b.key, err)
+			return fmt.Errorf("%s.tls.key: %w", b.key, err)
 		}
-		if _, err := tls.X509KeyPair(cert, key); err != nil {
-			return fmt.Errorf("%[1]s.tls.cert_file, %[1]s.tls.key_file: not a certificate and its key: %[2]w", b.key, err)
+		if _, err := tls.X509KeyPair([]byte(cert), []byte(key)); err != nil {
+			return fmt.Errorf("%[1]s.tls.cert, %[1]s.tls.key: not a certificate and its key: %[2]w", b.key, err)
 		}
-		if t.ClientCAFile != "" {
-			ca, err := os.ReadFile(t.ClientCAFile)
+		if !t.ClientCA.IsZero() {
+			ca, err := t.ClientCA.Value()
 			if err != nil {
-				return fmt.Errorf("%s.tls.client_ca_file: %w", b.key, err)
+				return fmt.Errorf("%s.tls.client_ca: %w", b.key, err)
 			}
-			if !x509.NewCertPool().AppendCertsFromPEM(ca) {
-				return fmt.Errorf("%s.tls.client_ca_file: %s holds no certificate", b.key, t.ClientCAFile)
+			if !x509.NewCertPool().AppendCertsFromPEM([]byte(ca)) {
+				return fmt.Errorf("%s.tls.client_ca: holds no certificate", b.key)
 			}
 		}
 	}

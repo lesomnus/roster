@@ -3,6 +3,7 @@ package roster;
 
 import "app/nomination.proto";
 import "google/protobuf/timestamp.proto";
+import "orm.proto";
 import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 import "roster/payday/tenant_svc.g.proto";
@@ -37,11 +38,14 @@ service NominationService {
 }
 
 message NominationAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   TenantRef tenant = 2;
   map<string, string> labels = 7;
   string name = 5 [features.field_presence = IMPLICIT];
-  bytes borrower_id = 8 [features.field_presence = IMPLICIT];
+  bytes borrower_id = 8 [
+    (orm.field) = {type: TYPE_UUID},
+    features.field_presence = IMPLICIT
+  ];
   HolderRef acts_as = 9;
   google.protobuf.Timestamp date_created = 15;
 }
@@ -53,14 +57,14 @@ message NominationGetRequest {
 
 message NominationRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     NominationRefByBorrower borrower = 2;
   }
 }
 
 message NominationRefByBorrower {
   TenantRef tenant = 2;
-  bytes borrower_id = 8;
+  bytes borrower_id = 8 [(orm.field) = {type: TYPE_UUID}];
 }
 
 message NominationSelect {
@@ -149,7 +153,7 @@ message NominationListResponse {
 message NominationFilter {
   NominationRef ref = 1;
   TenantRef tenant = 2;
-  bytes borrower_id = 3;
+  bytes borrower_id = 3 [(orm.field) = {type: TYPE_UUID}];
   HolderRef acts_as = 4;
 }
 

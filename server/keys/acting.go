@@ -256,7 +256,7 @@ func Acting(deployment app.Server, tenant app.Server) auth.Handler {
 
 			// Always set on a delegation -- [findDelegation] refuses a row
 			// without one -- so a stream carrying this ends when it does.
-			DateExpires: v.Expires,
+			DateExpired: v.Expires,
 		}
 
 		p, err := pdid.From(h.GetId())

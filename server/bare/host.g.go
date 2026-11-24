@@ -13,7 +13,6 @@ import (
 	maildomain "github.com/lesomnus/roster/internal/ent/maildomain"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -37,11 +36,14 @@ type HostServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewHostServiceServer(db *ent.Client, opts ...Option) rstr.HostServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return HostServiceServer{Store: s.Store}
 }
@@ -163,7 +165,10 @@ func (st HostServiceServer) create(ctx context.Context, req *rstr.HostAddRequest
 }
 
 func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*rstr.Host, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +183,7 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 	}
 
 	var stored *ent.Host
-	if snapshotOptions(s.Rec, rstr.HostService_Add_FullMethodName).Value {
+	if s.images(rstr.HostService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -204,10 +209,11 @@ func (s HostServiceServer) Add(ctx context.Context, req *rstr.HostAddRequest) (*
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.HostService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.Host",
+		By:     rstr.HostService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -350,6 +356,9 @@ func HostSelectInit(ctx context.Context, scope Scope, q *ent.HostQuery, m *rstr.
 }
 
 func (s HostServiceServer) Patch(ctx context.Context, req *rstr.HostPatchRequest) (*rstr.Host, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(hostOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -399,6 +408,9 @@ var hostPatchColumns = entpatch.Columns{
 	1: host.FieldId, 2: host.TenantColumn, 5: host.FieldName, 6: host.FieldDesc, 7: host.FieldLabels, 9: host.FieldDateProved, 13: host.FieldDateUpdated, 14: host.FieldDateErased, 15: host.FieldDateCreated}
 
 func (s HostServiceServer) Apply(ctx context.Context, req *rstr.HostApplyRequest) (*rstr.Host, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -426,7 +438,7 @@ func (s HostServiceServer) apply(ctx context.Context, ref *rstr.HostRef, doc *pa
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -447,7 +459,7 @@ func (s HostServiceServer) apply(ctx context.Context, ref *rstr.HostRef, doc *pa
 	}
 
 	var previous *rstr.Host
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -516,7 +528,8 @@ func (s HostServiceServer) apply(ctx context.Context, ref *rstr.HostRef, doc *pa
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Host",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -533,6 +546,9 @@ func (s HostServiceServer) apply(ctx context.Context, ref *rstr.HostRef, doc *pa
 }
 
 func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.HostEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := HostPick(req)
 	if err != nil {
 		return nil, err
@@ -542,7 +558,7 @@ func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -553,8 +569,8 @@ func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.
 
 	var k any
 	var previous *rstr.Host
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.HostService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.HostService_Erase_FullMethodName)
 		var v *ent.Host
 		var err error
 		if images.Previous {
@@ -585,7 +601,8 @@ func (s HostServiceServer) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Host",
 			By:       rstr.HostService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,
@@ -647,11 +664,14 @@ type MailDomainServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewMailDomainServiceServer(db *ent.Client, opts ...Option) rstr.MailDomainServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return MailDomainServiceServer{Store: s.Store}
 }
@@ -771,7 +791,10 @@ func (st MailDomainServiceServer) create(ctx context.Context, req *rstr.MailDoma
 }
 
 func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAddRequest) (*rstr.MailDomain, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -786,7 +809,7 @@ func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAd
 	}
 
 	var stored *ent.MailDomain
-	if snapshotOptions(s.Rec, rstr.MailDomainService_Add_FullMethodName).Value {
+	if s.images(rstr.MailDomainService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -812,10 +835,11 @@ func (s MailDomainServiceServer) Add(ctx context.Context, req *rstr.MailDomainAd
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.MailDomainService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.MailDomain",
+		By:     rstr.MailDomainService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -958,6 +982,9 @@ func MailDomainSelectInit(ctx context.Context, scope Scope, q *ent.MailDomainQue
 }
 
 func (s MailDomainServiceServer) Patch(ctx context.Context, req *rstr.MailDomainPatchRequest) (*rstr.MailDomain, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(mailDomainOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -1007,6 +1034,9 @@ var mailDomainPatchColumns = entpatch.Columns{
 	1: maildomain.FieldId, 2: maildomain.TenantColumn, 5: maildomain.FieldName, 9: maildomain.FieldProvider, 6: maildomain.FieldDesc, 7: maildomain.FieldLabels, 13: maildomain.FieldDateUpdated, 14: maildomain.FieldDateErased, 15: maildomain.FieldDateCreated}
 
 func (s MailDomainServiceServer) Apply(ctx context.Context, req *rstr.MailDomainApplyRequest) (*rstr.MailDomain, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -1034,7 +1064,7 @@ func (s MailDomainServiceServer) apply(ctx context.Context, ref *rstr.MailDomain
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1055,7 +1085,7 @@ func (s MailDomainServiceServer) apply(ctx context.Context, ref *rstr.MailDomain
 	}
 
 	var previous *rstr.MailDomain
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -1124,7 +1154,8 @@ func (s MailDomainServiceServer) apply(ctx context.Context, ref *rstr.MailDomain
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.MailDomain",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -1141,6 +1172,9 @@ func (s MailDomainServiceServer) apply(ctx context.Context, ref *rstr.MailDomain
 }
 
 func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomainRef) (*rstr.MailDomainEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := MailDomainPick(req)
 	if err != nil {
 		return nil, err
@@ -1150,7 +1184,7 @@ func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomain
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1161,8 +1195,8 @@ func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomain
 
 	var k any
 	var previous *rstr.MailDomain
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.MailDomainService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.MailDomainService_Erase_FullMethodName)
 		var v *ent.MailDomain
 		var err error
 		if images.Previous {
@@ -1193,7 +1227,8 @@ func (s MailDomainServiceServer) Erase(ctx context.Context, req *rstr.MailDomain
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.MailDomain",
 			By:       rstr.MailDomainService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,
@@ -1263,11 +1298,14 @@ type HostProofServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewHostProofServiceServer(db *ent.Client, opts ...Option) rstr.HostProofServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return HostProofServiceServer{Store: s.Store}
 }
@@ -1387,7 +1425,10 @@ func (st HostProofServiceServer) create(ctx context.Context, req *rstr.HostProof
 }
 
 func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddRequest) (*rstr.HostProof, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1402,7 +1443,7 @@ func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddR
 	}
 
 	var stored *ent.HostProof
-	if snapshotOptions(s.Rec, rstr.HostProofService_Add_FullMethodName).Value {
+	if s.images(rstr.HostProofService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -1428,10 +1469,11 @@ func (s HostProofServiceServer) Add(ctx context.Context, req *rstr.HostProofAddR
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.HostProofService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.HostProof",
+		By:     rstr.HostProofService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -1574,6 +1616,9 @@ func HostProofSelectInit(ctx context.Context, scope Scope, q *ent.HostProofQuery
 }
 
 func (s HostProofServiceServer) Patch(ctx context.Context, req *rstr.HostProofPatchRequest) (*rstr.HostProof, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(hostProofOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -1623,6 +1668,9 @@ var hostProofPatchColumns = entpatch.Columns{
 	1: hostproof.FieldId, 2: hostproof.TenantColumn, 5: hostproof.FieldName, 9: hostproof.FieldToken, 10: hostproof.FieldDateExpires, 6: hostproof.FieldDesc, 13: hostproof.FieldDateUpdated, 14: hostproof.FieldDateErased, 15: hostproof.FieldDateCreated}
 
 func (s HostProofServiceServer) Apply(ctx context.Context, req *rstr.HostProofApplyRequest) (*rstr.HostProof, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -1650,7 +1698,7 @@ func (s HostProofServiceServer) apply(ctx context.Context, ref *rstr.HostProofRe
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1671,7 +1719,7 @@ func (s HostProofServiceServer) apply(ctx context.Context, ref *rstr.HostProofRe
 	}
 
 	var previous *rstr.HostProof
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -1740,7 +1788,8 @@ func (s HostProofServiceServer) apply(ctx context.Context, ref *rstr.HostProofRe
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.HostProof",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -1757,6 +1806,9 @@ func (s HostProofServiceServer) apply(ctx context.Context, ref *rstr.HostProofRe
 }
 
 func (s HostProofServiceServer) Erase(ctx context.Context, req *rstr.HostProofRef) (*rstr.HostProofEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := HostProofPick(req)
 	if err != nil {
 		return nil, err
@@ -1766,7 +1818,7 @@ func (s HostProofServiceServer) Erase(ctx context.Context, req *rstr.HostProofRe
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -1777,8 +1829,8 @@ func (s HostProofServiceServer) Erase(ctx context.Context, req *rstr.HostProofRe
 
 	var k any
 	var previous *rstr.HostProof
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.HostProofService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.HostProofService_Erase_FullMethodName)
 		var v *ent.HostProof
 		var err error
 		if images.Previous {
@@ -1809,7 +1861,8 @@ func (s HostProofServiceServer) Erase(ctx context.Context, req *rstr.HostProofRe
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.HostProof",
 			By:       rstr.HostProofService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

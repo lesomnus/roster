@@ -7,6 +7,7 @@
 package rstr
 
 import (
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -858,13 +859,13 @@ var File_app_session_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_session_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x17app/session_svc.g.proto\x12\x06roster\x1a\x11app/session.proto\x1a roster/payday/holder_svc.g.proto\"h\n" +
+	"\x17app/session_svc.g.proto\x12\x06roster\x1a\x11app/session.proto\x1a\torm.proto\x1a roster/payday/holder_svc.g.proto\"h\n" +
 	"\x11SessionGetRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.roster.SessionRefR\x03ref\x12-\n" +
-	"\x06select\x18\x02 \x01(\v2\x15.roster.SessionSelectR\x06select\"?\n" +
+	"\x06select\x18\x02 \x01(\v2\x15.roster.SessionSelectR\x06select\"G\n" +
 	"\n" +
-	"SessionRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x18\n" +
+	"SessionRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12\x18\n" +
 	"\x06secret\x18\t \x01(\fH\x00R\x06secretB\x05\n" +
 	"\x03key\"\xa4\x02\n" +
 	"\rSessionSelect\x12\x10\n" +

@@ -8,6 +8,7 @@ package rstr
 
 import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -4955,9 +4956,9 @@ var File_app_host_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_host_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/host_svc.g.proto\x12\x06roster\x1a\x0eapp/host.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xf4\x02\n" +
-	"\x0eHostAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x14app/host_svc.g.proto\x12\x06roster\x1a\x0eapp/host.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xfc\x02\n" +
+	"\x0eHostAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x19\n" +
 	"\x04desc\x18\x06 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04desc\x12:\n" +
@@ -4970,9 +4971,9 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"_\n" +
 	"\x0eHostGetRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.HostRefR\x03ref\x12*\n" +
-	"\x06select\x18\x02 \x01(\v2\x12.roster.HostSelectR\x06select\"8\n" +
-	"\aHostRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12\x14\n" +
+	"\x06select\x18\x02 \x01(\v2\x12.roster.HostSelectR\x06select\"@\n" +
+	"\aHostRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12\x14\n" +
 	"\x04name\x18\x05 \x01(\tH\x00R\x04nameB\x05\n" +
 	"\x03key\"\x94\x02\n" +
 	"\n" +
@@ -5022,9 +5023,9 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x11HostUpdateRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.HostRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\"\xe6\x02\n" +
-	"\x14MailDomainAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\"\xee\x02\n" +
+	"\x14MailDomainAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12!\n" +
 	"\bprovider\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\bprovider\x12\x19\n" +
@@ -5036,9 +5037,9 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"q\n" +
 	"\x14MailDomainGetRequest\x12'\n" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.MailDomainRefR\x03ref\x120\n" +
-	"\x06select\x18\x02 \x01(\v2\x18.roster.MailDomainSelectR\x06select\"U\n" +
-	"\rMailDomainRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12+\n" +
+	"\x06select\x18\x02 \x01(\v2\x18.roster.MailDomainSelectR\x06select\"]\n" +
+	"\rMailDomainRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12+\n" +
 	"\x02at\x18\x02 \x01(\v2\x19.roster.MailDomainRefByAtH\x00R\x02atB\x05\n" +
 	"\x03key\"R\n" +
 	"\x11MailDomainRefByAt\x12)\n" +
@@ -5087,9 +5088,9 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.MailDomainRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x1a\n" +
 	"\bprovider\x18\t \x01(\tR\bprovider\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\"\xa1\x02\n" +
-	"\x13HostProofAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\"\xa9\x02\n" +
+	"\x13HostProofAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12\x19\n" +
 	"\x04name\x18\x05 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04name\x12\x1b\n" +
 	"\x05token\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x12=\n" +
@@ -5099,9 +5100,9 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"n\n" +
 	"\x13HostProofGetRequest\x12&\n" +
 	"\x03ref\x18\x01 \x01(\v2\x14.roster.HostProofRefR\x03ref\x12/\n" +
-	"\x06select\x18\x02 \x01(\v2\x17.roster.HostProofSelectR\x06select\"S\n" +
-	"\fHostProofRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12*\n" +
+	"\x06select\x18\x02 \x01(\v2\x17.roster.HostProofSelectR\x06select\"[\n" +
+	"\fHostProofRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12*\n" +
 	"\x02at\x18\x02 \x01(\v2\x18.roster.HostProofRefByAtH\x00R\x02atB\x05\n" +
 	"\x03key\"Q\n" +
 	"\x10HostProofRefByAt\x12)\n" +

@@ -8,6 +8,7 @@ package rstr
 
 import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -3612,9 +3613,9 @@ var File_app_role_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_role_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/role_svc.g.proto\x12\x06roster\x1a\x15app/group_svc.g.proto\x1a\x0eapp/role.proto\x1a\x14app/site_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\x93\x03\n" +
-	"\x0eRoleAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x14app/role_svc.g.proto\x12\x06roster\x1a\x15app/group_svc.g.proto\x1a\x0eapp/role.proto\x1a\x14app/site_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\x9b\x03\n" +
+	"\x0eRoleAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
 	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -3628,9 +3629,9 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"_\n" +
 	"\x0eRoleGetRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.RoleRefR\x03ref\x12*\n" +
-	"\x06select\x18\x02 \x01(\v2\x12.roster.RoleSelectR\x06select\"O\n" +
-	"\aRoleRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12+\n" +
+	"\x06select\x18\x02 \x01(\v2\x12.roster.RoleSelectR\x06select\"W\n" +
+	"\aRoleRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12+\n" +
 	"\x04slug\x18\x04 \x01(\v2\x15.roster.RoleRefBySlugH\x00R\x04slugB\x05\n" +
 	"\x03key\"P\n" +
 	"\rRoleRefBySlug\x12\x14\n" +
@@ -3698,9 +3699,9 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\breads_as\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\areadsAs\x12$\n" +
 	"\n" +
 	"hands_over\x18\n" +
-	" \x01(\tB\x05\xaa\x01\x02\b\x02R\thandsOver\"\xf9\x02\n" +
-	"\x11BindingAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12#\n" +
+	" \x01(\tB\x05\xaa\x01\x02\b\x02R\thandsOver\"\x81\x03\n" +
+	"\x11BindingAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12#\n" +
 	"\x04role\x18\x02 \x01(\v2\x0f.roster.RoleRefR\x04role\x12#\n" +
 	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\x12)\n" +
 	"\x06holder\x18\b \x01(\v2\x11.roster.HolderRefR\x06holder\x12&\n" +
@@ -3712,10 +3713,10 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"h\n" +
 	"\x11BindingGetRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.roster.BindingRefR\x03ref\x12-\n" +
-	"\x06select\x18\x02 \x01(\v2\x15.roster.BindingSelectR\x06select\"%\n" +
+	"\x06select\x18\x02 \x01(\v2\x15.roster.BindingSelectR\x06select\"-\n" +
 	"\n" +
-	"BindingRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02idB\x05\n" +
+	"BindingRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02idB\x05\n" +
 	"\x03key\"\xc9\x02\n" +
 	"\rBindingSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12&\n" +

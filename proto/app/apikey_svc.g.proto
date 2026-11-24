@@ -3,6 +3,7 @@ package roster;
 
 import "app/apikey.proto";
 import "google/protobuf/timestamp.proto";
+import "orm.proto";
 import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
@@ -34,7 +35,7 @@ service ApiKeyService {
 }
 
 message ApiKeyAddRequest {
-  bytes id = 1;
+  bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
   HolderRef holder = 2;
   string alias = 4 [features.field_presence = IMPLICIT];
   string desc = 6 [features.field_presence = IMPLICIT];
@@ -53,7 +54,7 @@ message ApiKeyGetRequest {
 
 message ApiKeyRef {
   oneof key {
-    bytes id = 1;
+    bytes id = 1 [(orm.field) = {type: TYPE_UUID}];
     ApiKeyRefBySlug slug = 4;
     bytes secret = 9;
   }

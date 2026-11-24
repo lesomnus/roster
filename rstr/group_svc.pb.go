@@ -8,6 +8,7 @@ package rstr
 
 import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -3161,9 +3162,9 @@ var File_app_group_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_group_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x15app/group_svc.g.proto\x12\x06roster\x1a\x0fapp/group.proto\x1a\x14app/site_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\xfb\x02\n" +
-	"\x0fGroupAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x15app/group_svc.g.proto\x12\x06roster\x1a\x0fapp/group.proto\x1a\x14app/site_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\x83\x03\n" +
+	"\x0fGroupAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
 	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -3176,9 +3177,9 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"b\n" +
 	"\x0fGroupGetRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\x12+\n" +
-	"\x06select\x18\x02 \x01(\v2\x13.roster.GroupSelectR\x06select\"Q\n" +
-	"\bGroupRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12,\n" +
+	"\x06select\x18\x02 \x01(\v2\x13.roster.GroupSelectR\x06select\"Y\n" +
+	"\bGroupRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12,\n" +
 	"\x04slug\x18\x04 \x01(\v2\x16.roster.GroupRefBySlugH\x00R\x04slugB\x05\n" +
 	"\x03key\"Q\n" +
 	"\x0eGroupRefBySlug\x12\x14\n" +
@@ -3229,17 +3230,17 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x12\n" +
 	"\x04name\x18\x05 \x01(\tR\x04name\x12\x12\n" +
-	"\x04desc\x18\x06 \x01(\tR\x04desc\"\xaf\x01\n" +
-	"\x17GroupExposureAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12&\n" +
+	"\x04desc\x18\x06 \x01(\tR\x04desc\"\xb7\x01\n" +
+	"\x17GroupExposureAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12&\n" +
 	"\x05group\x18\x02 \x01(\v2\x10.roster.GroupRefR\x05group\x12\x1d\n" +
 	"\x06client\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\x06client\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"z\n" +
 	"\x17GroupExposureGetRequest\x12*\n" +
 	"\x03ref\x18\x01 \x01(\v2\x18.roster.GroupExposureRefR\x03ref\x123\n" +
-	"\x06select\x18\x02 \x01(\v2\x1b.roster.GroupExposureSelectR\x06select\"j\n" +
-	"\x10GroupExposureRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12=\n" +
+	"\x06select\x18\x02 \x01(\v2\x1b.roster.GroupExposureSelectR\x06select\"r\n" +
+	"\x10GroupExposureRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12=\n" +
 	"\acarried\x18\x02 \x01(\v2!.roster.GroupExposureRefByCarriedH\x00R\acarriedB\x05\n" +
 	"\x03key\"[\n" +
 	"\x19GroupExposureRefByCarried\x12&\n" +

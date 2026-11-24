@@ -8,6 +8,7 @@ package rstr
 
 import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -2633,9 +2634,9 @@ var File_app_email_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_email_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x15app/email_svc.g.proto\x12\x06roster\x1a\x0fapp/email.proto\x1a\x18app/identity_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xe4\x02\n" +
-	"\x0fEmailAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x15app/email_svc.g.proto\x12\x06roster\x1a\x0fapp/email.proto\x1a\x18app/identity_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xf2\x02\n" +
+	"\x0fEmailAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1f\n" +
 	"\aaddress\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\aaddress\x12?\n" +
 	"\rdate_verified\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\fdateVerified\x122\n" +
@@ -2643,22 +2644,22 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"vouched_by\x18\n" +
 	" \x01(\v2\x13.roster.IdentityRefR\tvouchedBy\x12\x1d\n" +
 	"\n" +
-	"entered_by\x18\f \x01(\fR\tenteredBy\x12\"\n" +
-	"\ttenant_id\x18\v \x01(\fB\x05\xaa\x01\x02\b\x02R\btenantId\x12=\n" +
+	"entered_by\x18\f \x01(\fR\tenteredBy\x12(\n" +
+	"\ttenant_id\x18\v \x01(\fB\v\xea\x82\x16\x02\x10@\xaa\x01\x02\b\x02R\btenantId\x12=\n" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"b\n" +
 	"\x0fEmailGetRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\x12+\n" +
-	"\x06select\x18\x02 \x01(\v2\x13.roster.EmailSelectR\x06select\"\x82\x01\n" +
-	"\bEmailRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x125\n" +
+	"\x06select\x18\x02 \x01(\v2\x13.roster.EmailSelectR\x06select\"\x8a\x01\n" +
+	"\bEmailRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x125\n" +
 	"\aaddress\x18\x02 \x01(\v2\x19.roster.EmailRefByAddressH\x00R\aaddress\x12&\n" +
 	"\x02at\x18\v \x01(\v2\x14.roster.EmailRefByAtH\x00R\x02atB\x05\n" +
 	"\x03key\"X\n" +
 	"\x11EmailRefByAddress\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x18\n" +
-	"\aaddress\x18\b \x01(\tR\aaddress\"E\n" +
-	"\fEmailRefByAt\x12\x1b\n" +
-	"\ttenant_id\x18\v \x01(\fR\btenantId\x12\x18\n" +
+	"\aaddress\x18\b \x01(\tR\aaddress\"M\n" +
+	"\fEmailRefByAt\x12#\n" +
+	"\ttenant_id\x18\v \x01(\fB\x06\xea\x82\x16\x02\x10@R\btenantId\x12\x18\n" +
 	"\aaddress\x18\b \x01(\tR\aaddress\"\xe6\x02\n" +
 	"\vEmailSelect\x12\x10\n" +
 	"\x03all\x18\x01 \x01(\bR\x03all\x12,\n" +

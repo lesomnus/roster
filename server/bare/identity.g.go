@@ -11,7 +11,6 @@ import (
 	identity "github.com/lesomnus/roster/internal/ent/identity"
 	predicate "github.com/lesomnus/roster/internal/ent/predicate"
 	rstr "github.com/lesomnus/roster/rstr"
-	ent1 "github.com/protobuf-orm/ent"
 	dialect "github.com/protobuf-orm/ent/dialect"
 	sql "github.com/protobuf-orm/ent/dialect/sql"
 	sqlgraph "github.com/protobuf-orm/ent/dialect/sql/sqlgraph"
@@ -35,11 +34,14 @@ type IdentityServiceServer struct {
 //
 // It takes the options of [Server] so that what is built here can be told
 // where to report its writes and what it may see. Built without them, it
-// reports nowhere and sees everything.
+// reports nowhere and sees everything. An invalid option panics; use NewServer
+// to handle configuration errors before constructing individual services.
 func NewIdentityServiceServer(db *ent.Client, opts ...Option) rstr.IdentityServiceServer {
 	s := Server{Store: Store{Db: db}}
 	for _, opt := range opts {
-		opt(&s)
+		if err := opt(&s); err != nil {
+			panic(err)
+		}
 	}
 	return IdentityServiceServer{Store: s.Store}
 }
@@ -160,7 +162,10 @@ func (st IdentityServiceServer) create(ctx context.Context, req *rstr.IdentityAd
 }
 
 func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddRequest) (*rstr.Identity, error) {
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -175,7 +180,7 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 	}
 
 	var stored *ent.Identity
-	if snapshotOptions(s.Rec, rstr.IdentityService_Add_FullMethodName).Value {
+	if s.images(rstr.IdentityService_Add_FullMethodName).Value {
 		q.Stored(&stored)
 	}
 
@@ -201,10 +206,11 @@ func (s IdentityServiceServer) Add(ctx context.Context, req *rstr.IdentityAddReq
 	if stored != nil {
 		value = s.image(stored.Proto())
 	}
-	if err := record(ctx, s.Rec, st.Db, Change{
-		By:    rstr.IdentityService_Add_FullMethodName,
-		Key:   u.Id,
-		Value: value,
+	if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+		Entity: "roster.Identity",
+		By:     rstr.IdentityService_Add_FullMethodName,
+		Key:    u.Id,
+		Value:  value,
 	}); err != nil {
 		return nil, err
 	}
@@ -344,6 +350,9 @@ func IdentitySelectInit(ctx context.Context, scope Scope, q *ent.IdentityQuery, 
 }
 
 func (s IdentityServiceServer) Patch(ctx context.Context, req *rstr.IdentityPatchRequest) (*rstr.Identity, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	doc, err := ormpatch.FromPatchRequest(identityOrmEntity, req.ProtoReflect(), nil)
 	if err != nil {
 		if _, ok := status.FromError(err); ok {
@@ -393,6 +402,9 @@ var identityPatchColumns = entpatch.Columns{
 	1: identity.FieldId, 2: identity.HolderColumn, 8: identity.FieldProvider, 9: identity.FieldSubject, 10: identity.FieldTenantId, 13: identity.FieldDateUpdated, 14: identity.FieldDateErased, 15: identity.FieldDateCreated}
 
 func (s IdentityServiceServer) Apply(ctx context.Context, req *rstr.IdentityApplyRequest) (*rstr.Identity, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	if !req.HasPatch() {
 		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
 	}
@@ -420,7 +432,7 @@ func (s IdentityServiceServer) apply(ctx context.Context, ref *rstr.IdentityRef,
 		return nil, status.Errorf(codes.Internal, "%s", err)
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, true)
+	tx, err := join(ctx, s.Db, true, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -441,7 +453,7 @@ func (s IdentityServiceServer) apply(ctx context.Context, ref *rstr.IdentityRef,
 	}
 
 	var previous *rstr.Identity
-	images := snapshotOptions(s.Rec, by)
+	images := s.images(by)
 	if images.Previous && mod != nil {
 		u, err := st.snapshot(ctx, p, true)
 		if err != nil {
@@ -510,7 +522,8 @@ func (s IdentityServiceServer) apply(ctx context.Context, ref *rstr.IdentityRef,
 		if images.Value {
 			value = s.image(out)
 		}
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Identity",
 			By:       by,
 			Key:      k,
 			Patch:    doc,
@@ -527,6 +540,9 @@ func (s IdentityServiceServer) apply(ctx context.Context, ref *rstr.IdentityRef,
 }
 
 func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef) (*rstr.IdentityEraseResponse, error) {
+	if s.admission != nil {
+		ctx = request(ctx, req)
+	}
 	p, err := IdentityPick(req)
 	if err != nil {
 		return nil, err
@@ -536,7 +552,7 @@ func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef)
 		return nil, err
 	}
 
-	tx, err := ent1.JoinTx[*ent.Client, *ent.Tx](ctx, s.Db, s.Rec != nil)
+	tx, err := join(ctx, s.Db, s.Rec != nil || s.admission != nil, s.admission != nil)
 	if err != nil {
 		return nil, err
 	}
@@ -547,8 +563,8 @@ func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef)
 
 	var k any
 	var previous *rstr.Identity
-	if s.Rec != nil {
-		images := snapshotOptions(s.Rec, rstr.IdentityService_Erase_FullMethodName)
+	if s.Rec != nil || s.admission != nil {
+		images := s.images(rstr.IdentityService_Erase_FullMethodName)
 		var v *ent.Identity
 		var err error
 		if images.Previous {
@@ -579,7 +595,8 @@ func (s IdentityServiceServer) Erase(ctx context.Context, req *rstr.IdentityRef)
 		return nil, err
 	}
 	if n > 0 {
-		if err := record(ctx, s.Rec, st.Db, Change{
+		if err := record(ctx, s.Rec, s.admission, st.Db, Change{
+			Entity:   "roster.Identity",
 			By:       rstr.IdentityService_Erase_FullMethodName,
 			Key:      k,
 			Previous: previous,

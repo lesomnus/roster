@@ -354,8 +354,10 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	}
 	// And payday's keys that nothing of roster's reads, for the same reason:
 	// the manual promises that a key nothing reads is refused by name, and
-	// these were taken and changed nothing. No port registers reflection, and
-	// roster has no `migrate plan` for a dev database to be worked with.
+	// these were taken and changed nothing. No port registers reflection,
+	// roster has no `migrate plan` for a dev database to be worked with, and
+	// `watch.namespace` is read by payday's NATS broker alone, which roster
+	// does not link: `memory` and `postgres` ignore it.
 	for _, v := range []struct {
 		key  string
 		said bool
@@ -366,6 +368,8 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		{"admin.allow_reflection", c.Admin.AllowReflection, "roster serves no reflection on any port"},
 		{"db.dev_dsn", c.Db.DevDsn != "", "roster plans no migration, and db.migrate is how its tables are made"},
 		{"control.db.dev_dsn", c.Control.Db.DevDsn != "", "roster plans no migration, and control.db.migrate is how its tables are made"},
+		{"watch.namespace", c.Watch.Namespace != "", "no broker roster links reads it; memory and postgres keep a deployment apart without one"},
+		{"control.watch.namespace", c.Control.Watch.Namespace != "", "no broker roster links reads it; memory and postgres keep a deployment apart without one"},
 	} {
 		if v.said && prefix == keys.PrefixTenant {
 			return nil, fmt.Errorf("%s: nothing reads it -- %s. take the setting out", v.key, v.why)

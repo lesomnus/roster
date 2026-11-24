@@ -8,6 +8,7 @@ package rstr
 
 import (
 	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1892,9 +1893,9 @@ var File_app_team_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_team_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/team_svc.g.proto\x12\x06roster\x1a\x14app/site_svc.g.proto\x1a\x0eapp/team.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\x82\x02\n" +
-	"\x0eTeamAddRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\fR\x02id\x12)\n" +
+	"\x14app/team_svc.g.proto\x12\x06roster\x1a\x14app/site_svc.g.proto\x1a\x0eapp/team.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\x8a\x02\n" +
+	"\x0eTeamAddRequest\x12\x16\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
 	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\x12\x1b\n" +
 	"\x05alias\x18\x04 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05alias\x12\x19\n" +
@@ -1903,9 +1904,9 @@ const file_app_team_svc_g_proto_rawDesc = "" +
 	"\fdate_created\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\vdateCreated\"_\n" +
 	"\x0eTeamGetRequest\x12!\n" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.TeamRefR\x03ref\x12*\n" +
-	"\x06select\x18\x02 \x01(\v2\x12.roster.TeamSelectR\x06select\"O\n" +
-	"\aTeamRef\x12\x10\n" +
-	"\x02id\x18\x01 \x01(\fH\x00R\x02id\x12+\n" +
+	"\x06select\x18\x02 \x01(\v2\x12.roster.TeamSelectR\x06select\"W\n" +
+	"\aTeamRef\x12\x18\n" +
+	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@H\x00R\x02id\x12+\n" +
 	"\x04slug\x18\x04 \x01(\v2\x15.roster.TeamRefBySlugH\x00R\x04slugB\x05\n" +
 	"\x03key\"J\n" +
 	"\rTeamRefBySlug\x12\x14\n" +
