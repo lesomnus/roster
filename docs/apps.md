@@ -508,7 +508,7 @@ own credential cannot: an `rk_` does not introspect on the data plane, and
 `roster-at` is a header only roster reads. So it exchanges one (#74):
 
 ```
-loft   ─ rk_ + roster-at: @acme ─▶ DelegationService/Exchange{audience: @acme/levyan, methods}
+loft   ─ rk_ + roster-at: @acme ─▶ DelegationService/Exchange{app: @acme/levyan, methods}
        ◀─ rd_…   (about @acme/loft, issued to @acme/levyan, fifteen minutes)
 loft   ─ Bearer rd_… ─▶ levyan
 levyan ─ rk_ + roster-at: @acme ─▶ TokenService/Introspect(rd_…)
@@ -517,13 +517,13 @@ levyan ─ HolderService/Reaches(@acme/loft) → covers → serves it, or not
 ```
 
 - **It is a delegation turned round.** An ordinary one is about somebody else and
-  issued to the caller; this is about the caller and issued to the audience. Only
-  the audience is told who it names -- the sender, and every other caller, get the
+  issued to the caller; this is about the caller and issued to the app it names.
+  Only that app is told who it names -- the sender, and every other caller, get the
   `NotFound` a string that was never a token gets.
 - **Checked by roster.** It is opaque and the receiver asks, because roster
   issues nothing a third party verifies on its own (`CLAUDE.md`, *the other
   rule*).
-- **One tenant.** The audience is the caller's own tenant's holder; the receiver
+- **One tenant.** The app is the caller's own tenant's holder; the receiver
   introspects narrowed to that tenant too, which is how the issuer binding
   matches.
 - **`methods` are the receiver's.** What the token is for at levyan --
@@ -547,7 +547,7 @@ app:
 ```
 loft   ─ authorize, audience=urn:example:api:levyan ─▶ issuer      (erin's browser, signed in)
        ◀─ JWT {sub: erin, aud: levyan, client_id: loft}
-loft   ─ rk_ + roster-at: @acme ─▶ DelegationService/Exchange{audience: @acme/levyan, methods}
+loft   ─ rk_ + roster-at: @acme ─▶ DelegationService/Exchange{app: @acme/levyan, methods}
        ◀─ rd_…   (about @acme/loft, issued to @acme/levyan)
 loft   ─ the JWT and the rd_ ─▶ levyan, at a method meant for an app acting for somebody
 levyan ─ the issuer's keys → aud, client_id;  Introspect(rd_) → @acme/loft
@@ -622,8 +622,8 @@ type Tenancy interface {
 	Serves(ctx context.Context) ([]pdid.Id, error)
 	// A context whose calls to roster are answered as this app's holder in tenant.
 	Roster(ctx context.Context, tenant pdid.Id) (context.Context, error)
-	// A token naming this app's holder in tenant, for calling audience.
-	Token(ctx context.Context, tenant pdid.Id, audience string) (string, error)
+	// A token naming this app's holder in tenant, for calling app.
+	Token(ctx context.Context, tenant pdid.Id, app string) (string, error)
 }
 
 var ErrNotServed = errors.New("this instance does not serve that tenant")
@@ -641,7 +641,7 @@ var ErrNotServed = errors.New("this instance does not serve that tenant")
   arrives for a tenant it has not read. The account app and `ldap serve` are this
   layer, written twice.
 - **`Token()`** is `DelegationService/Exchange`, asked narrowed to the tenant,
-  for the audience's holder there; in C, the same call with the `rt_`.
+  for the app's holder there; in C, the same call with the `rt_`.
 
 What this layer **cannot** hide, and should not try to:
 

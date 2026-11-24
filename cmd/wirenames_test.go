@@ -152,7 +152,7 @@ func TestASecretACallerSendsIsBytes(t *testing.T) {
 //
 // `Delegation.issuer`, `Link.issuer` and `Continuation.issuer` held the
 // identifier of the caller the secret was given to, so that no other caller
-// can present it, and on a delegation made by `Exchange` the audience: who
+// can present it, and on a delegation made by `Exchange` the app: who
 // it was made **for**, which a page lists as where somebody is signed in.
 // `Connection.issuer` is an OpenID issuer's URL. Answered: one word for both;
 // right is `issuer` on `Connection` alone.

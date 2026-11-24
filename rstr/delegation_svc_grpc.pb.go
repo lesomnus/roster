@@ -64,7 +64,7 @@ type DelegationServiceClient interface {
 	// A delegation already says *who* (`holder`) and *who may present it*
 	// (`issued_to`), and `TokenService/Introspect` already answers only the caller
 	// it was issued to. So this mints one about the **caller** and issues it to
-	// the **audience**: Loft, narrowed to acme, asks for a token for
+	// the **app** it names: Loft, narrowed to acme, asks for a token for
 	// `@acme/levyan`; levyan, narrowed to acme too, introspects it and is told
 	// `@acme/loft`. Nobody else is told anything -- Loft included -- and the
 	// token is as good as a stranger's string to every caller but levyan.
@@ -81,7 +81,7 @@ type DelegationServiceClient interface {
 	// `roster-at` to the holder a tenant nominated for it. A deployment key as
 	// itself is nobody in any tenant and is refused, and so is a caller acting
 	// through a delegation (`roster-as`) -- minting from one would renew it. The
-	// audience is one of the caller's own tenant's holders, and not the caller:
+	// app is one of the caller's own tenant's holders, and not the caller:
 	// a call across tenants is not something this can say, and a token for
 	// yourself proves nothing to anybody.
 	Exchange(ctx context.Context, in *DelegationExchangeRequest, opts ...grpc.CallOption) (*DelegationExchangeResponse, error)
@@ -210,7 +210,7 @@ type DelegationServiceServer interface {
 	// A delegation already says *who* (`holder`) and *who may present it*
 	// (`issued_to`), and `TokenService/Introspect` already answers only the caller
 	// it was issued to. So this mints one about the **caller** and issues it to
-	// the **audience**: Loft, narrowed to acme, asks for a token for
+	// the **app** it names: Loft, narrowed to acme, asks for a token for
 	// `@acme/levyan`; levyan, narrowed to acme too, introspects it and is told
 	// `@acme/loft`. Nobody else is told anything -- Loft included -- and the
 	// token is as good as a stranger's string to every caller but levyan.
@@ -227,7 +227,7 @@ type DelegationServiceServer interface {
 	// `roster-at` to the holder a tenant nominated for it. A deployment key as
 	// itself is nobody in any tenant and is refused, and so is a caller acting
 	// through a delegation (`roster-as`) -- minting from one would renew it. The
-	// audience is one of the caller's own tenant's holders, and not the caller:
+	// app is one of the caller's own tenant's holders, and not the caller:
 	// a call across tenants is not something this can say, and a token for
 	// yourself proves nothing to anybody.
 	Exchange(context.Context, *DelegationExchangeRequest) (*DelegationExchangeResponse, error)

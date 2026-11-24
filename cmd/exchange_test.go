@@ -25,7 +25,7 @@ import (
 // calling levyan about acme, has nothing levyan can check as `@acme/loft`: its
 // `rk_` does not introspect on the data plane and `roster-at` is a header only
 // roster reads. `Delegation.Exchange` mints a delegation **about the caller,
-// issued to the audience**, so levyan -- narrowed to acme itself -- introspects
+// issued to the app it names**, so levyan -- narrowed to acme itself -- introspects
 // it and is told Loft, and nobody else is told anything.
 func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 	x := require.New(t)
@@ -53,8 +53,8 @@ func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 	tokens := pdpb.NewTokenServiceClient(b.Conn)
 
 	got, err := delegations.Exchange(arrivedAt(ctx, b.Token, at), app.DelegationExchangeRequest_builder{
-		Audience: app.HolderRef_builder{Id: levyan.Bytes()}.Build(),
-		Methods:  []string{"/levyan.InvoiceService/Get"},
+		App:     app.HolderRef_builder{Id: levyan.Bytes()}.Build(),
+		Methods: []string{"/levyan.InvoiceService/Get"},
 	}.Build())
 	x.NoError(err)
 	x.NotEmpty(got.GetToken())
@@ -64,7 +64,7 @@ func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 		return tokens.Introspect(ctx, pdpb.TokenIntrospectRequest_builder{Token: got.GetToken()}.Build())
 	}
 
-	t.Run("the audience is told who sent it", func(t *testing.T) {
+	t.Run("the app is told who sent it", func(t *testing.T) {
 		x := require.New(t)
 
 		v, err := ask(arrivedAt(ctx, levyanToken, at))
@@ -81,7 +81,7 @@ func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 		_, err := ask(arrivedAt(ctx, b.Token, at))
 		x.Equal(codes.NotFound, status.Code(err))
 
-		// The audience's key as itself, allowed to introspect and nobody in acme.
+		// The app's key as itself, allowed to introspect and nobody in acme.
 		_, err = ask(metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+levyanToken)))
 		x.Equal(codes.NotFound, status.Code(err))
 	})
@@ -89,17 +89,17 @@ func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 	t.Run("and a key as itself is nobody to name", func(t *testing.T) {
 		_, err := delegations.Exchange(metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+b.Token)),
 			app.DelegationExchangeRequest_builder{
-				Audience: app.HolderRef_builder{Id: levyan.Bytes()}.Build(),
-				Methods:  []string{"/levyan.InvoiceService/Get"},
+				App:     app.HolderRef_builder{Id: levyan.Bytes()}.Build(),
+				Methods: []string{"/levyan.InvoiceService/Get"},
 			}.Build())
 		require.Error(t, err)
 	})
 
-	t.Run("and an audience in another tenant is refused", func(t *testing.T) {
+	t.Run("and an app in another tenant is refused", func(t *testing.T) {
 		elsewhere := addHolder(t, ctx, b.Server, add(t, ctx, b.Server, "fabrikam"), "levyan")
 		_, err := delegations.Exchange(arrivedAt(ctx, b.Token, at), app.DelegationExchangeRequest_builder{
-			Audience: app.HolderRef_builder{Id: elsewhere.Bytes()}.Build(),
-			Methods:  []string{"/levyan.InvoiceService/Get"},
+			App:     app.HolderRef_builder{Id: elsewhere.Bytes()}.Build(),
+			Methods: []string{"/levyan.InvoiceService/Get"},
 		}.Build())
 		require.Error(t, err)
 		require.NotEqual(t, codes.OK, status.Code(err))
@@ -107,7 +107,7 @@ func TestAnAppProvesWhoItIsToAnotherInTheSameTenant(t *testing.T) {
 
 	t.Run("and a token for nothing is not minted", func(t *testing.T) {
 		_, err := delegations.Exchange(arrivedAt(ctx, b.Token, at), app.DelegationExchangeRequest_builder{
-			Audience: app.HolderRef_builder{Id: levyan.Bytes()}.Build(),
+			App: app.HolderRef_builder{Id: levyan.Bytes()}.Build(),
 		}.Build())
 		require.Equal(t, codes.InvalidArgument, status.Code(err))
 	})
@@ -137,8 +137,8 @@ func TestExchangeHandsOnNothingTheCallerMayNot(t *testing.T) {
 	delegations := app.NewDelegationServiceClient(b.Conn)
 	mint := func(ctx context.Context, to pdid.Id, methods ...string) (*app.DelegationExchangeResponse, error) {
 		return delegations.Exchange(ctx, app.DelegationExchangeRequest_builder{
-			Audience: app.HolderRef_builder{Id: to.Bytes()}.Build(),
-			Methods:  methods,
+			App:     app.HolderRef_builder{Id: to.Bytes()}.Build(),
+			Methods: methods,
 		}.Build())
 	}
 
@@ -218,8 +218,8 @@ func TestEndingANominationVoidsTheTokensTheAppMinted(t *testing.T) {
 
 	at := front.AtTenant("contoso")
 	got, err := app.NewDelegationServiceClient(b.Conn).Exchange(arrivedAt(ctx, b.Token, at), app.DelegationExchangeRequest_builder{
-		Audience: app.HolderRef_builder{Id: levyan.Bytes()}.Build(),
-		Methods:  []string{"/levyan.InvoiceService/Get"},
+		App:     app.HolderRef_builder{Id: levyan.Bytes()}.Build(),
+		Methods: []string{"/levyan.InvoiceService/Get"},
 	}.Build())
 	x.NoError(err)
 

@@ -1550,11 +1550,11 @@ func (b0 DelegationRevokeResponse_builder) Build() *DelegationRevokeResponse {
 }
 
 type DelegationExchangeRequest struct {
-	state               protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Audience *HolderRef             `protobuf:"bytes,1,opt,name=audience"`
-	xxx_hidden_Methods  []string               `protobuf:"bytes,2,rep,name=methods"`
-	unknownFields       protoimpl.UnknownFields
-	sizeCache           protoimpl.SizeCache
+	state              protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_App     *HolderRef             `protobuf:"bytes,1,opt,name=app"`
+	xxx_hidden_Methods []string               `protobuf:"bytes,2,rep,name=methods"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *DelegationExchangeRequest) Reset() {
@@ -1582,9 +1582,9 @@ func (x *DelegationExchangeRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *DelegationExchangeRequest) GetAudience() *HolderRef {
+func (x *DelegationExchangeRequest) GetApp() *HolderRef {
 	if x != nil {
-		return x.xxx_hidden_Audience
+		return x.xxx_hidden_App
 	}
 	return nil
 }
@@ -1596,31 +1596,32 @@ func (x *DelegationExchangeRequest) GetMethods() []string {
 	return nil
 }
 
-func (x *DelegationExchangeRequest) SetAudience(v *HolderRef) {
-	x.xxx_hidden_Audience = v
+func (x *DelegationExchangeRequest) SetApp(v *HolderRef) {
+	x.xxx_hidden_App = v
 }
 
 func (x *DelegationExchangeRequest) SetMethods(v []string) {
 	x.xxx_hidden_Methods = v
 }
 
-func (x *DelegationExchangeRequest) HasAudience() bool {
+func (x *DelegationExchangeRequest) HasApp() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_Audience != nil
+	return x.xxx_hidden_App != nil
 }
 
-func (x *DelegationExchangeRequest) ClearAudience() {
-	x.xxx_hidden_Audience = nil
+func (x *DelegationExchangeRequest) ClearApp() {
+	x.xxx_hidden_App = nil
 }
 
 type DelegationExchangeRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	// Who the token is for: the holder the receiving app is in this tenant -- the
-	// one its own key is narrowed to when it introspects.
-	Audience *HolderRef
+	// one its own key is narrowed to when it introspects. `app`, as a role, a
+	// group and a key say the app they are of.
+	App *HolderRef
 	// What the token is for, at the receiver: usually its own methods. The
 	// receiver narrows by them as it would by a key's; what the caller may
 	// actually do there is still the receiver's to decide, with
@@ -1638,7 +1639,7 @@ func (b0 DelegationExchangeRequest_builder) Build() *DelegationExchangeRequest {
 	m0 := &DelegationExchangeRequest{}
 	b, x := &b0, m0
 	_, _ = b, x
-	x.xxx_hidden_Audience = b.Audience
+	x.xxx_hidden_App = b.App
 	x.xxx_hidden_Methods = b.Methods
 	return m0
 }
@@ -1784,9 +1785,9 @@ const file_app_delegation_svc_g_proto_rawDesc = "" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\"6\n" +
 	"\x17DelegationRevokeRequest\x12\x1b\n" +
 	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\"\x1a\n" +
-	"\x18DelegationRevokeResponse\"d\n" +
-	"\x19DelegationExchangeRequest\x12-\n" +
-	"\baudience\x18\x01 \x01(\v2\x11.roster.HolderRefR\baudience\x12\x18\n" +
+	"\x18DelegationRevokeResponse\"Z\n" +
+	"\x19DelegationExchangeRequest\x12#\n" +
+	"\x03app\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03app\x12\x18\n" +
 	"\amethods\x18\x02 \x03(\tR\amethods\"x\n" +
 	"\x1aDelegationExchangeResponse\x12\x1b\n" +
 	"\x05token\x18\x01 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05token\x12=\n" +
@@ -1839,7 +1840,7 @@ var file_app_delegation_svc_g_proto_depIdxs = []int32{
 	18, // 12: roster.DelegationListResponse.items:type_name -> roster.Delegation
 	2,  // 13: roster.DelegationFilter.ref:type_name -> roster.DelegationRef
 	14, // 14: roster.DelegationFilter.holder:type_name -> roster.HolderRef
-	14, // 15: roster.DelegationExchangeRequest.audience:type_name -> roster.HolderRef
+	14, // 15: roster.DelegationExchangeRequest.app:type_name -> roster.HolderRef
 	15, // 16: roster.DelegationExchangeResponse.date_expired:type_name -> google.protobuf.Timestamp
 	0,  // 17: roster.DelegationService.Add:input_type -> roster.DelegationAddRequest
 	1,  // 18: roster.DelegationService.Get:input_type -> roster.DelegationGetRequest

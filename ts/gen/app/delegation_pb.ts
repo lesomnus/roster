@@ -129,8 +129,9 @@ export type Delegation = Message<"roster.Delegation"> & {
    *
    * Usually the caller that minted it, about somebody it just signed in. A
    * `DelegationService/Exchange` turns that round: the row is about the caller,
-   * and this names the **audience** -- the holder another app is in the same
-   * tenant -- so that only that app, introspecting, is told who it names (#74).
+   * and this names the **app** it was asked for -- the holder another app is in
+   * the same tenant -- so that only that app, introspecting, is told who it
+   * names (#74).
    * Either way it is a data-plane holder or a control-plane key, compared and
    * never followed.
    *

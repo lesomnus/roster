@@ -192,7 +192,7 @@ func (s coreDelegation) reaches(ctx context.Context, ref *app.DelegationRef) err
 	return s.mayReach(ctx, "ref", holder)
 }
 
-// Exchange mints a delegation about the caller, issued to the audience: a token
+// Exchange mints a delegation about the caller, issued to the app it names: a token
 // one app hands another so the second can ask roster who the first is.
 // `delegation_svc.ext.proto` has the argument.
 //
@@ -208,7 +208,7 @@ func (s coreDelegation) reaches(ctx context.Context, ref *app.DelegationRef) err
 // # The rules
 //
 // The caller is a holder, because the token names a holder: a deployment key as
-// itself is no one in any tenant. The audience is the caller's tenant's own,
+// itself is no one in any tenant. The app is the caller's tenant's own,
 // the agreement every row naming two holders is held to (`agree.go`), and
 // somebody **else**.
 //
@@ -228,7 +228,7 @@ func (s coreDelegation) reaches(ctx context.Context, ref *app.DelegationRef) err
 //   - `methods` are held to what the caller's own credential allows, the rule
 //     `Vouch.Delegate` holds its tokens to (`server/vouch`, `mayDelegate`):
 //     nobody hands on what they may not call.
-//   - The audience is not the caller. A token for yourself proves nothing to
+//   - The app is not the caller. A token for yourself proves nothing to
 //     anybody, and it was the whole of the trick above.
 //   - A caller acting through a delegation (`roster-as`) is refused. They are
 //     the person it names only within what that person handed over, and a
@@ -244,22 +244,22 @@ func (s coreDelegation) Exchange(ctx context.Context, req *app.DelegationExchang
 		return nil, status.Error(codes.PermissionDenied,
 			"a token naming the caller is the caller's own; one acting through a delegation may not mint another from it")
 	}
-	if req.GetAudience() == nil {
-		return nil, status.Error(codes.InvalidArgument, "audience: which app in this tenant the token is for")
+	if req.GetApp() == nil {
+		return nil, status.Error(codes.InvalidArgument, "app: which app in this tenant the token is for")
 	}
 
-	to, err := s.holderOf(ctx, req.GetAudience())
+	to, err := s.holderOf(ctx, req.GetApp())
 	if err != nil {
 		return nil, err
 	}
 	if to == f.Actor {
-		return nil, pderr.Invalidf("audience", "a token for yourself proves who you are to nobody; name the app it is for")
+		return nil, pderr.Invalidf("app", "a token for yourself proves who you are to nobody; name the app it is for")
 	}
 	whose, err := s.tenantOfHolder(ctx, app.HolderRef_builder{Id: to.Bytes()}.Build())
 	if err != nil {
 		return nil, err
 	}
-	if err := tenantsAgree("audience", whose, f.Tenant); err != nil {
+	if err := tenantsAgree("app", whose, f.Tenant); err != nil {
 		return nil, err
 	}
 
