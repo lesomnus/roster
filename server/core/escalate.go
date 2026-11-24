@@ -12,6 +12,8 @@ import (
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/lesomnus/z"
+
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/quote"
 )
@@ -75,6 +77,19 @@ import (
 // allows the write when that is nothing, so a path not walked is an
 // administrator who reads as holding nothing and can be reset by anybody. That
 // was true of a group binding until it was written down here.
+//
+// # At one app
+//
+// A method is a name, and two apps may both serve one. So what is held is
+// held at an app -- the one the role names (`Role.app`), and none is roster's
+// own -- and the rule is asked there: a method is covered only by what the
+// caller holds at that app. What somebody holds at roster hands out nothing at
+// an app, and the other way round. Read as one list of names, somebody holding
+// all of one app handed out a role of another's naming the same methods, and
+// whoever held them anywhere handed them out everywhere they were read.
+//
+// [Core.mayReach] is not: what keeps an account is roster's, and it compares
+// what the two hold at roster alone.
 //
 // # Where it is applied, and the one place it is not
 //
@@ -159,16 +174,23 @@ type Joining func(ctx context.Context, group pdid.Id) ([]Grant, error)
 // `core.mayChangeGroup`, which guard the membership writes and nothing else.
 type Holding func(ctx context.Context, who pdid.Id) ([]Grant, error)
 
-// Grant is a set of patterns and where they are held.
+// Grant is a set of patterns, where they are held, and at which app.
 //
 // `Site` is `pdid.Nil` for a binding made across the tenant, and otherwise the
 // site it was made in. Keeping the two together is the whole of what lets a
 // site administrator delegate inside their own site without being able to
 // delegate outside it -- flattened into one list, the two are the same strings
 // and the wider one wins.
+//
+// `App` is the app the role names the methods of (`Role.app`), and `pdid.Nil`
+// is roster's own. Kept beside them for the same reason one level up: a
+// method's name is no app's, and two apps may both serve one. Flattened, a
+// role of Foo's naming `/x.Svc/Do` was held at Bar as well, and whoever held
+// it at either handed it out at both.
 type Grant struct {
 	Methods []string
 	Site    pdid.Id
+	App     pdid.Id
 }
 
 // mayGrant refuses a caller handing out a method they do not hold.
@@ -184,7 +206,12 @@ type Grant struct {
 // That asymmetry is the rule rather than a special case. Narrowing a permission
 // is free and widening one is what needs permission, so a grant made in Seoul
 // covers a grant being made in Seoul and covers nothing wider.
-func (s Core) mayGrant(ctx context.Context, field string, methods []string, at pdid.Id) error {
+//
+// `of` is the app the methods are handed out at: the role's (`Role.app`), and
+// `pdid.Nil` for roster's own. Only what the caller holds at that app counts.
+// What somebody holds at roster hands out nothing at an app, and the other way
+// round: a method is a name, and the same name at two apps is two grants.
+func (s Core) mayGrant(ctx context.Context, field string, methods []string, at, of pdid.Id) error {
 	f, ok := frame.From(ctx)
 	if !ok {
 		return nil
@@ -202,7 +229,7 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string, at p
 		return err
 	}
 
-	reaches := reachingAt(held, at)
+	reaches := reachingAt(held, at, of)
 	for _, m := range methods {
 		// One of theirs has to cover it **on its own**. Asking whether the
 		// union covers it would let somebody holding every service of a package
@@ -211,25 +238,60 @@ func (s Core) mayGrant(ctx context.Context, field string, methods []string, at p
 		// `frame.Covers`.
 		if !slices.ContainsFunc(reaches, func(v string) bool { return frame.Covers(v, m) }) {
 			return status.Errorf(codes.PermissionDenied,
-				"%s: you do not hold %s here, so you may not grant it", field, quote.Sent(m))
+				"%s: you do not hold %s %s, so you may not grant it", field, quote.Sent(m), s.whereHeld(ctx, of))
 		}
 	}
 
 	return nil
 }
 
-// reachingAt is what of somebody's grants reaches the scope `at`: every one
-// made across the tenant, which reaches everywhere, and every one made in that
-// site, which reaches that site alone.
-func reachingAt(held []Grant, at pdid.Id) []string {
+// reachingAt is what of somebody's grants reaches the scope `at` at the app
+// `of`: every one made across the tenant, which reaches everywhere, and every
+// one made in that site, which reaches that site alone -- of the roles of that
+// app, and of no other's.
+func reachingAt(held []Grant, at, of pdid.Id) []string {
 	var reaches []string
 	for _, g := range held {
+		if g.App != of {
+			continue
+		}
 		if g.Site == pdid.Nil || g.Site == at {
 			reaches = append(reaches, g.Methods...)
 		}
 	}
 
 	return reaches
+}
+
+// whereHeld is where a refusal of the hold rule says the method is not held:
+// `here` at roster, as it always said, and at an app by the holder it is
+// answered as, `at @acme/loft`.
+//
+// Read through this stack, as the caller reads the holder; one they cannot see
+// is named by its identifier, which is what they wrote or what the role says.
+func (s Core) whereHeld(ctx context.Context, of pdid.Id) string {
+	if of == pdid.Nil {
+		return "here"
+	}
+
+	return "at " + s.appNamed(ctx, of)
+}
+
+// appNamed is how a refusal names an app: `@tenant/alias`, the holder it is
+// answered as, and its identifier where the caller cannot read that holder.
+func (s Core) appNamed(ctx context.Context, of pdid.Id) string {
+	v, err := s.Next().Holder().Get(ctx, app.HolderGetRequest_builder{
+		Ref: app.HolderRef_builder{Id: of.Bytes()}.Build(),
+		Select: app.HolderSelect_builder{
+			Alias:  z.Ptr(true),
+			Tenant: app.TenantSelect_builder{Alias: z.Ptr(true)}.Build(),
+		}.Build(),
+	}.Build())
+	if err != nil || v.GetAlias() == "" || v.GetTenant().GetAlias() == "" {
+		return of.String()
+	}
+
+	return "@" + v.GetTenant().GetAlias() + "/" + v.GetAlias()
 }
 
 // mayJoin refuses putting somebody into a group that holds more than the
@@ -293,7 +355,7 @@ func (s Core) mayJoin(ctx context.Context, ref *app.GroupRef) error {
 	}
 
 	for _, v := range vs {
-		if err := s.mayGrant(ctx, "group", v.Methods, v.Site); err != nil {
+		if err := s.mayGrant(ctx, "group", v.Methods, v.Site, v.App); err != nil {
 			return err
 		}
 	}
@@ -497,29 +559,34 @@ func (s Core) siteOf(ctx context.Context, ref *app.SiteRef) (pdid.Id, error) {
 	return pdid.From(v.GetId())
 }
 
-// siteOfRole is where a role belongs, read off the row.
+// siteOfRole is where a role belongs, and the app it names the methods of
+// ([pdid.Nil] for roster's), read off the row.
 //
 // Separate from [Core.siteOf] because a patch names the role and not the site:
-// `Role.site` is immutable, so the request has no say in it, and asking the
-// request would be asking the caller which rules to hold them to.
-func (s Core) siteOfRole(ctx context.Context, ref *app.RoleRef) (pdid.Id, error) {
+// `Role.site` and `Role.app` are immutable, so the request has no say in
+// them, and asking the request would be asking the caller which rules to hold
+// them to.
+func (s Core) siteOfRole(ctx context.Context, ref *app.RoleRef) (site, of pdid.Id, err error) {
 	if ref == nil {
-		return pdid.Nil, nil
+		return pdid.Nil, pdid.Nil, nil
 	}
 
 	v, err := s.Next().Role().Get(ctx, app.RoleGetRequest_builder{
 		Ref:    ref,
-		Select: app.RoleSelect_builder{Site: app.SiteSelect_builder{}.Build()}.Build(),
+		Select: app.RoleSelect_builder{Site: app.SiteSelect_builder{}.Build(), App: app.HolderSelect_builder{}.Build()}.Build(),
 	}.Build())
 	if err != nil {
-		return pdid.Nil, err
+		return pdid.Nil, pdid.Nil, err
 	}
 
-	if b := v.GetSite().GetId(); len(b) > 0 {
-		return pdid.From(b)
+	if site, err = idOr(v.GetSite().GetId()); err != nil {
+		return pdid.Nil, pdid.Nil, err
+	}
+	if of, err = idOr(v.GetApp().GetId()); err != nil {
+		return pdid.Nil, pdid.Nil, err
 	}
 
-	return pdid.Nil, nil
+	return site, of, nil
 }
 
 // siteOfTeam is the site a team is in, which is the scope a role attached
@@ -558,17 +625,29 @@ func (s Core) siteOfTeam(ctx context.Context, ref *app.TeamRef) (pdid.Id, error)
 // them rather than an empty column beside a flag. That is the whole gain: a
 // caller checking `methods` cannot find nothing to refuse and hand out
 // everything, because "everything" is in the list it is checking.
-func (s Core) methodsOf(ctx context.Context, ref *app.RoleRef) ([]string, error) {
+//
+// And the app it names them of (`Role.app`), [pdid.Nil] for roster's: what it
+// allows is allowed there and nowhere else, which is where handing it out is
+// asked.
+func (s Core) methodsOf(ctx context.Context, ref *app.RoleRef) ([]string, pdid.Id, error) {
 	if ref == nil {
-		return nil, nil
+		return nil, pdid.Nil, nil
 	}
 
-	v, err := s.Next().Role().Get(ctx, app.RoleGetRequest_builder{Ref: ref}.Build())
+	v, err := s.Next().Role().Get(ctx, app.RoleGetRequest_builder{
+		Ref:    ref,
+		Select: app.RoleSelect_builder{Methods: z.Ptr(true), App: app.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
 	if err != nil {
-		return nil, err
+		return nil, pdid.Nil, err
 	}
 
-	return v.GetMethods(), nil
+	of, err := idOr(v.GetApp().GetId())
+	if err != nil {
+		return nil, pdid.Nil, err
+	}
+
+	return v.GetMethods(), of, nil
 }
 
 // mayReach refuses somebody writing a credential for a person who holds more
@@ -630,6 +709,18 @@ func (s Core) methodsOf(ctx context.Context, ref *app.RoleRef) ([]string, error)
 // anybody who holds something -- which is a conversation, and a binding ends
 // it.
 //
+// # Of roster's roles
+//
+// What the two hold is compared at roster, and a role of an app's makes
+// nobody wider and nobody narrower. An account's ways in are roster's, and
+// counted app by app, everybody who held any role of an app's was wider than
+// a tenant's administrator who holds nothing there -- so nobody could reset
+// the password of somebody who merely uses an app. What follows is said where
+// the rule is told: whoever may write a way into an account may act as that
+// person at an app. What is roster's still counts wherever it is held, so an
+// app's own holder is wider than a caller who does not hold its role at
+// roster.
+//
 // # What is not covered
 //
 // Suspending somebody (D26) is a denial of service rather than an escalation,
@@ -679,9 +770,13 @@ func (s Core) mayReach(ctx context.Context, field string, target pdid.Id) error 
 		return err
 	}
 
+	// At roster, of both: see "# Of roster's roles".
 	for _, g := range theirs {
+		if g.App != pdid.Nil {
+			continue
+		}
 		for _, m := range g.Methods {
-			if !holdsAt(mine, g.Site, m) {
+			if !holdsAt(mine, g.Site, pdid.Nil, m) {
 				return status.Errorf(codes.PermissionDenied,
 					"%s: they hold %s and you do not, so you may not write their credential", field, m)
 			}
@@ -760,7 +855,7 @@ func (s Core) onlyMine(ctx context.Context) (*app.HolderRef, error) {
 			"this server cannot say what you hold across the tenant, so it will not show you anybody's")
 	}
 
-	held, err := s.rules.Everywhere(ctx, f.Actor)
+	held, err := s.rules.Everywhere(ctx, f.Actor, pdid.Nil)
 	if err != nil {
 		return nil, err
 	}
@@ -811,16 +906,21 @@ func (s Core) mayTakeAWayIn(ctx context.Context, field string, holder []byte) er
 	return s.mayReach(ctx, field, k)
 }
 
-// holdsAt is whether one of `mine` covers `m` where `at` is held.
+// holdsAt is whether one of `mine` covers `m` where `at` is held, at the app
+// `of`.
 //
 // A grant made across the tenant reaches everywhere and one made in a site
 // reaches that site, which is `mayGrant`'s asymmetry unchanged -- and one of
 // them has to cover it **on its own**, for `mayGrant`'s reason: asking whether
 // the union covers it would let somebody holding every service of a package
 // stand in for the package, which is true today and wrong the moment a service
-// is added.
-func holdsAt(mine []Grant, at pdid.Id, m string) bool {
+// is added. And it is one of that app's: a method held at roster is not held
+// at an app, whatever it is called.
+func holdsAt(mine []Grant, at, of pdid.Id, m string) bool {
 	for _, h := range mine {
+		if h.App != of {
+			continue
+		}
 		if h.Site != pdid.Nil && h.Site != at {
 			continue
 		}

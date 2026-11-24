@@ -130,6 +130,20 @@ func (s RoleServiceServer) image(v *rstr.Role) *rstr.Role {
 			trim(m.Get(f).Message())
 		}
 	}
+	{
+		f := m.Descriptor().Fields().ByNumber(9)
+		if m.Has(f) {
+			trim := func(r protoreflect.Message) {
+				r.Range(func(f protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+					if f.Number() != 1 {
+						r.Clear(f)
+					}
+					return true
+				})
+			}
+			trim(m.Get(f).Message())
+		}
+	}
 	return out
 }
 
@@ -137,7 +151,7 @@ func (s RoleServiceServer) image(v *rstr.Role) *rstr.Role {
 // and what the answer says about its edges. Add and AddMany both write
 // with it, so that an item of an AddMany is the row an Add of it would be.
 func (st RoleServiceServer) create(ctx context.Context, req *rstr.RoleAddRequest) (*ent.RoleCreate, []func(v *rstr.Role), error) {
-	ds := make([]func(v *rstr.Role), 0, 2)
+	ds := make([]func(v *rstr.Role), 0, 3)
 	q := st.Db.Role.Create()
 	var k uuid.UUID
 	if req.HasId() {
@@ -178,6 +192,16 @@ func (st RoleServiceServer) create(ctx context.Context, req *rstr.RoleAddRequest
 	}
 	if u := req.GetMethods(); len(u) > 0 {
 		q.SetMethods(u)
+	}
+	if req.HasApp() {
+		if k, err := HolderGetKey(ctx, st.Db, req.GetApp()); err != nil {
+			return nil, nil, err
+		} else {
+			q.SetAppId(k)
+			ds = append(ds, func(v *rstr.Role) {
+				v.SetApp(rstr.Holder_builder{Id: k[:]}.Build())
+			})
+		}
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
@@ -385,6 +409,21 @@ func RoleSelect(ctx context.Context, scope Scope, q *ent.RoleQuery, m *rstr.Role
 			return err
 		}
 	}
+	if m.HasApp() {
+		p, err := HolderNarrow(ctx, scope, nil)
+		if err != nil {
+			return err
+		}
+		q.WithApp(func(q *ent.HolderQuery) {
+			if p != nil {
+				q.Where(p)
+			}
+			err = HolderSelect(ctx, scope, q, m.GetApp())
+		})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -447,7 +486,7 @@ func RoleGetKey(ctx context.Context, db *ent.Client, ref *rstr.RoleRef) (uuid.UU
 var roleOrmEntity = ormpatch.MustEntityOf(rstr.File_app_role_proto, "Role")
 
 var rolePatchColumns = entpatch.Columns{
-	1: role.FieldId, 2: role.TenantColumn, 3: role.SiteColumn, 4: role.FieldAlias, 5: role.FieldName, 6: role.FieldDesc, 7: role.FieldLabels, 8: role.FieldMethods, 13: role.FieldDateUpdated, 14: role.FieldDateErased, 15: role.FieldDateCreated}
+	1: role.FieldId, 2: role.TenantColumn, 3: role.SiteColumn, 4: role.FieldAlias, 5: role.FieldName, 6: role.FieldDesc, 7: role.FieldLabels, 8: role.FieldMethods, 9: role.AppColumn, 13: role.FieldDateUpdated, 14: role.FieldDateErased, 15: role.FieldDateCreated}
 
 func (s RoleServiceServer) Apply(ctx context.Context, req *rstr.RoleApplyRequest) (*rstr.Role, error) {
 	if s.admission != nil {

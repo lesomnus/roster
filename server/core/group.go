@@ -341,22 +341,31 @@ func (s coreGroup) Update(ctx context.Context, req *app.GroupUpdateRequest) (*ap
 }
 
 // mayHoldInGroup refuses a role that would reach past the group it is held in:
-// one bound to a site, or naming anything [managing] does not.
+// one bound to a site, or naming anything [managing] does not -- and one of an
+// app's, which names nothing at roster.
 func (s Core) mayHoldInGroup(ctx context.Context, ref *app.RoleRef) error {
 	if ref == nil {
 		return nil
 	}
 
-	at, err := s.siteOfRole(ctx, ref)
+	at, of, err := s.siteOfRole(ctx, ref)
 	if err != nil {
 		return err
+	}
+	if of != pdid.Nil {
+		// What a manager holds is roster's verbs on one group, and a role of
+		// an app's is nothing at roster: held there, it would make a manager
+		// of nobody, and read as one.
+		return pderr.Invalidf("role",
+			"a role held in a group is one of roster's, as the tenant's %q is; this is a role of %s's, which names nothing a manager does",
+			Manages, s.appNamed(ctx, of))
 	}
 	if at != pdid.Nil {
 		return pderr.Invalidf("role",
 			"a role held in a group belongs to no site; it names what changes the group's members, and that is not in a site")
 	}
 
-	ms, err := s.methodsOf(ctx, ref)
+	ms, _, err := s.methodsOf(ctx, ref)
 	if err != nil {
 		return err
 	}

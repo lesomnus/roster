@@ -62,6 +62,7 @@ func (s coreRole) Narrow(ctx context.Context, req *app.RoleNarrowRequest) (*app.
 				All:    z.Ptr(true),
 				Tenant: app.TenantSelect_builder{}.Build(),
 				Site:   app.SiteSelect_builder{}.Build(),
+				App:    app.HolderSelect_builder{}.Build(),
 			}.Build(),
 		}.Build())
 		if err != nil {
@@ -90,7 +91,11 @@ func (s coreRole) Narrow(ctx context.Context, req *app.RoleNarrowRequest) (*app.
 				return nil, err
 			}
 		}
-		if err := s.mayTakeAway(ctx, "methods", out, at); err != nil {
+		of, err := idOr(got.GetApp().GetId())
+		if err != nil {
+			return nil, err
+		}
+		if err := s.mayTakeAway(ctx, "methods", out, at, of); err != nil {
 			return nil, err
 		}
 
@@ -171,8 +176,11 @@ func narrowed(have, take []string) (out, left []string) {
 // other act: nobody takes away what they could not have given. See
 // [coreRole.Narrow] for why it is the rule, and what it keeps out of reach.
 //
+// At the app `of`, as `mayGrant` is: what somebody holds at roster takes
+// nothing away at an app, and the other way round.
+//
 // Waived for the deployment's own work, with no frame, as `mayGrant` is.
-func (s Core) mayTakeAway(ctx context.Context, field string, methods []string, at pdid.Id) error {
+func (s Core) mayTakeAway(ctx context.Context, field string, methods []string, at, of pdid.Id) error {
 	f, ok := frame.From(ctx)
 	if !ok {
 		return nil
@@ -187,11 +195,11 @@ func (s Core) mayTakeAway(ctx context.Context, field string, methods []string, a
 		return err
 	}
 
-	reaches := reachingAt(held, at)
+	reaches := reachingAt(held, at, of)
 	for _, m := range methods {
 		if !slices.ContainsFunc(reaches, func(v string) bool { return frame.Covers(v, m) }) {
 			return status.Errorf(codes.PermissionDenied,
-				"%s: you do not hold %s here, so you may not take it away", field, quote.Sent(m))
+				"%s: you do not hold %s %s, so you may not take it away", field, quote.Sent(m), s.whereHeld(ctx, of))
 		}
 	}
 

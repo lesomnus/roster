@@ -126,6 +126,7 @@ message RoleAddRequest {
   string desc = 6 [features.field_presence = IMPLICIT];
   map<string, string> labels = 7;
   repeated string methods = 8;
+  HolderRef app = 9;
   google.protobuf.Timestamp date_created = 15;
 }
 
@@ -155,6 +156,7 @@ message RoleSelect {
   bool desc = 6;
   bool labels = 7;
   bool methods = 8;
+  HolderSelect app = 9;
   bool date_updated = 13;
   bool date_erased = 14;
   bool date_created = 15;

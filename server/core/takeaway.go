@@ -1,9 +1,11 @@
 package core
 
 import (
+	"bytes"
 	"context"
 
 	"github.com/lesomnus/z"
+	"github.com/protobuf-orm/ent/dialect"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -172,6 +174,7 @@ func (s coreRole) Erase(ctx context.Context, req *app.RoleRef) (*app.RoleEraseRe
 			All:    z.Ptr(true),
 			Tenant: app.TenantSelect_builder{}.Build(),
 			Site:   app.SiteSelect_builder{}.Build(),
+			App:    app.HolderSelect_builder{}.Build(),
 		}.Build(),
 	}.Build())
 	if status.Code(err) == codes.NotFound {
@@ -188,7 +191,11 @@ func (s coreRole) Erase(ctx context.Context, req *app.RoleRef) (*app.RoleEraseRe
 	if err != nil {
 		return nil, err
 	}
-	if err := s.mayTakeAway(ctx, "ref", got.GetMethods(), at); err != nil {
+	of, err := idOr(got.GetApp().GetId())
+	if err != nil {
+		return nil, err
+	}
+	if err := s.mayTakeAway(ctx, "ref", got.GetMethods(), at, of); err != nil {
 		return nil, err
 	}
 	tenant, err := pdid.From(got.GetTenant().GetId())
@@ -197,7 +204,7 @@ func (s coreRole) Erase(ctx context.Context, req *app.RoleRef) (*app.RoleEraseRe
 	}
 
 	var out *app.RoleEraseResponse
-	could := at == pdid.Nil && administers(got.GetMethods())
+	could := at == pdid.Nil && of == pdid.Nil && administers(got.GetMethods())
 	err = s.keepsAdministered(ctx, tenant, could, "erasing role "+got.GetAlias(), func(next app.Server) error {
 		var err error
 		out, err = next.Role().Erase(ctx, req)
@@ -280,15 +287,77 @@ func (s coreHolder) Erase(ctx context.Context, req *app.HolderRef) (*app.HolderE
 		return nil, err
 	}
 
-	var out *app.HolderEraseResponse
-	err := s.keepsTheirs(ctx, req, "erasing them", func(next app.Server) error {
-		var err error
-		out, err = next.Holder().Erase(ctx, req)
+	who, err := s.holderOf(ctx, req)
+	if err != nil {
+		return nil, err
+	}
 
-		return err
+	// And the roles that are theirs as an app (`Role.app`), in the same act:
+	// a role of an app that has ended names the methods of nobody, and what
+	// it handed out is gone as an erased role's is. One transaction, on the
+	// person's row, so the erase and theirs are both made or neither; a
+	// restore of the person brings the row back and not these.
+	var out *app.HolderEraseResponse
+	err = s.only(ctx, who.Bytes(), func(next app.Server, tx dialect.Driver) error {
+		in := coreHolder{s.over(next, tx), next.Holder()}
+
+		return in.keepsTheirs(ctx, req, "erasing them", func(next app.Server) error {
+			v, err := next.Holder().Get(ctx, app.HolderGetRequest_builder{
+				Ref:    app.HolderRef_builder{Id: who.Bytes()}.Build(),
+				Select: app.HolderSelect_builder{Tenant: app.TenantSelect_builder{}.Build()}.Build(),
+			}.Build())
+			if status.Code(err) == codes.NotFound {
+				// Nobody this caller sees, which the erase answers.
+				out, err = next.Holder().Erase(ctx, req)
+
+				return err
+			}
+			if err != nil {
+				return err
+			}
+			if out, err = next.Holder().Erase(ctx, req); err != nil || !out.GetErased() {
+				return err
+			}
+
+			return erasedWithTheir(ctx, next, v.GetTenant().GetId(), who)
+		})
 	})
 
 	return out, err
+}
+
+// erasedWithTheir erases every role of the app `who` is, of its tenant and
+// still there: what [coreHolder.Erase] ends with them. Through `next`, the
+// server under this layer, so each is the erase a role's is, on the trail and
+// on the stream; and asked nothing of what they gave, which the person's
+// erase already was.
+func erasedWithTheir(ctx context.Context, next app.Server, tenant []byte, who pdid.Id) error {
+	var theirs [][]byte
+	for after := ""; ; {
+		page, err := next.Role().List(ctx, app.RoleListRequest_builder{
+			Filters: []*app.RoleFilter{app.RoleFilter_builder{Tenant: app.TenantRef_builder{Id: tenant}.Build()}.Build()},
+			Size:    100,
+			After:   after,
+		}.Build())
+		if err != nil {
+			return err
+		}
+		for _, r := range page.GetItems() {
+			if bytes.Equal(r.GetApp().GetId(), who.Bytes()) {
+				theirs = append(theirs, r.GetId())
+			}
+		}
+		if after = page.GetNext(); after == "" {
+			break
+		}
+	}
+	for _, id := range theirs {
+		if _, err := next.Role().Erase(ctx, app.RoleRef_builder{Id: id}.Build()); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // erasesAcrossTheTenant is [Core.acrossTheTenant] for erasing a person, which

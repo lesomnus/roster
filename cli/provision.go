@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/roster/account"
 	"github.com/lesomnus/roster/cmd"
 	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/keys"
 )
 
@@ -55,7 +56,7 @@ import (
 // somebody's. `docker/customer.sh` has minted a holder and a key of this name
 // by hand for as long as it existed, which is what makes this the replacement
 // for a runbook step rather than a second name for one.
-const accountProvisioned = "account"
+const accountProvisioned = core.AccountRole
 
 // provisionAccount ensures the account app's rows in every tenant that has a
 // name, mints its one deployment key, and answers with the key and how many

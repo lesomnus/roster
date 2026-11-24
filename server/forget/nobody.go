@@ -24,6 +24,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/phone"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/lesomnus/roster/internal/ent/relation"
+	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	app "github.com/lesomnus/roster/rstr"
@@ -177,6 +178,7 @@ var naming = map[string]names{
 	app.LinkService_Add_FullMethodName:            {link.Table, []string{link.HolderColumn}},
 	app.PhoneService_Add_FullMethodName:           {phone.Table, []string{phone.HolderColumn}},
 	app.RelationService_Add_FullMethodName:        {relation.Table, []string{relation.HolderColumn, relation.OtherColumn}},
+	app.RoleService_Add_FullMethodName:            {role.Table, []string{role.AppColumn}},
 	app.SiteMembershipService_Add_FullMethodName:  {sitemembership.Table, []string{sitemembership.HolderColumn}},
 	app.TeamMembershipService_Add_FullMethodName:  {teammembership.Table, []string{teammembership.HolderColumn}},
 

@@ -60,7 +60,7 @@ func (s coreApiKey) Add(ctx context.Context, req *app.ApiKeyAddRequest) (*app.Ap
 	// whatever narrows its holder and by nothing else. Writing one is therefore
 	// a tenant-wide grant, and somebody who holds a method only in a site may
 	// not put it on a key.
-	if err := s.mayGrant(ctx, "methods", req.GetMethods(), pdid.Nil); err != nil {
+	if err := s.mayGrant(ctx, "methods", req.GetMethods(), pdid.Nil, pdid.Nil); err != nil {
 		return nil, err
 	}
 
@@ -89,7 +89,7 @@ func (s coreApiKey) Add(ctx context.Context, req *app.ApiKeyAddRequest) (*app.Ap
 // they are leaving in place is a caller who should not be writing this row at
 // all.
 func (s coreApiKey) Patch(ctx context.Context, req *app.ApiKeyPatchRequest) (*app.ApiKey, error) {
-	if err := s.mayGrant(ctx, "methods", req.GetMethods(), pdid.Nil); err != nil {
+	if err := s.mayGrant(ctx, "methods", req.GetMethods(), pdid.Nil, pdid.Nil); err != nil {
 		return nil, err
 	}
 
@@ -133,7 +133,7 @@ func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*ap
 	// this again where it has always asked it -- after: a key that was
 	// refused left behind the holder it had named, on a plane where a holder
 	// is a caller (#274). So nobody is made for a key that will not be.
-	if err := s.mayGrant(ctx, "methods", req.GetMethods(), pdid.Nil); err != nil {
+	if err := s.mayGrant(ctx, "methods", req.GetMethods(), pdid.Nil, pdid.Nil); err != nil {
 		return nil, err
 	}
 

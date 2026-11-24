@@ -208,7 +208,9 @@ Nobody hands out what they do not hold, so this never makes more than there
 was. What it does is spread: an administrator who gives one person
 `BindingService/Add` beside `/roster.*/*` has let that person make
 administrators. `RoleService/Add` and `/Widen` are the same act one step
-earlier, since a role is written to be bound.
+earlier, since a role is written to be bound. And it is at every app they hold
+something: what they hold at Loft, through a role of Loft's, they hand out at
+Loft (`Role.app`), with the one verb of roster's.
 
 ### A role bound to a group
 

@@ -9,6 +9,7 @@ import (
 	"time"
 	"uuid"
 
+	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/role"
 	"github.com/lesomnus/roster/internal/ent/site"
 	"github.com/lesomnus/roster/internal/ent/tenant"
@@ -41,6 +42,8 @@ type Role struct {
 	TenantId uuid.UUID `json:"tenant_id,omitempty"`
 	// SiteId holds the value of the "site_id" field.
 	SiteId uuid.UUID `json:"site_id,omitempty"`
+	// AppId holds the value of the "app_id" field.
+	AppId uuid.UUID `json:"app_id,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RoleQuery when eager-loading is set.
 	Edges        RoleEdges `json:"edges"`
@@ -53,9 +56,11 @@ type RoleEdges struct {
 	Tenant *Tenant `json:"tenant,omitempty"`
 	// Site holds the value of the site edge.
 	Site *Site `json:"site,omitempty"`
+	// App holds the value of the app edge.
+	App *Holder `json:"app,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // TenantOrErr returns the Tenant value or an error if the edge
@@ -80,6 +85,17 @@ func (e RoleEdges) SiteOrErr() (*Site, error) {
 	return nil, &NotLoadedError{edge: "site"}
 }
 
+// AppOrErr returns the App value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e RoleEdges) AppOrErr() (*Holder, error) {
+	if e.App != nil {
+		return e.App, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: holder.Label}
+	}
+	return nil, &NotLoadedError{edge: "app"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*Role) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -91,7 +107,7 @@ func (*Role) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullString)
 		case role.FieldDateUpdated, role.FieldDateErased, role.FieldDateCreated:
 			values[i] = new(sql.NullTime)
-		case role.FieldSiteId:
+		case role.FieldSiteId, role.FieldAppId:
 			values[i] = new(sql.Null[uuid.UUID])
 		case role.FieldId, role.FieldTenantId:
 			values[i] = new(uuid.UUID)
@@ -181,6 +197,12 @@ func (_m *Role) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.SiteId = value.V
 			}
+		case role.FieldAppId:
+			if value, ok := values[i].(*sql.Null[uuid.UUID]); !ok {
+				return fmt.Errorf("unexpected type %T for field app_id", values[i])
+			} else if value.Valid {
+				_m.AppId = value.V
+			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -202,6 +224,11 @@ func (_m *Role) QueryTenant() *TenantQuery {
 // QuerySite queries the "site" edge of the Role entity.
 func (_m *Role) QuerySite() *SiteQuery {
 	return NewRoleClient(_m.config).QuerySite(_m)
+}
+
+// QueryApp queries the "app" edge of the Role entity.
+func (_m *Role) QueryApp() *HolderQuery {
+	return NewRoleClient(_m.config).QueryApp(_m)
 }
 
 // Update returns a builder for updating this Role.
@@ -258,6 +285,9 @@ func (_m *Role) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("site_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SiteId))
+	builder.WriteString(", ")
+	builder.WriteString("app_id=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AppId))
 	builder.WriteByte(')')
 	return builder.String()
 }

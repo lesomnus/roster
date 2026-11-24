@@ -138,7 +138,7 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 			return err
 		}
 
-		held, err := p.of(ctx, holder)
+		held, err := p.of(ctx, holder, roster)
 		if err != nil {
 			return err
 		}
@@ -151,7 +151,7 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 		return nil
 	}
 
-	held, err := p.of(ctx, c.Actor.Uuid())
+	held, err := p.of(ctx, c.Actor.Uuid(), roster)
 	if err != nil {
 		return err
 	}
@@ -189,8 +189,8 @@ func (p policy) May(ctx context.Context, c gate.Call) error {
 // into, what may be granted or taken away -- since everybody has it and it
 // reaches nobody else. And it is not held across the tenant.
 //
-// A role of that name in a site, or erased, is no such role; and a method it
-// names that is not somebody's own to call is not held through it
+// A role of that name in a site, of an app's, or erased, is no such role; and
+// a method it names that is not somebody's own to call is not held through it
 // ([core.Owned]).
 func (p policy) own(ctx context.Context, tenant uuid.UUID) ([]string, error) {
 	if tenant == uuid.Nil() {
@@ -198,7 +198,7 @@ func (p policy) own(ctx context.Context, tenant uuid.UUID) ([]string, error) {
 	}
 
 	r, err := p.db.Role.Query().
-		Where(entrole.TenantIdEQ(tenant), entrole.AliasEQ(core.Owns), entrole.SiteIdIsNil(), entrole.DateErasedIsNil()).
+		Where(entrole.TenantIdEQ(tenant), entrole.AliasEQ(core.Owns), entrole.SiteIdIsNil(), entrole.AppIdIsNil(), entrole.DateErasedIsNil()).
 		First(ctx)
 	if ent.IsNotFound(err) {
 		return nil, nil
@@ -393,7 +393,7 @@ func (p policy) sets(ctx context.Context) ([]uuid.UUID, bool, error) {
 		return nil, true, nil
 	}
 
-	held, err := p.of(ctx, f.Actor.Uuid())
+	held, err := p.of(ctx, f.Actor.Uuid(), roster)
 	if err != nil {
 		return nil, false, err
 	}
@@ -575,8 +575,21 @@ func bindingsReaching(ctx context.Context, db *ent.Client, who uuid.UUID) ([]*en
 	return q.WithRole(live).WithSite().All(ctx)
 }
 
-// of reads the bindings a holder has, by being them or by being in a group.
-func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
+// roster is the app a role of roster's own names the methods of: none.
+//
+// What somebody holds is held at an app (`Role.app`). The gate, the wall and
+// every reader that decides a call to roster ask it of this one, so that a
+// role of an app's gives nothing here -- no method, and no site: a method's
+// name is no app's, and read at roster, a role of Foo's naming
+// `/roster.HolderService/Erase` let whoever it was bound erase anybody.
+var roster = uuid.Nil()
+
+// of reads the bindings a holder has, by being them or by being in a group,
+// of the roles that name the methods of `app` -- [roster] for the gate's.
+//
+// Every one of the four ways a role reaches somebody is read at the app, and
+// so is what a deployment's file grants, which is roster's.
+func (p policy) of(ctx context.Context, who uuid.UUID, app uuid.UUID) (held, error) {
 	h := held{methods: map[string]struct{}{}, everywhere: map[string]struct{}{}}
 
 	vs, err := bindingsReaching(ctx, p.db, who)
@@ -606,6 +619,11 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 		return held{}, err
 	}
 	for _, v := range ts {
+		if v.Edges.Role != nil && v.Edges.Role.AppId != app {
+			// Another app's, which reaches them there and is nothing here --
+			// not even the sight of the team's site.
+			continue
+		}
 		if v.Edges.Role != nil {
 			for _, m := range v.Edges.Role.Methods {
 				h.methods[m] = struct{}{}
@@ -652,7 +670,7 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 		return held{}, err
 	}
 	for _, v := range gs {
-		if v.Edges.Role == nil {
+		if v.Edges.Role == nil || v.Edges.Role.AppId != app {
 			continue
 		}
 		for _, m := range v.Edges.Role.Methods {
@@ -667,9 +685,10 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 	}
 
 	for _, v := range vs {
-		if v.Edges.Role == nil {
+		if v.Edges.Role == nil || v.Edges.Role.AppId != app {
 			// A binding of a role that was erased, which grants nothing --
-			// not even the sight of the site it was made in.
+			// not even the sight of the site it was made in; or of a role of
+			// another app's, which grants nothing here.
 			continue
 		}
 		for _, m := range v.Edges.Role.Methods {
@@ -691,6 +710,10 @@ func (p policy) of(ctx context.Context, who uuid.UUID) (held, error) {
 
 		h.sites = append(h.sites, v.Edges.Site.Id)
 		h.reaches = append(h.reaches, reach{methods: v.Edges.Role.Methods, site: v.Edges.Site.Id})
+	}
+
+	if app != roster {
+		return h, nil
 	}
 
 	extra, err := configuredGrants(ctx, p.db, who, p.sources)
@@ -851,8 +874,9 @@ func asItIs(column string) func(*entsql.UpdateBuilder) {
 }
 
 // Administered is [core.Administered] on this deployment's rows: the tenant's
-// roles whose patterns cover `method`, bound with no site to somebody there and
-// not suspended, or to a group of the tenant's with such somebody in it.
+// roles of roster's whose patterns cover `method`, bound with no site to
+// somebody there and not suspended, or to a group of the tenant's with such
+// somebody in it. A role of an app's is nothing at roster, whatever it names.
 //
 // Bindings and groups, and not a team: a role held in a team is held at the
 // team's site, which is not the whole tenant. And not what a deployment's
@@ -870,8 +894,8 @@ func Administered(db *ent.Client) core.Administered {
 		}
 
 		rs, err := c.Role.Query().
-			Where(entrole.TenantIdEQ(tenant.Uuid()), entrole.DateErasedIsNil()).
-			Select(entrole.FieldId, entrole.FieldMethods).
+			Where(entrole.TenantIdEQ(tenant.Uuid()), entrole.AppIdIsNil(), entrole.DateErasedIsNil()).
+			Select(entrole.FieldId, entrole.FieldMethods, entrole.FieldAppId).
 			All(ctx)
 		if err != nil {
 			return false, err
@@ -924,7 +948,7 @@ func Rules(db *ent.Client, sources ...rbac.Source) core.Rules {
 		Joining:      Joining(db),
 		Holding:      Holding(db, sources...),
 		Giving:       Giving(db),
-		Held:         core.Held(Everything(db, sources...)),
+		Held:         HeldAt(db, sources...),
 		Everywhere:   Everywhere(db, sources...),
 		Administered: Administered(db),
 		Releasing:    Releasing(db, audit.Contents{}),
@@ -1043,8 +1067,9 @@ func Sited(db *ent.Client) core.Sited {
 	}
 }
 
-// Named is a tenant's role by its alias, for [core.Named]: read from the rows
-// and not through a server, so that it answers the same whoever is asking.
+// Named is a tenant's role of roster's by its alias, for [core.Named]: read
+// from the rows and not through a server, so that it answers the same whoever
+// is asking. A role of an app's names nothing a rule of roster's is about.
 func Named(db *ent.Client) core.Named {
 	return func(ctx context.Context, drv dialect.Driver, tenant pdid.Id, alias string) (*core.NamedRole, error) {
 		// On the driver it is handed, as [Administered] is.
@@ -1054,7 +1079,7 @@ func Named(db *ent.Client) core.Named {
 		}
 
 		v, err := c.Role.Query().
-			Where(entrole.TenantIdEQ(tenant.Uuid()), entrole.AliasEQ(alias), entrole.DateErasedIsNil()).
+			Where(entrole.TenantIdEQ(tenant.Uuid()), entrole.AliasEQ(alias), entrole.AppIdIsNil(), entrole.DateErasedIsNil()).
 			WithSite().
 			Only(ctx)
 		if ent.IsNotFound(err) {
@@ -1272,7 +1297,7 @@ func Giving(db *ent.Client) core.Giving {
 					continue
 				}
 
-				g := core.Grant{Methods: v.Edges.Role.Methods}
+				g := core.Grant{Methods: v.Edges.Role.Methods, App: appOf(v.Edges.Role)}
 				if v.Edges.Team != nil && v.Edges.Team.Edges.Site != nil {
 					g.Site = pdid.Id(v.Edges.Team.Edges.Site.Id)
 				}
@@ -1297,7 +1322,7 @@ func Giving(db *ent.Client) core.Giving {
 			var gs []core.Grant
 			for _, v := range vs {
 				if v.Edges.Role != nil {
-					gs = append(gs, core.Grant{Methods: v.Edges.Role.Methods})
+					gs = append(gs, core.Grant{Methods: v.Edges.Role.Methods, App: appOf(v.Edges.Role)})
 				}
 			}
 
@@ -1352,7 +1377,7 @@ func Holding(db *ent.Client, sources ...rbac.Source) core.Holding {
 				continue
 			}
 
-			gs = append(gs, core.Grant{Methods: v.Edges.Role.Methods})
+			gs = append(gs, core.Grant{Methods: v.Edges.Role.Methods, App: appOf(v.Edges.Role)})
 		}
 
 		// And a manager's, across the tenant for the same reason: the gate
@@ -1363,7 +1388,7 @@ func Holding(db *ent.Client, sources ...rbac.Source) core.Holding {
 			return nil, err
 		}
 		for _, r := range rs {
-			gs = append(gs, core.Grant{Methods: r.Methods})
+			gs = append(gs, core.Grant{Methods: r.Methods, App: appOf(r)})
 		}
 
 		extra, err := configuredGrants(ctx, db, who.Uuid(), sources)
@@ -1374,8 +1399,8 @@ func Holding(db *ent.Client, sources ...rbac.Source) core.Holding {
 	}
 }
 
-// grantsOf is a set of bindings as the rule reads them: what each allows, and
-// where.
+// grantsOf is a set of bindings as the rule reads them: what each allows,
+// where, and at which app.
 //
 // One function because both answers are the same rows read the same way, and
 // two copies of this loop would be two places to remember that a binding with
@@ -1387,7 +1412,7 @@ func grantsOf(vs []*ent.Binding) []core.Grant {
 			continue
 		}
 
-		g := core.Grant{Methods: v.Edges.Role.Methods}
+		g := core.Grant{Methods: v.Edges.Role.Methods, App: appOf(v.Edges.Role)}
 		if v.Edges.Site != nil {
 			g.Site = pdid.Id(v.Edges.Site.Id)
 		}
@@ -1531,8 +1556,21 @@ func siteOf(ctx context.Context, db *ent.Client, scope pdid.Id) (uuid.UUID, erro
 	return v.SiteId, nil
 }
 
+// appOf is the app a role names the methods of, as a grant says it:
+// [pdid.Nil] for roster's own.
+func appOf(r *ent.Role) pdid.Id {
+	if r.AppId == roster {
+		return pdid.Nil
+	}
+
+	return pdid.Id(r.AppId)
+}
+
+// allows is whether a role of roster's allows `method`. One of an app's allows
+// nothing at roster, whatever it names, which is what every reader of a call
+// to roster here asks.
 func allows(r *ent.Role, method string) bool {
-	if r == nil {
+	if r == nil || r.AppId != roster {
 		return false
 	}
 
@@ -1545,13 +1583,15 @@ func allows(r *ent.Role, method string) bool {
 	return false
 }
 
-// Everywhere is [Everything] without a site or a team: the patterns held
-// through a binding across the whole tenant, for `Holder.Reaches`.
+// Everywhere is [HeldAt] without a site or a team: the patterns held through a
+// binding across the whole tenant, at an app, for `Holder.Reaches` -- and at
+// roster for the rules of `server/core` that ask what somebody holds across
+// it.
 func Everywhere(db *ent.Client, sources ...rbac.Source) core.Everywhere {
 	p := policy{db: db, sources: sources}
 
-	return func(ctx context.Context, who pdid.Id) ([]string, error) {
-		h, err := p.of(ctx, who.Uuid())
+	return func(ctx context.Context, who, of pdid.Id) ([]string, error) {
+		h, err := p.of(ctx, who.Uuid(), of.Uuid())
 		if err != nil {
 			return nil, err
 		}
@@ -1566,15 +1606,25 @@ func Everywhere(db *ent.Client, sources ...rbac.Source) core.Everywhere {
 	}
 }
 
-// Everything is what a caller effectively holds, for `server/me`.
+// Everything is what a caller effectively holds at roster, for `server/me`.
 //
 // The same union the gate enforces, so that what a page shows and what the
 // server allows come from one function rather than two that agree today.
 func Everything(db *ent.Client, sources ...rbac.Source) me.Held {
-	p := policy{db: db, sources: sources}
+	held := HeldAt(db, sources...)
 
 	return func(ctx context.Context, who pdid.Id) ([]string, []pdid.Id, bool, error) {
-		h, err := p.of(ctx, who.Uuid())
+		return held(ctx, who, pdid.Nil)
+	}
+}
+
+// HeldAt is [Everything] at an app: what somebody holds of the roles that name
+// that app's methods, for `Holder.Reaches`; [pdid.Nil] is roster's.
+func HeldAt(db *ent.Client, sources ...rbac.Source) core.Held {
+	p := policy{db: db, sources: sources}
+
+	return func(ctx context.Context, who, of pdid.Id) ([]string, []pdid.Id, bool, error) {
+		h, err := p.of(ctx, who.Uuid(), of.Uuid())
 		if err != nil {
 			return nil, nil, false, err
 		}

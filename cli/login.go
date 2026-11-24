@@ -32,6 +32,7 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/login"
 	rstr "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/front"
 	"github.com/lesomnus/roster/server/keys"
 )
@@ -779,7 +780,7 @@ func ensureNominated(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, bor
 
 // provisioned is what this command's rows are called, so that a later run finds
 // them and a person reading the admin console can tell them from somebody's.
-const provisioned = "login-app"
+const provisioned = core.LoginRole
 
 func mustFind[T any](cl *xli.Command, name string) T {
 	v, _ := flg.Find[T](cl, name)

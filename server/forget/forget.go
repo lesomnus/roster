@@ -37,7 +37,7 @@
 // gone, and [subjects] says what it was read as once it named nothing.
 //
 // The `Holder` row itself **stays, blank**. Its identifier is referenced --
-// `Audit.actor_id` is it, and seventeen foreign keys point at it -- and what makes
+// `Audit.actor_id` is it, and eighteen foreign keys point at it -- and what makes
 // it personal data is that it resolves to a name. Emptied of the columns that
 // name somebody -- every one the schema declares personal, their picture and
 // what their directory called them among them -- it is a stable pseudonym
@@ -419,7 +419,9 @@ func forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 // So a restore stamps `date_invalidated`, the moment everything issued before
 // it is void, as `Invalidate` does and in the write that brings them back.
 // Now, and taken from nobody, for `Invalidate`'s reason. What comes back is
-// the rows: the name, the ways in, what they may do. A key comes back too --
+// the rows: the name, the ways in, what they may do. Not the roles that were
+// of them as an app (`Role.app`): those were erased with them, as their own
+// act, and stay erased. A key comes back too --
 // it is not ended by signing somebody out everywhere, on purpose
 // (`holder.ext.proto`, `date_invalidated`) -- and is an operator's to revoke,
 // which they can while its holder is erased.
@@ -866,14 +868,16 @@ func subjects() []subject {
 		// waiting to be a surprise.
 		//
 		// And there is an asymmetry underneath worth knowing about, which
-		// nothing else states: of the seventeen foreign keys into `holder`,
-		// sixteen are `NO ACTION` and `binding_holder_holder` alone is
-		// `SET NULL` -- see `internal/ent/migrate/schema.go`. Nothing depends
-		// on it today, because an erase is an UPDATE and no `ON DELETE` rule
-		// fires. It would matter the day somebody builds a **hard** erase of a
-		// person: sixteen children would block it and `Binding` would quietly
-		// keep a row whose holder is NULL. Removing these here is what makes
-		// that irrelevant either way.
+		// nothing else states: of the eighteen foreign keys into `holder`,
+		// sixteen are `NO ACTION`, and `binding_holder_holder` and
+		// `role_holder_app` are `SET NULL` -- see
+		// `internal/ent/migrate/schema.go`. Nothing depends on it today,
+		// because an erase is an UPDATE and no `ON DELETE` rule fires. It would
+		// matter the day somebody builds a **hard** erase of a person: sixteen
+		// children would block it, `Binding` would quietly keep a row whose
+		// holder is NULL, and a role of the app they were would become one of
+		// roster's own (`Role.app`). Removing the bindings here is what makes
+		// the first irrelevant either way; the second is the day's to settle.
 		{
 			name: "binding",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {

@@ -373,7 +373,7 @@ export const Role = {
 	schema: RoleSchema,
 	domain: 15,
 	version: "dateUpdated",
-	refs: [{ field: "tenant", to: "roster.Tenant" }, { field: "site", to: "roster.Site" }],
+	refs: [{ field: "tenant", to: "roster.Tenant" }, { field: "site", to: "roster.Site" }, { field: "app", to: "roster.Holder" }],
 	alias: "alias",
 	key: "id",
 	ids: ["id"],

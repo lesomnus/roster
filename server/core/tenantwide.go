@@ -70,7 +70,7 @@ func (s Core) acrossTheTenant(ctx context.Context, method string) error {
 			"this server cannot say what you hold across the tenant, so it will not let you change all of it")
 	}
 
-	held, err := s.rules.Everywhere(ctx, f.Actor)
+	held, err := s.rules.Everywhere(ctx, f.Actor, pdid.Nil)
 	if err != nil {
 		return err
 	}
