@@ -183,8 +183,8 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 //
 // Beside it, [core.AppAdministrator] is bound **for the app** to the app's
 // holder and to each of `people`: roster's verbs over the app's roles, the
-// bindings of them, its groups and their memberships, and nothing else of the
-// tenant's. So the app reads and writes what is its own as itself, and its
+// bindings of them, its groups and their memberships, the keys that are for
+// it, and nothing else of the tenant's. So the app reads and writes what is its own as itself, and its
 // administrators do at roster, binding the app's roles and making a second
 // administrator. The role is the tenant's one of that name, made here the
 // first time it is needed and used as it stands when it names fewer; one

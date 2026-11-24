@@ -438,6 +438,33 @@ is answered at Loft and refused at roster and at every other app
 of themselves at roster says the verbs among `methods`, names Loft in `apps`,
 and holds none of them in `everywhere`.
 
+### An app's page of somebody's keys
+
+A key is for one app (`ApiKey.app`), and **a key for Loft is Loft's row**:
+`app-administrator` names `ApiKeyService`'s `Get`, `List` and `Erase`, so
+Loft, as itself -- `install` binds it for itself -- and Loft's administrators
+list the keys that are for Loft, of one person or of everybody, read one, and
+end one whoever's it is. A key of roster's, or for another app, is not seen by
+them and not ended, refused naming Loft; their own keys are theirs as ever.
+
+So Loft's page shows somebody their own keys for Loft, what each may call, and
+ends one: Loft's server asks roster as Loft, for the person its own session
+says is there, with a filter naming them --
+
+```
+ApiKeyService/List { filters: [{ holder: { id: <sub> } }] }   # as Loft: their keys for Loft
+ApiKeyService/Erase { id: <the key> }                         # and ending one
+```
+
+-- and holds that page to its own session, since roster answers Loft every
+key for Loft whoever asks it to. A browser cannot ask roster itself: roster
+takes no token of the issuer's, and its session's cookie is its own host's.
+Ending one is on the trail as Loft's own write. **Minting one is not among
+these**: it is the person's own, held to what they hold at Loft
+([usage/ways-in.md](usage/ways-in.md) § *A key for an app*). A tenant installed before `ApiKeyService`'s verbs
+were among these holds an `app-administrator` naming fewer, which is used as
+it stands until somebody widens it.
+
 ### People's tokens
 
 A page that signs somebody in gets an **ID token**: it says to that page who

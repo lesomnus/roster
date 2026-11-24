@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"slices"
 	"time"
 
 	"github.com/lesomnus/z"
@@ -390,18 +391,53 @@ func (s Core) holderNamed(ctx context.Context, alias string) (*app.HolderRef, er
 // finding the key an app was presented, which answers it to that app alone
 // (`server/keys`). No port serves a read by the verifier (`cmd`,
 // `NotByVerifier`), so this is that read and no other.
+//
+// # And the keys that are for an app are that app's rows
+//
+// `Get`, `List` and `Erase` are among roster's verbs held for one app
+// ([ForAnApp]), and a key is an app's row when its `app` is that app. So
+// whoever holds the verb for Foo -- Foo itself, bound `app-administrator` for
+// itself by `roster app install`, and Foo's administrators -- reads the keys
+// for Foo of anybody, and ends one whoever's it is: what it takes away is a
+// way in at Foo and nowhere else. A key of roster's, or for another app, is
+// not theirs by it: not seen (`cmd.Apps`), and not ended ([Core.mayWriteOfApp]).
+// Minting is not among them, and is the person's.
 func (s coreApiKey) Get(ctx context.Context, req *app.ApiKeyGetRequest) (*app.ApiKey, error) {
 	whose, of, err := s.whoseFor(ctx, req.GetRef())
 	if err != nil {
 		return nil, err
 	}
 	if !s.spentBy(ctx, req.GetRef(), of) {
-		if err := s.mayReadOf(ctx, "ref", whose); err != nil {
+		if err := s.mayReadKey(ctx, "ref", app.ApiKeyService_Get_FullMethodName, whose, of); err != nil {
 			return nil, err
 		}
 	}
 
 	return s.ApiKeyServiceServer.Get(ctx, req)
+}
+
+// heldForOnly is whether the caller holds `method` for the app `of` itself
+// (`Binding.app`). Not across the tenant: a key's read held across it answers
+// somebody their own, and its erase held across it is held to the reach rule,
+// as they always were.
+func (s coreApiKey) heldForOnly(ctx context.Context, method string, of pdid.Id) (bool, error) {
+	apps, _, _, err := s.heldFor(ctx, method)
+
+	return slices.Contains(apps, of), err
+}
+
+// mayReadKey is [Core.mayReadOf] of a key's holder, or the caller holding the
+// read `method` for the app the key is for.
+func (s coreApiKey) mayReadKey(ctx context.Context, field, method string, whose, of pdid.Id) error {
+	err := s.mayReadOf(ctx, field, whose)
+	if err == nil || of == pdid.Nil || status.Code(err) != codes.PermissionDenied {
+		return err
+	}
+	if held, herr := s.heldForOnly(ctx, method, of); herr != nil || held {
+		return herr
+	}
+
+	return err
 }
 
 // spentBy is whether a key found by its verifier is read by the app it is
@@ -416,6 +452,18 @@ func (s coreApiKey) List(ctx context.Context, req *app.ApiKeyListRequest) (*app.
 	mine, err := s.onlyMine(ctx)
 	if err != nil {
 		return nil, err
+	}
+	if mine != nil {
+		// Or the keys for an app they hold the read for, of anybody: the wall
+		// answers those and their own (`cmd.Apps`), and a filter naming
+		// somebody else is the keys of theirs for that app.
+		apps, _, _, err := s.heldFor(ctx, app.ApiKeyService_List_FullMethodName)
+		if err != nil {
+			return nil, err
+		}
+		if len(apps) > 0 {
+			mine = nil
+		}
 	}
 	if mine != nil {
 		// Their own, whatever was asked for: a filter that names nobody is
@@ -457,6 +505,9 @@ func (s coreApiKey) List(ctx context.Context, req *app.ApiKeyListRequest) (*app.
 	return res, nil
 }
 
+// Erase is a way in taken away, and meets [coreApiKey.reaches]; or it is a
+// key for an app ended by whoever holds `Erase` for that app, whoever's it
+// is ([coreApiKey.Get]).
 func (s coreApiKey) Erase(ctx context.Context, req *app.ApiKeyRef) (*app.ApiKeyEraseResponse, error) {
 	if err := s.reaches(ctx, req); err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -472,9 +523,26 @@ func (s coreApiKey) Erase(ctx context.Context, req *app.ApiKeyRef) (*app.ApiKeyE
 // reaches is `mayReach` on the holder of the key a reference names, read
 // through the wall first so a key outside the caller's tenant is `NotFound`
 // before anybody is compared.
+//
+// Somebody's own is theirs to end. One for an app the caller holds `Erase`
+// for is theirs to end too, and nothing else is asked of it. Anything else,
+// to somebody who holds `Erase` for an app and not across the tenant, is not
+// that app's, and is refused naming it ([Core.mayWriteOfApp]).
 func (s coreApiKey) reaches(ctx context.Context, ref *app.ApiKeyRef) error {
-	holder, err := s.whose(ctx, ref)
+	holder, of, err := s.whoseFor(ctx, ref)
 	if err != nil || holder == pdid.Nil {
+		return err
+	}
+	if f, ok := frame.From(ctx); ok && f.Actor == holder {
+		return s.mayReach(ctx, "ref", holder)
+	}
+	if of != pdid.Nil {
+		held, err := s.heldForOnly(ctx, app.ApiKeyService_Erase_FullMethodName, of)
+		if err != nil || held {
+			return err
+		}
+	}
+	if err := s.mayWriteOfApp(ctx, "ref", app.ApiKeyService_Erase_FullMethodName, "key", of, pdid.Nil); err != nil {
 		return err
 	}
 

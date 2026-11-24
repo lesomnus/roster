@@ -302,6 +302,12 @@ the account page draws it `@loft`, and `roster me get` and `roster key list`
 print `app=@…`, each saying nothing of a key of roster's. What ends the app's
 holder ends the keys that are for it, whoever's they are.
 
+**It is the app's row.** The app itself and its administrators, who hold
+roster's verbs for it, list the keys that are for it -- of one person, or of
+everybody -- read one and end one, whoever's it is; none of roster's and none
+of another app's ([../apps.md](../apps.md) § *An app's page of somebody's
+keys*). Minting one stays the person's.
+
 ### A terminal, signed in from a browser
 
 A machine with no browser -- a server over SSH, a container, somebody's laptop on
