@@ -14,7 +14,6 @@ import (
 
 	"github.com/lesomnus/xli"
 	"github.com/lesomnus/xli/arg"
-	"github.com/lesomnus/xli/flg"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -224,44 +223,7 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 	}
 	add.Handler = xli.Chain(xli.OnRun(tenantNamed), add.Handler)
 
-	cs := t.Commands()
-	templatesFirst(cs)
-
-	return cs
-}
-
-// templatesFirst puts [templateOf] in front of every command of `cs`, and of
-// the commands under them, that reads `-o`.
-//
-// payday refuses a wrong `-o` and `--in` before its connector is asked, as a
-// wrong flag (#531), so roster no longer checks either itself, but for one
-// case: a template that does not parse. payday refuses it before anything is
-// opened, with status 2, in the template package's words alone, which name
-// no flag (`template: template: :1: unclosed action`); a refusal names the
-// flag as it is typed. Until payday's does, this says it first.
-func templatesFirst(cs xli.Commands) {
-	for _, v := range cs {
-		templatesFirst(v.Commands)
-		if v.Flags.Get("output") == nil {
-			continue
-		}
-
-		v.Handler = xli.Chain(xli.OnRun(templateOf), v.Handler)
-	}
-}
-
-// templateOf refuses an `-o template=` that does not parse, naming `-o`, and
-// lets every other `-o` through to payday's own check.
-func templateOf(ctx context.Context, cl *xli.Command, next xli.Next) error {
-	if v, ok := flg.Find[string](cl, "output"); ok {
-		if text, ok := strings.CutPrefix(v, "template="); ok {
-			if _, err := pdcmd.Template(text); err != nil {
-				return invocation(fmt.Errorf("-o %s: %w", v, err))
-			}
-		}
-	}
-
-	return next(ctx)
+	return t.Commands()
 }
 
 // tenantNamed refuses `tenant add` that names no alias, by NAME or in REQ.
