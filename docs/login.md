@@ -77,9 +77,10 @@ sequenceDiagram
 the session is the app's, because a cookie belongs to the origin the browser is
 actually talking to.
 
-roster does serve one browser of its own -- the admin console, on the control
-plane, on a cookie roster mints and checks (`AuthService.SignIn`). Different
-plane, different people, and nothing about a customer's sign-in passes through it.
+roster does serve browsers of its own -- the admin console, on the control
+plane, and the user console (§ *The user console, through the front door*), on a
+cookie roster mints and checks (`AuthService.SignIn`). Neither is a product's,
+and nothing about a product's sign-in passes through them.
 
 ### What each side answers
 
@@ -165,7 +166,7 @@ Line by line, against the no-Hydra picture:
 | | without Hydra | with Hydra |
 | --- | --- | --- |
 | who asks roster | the product app | the **Login App** |
-| what it asks | `VouchService.Verify` | `Identity` → `Holder.id`, and `Vouch` only if there is a password |
+| what it asks | `VouchService.Verify` | `Identity` → `Holder.id` and then `Vouch.Accept`, or `Vouch.Delegate` for a password |
 | what the product app gets back | `{ok, holder, tenant}` | an `id_token` carrying the same `sub` |
 | the cookie | the app's own, opaque | **unchanged** -- the app's own, opaque |
 | a second product | has to sign in again | is already signed in, at Hydra |
@@ -1237,7 +1238,7 @@ There are **three** of them, and the third was told last: the user console drew 
 form unconditionally until `AuthService.Offers` existed, so for such a tenant it
 offered one whose every answer `Vouch.Verify` refused, and said only *no*. The Login
 App is told by `/flow` and the account app by `GET /providers`; on the data plane a
-page cannot be told by a route (`cmd.serveHttp` says why) and cannot read the tenant
+page cannot be told by a route (`Server.http` in `cmd/serve.go` says why) and cannot read the tenant
 through the wall before it has a frame, so it asks.
 
 Three things it deliberately does not reach:
@@ -1326,8 +1327,8 @@ answers with an opaque `continuation` -- short-lived, single-use, resolvable onl
 the caller it was issued to -- and the app hands it back with the second secret. So
 the two forms are the app's and the fact that both were the same person is
 roster's. Beside it come the two things needed to draw the second form: what is
-`satisfied` so far and what is `available` to this person, each a kind, a name and a
-lockout. What does not come is how many steps there are, which method to offer, or
+`satisfied` so far, by kind, and what is `available` to this person, each a kind, a
+name and a lockout. What does not come is how many steps there are, which method to offer, or
 what to call them.
 
 ## Signing in by address, and where the tenant comes from
@@ -1519,7 +1520,7 @@ sequenceDiagram
 
   Note over A,R: POST /session {alias, password}
   A->>R: Vouch.Delegate
-  R-->>A: {ok, holder, tenant, token, date_expired}
+  R-->>A: {verified: {ok, holder, tenant}, token, date_expired}
 
   Note over A,R: later, drawing a page
   A->>R: MeService/Get<br/>authorization: Bearer rk_… (who is calling)<br/>roster-as: rd_… (who the call is about)

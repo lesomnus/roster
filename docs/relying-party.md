@@ -34,7 +34,7 @@ the issuer's side; this document is it from the product's.
 | `docker/device.sh` | the third shape: a client with **no browser**, RFC 8628 ([`login.md`](login.md) § *A device with no browser*) |
 | `compose.yaml` | both services, their clients, and Hydra's six `URLS_*` |
 | `deploy/product.yaml`, `deploy/clients/product.json` | `itself` as a manifest and a declared client |
-| `scripts/hydra.sh` | stands compose up and runs seven walks |
+| `scripts/hydra.sh` | stands compose up and runs eight walks |
 | `scripts/cluster.sh` | k3d over `deploy/`, and `itself.sh` as a Job inside it |
 | `login/doctor.go` | `roster login doctor`: whether the clients are registered in a way any of this works with |
 
@@ -72,7 +72,7 @@ sequenceDiagram
   L-->>B: {brand, client, scope}
   B->>L: POST /session {alias, password}
   L->>R: roster.VouchService/Delegate
-  R-->>L: {verified: {ok, token: rd_…}}
+  R-->>L: {verified: {ok}, token: rd_…}
   L-->>B: 204, Set-Cookie: the Login App's session
   B->>L: POST /accept?login_challenge=…
   L->>H: PUT …/requests/login/accept {subject: Holder.id}
@@ -258,9 +258,9 @@ hands one to the browser as the other. `AuthService.SignIn` does exactly that,
 and for a while the absence of it here read as *issuing is HTTP*, which is wrong.
 
 The real line is **whose session it is**. `AuthService` mints roster's own
-session for roster's own browser -- the admin console, on the control plane's
-listener alone (`console.Auth(…, s.Sessions)` in `cmd/serve.go`), for operators,
-in roster's session store. The Login App's cookie is the Login App's: its origin,
+sessions for roster's own browsers -- the admin console, on the admin listener
+(`console.Auth(…, s.Sessions)` in `cmd/admin.go`), for operators, and the user
+console on the data plane, for a tenant's people -- in roster's session stores. The Login App's cookie is the Login App's: its origin,
 its store, its row, its lifetime. CLAUDE.md's second rule is what settles it --
 *a session cookie for another app's browser is not roster's to make* -- and so
 does the history: `POST /session` was once mounted on every listener that had
@@ -478,7 +478,7 @@ state := base64.RawURLEncoding.EncodeToString(b)
 a.flows[state] = flow{expires: now.Add(10 * time.Minute)}
 http.SetCookie(w, &http.Cookie{
 	Name: "product_state", Value: state, Path: "/",
-	HttpOnly: true, Secure: r.TLS != nil, SameSite: http.SameSiteLaxMode, MaxAge: 600,
+	HttpOnly: true, Secure: !a.insecure, SameSite: http.SameSiteLaxMode, MaxAge: 600,
 })
 http.Redirect(w, r, a.cfg.AuthCodeURL(state), http.StatusFound)
 ```
@@ -516,10 +516,10 @@ _, cookie, err := a.sessions.Mint(ctx, authsession.Session{
 // payday/auth/authoidc
 func Subject(_ context.Context, t *oidc.IDToken) (auth.Identity, error) {
 	if t.Subject == "" {
-		return auth.Identity{}, fmt.Errorf("%w: the token names nobody", auth.ErrNoCredential)
+		return auth.Identity{}, fmt.Errorf("%s: the token names nobody", Method)
 	}
 
-	return auth.Identity{Id: t.Subject, Grant: frame.Whole(), Expires: t.Expiry}, nil
+	return auth.Identity{Id: t.Subject, Grant: frame.Whole(), DateExpired: t.Expiry}, nil
 }
 ```
 
@@ -676,7 +676,7 @@ says nothing about the tenant, so the tenant comes from the other address, which
 nothing redirects to; the same client can do the device grant too.
 [login.md](login.md) § *What changes when Hydra is in front* says the rule.
 
-And Hydra, five variables of it (`compose.yaml`, and the same five in
+And Hydra, six variables of it (`compose.yaml`, and the same six in
 `deploy/hydra.yaml`):
 
 | | |
@@ -691,7 +691,7 @@ And Hydra, five variables of it (`compose.yaml`, and the same five in
 
 ```sh
 roster login doctor --hydra …
-./scripts/hydra.sh      # compose: doctor, then seven walks
+./scripts/hydra.sh      # compose: doctor, then eight walks
 ./scripts/cluster.sh    # k3d over deploy/, and itself.sh as a Job inside it
 ```
 
