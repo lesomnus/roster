@@ -1246,6 +1246,25 @@ no row and alters no table: it looks the provisioner up and does not make it,
 and asks of both databases what `serve` asks before it serves, without
 migrating either.
 
+**A dry run says of each row what the run would say**, a refusal as much as a
+write: each row goes through every rule its write is held to and stops short of
+the write alone, so a row the run would refuse is refused, in the run's words
+and with its exit status, and the rows after it are not looked at, as the run
+does not look at them. What only the writes ahead of a row can answer is said
+under it rather than promised: what is asked of a tenant an earlier row adds,
+which is not there yet to be asked about -- a connection that provisions reads
+its tenant -- and of a connection that provisions where an earlier row moves
+which of the tenant's does.
+
+```
+$ roster resources apply --dry-run
++ Tenant @fabrikam
++ Connection @fabrikam/entra
+    not asked yet: @fabrikam is added by an earlier row; what is asked of it is asked when the run has written it
+
+(dry run; nothing was written)
+```
+
 **A file is read as the configuration is.** A key its top level does not hold,
 and a key the row's `kind` does not read -- one another kind reads among them --
 is refused, by the file, where the key is in it and its name; so is a `kind`

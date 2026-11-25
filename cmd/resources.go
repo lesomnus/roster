@@ -220,6 +220,11 @@ type AppliedRow struct {
 	Kind   string
 	Name   string
 	Fields []string
+
+	// Unasked is, in a dry run, what was not asked of the row because only
+	// the writes before it could answer it, and why; empty where everything
+	// the run asks was asked. See [ApplyResources].
+	Unasked string
 }
 
 // ReadResources reads the files named, in order, and refuses what nothing
@@ -539,6 +544,24 @@ func (r Resource) where() string {
 // `dry` answers what it would do and writes nothing, which is what a person
 // wants before a deployment does it for them.
 //
+// # A dry run says what the run would say
+//
+// Each row goes the run's own way, through every rule the write is held to,
+// and stops short of the write alone ([core.Dry]); so a row the run would
+// refuse is refused, in the run's words and with its status, and the rows
+// after it are not looked at, as the run does not look at them. It read the
+// rows and answered from what it found, and so promised `+` for a row the
+// run refused: a connection's name that is no alias, an issuer not written as
+// it is compared, a claim the provider does not issue, a tenant's front door
+// that is no origin, a host's or a mail domain's name not written as it is
+// compared, and any row of a tenant that is not there.
+//
+// What only a write can answer is said rather than promised: what is asked of
+// a tenant an earlier row of the files adds, which is not there yet to be
+// asked about, and of a connection that provisions where an earlier row moves
+// which of the tenant's does, since one of a tenant's does and which is asked
+// of the rows as written ([AppliedRow.Unasked]).
+//
 // # A tenant that is leaving is left as it is
 //
 // A file finds its tenant by alias, and looked at nothing else of it. So a
@@ -591,6 +614,9 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 	if err != nil {
 		return out, err
 	}
+	if dry {
+		as = core.Dry(as)
+	}
 
 	// The stack the **admin console** writes a customer through, and for its
 	// reason: the provisioner is a holder of the control plane, so a layer
@@ -609,10 +635,15 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 	leaving := leavers{}
 	defer leaving.said(ctx)
 
+	// What a dry run has answered and not written, which what is asked of a
+	// row after it reads: the tenants it adds, and the tenants a connection
+	// of which it marks or unmarks as the one that provisions.
+	adds, marks := map[string]bool{}, map[string]bool{}
+
 	for _, r := range rs {
 		// Every kind is one of these: [checkResources] refused any other
 		// before anything was written.
-		apply := map[string]func(context.Context, app.Server, Resource, bool) (string, []string, error){
+		apply := map[string]func(context.Context, app.Server, Resource) (string, []string, error){
 			"Tenant":     applyTenant,
 			"Connection": applyConnection,
 			"Host":       applyHost,
@@ -632,7 +663,11 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 			continue
 		}
 
-		was, fields, err := apply(as, at, r, dry)
+		was, fields, err := apply(as, at, r)
+		unasked := ""
+		if dry {
+			was, unasked, err = leaving.dry(r, was, fields, err, adds, marks)
+		}
 		if err != nil {
 			return out, r.refused(err)
 		}
@@ -646,10 +681,72 @@ func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Ap
 		default:
 			out.Same = append(out.Same, what)
 		}
-		out.Rows = append(out.Rows, AppliedRow{Was: was, Kind: r.Kind, Name: what, Fields: fields})
+		out.Rows = append(out.Rows, AppliedRow{Was: was, Kind: r.Kind, Name: what, Fields: fields, Unasked: unasked})
 	}
 
 	return out, nil
+}
+
+// made is what a write answered, with a dry run's write that would have been
+// made ([core.ErrDry]) answered as made.
+func made(err error) error {
+	if errors.Is(err, core.ErrDry) {
+		return nil
+	}
+
+	return err
+}
+
+// dry is what a dry run answers of `r`, once it has been through every rule
+// its write is held to and answered `was` and `err`: what the store says of a
+// write as well, which the write was stopped short of, and what cannot be
+// asked before the writes ahead of it are made ([ApplyResources]).
+func (l leavers) dry(r Resource, was string, fields []string, err error, adds, marks map[string]bool) (string, string, error) {
+	if r.Kind == "Tenant" {
+		if err == nil && was == "added" {
+			adds[r.Alias] = true
+		}
+
+		return was, "", err
+	}
+
+	// A row of a tenant an earlier row adds: the tenant is there when the run
+	// writes the row, and not when this asks. What reads it -- a connection
+	// that provisions reads its tenant, and the others of it -- answers that
+	// it is not there, which the run does not.
+	if adds[r.Tenant] {
+		if status.Code(err) != codes.NotFound {
+			return was, "", err
+		}
+
+		return "added", fmt.Sprintf("@%s is added by an earlier row; what is asked of it is asked when the run has written it", r.Tenant), nil
+	}
+
+	// A connection that provisions, of a tenant one of whose connections an
+	// earlier row marks or unmarks: one of a tenant's provisions, and which
+	// is asked of the rows as the run has written them.
+	moves := r.Kind == "Connection" &&
+		(was == "added" && r.Provisions || was == "changed" && slices.Contains(fields, "provisions"))
+	if moves {
+		if marks[r.Tenant] && (err == nil || status.Code(err) == codes.FailedPrecondition) {
+			return was, fmt.Sprintf("an earlier row moves which connection of @%s provisions; "+
+				"one of a tenant's does, and which is asked when the run has written that row", r.Tenant), nil
+		}
+		if err == nil {
+			marks[r.Tenant] = true
+		}
+	}
+	if err != nil {
+		return was, "", err
+	}
+
+	// A tenant that is not there is said by the store, below where the write
+	// stopped, in these words: the run's own refusal of the row.
+	if v := l[r.Tenant]; v != nil && v.missing != nil {
+		return was, "", v.missing
+	}
+
+	return was, "", nil
 }
 
 // named is what a resource is called in what a run answers: a tenant by its
@@ -677,6 +774,10 @@ type leaver struct {
 	// What of it the files declare, and which files.
 	left  []string
 	files []string
+
+	// missing is how the tenant not being there was answered: what the store
+	// answers a write into it, which a dry run says for it.
+	missing error
 }
 
 // left is whether `r` is, or is under, a tenant that is closed or destroyed.
@@ -704,6 +805,7 @@ func (l leavers) left(ctx context.Context, s app.Server, r Resource) (bool, erro
 		case status.Code(err) == codes.NotFound:
 			// Nobody of that alias: a tenant the file makes, or a row whose
 			// own kind says its tenant is not there.
+			v.missing = err
 		case err != nil:
 			return false, err
 		case got.GetDateDestroyed() != nil:
@@ -838,7 +940,7 @@ func labelsOf(r Resource) map[string]string {
 // reason (`proto/ext/app/host_svc.ext.proto` and its neighbours); this is that
 // rule arrived at from the other side.
 
-func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (string, []string, error) {
+func applyTenant(ctx context.Context, s app.Server, r Resource) (string, []string, error) {
 	if r.Alias == "" {
 		return "", nil, errors.New("alias")
 	}
@@ -848,9 +950,6 @@ func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (strin
 		Select: app.TenantSelect_builder{All: proto.Bool(true)}.Build(),
 	}.Build())
 	if status.Code(err) == codes.NotFound {
-		if dry {
-			return "added", nil, nil
-		}
 		add := app.TenantAddRequest_builder{
 			Alias: r.Alias, Name: r.Name, Desc: r.Desc, Labels: labelsOf(r),
 		}
@@ -859,7 +958,7 @@ func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (strin
 		}
 		_, err = s.Tenant().Add(ctx, add.Build())
 
-		return "added", nil, err
+		return "added", nil, made(err)
 	}
 	if err != nil {
 		return "", nil, err
@@ -877,10 +976,6 @@ func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (strin
 	if len(fields) == 0 && declared(got.GetLabels()) {
 		return "same", nil, nil
 	}
-	if dry {
-		return "changed", fields, nil
-	}
-
 	// `Update` and not `Patch`, which the three below use: it is the verb the
 	// consoles call, so the one rule about a front door -- an origin and
 	// nothing more -- meets a file exactly as it meets a form.
@@ -896,7 +991,7 @@ func applyTenant(ctx context.Context, s app.Server, r Resource, dry bool) (strin
 	}
 	_, err = s.Tenant().Update(ctx, up.Build())
 
-	return "changed", fields, err
+	return "changed", fields, made(err)
 }
 
 // settle is a tenant's settings with what a file said written over them,
@@ -944,7 +1039,7 @@ func settle(cur *app.TenantConfig, said *Settings) *app.TenantConfig {
 	return out
 }
 
-func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (string, []string, error) {
+func applyConnection(ctx context.Context, s app.Server, r Resource) (string, []string, error) {
 	at, err := tenantRef(ctx, s, r)
 	if err != nil {
 		return "", nil, err
@@ -957,9 +1052,6 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		Select: app.ConnectionSelect_builder{All: proto.Bool(true)}.Build(),
 	}.Build())
 	if status.Code(err) == codes.NotFound {
-		if dry {
-			return "added", nil, nil
-		}
 		_, err = s.Connection().Add(ctx, app.ConnectionAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc,
 			Issuer: r.Issuer, ClientId: r.ClientId, Scopes: r.Scopes, SecretRef: r.SecretRef,
@@ -968,7 +1060,7 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 			Labels:       labelsOf(r),
 		}.Build())
 
-		return "added", nil, err
+		return "added", nil, made(err)
 	}
 	if err != nil {
 		return "", nil, err
@@ -985,10 +1077,6 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 	if len(fields) == 0 && declared(got.GetLabels()) {
 		return "same", nil, nil
 	}
-	if dry {
-		return "changed", fields, nil
-	}
-
 	v, err := s.Connection().Patch(ctx, app.ConnectionPatchRequest_builder{
 		Ref:          app.ConnectionRef_builder{Id: got.GetId()}.Build(),
 		Desc:         proto.String(r.Desc),
@@ -1002,7 +1090,7 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		DateUpdated:  got.GetDateUpdated(),
 	}.Build())
 	if err != nil || len(r.Scopes) > 0 || len(got.GetScopes()) == 0 {
-		return "changed", fields, err
+		return "changed", fields, made(err)
 	}
 
 	// Scopes left out are none, as every other key left out is empty. A list
@@ -1028,7 +1116,7 @@ func applyConnection(ctx context.Context, s app.Server, r Resource, dry bool) (s
 	return "changed", fields, err
 }
 
-func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string, []string, error) {
+func applyHost(ctx context.Context, s app.Server, r Resource) (string, []string, error) {
 	at, err := tenantRef(ctx, s, r)
 	if err != nil {
 		return "", nil, err
@@ -1039,14 +1127,11 @@ func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string,
 		Select: app.HostSelect_builder{All: proto.Bool(true)}.Build(),
 	}.Build())
 	if status.Code(err) == codes.NotFound {
-		if dry {
-			return "added", nil, nil
-		}
 		_, err = s.Host().Add(ctx, app.HostAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc, Labels: labelsOf(r),
 		}.Build())
 
-		return "added", nil, err
+		return "added", nil, made(err)
 	}
 	if err != nil {
 		return "", nil, err
@@ -1071,10 +1156,6 @@ func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string,
 	if len(fields) == 0 && declared(got.GetLabels()) {
 		return "same", nil, nil
 	}
-	if dry {
-		return "changed", fields, nil
-	}
-
 	_, err = s.Host().Patch(ctx, app.HostPatchRequest_builder{
 		Ref:         app.HostRef_builder{Id: got.GetId()}.Build(),
 		Desc:        proto.String(r.Desc),
@@ -1082,10 +1163,10 @@ func applyHost(ctx context.Context, s app.Server, r Resource, dry bool) (string,
 		DateUpdated: got.GetDateUpdated(),
 	}.Build())
 
-	return "changed", fields, err
+	return "changed", fields, made(err)
 }
 
-func applyMailDomain(ctx context.Context, s app.Server, r Resource, dry bool) (string, []string, error) {
+func applyMailDomain(ctx context.Context, s app.Server, r Resource) (string, []string, error) {
 	at, err := tenantRef(ctx, s, r)
 	if err != nil {
 		return "", nil, err
@@ -1103,14 +1184,11 @@ func applyMailDomain(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		Select: app.MailDomainSelect_builder{All: proto.Bool(true)}.Build(),
 	}.Build())
 	if status.Code(err) == codes.NotFound {
-		if dry {
-			return "added", nil, nil
-		}
 		_, err = s.MailDomain().Add(ctx, app.MailDomainAddRequest_builder{
 			Tenant: at, Name: r.Name, Desc: r.Desc, Provider: r.Routes, Labels: labelsOf(r),
 		}.Build())
 
-		return "added", nil, err
+		return "added", nil, made(err)
 	}
 	if err != nil {
 		return "", nil, err
@@ -1122,10 +1200,6 @@ func applyMailDomain(ctx context.Context, s app.Server, r Resource, dry bool) (s
 	if len(fields) == 0 && declared(got.GetLabels()) {
 		return "same", nil, nil
 	}
-	if dry {
-		return "changed", fields, nil
-	}
-
 	_, err = s.MailDomain().Patch(ctx, app.MailDomainPatchRequest_builder{
 		Ref:         app.MailDomainRef_builder{Id: got.GetId()}.Build(),
 		Desc:        proto.String(r.Desc),
@@ -1134,7 +1208,7 @@ func applyMailDomain(ctx context.Context, s app.Server, r Resource, dry bool) (s
 		DateUpdated: got.GetDateUpdated(),
 	}.Build())
 
-	return "changed", fields, err
+	return "changed", fields, made(err)
 }
 
 // differs is the names, of pairs of a name and whether it changes, that
