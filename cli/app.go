@@ -164,8 +164,8 @@ func newCmdAppInstall(c *cmd.Config) *xli.Command {
 // would hand the app whatever it names at another app.
 //
 // A holder of the app's name that is already there is somebody's, and is used
-// only if it holds nothing but the app's own roles -- which is what a second
-// run finds -- or when `--adopt` says to. Taking it silently was answering the
+// only if it is this app's own ([appsOwn]), if it holds nothing but the app's
+// own roles, or when `--adopt` says to. Taking it silently was answering the
 // app's key with whatever that holder held, and handing whoever signs in as it
 // the app's methods: `roster app install admin` was a key answered as the
 // tenant's administrator.
@@ -258,12 +258,16 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 		return nil, err
 	}
 	if !made {
+		own, err := appsOwn(ctx, s, who, name)
+		if err != nil {
+			return nil, err
+		}
 		h, err := holdingOf(ctx, s, who, existing, everything)
 		if err != nil {
 			return nil, err
 		}
 		switch {
-		case h.empty():
+		case own, h.empty():
 		case !adopt:
 			return nil, fmt.Errorf("@%s/%s is already there and holds %s: the app's key would be answered with all of it, "+
 				"and whoever signs in as it would hold the app's methods. Name the app something else, or say --adopt", tenant, name, h)
@@ -434,6 +438,27 @@ func everyRoleIsTheApps(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, 
 	}
 
 	return nil
+}
+
+// appsOwn is whether the holder `who` is the one `roster app install` made or
+// adopted for the app `name`: it carries [rstr.LabelApp] with that name, which
+// install writes (#451) and nobody at a port writes or takes off.
+//
+// Such a holder goes on whatever it holds. What it holds is the app's own --
+// its role, its bindings, the `rt_` key minted for it -- and counting those as
+// somebody else's refused a second run once the app had a key, and asked the
+// operator to adopt the app's own holder (#567). One of that alias carrying
+// another app's name, or none, is somebody's as before.
+func appsOwn(ctx context.Context, s *cmd.Server, who []byte, name string) (bool, error) {
+	got, err := s.Ungated.Holder().Get(ctx, rstr.HolderGetRequest_builder{
+		Ref:    rstr.HolderRef_builder{Id: who}.Build(),
+		Select: rstr.HolderSelect_builder{Labels: z.Ptr(true)}.Build(),
+	}.Build())
+	if err != nil {
+		return false, err
+	}
+
+	return got.GetLabels()[rstr.LabelApp] == name, nil
 }
 
 // appRoleIsRosters refuses a role called [AppRole] that is not a role of
