@@ -64,7 +64,7 @@ them in one place.
 | `continuation` and `link`, sign-in attempts and the links mailed | a sweep every ten minutes, of those past their expiry |
 | `hostproof`, claims of a hostname | a sweep every day, of those past their expiry |
 | `outbox` | the drain, which runs in a `serve` that holds a broker. A command at the box writes here wherever there is a broker, so a deployment that names one and runs no `serve` grows it |
-| a person's rows -- their addresses, numbers, accounts at a provider, secrets, keys, sessions, memberships and bindings | `holder.forget_after` after they are erased, or `roster forget`. Their own row stays, blank ([Destroying somebody](#destroying-somebody-which-an-erase-does-not)) |
+| a person's rows -- their addresses, numbers, accounts at a provider, secrets, badges, keys, sessions, memberships and bindings | `holder.forget_after` after they are erased, or `roster forget`. Their own row stays, blank ([Destroying somebody](#destroying-somebody-which-an-erase-does-not)) |
 | a closed tenant's rows | `tenant.restore_within` after the close, or by hand. The tenant's own row stays, blank ([A tenant leaving](#a-tenant-leaving)) |
 | `consent` | `consent.keep` after the person's erase |
 
@@ -342,7 +342,7 @@ roster init
 ```
 control plane
   holder admin is 019ff2...
-  bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
+  bound to role "everything" = /roster.*/* -- every Rpc roster serves, now and after an upgrade
   password  on standard output, alone
 
 sign in to the admin console as admin. that password is shown once and is not stored -- write it down now.
@@ -591,7 +591,7 @@ looked for in the zone the alias is written in.
 
 ## The listeners
 
-Five of roster's own at most, and which open is what the configuration named.
+Six of roster's own at most, and which open is what the configuration named.
 
 | | who calls it | |
 | --- | --- | --- |
@@ -1027,13 +1027,13 @@ kept in memory. That is one replica, and a restart is a rotation: the
 account page asks everybody to sign in again, which is all a rotation costs, since
 the key is a row like any other whichever way it was made. A tenant that registers
 a name later is nominated in at the next start, and the account app finds it on
-the first request for that name without one. In four processes nothing is made
+the first request for that name without one. In five processes nothing is made
 for you: each `provision` writes its keys into a directory the app's own process
 reads with `${file:}`, and a key that was written down is left exactly as written --
 a reference that resolves to nothing is a refusal, never a fresh key made quietly
 over it. The role is written as exactly the app's list on every run, so a release
 whose app calls something more -- the account app's `EmailService/Attest`, which
-it was missing -- is a restart in one process and `provision` run again in four.
+it was missing -- is a restart in one process and `provision` run again in five.
 The directory's key is still yours to write either way:
 `roster --as admin control key add --allow /roster.NominationService/List directory`, and
 `roster app install --tenant … --allow … directory` in each tenant it serves.
@@ -1064,7 +1064,7 @@ why it is not shorter*). Name one -- 32 base64 bytes, as `${env:}` or `${file:}`
 where either of those matters.
 
 Each of the three is a **consumer**: it reaches roster over the wire with its own
-key and cannot reach past it, in one process exactly as in four -- each with one
+key and cannot reach past it, in one process exactly as in five -- each with one
 `rk_` narrowed per request to the holder each tenant nominated for it
 ([apps.md](apps.md)), or, run by a tenant for itself, that tenant's `rt_`. `scripts/test.sh`
 refuses the import rather than trusting anybody to remember. Their own designs are
@@ -1118,8 +1118,9 @@ names no setting is said on standard error as a misspelt one is.
 
 ### The key cannot exist before this has run once
 
-`roster login serve` refuses to start without a tenant key, and minting one takes
-a tenant, which somebody makes after the first boot.
+`roster login serve` refuses to start without its deployment key, and the key
+answers in a tenant only once this has nominated it there -- which takes a
+tenant, which somebody makes after the first boot.
 
 ```sh
 roster login provision --out /run/roster-login
@@ -1174,15 +1175,15 @@ before `ExecStart` on a box. `deploy/` is that, as manifests.
 
 ### Which to run
 
-Four processes, when the blast radius is worth the pods: the account app and the
+Five processes, when the blast radius is worth the pods: the account app and the
 Login App face the internet and hold the credentials for every tenant they front,
 while the control plane holds every key and the database. In one process a bug in the first
-reaches the second; in four that is a kernel boundary rather than a code one.
+reaches the second; in five that is a kernel boundary rather than a code one.
 
-One process, when it is not. A deployment that is four containers to run one
+One process, when it is not. A deployment that is five containers to run one
 binary against one database pays for it in configuration, upgrades and things to
 watch, and gets a boundary it may never have needed. `compose.yaml` runs the
-four-process shape; this file's own configuration is the one-process one.
+five-process shape; this file's own configuration is the one-process one.
 
 ## Declaring the rows that are configuration
 
