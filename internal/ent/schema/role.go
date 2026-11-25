@@ -73,6 +73,8 @@ func (Role) Indexes() []ent.Index {
 			StorageKey("role_slug").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+		index.Fields("app_id").
+			StorageKey("role_by_app"),
 	}
 }
 
@@ -152,6 +154,8 @@ func (Binding) Indexes() []ent.Index {
 			StorageKey("binding_by_holder"),
 		index.Fields("group_id").
 			StorageKey("binding_by_group"),
+		index.Fields("app_id").
+			StorageKey("binding_by_app"),
 	}
 }
 

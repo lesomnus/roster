@@ -833,6 +833,18 @@ roster --as admin role list -o wide
 Each `list` is a page of twenty, and `-o wide` does not say when there are
 more: `-n` and `--next` ask for the rest ([cli.md](cli.md#how-anything-is-named)).
 
+`role list`, `group list`, `binding list` and `api-key list` take an app, as
+they take a tenant or a holder: the rows whose `app` is that holder, of what
+the caller may see. With none they answer every row the caller may see, as
+before, and an app's administrator is answered that app's rows either way and
+nothing for another app's. There is no filter for roster's own: a reference
+that names nothing is refused, `InvalidArgument`, as it is for every edge a
+list takes.
+
+```sh
+roster --as admin role list '{"filters":[{"app":{"slug":{"alias":"loft","tenant":{"alias":"newco"}}}}]}'
+```
+
 and, as the person themselves, over the wire:
 
 ```

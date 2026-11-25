@@ -103,6 +103,11 @@ var (
 				},
 			},
 			{
+				Name:    "apikey_by_app",
+				Unique:  false,
+				Columns: []*schema.Column{ApikeyColumns[12]},
+			},
+			{
 				Name:    "apikey_secret",
 				Unique:  true,
 				Columns: []*schema.Column{ApikeyColumns[4]},
@@ -330,6 +335,11 @@ var (
 				Name:    "binding_by_group",
 				Unique:  false,
 				Columns: []*schema.Column{BindingColumns[8]},
+			},
+			{
+				Name:    "binding_by_app",
+				Unique:  false,
+				Columns: []*schema.Column{BindingColumns[9]},
 			},
 		},
 	}
@@ -662,6 +672,11 @@ var (
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
+			},
+			{
+				Name:    "group_by_app",
+				Unique:  false,
+				Columns: []*schema.Column{GroupColumns[10]},
 			},
 		},
 	}
@@ -1278,6 +1293,11 @@ var (
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
+			},
+			{
+				Name:    "role_by_app",
+				Unique:  false,
+				Columns: []*schema.Column{RoleColumns[11]},
 			},
 		},
 	}

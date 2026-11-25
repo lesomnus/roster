@@ -162,6 +162,7 @@ message GroupFilter {
   GroupRef ref = 1;
   TenantRef tenant = 2;
   SiteRef site = 3;
+  HolderRef app = 4;
 }
 
 message GroupUpdateRequest {

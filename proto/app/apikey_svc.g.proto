@@ -171,6 +171,7 @@ message ApiKeyListResponse {
 message ApiKeyFilter {
   ApiKeyRef ref = 1;
   HolderRef holder = 2;
+  HolderRef app = 3;
 }
 
 message ApiKeyIssueRequest {

@@ -74,6 +74,8 @@ func (ApiKey) Indexes() []ent.Index {
 			StorageKey("apikey_slug").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+		index.Fields("app_id").
+			StorageKey("apikey_by_app"),
 		index.Fields("secret").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),

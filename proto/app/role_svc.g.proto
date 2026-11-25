@@ -247,6 +247,7 @@ message RoleFilter {
   RoleRef ref = 1;
   TenantRef tenant = 2;
   SiteRef site = 3;
+  HolderRef app = 4;
 }
 
 message RoleWidenRequest {
@@ -432,4 +433,5 @@ message BindingFilter {
   HolderRef holder = 3;
   GroupRef group = 4;
   SiteRef site = 5;
+  HolderRef app = 6;
 }
