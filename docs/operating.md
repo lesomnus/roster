@@ -2095,7 +2095,7 @@ SQLite with a hook that is down signs people in a `hook.timeout` late.
 down shuts nobody out: signing in, proving a secret, spending a link, a
 delegation, a person setting or recovering their own password, second factor,
 badge or key, an address being proved, and what a sign-in writes on a
-provider's word (`cmd.WayIn` is the list). Making a person is not a way in: a
+provider's word (`waysIn` in `cmd/hook.go` is the list). Making a person is not a way in: a
 hook that covers `HolderService/Add` is asked about a person a first sign-in
 makes where a tenant enrols them (`login.enrol: enrolling`), so while such a
 hook is down nobody new is made, and everybody who exists still signs in. Nor
@@ -2199,11 +2199,15 @@ roster trail profiles
 ```
 
 ```
-pci    retain=2160h destroy=8760h   PCI-DSS 10.5.1: one year of audit history, the last three months immediately available
-hipaa  retain=2160h destroy=52560h  HIPAA 45 CFR 164.316(b)(2)(i): documentation retained six years
-sox    retain=2160h destroy=61320h  SOX, via 17 CFR 210.2-06: audit records retained seven years
-pipa   retain=2160h destroy=8760h   개인정보의 안전성 확보조치 기준: access records kept at least one year
-gdpr   retain=2160h destroy=17520h  GDPR names no figure — Article 5(1)(e) asks for a stated limit rather than a particular one …
+forever          retain=forever  destroy=forever  kept, on purpose: an operating record of what a machine did is not personal data and usually has the opposite requirement
+gdpr             retain=2160h0m0s destroy=17520h0m0s GDPR names no figure -- Article 5(1)(e) asks for a stated limit rather than a particular one, and two years is a convention rather than a citation. Argue with it
+hipaa            retain=2160h0m0s destroy=52560h0m0s HIPAA 45 CFR 164.316(b)(2)(i): documentation retained six years
+pci              retain=2160h0m0s destroy=8760h0m0s PCI-DSS 10.5.1: one year of audit history, the last three months immediately available
+pipa             retain=2160h0m0s destroy=8760h0m0s 개인정보의 안전성 확보조치 기준: access records kept at least one year
+pipa-sensitive   retain=2160h0m0s destroy=17520h0m0s 개인정보의 안전성 확보조치 기준: two years for unique identifiers, sensitive data, or a larger processor
+sox              retain=2160h0m0s destroy=61320h0m0s SOX, via 17 CFR 210.2-06: audit records retained seven years
+
+A starting point and not a guarantee: what a deployment must keep depends on what it processes and for whom.
 ```
 
 `61320h` is unreadable; *seven years, because 17 CFR 210.2-06 says seven years* is
@@ -2989,7 +2993,7 @@ it was given:
 | `EmailService/Get` by address | the tenant's identifier, and that an address was given |
 | `IdentityService/Get` by subject | the tenant's identifier, and that a provider and a subject were given |
 | `PhoneService/Get` by number | whose it is, as a reference is kept, and that a number and a kind were given |
-| `List` | each filter -- a row or a tenant by identifier, or that one was named by alias; a filter by labels as a filter with nothing in it -- the size, and `reverse`. Not the cursor, nor that there was one: it is the last row's place in the order, which for an order by name is a name |
+| `List` | each filter -- a row or a tenant by identifier, or that one was named by alias; a filter by labels as a filter with nothing in it -- the size, `reverse`, and the `select`. Not the cursor, nor that there was one: it is the last row's place in the order, which for an order by name is a name |
 | `Watch` | its filters, which name rows by identifier, and `skip_snapshot` |
 | a key, a delegation, a session, a link or a continuation by its `secret` | that it was read by `secret`, and nothing of it |
 | a write, and a call that was refused | nothing of the request |
