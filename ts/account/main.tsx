@@ -264,11 +264,13 @@ function Profile(props: {
 								profile: {
 									displayName: s('display_name'),
 									picture: s('picture'),
-									department: s('department'),
-									employeeNo: s('employee_no'),
 									locale: s('locale'),
-									// Not on this form, and carried as it is: the
-									// profile is replaced whole.
+									// What their organisation says of them is not theirs
+									// to change, and is carried as it is stored: the
+									// profile is replaced whole, and one that differs in
+									// any of the three is refused (`server/core/own.go`).
+									department: row.data?.profile?.department ?? '',
+									employeeNo: row.data?.profile?.employeeNo ?? '',
 									title: row.data?.profile?.title ?? '',
 								},
 							})
@@ -277,8 +279,6 @@ function Profile(props: {
 					}}
 				>
 					<input name="display_name" placeholder="display name" defaultValue={row.data.profile?.displayName ?? ''} />
-					<input name="department" placeholder="department" defaultValue={row.data.profile?.department ?? ''} />
-					<input name="employee_no" placeholder="employee no" defaultValue={row.data.profile?.employeeNo ?? ''} />
 					<input name="locale" placeholder="locale" defaultValue={row.data.profile?.locale ?? ''} />
 					<input name="picture" placeholder="picture url" defaultValue={row.data.profile?.picture ?? ''} />
 					<button type="submit" disabled={update.state === 'pending'}>
@@ -286,14 +286,49 @@ function Profile(props: {
 					</button>
 				</form>
 			)}
+			{allowed && row.state === 'ok' && row.data !== undefined && <Organisation profile={row.data.profile} />}
 			{allowed && props.provisioned !== '' && (
 				<p className="note directory">
-					your organisation's directory says some of this too. What it says of you — a name, a department,
-					an employee number, a language — is written over what is here the next time it says it
+					your organisation's directory says some of this too. What it says of you — a name, a language — is
+					written over what is here the next time it says it
 				</p>
 			)}
 			{note !== null && <p className={note.ok ? 'note' : 'bad'}>{note.text}</p>}
 		</section>
+	)
+}
+
+/**
+ * Organisation is what somebody's organisation says of them, shown and not
+ * offered to change: each only where it has a value. They are written by an
+ * administrator of the tenant's people or by its directory, and the server
+ * refuses the person changing them on their own row (#368).
+ */
+function Organisation(props: { profile: { department: string; employeeNo: string; title: string } | undefined }): React.ReactNode {
+	const p = props.profile
+	const said = [
+		{ name: 'title', value: p?.title ?? '' },
+		{ name: 'department', value: p?.department ?? '' },
+		{ name: 'employee no', value: p?.employeeNo ?? '' },
+	].filter((v) => v.value !== '')
+	if (said.length === 0) {
+		return null
+	}
+
+	return (
+		<>
+			<dl className="organisation">
+				{said.map((v) => (
+					<div key={v.name}>
+						<dt>{v.name}</dt>
+						<dd>{v.value}</dd>
+					</div>
+				))}
+			</dl>
+			<p className="note organisation">
+				your organisation writes these: an administrator of its people, or its directory
+			</p>
+		</>
 	)
 }
 
