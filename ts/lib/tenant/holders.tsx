@@ -957,11 +957,9 @@ function Profile(props: { holder: Holder; may: (method: string) => boolean }): R
 								displayName: s('display_name'),
 								picture: s('picture'),
 								department: s('department'),
+								title: s('title'),
 								employeeNo: s('employee_no'),
 								locale: s('locale'),
-								// Not on this form, and carried as it is: the
-								// profile is replaced whole.
-								title: p?.title ?? '',
 							},
 						})
 						.then(() => say({ kind: 'done', text: 'saved' }))
@@ -969,8 +967,10 @@ function Profile(props: { holder: Holder; may: (method: string) => boolean }): R
 				}}
 			>
 				<input name="display_name" placeholder="display name" defaultValue={p?.displayName ?? ''} />
-				<input name="department" placeholder="department" defaultValue={p?.department ?? ''} />
-				<input name="employee_no" placeholder="employee no" defaultValue={p?.employeeNo ?? ''} />
+				{/* Bounded as the server bounds them (`server/core/form.go`). */}
+				<input name="department" placeholder="department" maxLength={256} defaultValue={p?.department ?? ''} />
+				<input name="title" placeholder="title" maxLength={256} defaultValue={p?.title ?? ''} />
+				<input name="employee_no" placeholder="employee no" maxLength={64} defaultValue={p?.employeeNo ?? ''} />
 				<input name="locale" placeholder="locale, e.g. ko-KR" defaultValue={p?.locale ?? ''} />
 				<input name="picture" placeholder="picture url" defaultValue={p?.picture ?? ''} />
 				<button type="submit" disabled={update.state === 'pending' || !props.may('/roster.HolderService/Update')}>
