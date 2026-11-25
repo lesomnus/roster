@@ -107,6 +107,12 @@ type hydra struct {
 	// which a real Hydra records another request for ([hydra.printedFor]).
 	consented map[string]bool
 	device    map[string]bool
+
+	// Where a test says, the redirect a challenge's authorization request named
+	// and what a client registered: a command line's loopback address, and the
+	// registration beside it. The harness's own otherwise ([redirectHostFor]).
+	sendsTo   map[string]string   // challenge -> redirect_uri
+	registers map[string][]string // client -> redirect_uris
 }
 
 func newHydra(t *testing.T) *hydra {
@@ -129,6 +135,8 @@ func newHydra(t *testing.T) *hydra {
 		loginNo:    map[string]string{},
 		consented:  map[string]bool{},
 		device:     map[string]bool{},
+		sendsTo:    map[string]string{},
+		registers:  map[string][]string{},
 	}
 
 	m := http.NewServeMux()
@@ -249,9 +257,15 @@ func newHydra(t *testing.T) *hydra {
 	// the harness gives that client's tenant.
 	m.HandleFunc("GET /admin/clients/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id := r.PathValue("id")
+		h.mu.Lock()
+		redirects := h.registers[id]
+		h.mu.Unlock()
+		if redirects == nil {
+			redirects = []string{"https://" + redirectHostFor(id) + "/callback"}
+		}
 		writeJson(w, map[string]any{
 			"client_id":     id,
-			"redirect_uris": []string{"https://" + redirectHostFor(id) + "/callback"},
+			"redirect_uris": redirects,
 		})
 	})
 
@@ -337,7 +351,11 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 		subject, skip = h.remembered[c], h.remembered[c] != ""
 	}
 	device := h.device[c]
+	redirect := h.sendsTo[c]
 	h.mu.Unlock()
+	if redirect == "" {
+		redirect = "https://" + redirectHostFor(client) + "/callback"
+	}
 	if scope == nil {
 		scope = []string{"openid", "profile", "email"}
 	}
@@ -353,7 +371,7 @@ func (h *hydra) raised(w http.ResponseWriter, r *http.Request, param string) {
 	// verification endpoint, with the client and no redirect: read off the
 	// image, for the login request and the consent request alike.
 	request := "https://issuer.test/oauth2/auth?client_id=" + client +
-		"&redirect_uri=" + url.QueryEscape("https://"+redirectHostFor(client)+"/callback") + extra
+		"&redirect_uri=" + url.QueryEscape(redirect) + extra
 	if device {
 		request = "https://issuer.test/oauth2/device/verify?client_id=" + client
 	}

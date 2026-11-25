@@ -274,6 +274,15 @@ sign_in() {
 		esac
 		die "a token was granted for ${AUDIENCE}, which ${OAUTH_CLIENT} is not registered for: ${l}"
 	fi
+	# A command line's walk (`LOOPBACK=1`): the code is sent to the loopback
+	# address on the port it asked with, which its client registered with no
+	# port. Nothing listens there; where Hydra sends the browser is the answer.
+	if [ -n "${LOOPBACK:-}" ]; then
+		case "${l}" in
+		"${CALLBACK}?"*code=*) ;;
+		*) die "the code was not sent to ${CALLBACK}: ${l}" ;;
+		esac
+	fi
 	step "the code, at the product's callback" "$(printf '%s' "${l}" | cut -c1-40)…"
 
 	grant=$(printf '%s' "${l}" | sed 's/.*[?&]code=//; s/&.*//')
@@ -318,6 +327,15 @@ fi
 
 printf '%s' "${claims}" | grep -q '"preferred_username":"'"${SEED_USER}"'"' \
 	|| die "the id_token carries no preferred_username for ${SEED_USER}: ${claims}"
+
+# The command line's walk ends here: the code came back to its loopback address
+# and was the person of the tenant its other redirect is at. The rest of this
+# walk is about sessions, and is the demo's.
+if [ -n "${LOOPBACK:-}" ]; then
+	step "signed in at the tenant" "by its other redirect"
+	echo "flow: ok"
+	exit 0
+fi
 
 # And what must never be in one: roster's answer about roster, which a product
 # holding a copy of would hold a stale one. `login/claims.go` says why.

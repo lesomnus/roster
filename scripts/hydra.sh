@@ -228,6 +228,17 @@ docker compose run --rm --no-deps --entrypoint /usr/local/bin/flow.sh \
 	-e "EXPECT_SUB=${sub}" -e "CONSENT=skip" -e "AUDIENCE=urn:roster:other:api" -e "EXPECT_REFUSED=1" \
 	login "$@"
 
+# And a command line's flow (#450): it redirects to the loopback interface on
+# whatever port it opened, which its registration does not say, and a loopback
+# address says nothing about the tenant -- so the code has to come back to that
+# port, and the person has to be the one of the tenant its other redirect is at.
+echo
+echo "== and a command line, back at a loopback port it was not registered with"
+docker compose run --rm --no-deps --entrypoint /usr/local/bin/flow.sh \
+	-e "EXPECT_SUB=${sub}" -e "CONSENT=skip" -e "LOOPBACK=1" \
+	-e "OAUTH_CLIENT=cli" -e "CLIENT_SECRET=cli-secret" -e "CALLBACK=http://127.0.0.1:53117/callback" \
+	login "$@"
+
 # The second mode, which is a different app: the setting is read at start.
 # Put back afterwards, so `--hold` leaves what `compose.yaml` describes.
 echo

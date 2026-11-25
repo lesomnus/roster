@@ -67,6 +67,10 @@ import (
 //	a client that can do the device grant registers a redirect URI naming the
 //	tenant's own host, even though the device grant never sends a browser to it
 //
+// A command line's loopback address registered beside it (`login/at.go`,
+// `loopback`) is not counted: it names no tenant, so the client that does
+// both is still the one tenant's.
+//
 // It is used for nothing but saying which tenant. Ugly, and it is the same cost
 // #36 recorded when it took the discriminator off the client id: what says which
 // customer a flow is about has to be a name a customer claimed, and a device flow

@@ -46,6 +46,9 @@ set -eu
 # The public client with no secret, registered by `compose.yaml`. Its
 # `redirect_uris` exist for one reason and it is not redirecting: see there.
 : "${DEVICE_CLIENT:=device}"
+# An API it asks a token for, which `compose.yaml` registers it for (#450).
+: "${AUDIENCE:=urn:roster:demo:api}"
+: "${ADMIN:=http://hydra:4445}"
 
 jar=$(mktemp)
 trap 'rm -f "${jar}"' EXIT
@@ -63,7 +66,7 @@ die() { echo "device: $*" >&2; exit 1; }
 # 1. The device asks. No browser, no secret, no redirect -- which is the whole
 #    reason this grant exists.
 begun=$(curl -sS ${DIAL} -X POST "${ISSUER}/oauth2/device/auth" \
-	-d "client_id=${DEVICE_CLIENT}" -d 'scope=openid profile email')
+	-d "client_id=${DEVICE_CLIENT}" -d 'scope=openid profile email' -d "audience=${AUDIENCE}")
 
 device_code=$(printf '%s' "${begun}" | json device_code)
 user_code=$(printf '%s' "${begun}" | json user_code)
@@ -219,6 +222,17 @@ printf '%s' "${claims}" | grep -q '"preferred_username":"'"${SEED_USER}"'"' \
 	|| die "the id_token carries no preferred_username for ${SEED_USER}: ${claims}"
 printf '%s' "${claims}" | grep -q '"methods"' \
 	&& die "the id_token carries roster's method list"
+
+# And the API it asked for: what the access token is for, as the issuer's own
+# introspection answers it (#450). The device asked for it when it began, which
+# is the one request a device makes with its parameters in it.
+access=$(printf '%s' "${token}" | json access_token)
+[ -n "${access}" ] || die "the device was handed no access token: ${token}"
+seen=$(curl -sS ${DIAL} -X POST "${ADMIN}/admin/oauth2/introspect" -d "token=${access}")
+printf '%s' "${seen}" | grep -q '"active":true' || die "the issuer does not know its own access token: ${seen}"
+aud=$(printf '%s' "${seen}" | sed -n 's/.*"aud":\(\[[^]]*\]\).*/\1/p')
+step "the access token is for" "${aud:-nothing}"
+printf '%s' "${aud}" | grep -q "\"${AUDIENCE}\"" || die "the device asked for ${AUDIENCE} and the access token is not for it: ${seen}"
 
 # 8. And the code is spent. A device that polls again gets nothing, and a person
 #    who types the same code again is refused -- both of them Hydra's doing, and

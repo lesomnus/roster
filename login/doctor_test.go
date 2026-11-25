@@ -484,3 +484,72 @@ func TestADeviceClientWithNoRedirectIsToldWhyItNeedsOne(t *testing.T) {
 	x.Contains(found[0].Costs, "which tenant",
 		"the finding does not say why a client that never redirects needs a redirect")
 }
+
+// loopbackTenant is a resolver under which a loopback address is a tenant's
+// name -- as `127.0.0.1` can be, a `Host` row being any name -- beside
+// `app.test`'s, so that a check which asked about one would be seen to.
+func loopbackTenant(_ context.Context, host string) (string, error) {
+	switch host {
+	case "app.test":
+		return "contoso", nil
+	case "127.0.0.1", "::1":
+		return "fabrikam", nil
+	}
+
+	return "", errNobody
+}
+
+// TestDoctorCountsNoLoopbackAddressAsATenant: a command line's loopback
+// redirect, beside a tenant's host, is that tenant's client and passes; and
+// with nothing beside it, it is a client of nobody.
+//
+// The loopback address was asked about like any host, so a deployment with a
+// `Host` row for `127.0.0.1` had the client reported as two tenants' -- and
+// broken, with the device grant -- and one without it had a client of
+// loopback addresses alone told only that no tenant answers at them. The Login
+// App reads no tenant off a loopback address (`login/at.go`), and the check
+// says what it does.
+func TestDoctorCountsNoLoopbackAddressAsATenant(t *testing.T) {
+	beside := []string{"http://127.0.0.1/callback", "https://app.test/callback", "http://[::1]/callback"}
+
+	t.Run("beside one tenant's host", func(t *testing.T) {
+		x := require.New(t)
+
+		v := good()
+		v["redirect_uris"] = beside
+
+		at := clients(t, map[string]map[string]any{"app": v})
+		found, err := login.Doctor(context.Background(), at, "", nil, loopbackTenant)
+		x.NoError(err)
+		x.Empty(found, "a loopback address was counted as a tenant: %+v", found)
+	})
+
+	t.Run("and with the device grant", func(t *testing.T) {
+		x := require.New(t)
+
+		v := good()
+		v["redirect_uris"] = beside
+		v["grant_types"] = []string{"authorization_code", "refresh_token", login.DeviceGrant}
+
+		at := clients(t, map[string]map[string]any{"app": v})
+		found, err := login.Doctor(context.Background(), at, "", nil, loopbackTenant)
+		x.NoError(err)
+		x.Empty(found, "a loopback address was counted as a tenant: %+v", found)
+	})
+
+	t.Run("alone", func(t *testing.T) {
+		x := require.New(t)
+
+		v := good()
+		v["redirect_uris"] = []string{"http://127.0.0.1/callback", "http://[::1]/callback"}
+
+		at := clients(t, map[string]map[string]any{"app": v})
+		found, err := login.Doctor(context.Background(), at, "", nil, loopbackTenant)
+		x.NoError(err)
+		x.Len(found, 1)
+		x.Equal(login.Broken, found[0].Severity)
+		x.Equal("app", found[0].About)
+		x.Contains(found[0].What, "no tenant answers at any of its redirect_uris")
+		x.Contains(found[0].What, "a loopback address names none")
+	})
+}

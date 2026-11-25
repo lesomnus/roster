@@ -449,6 +449,10 @@ services:
         # because a gate starts a fresh process. `examples/product` says the
         # method in code for that reason; these say it here so the two are one
         # decision.
+        # `127.0.0.1:5555` is where `hydra perform` listens (below), and a
+        # loopback address says nothing about the tenant (`login/at.go`): the
+        # flows of this client are contoso's by its other redirect, at a name
+        # contoso claims, which nothing redirects to.
         cat >/tmp/demo.json <<'EOF'
         [{
           "client_id": "demo",
@@ -458,7 +462,7 @@ services:
           "response_types": ["code"],
           "scope": "openid offline profile email",
           "audience": ["urn:roster:demo:api"],
-          "redirect_uris": ["http://127.0.0.1:5555/callback"],
+          "redirect_uris": ["http://127.0.0.1:5555/callback", "http://product.test:5555/callback"],
           "post_logout_redirect_uris": ["http://127.0.0.1:5555/callback"],
           "token_endpoint_auth_method": "client_secret_basic"
         }]
@@ -511,11 +515,32 @@ services:
           "grant_types": ["urn:ietf:params:oauth:grant-type:device_code", "refresh_token"],
           "response_types": ["code"],
           "scope": "openid offline profile email",
-          "redirect_uris": ["http://127.0.0.1:5555/callback"],
+          "audience": ["urn:roster:demo:api"],
+          "redirect_uris": ["http://127.0.0.1:5555/callback", "http://product.test:5555/callback"],
           "token_endpoint_auth_method": "none"
         }]
         EOF
         hydra import client --endpoint http://hydra:4445 /tmp/device.json
+        # And a command line that signs somebody in through their browser, as
+        # `docs/login.md` tells one to be registered: its loopback address, on
+        # **no port**, because it listens on whatever port it could open and
+        # Hydra matches any port against it (RFC 8252 §7.3); and beside it a
+        # redirect at the tenant's own name, which nothing redirects to and
+        # which is what says whose its flows are.
+        cat >/tmp/cli.json <<'EOF'
+        [{
+          "client_id": "cli",
+          "client_secret": "cli-secret",
+          "client_name": "the demo's command line",
+          "grant_types": ["authorization_code", "refresh_token"],
+          "response_types": ["code"],
+          "scope": "openid offline profile email",
+          "audience": ["urn:roster:demo:api"],
+          "redirect_uris": ["http://127.0.0.1/callback", "http://product.test/callback"],
+          "token_endpoint_auth_method": "client_secret_basic"
+        }]
+        EOF
+        hydra import client --endpoint http://hydra:4445 /tmp/cli.json
 
   # The Login App: what Hydra hands a `login_challenge` to, and what answers
   # `acceptLoginRequest{subject}` with a `Holder.id`. Its own process with its
