@@ -153,14 +153,16 @@ since the holder is still an app's. A tenant's holders are not all people, and
 the SCIM endpoint and `roster scim adopt` ask that one test
 (`rstr.Holder.NoPerson`) -- rather than leaving out itself by name. Both are
 roster's to write, and a request at a port that carries either is refused.
-Nothing reads `roster.app` to decide what anybody may do.
+Nothing reads `roster.app` to decide what anybody may do; `install` reads it to
+know the app's own holder again.
 
 **A holder of the app's name that is already there is not taken silently.** It
 is somebody's -- a person, an earlier app holder with a key and a role -- and
 the app's key would be answered with everything it holds, while whoever signs
-in as it would hold the app's methods. `install` refuses it unless it holds
-nothing but the app's own role, and `--adopt` says to use it anyway, printing
-what it held. The start-up provisioning of roster's own apps skips such a
+in as it would hold the app's methods. `install` refuses it unless it is the
+app's own -- it carries `roster.app` with the app's name, so a second run goes
+on whatever it holds, the app's own key among it -- or holds nothing but the
+app's own role, and `--adopt` says to use it anyway, printing what it held. The start-up provisioning of roster's own apps skips such a
 tenant and says why, rather than failing for every tenant.
 
 **Every live key on the app's control-plane holder borrows through the

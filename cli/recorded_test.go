@@ -295,6 +295,7 @@ func TestEveryReadOfSomebodyAtTheBoxIsRecordedOrSaysWhy(t *testing.T) {
 		"labelled":       "reads a holder's labels to add the ones a provisioner or an install writes, for holderNamed and installApp; prints nothing of the row",
 		"holderFound":    "whether a tenant has a holder of the alias a provisioner chose, before it decides whose they are; reads an id and prints nothing of the row",
 		"holdingOf":      "counts what an app's holder already holds, for a refusal; prints counts and role names",
+		"appsOwn":        "reads the label that says whether a holder of an app's name is that app's own, before install decides whose it is; prints nothing of the row",
 		"somebodys":      "reads the labels of a holder of the alias a provisioner chose, to tell its own from the tenant's; prints the alias and the provisioner's own label",
 		"adoptScim":      shown,
 		"matched":        "gathers who a directory matched and roster has not linked, for adoptScim, which says whose it shows; prints nothing itself",
