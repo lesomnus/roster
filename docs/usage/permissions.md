@@ -87,8 +87,8 @@ gate from the roles.
 
 ## Four ways a binding reaches somebody
 
-`cmd/policy.go` answers from three sets, and a fourth entity narrows rather than
-widens. Getting this wrong in either direction is how permission systems leak,
+`cmd/policy.go` answers from four sets, and a binding's site narrows rather
+than widens. Getting this wrong in either direction is how permission systems leak,
 so it is worth reading once:
 
 | | | |
@@ -108,7 +108,7 @@ may be made again.
 > **A grant is any write that changes what the gate will answer for somebody.**
 
 Which is wider than the writes that name a role. `GroupMembership.Add` names
-none and hands over every binding written to that group; `ApiKey.Add` names none
+none and hands over every binding written to that group; `ApiKey.Issue` names none
 and hands over a credential that acts as somebody, and so does
 `NominationService/Add` -- an app's key answered as somebody in this tenant. All
 of them are refused unless the caller already holds what they are handing out.
@@ -139,8 +139,8 @@ person or to a group of **that** app, and a group of an app's takes that app's
 roles and no other:
 
 ```
-binding.group: a role of @newco/loft's is bound to a person or to a group of @newco/loft's, and @newco/oncall is the tenant's own
-binding.group: @newco/loft-users is a group of @newco/loft's, which is bound a role of @newco/loft's and no other, and @newco/support is roster's
+group: a role of @newco/loft's is bound to a person or to a group of @newco/loft's, and @newco/oncall is the tenant's own
+group: @newco/loft-users is a group of @newco/loft's, which is bound a role of @newco/loft's and no other, and @newco/support is roster's
 ```
 
 So taking somebody out of an app is ending their place in its group, or their
@@ -514,7 +514,7 @@ Every write above is refused if the caller does not already hold what the write
 hands over:
 
 ```
-role.methods: you do not hold "/roster.HolderService/Erase" here, so you may not grant it
+methods: you do not hold "/roster.HolderService/Erase" here, so you may not grant it
 ```
 
 Each method must be covered by **one** thing the caller holds, on its own.
@@ -532,7 +532,7 @@ somebody holds at roster hands out nothing at Loft, and what they hold at Loft
 nothing at roster or at levyan. The refusal names the app:
 
 ```
-role.methods: you do not hold "/loft.BookingService/Cancel" at @acme/loft, so you may not grant it
+methods: you do not hold "/loft.BookingService/Cancel" at @acme/loft, so you may not grant it
 ```
 
 A role of an app's is bound to a person or to a group of that app (§ *A group*),
@@ -569,7 +569,7 @@ It is refused where it is written -- `Role.Add`, `Role.Widen`, at a port and at
 the box alike -- and said for what it is:
 
 ```
-role.methods: "/loft.*/*" names no method of roster's; an app's methods are written in a role of that app (app)
+methods: "/loft.*/*" names no method of roster's; an app's methods are written in a role of that app (app)
 ```
 
 A role of an app's is taken as written: roster does not know an app's methods.
@@ -632,8 +632,8 @@ or to a group they are in; a write that takes that from the last of them is
 refused, since nobody in the tenant could put it back --
 
 ```
-methods: taking /roster.*/* out of everything leaves nobody administering the tenant -- …
-ref: erasing role everything leaves nobody administering the tenant -- …
+taking /roster.*/* out of everything leaves nobody administering the tenant -- …
+erasing role everything leaves nobody administering the tenant -- …
 ```
 
 -- whichever way it would: narrowing the role, erasing it, unbinding it,
@@ -662,10 +662,11 @@ unless that person's permissions are a subset of the caller's:
 | `IdentityService/Add`, `/Attest` | an account at a provider that signs in as them |
 | `EmailService/Add` | a mailbox a recovery link is sent to |
 | `PhoneService/Add` | a number, which says who they are to whoever reads it, and is where a code is sent the day one is |
-| `ApiKeyService/Add`, `/Issue` | a key that **acts as** them |
+| `ApiKeyService/Add`, `/Issue`, `DelegationService/Issue` | a key, or a delegation handed to an app, that **acts as** them |
+| `BadgeService/Enrol`, `/Unlock` | a badge, which opens every station that asks as them |
 | `NominationService/Add`, `/Patch` | an app's deployment key answered **as** them in this tenant |
 
-The middle two are worth reading twice before granting. They sound like keeping a
+The account and the mailbox are worth reading twice before granting. They sound like keeping a
 directory tidy, and each is a way to sign in as whoever the row is about: link an
 account you control to somebody's `Holder`, or put a mailbox you read on it and
 ask for a link.
@@ -704,8 +705,8 @@ one.
 
 **Taking one away is asked the same.** `EmailService/Erase`,
 `PhoneService/Erase` and `IdentityService/Erase` are refused unless that
-person's permissions are a subset of the caller's, as `ApiKeyService/Erase` and `DelegationService/Erase`
-are: an address erased is the mail-borne way back gone, and -- an address being
+person's permissions are a subset of the caller's, as `ApiKeyService/Erase`, `DelegationService/Erase`
+and `BadgeService/Erase` are: an address erased is the mail-borne way back gone, and -- an address being
 one person's in a tenant -- free to be written onto another row, which the
 caller's own is.
 
@@ -715,8 +716,8 @@ deliberately not covered. `server/core/escalate.go` is both rules, with the file
 comment that says how they were arrived at.
 
 ⚠️ On `admin.addr` these are **waived**, because an operator's standing there comes
-from the port rather than from a role: [operating.md](../operating.md) § "What the
-admin port waives" is the whole of it.
+from the port rather than from a role: [operating.md](../operating.md) § *`admin.addr` is
+root, and a role on it is not a fence* is the whole of it.
 
 ## What somebody does to their own account
 
@@ -730,13 +731,31 @@ roster --as admin role get @newco/self-service
 ```
 
 ```
-methods   /roster.HolderService/Get  /roster.HolderService/Update  /roster.HolderService/Portray
-          /roster.EmailService/Get   /roster.EmailService/List     /roster.EmailService/Add   /roster.EmailService/Erase
-          /roster.PhoneService/Get   /roster.PhoneService/List     /roster.PhoneService/Add   /roster.PhoneService/Erase
-          /roster.IdentityService/Attest  /roster.IdentityService/Erase
-          /roster.CredentialService/Set  /roster.CredentialService/Enrol  /roster.CredentialService/Erase
-          /roster.ApiKeyService/List /roster.ApiKeyService/Issue   /roster.ApiKeyService/Erase
-          /roster.DelegationService/List  /roster.DelegationService/Erase  /roster.DelegationService/Issue
+…
+methods      (22)
+  /roster.HolderService/Get
+  /roster.HolderService/Update
+  /roster.HolderService/Portray
+  /roster.EmailService/Get
+  /roster.EmailService/List
+  /roster.EmailService/Add
+  /roster.EmailService/Erase
+  /roster.PhoneService/Get
+  /roster.PhoneService/List
+  /roster.PhoneService/Add
+  /roster.PhoneService/Erase
+  /roster.IdentityService/Attest
+  /roster.IdentityService/Erase
+  /roster.CredentialService/Set
+  /roster.CredentialService/Enrol
+  /roster.CredentialService/Erase
+  /roster.ApiKeyService/List
+  /roster.ApiKeyService/Issue
+  /roster.ApiKeyService/Erase
+  /roster.DelegationService/List
+  /roster.DelegationService/Erase
+  /roster.DelegationService/Issue
+…
 ```
 
 It is the entity's own verb each time, with the person's own reference:
