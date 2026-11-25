@@ -10,7 +10,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"slices"
 	"strings"
 
 	"github.com/lesomnus/xli"
@@ -226,9 +225,43 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 	add.Handler = xli.Chain(xli.OnRun(tenantNamed), add.Handler)
 
 	cs := t.Commands()
-	formatsFirst(cs)
+	templatesFirst(cs)
 
 	return cs
+}
+
+// templatesFirst puts [templateOf] in front of every command of `cs`, and of
+// the commands under them, that reads `-o`.
+//
+// payday refuses a wrong `-o` and `--in` before its connector is asked, as a
+// wrong flag (#531), so roster no longer checks either itself, but for one
+// case: a template that does not parse. payday refuses it before anything is
+// opened, with status 2, in the template package's words alone, which name
+// no flag (`template: template: :1: unclosed action`); a refusal names the
+// flag as it is typed. Until payday's does, this says it first.
+func templatesFirst(cs xli.Commands) {
+	for _, v := range cs {
+		templatesFirst(v.Commands)
+		if v.Flags.Get("output") == nil {
+			continue
+		}
+
+		v.Handler = xli.Chain(xli.OnRun(templateOf), v.Handler)
+	}
+}
+
+// templateOf refuses an `-o template=` that does not parse, naming `-o`, and
+// lets every other `-o` through to payday's own check.
+func templateOf(ctx context.Context, cl *xli.Command, next xli.Next) error {
+	if v, ok := flg.Find[string](cl, "output"); ok {
+		if text, ok := strings.CutPrefix(v, "template="); ok {
+			if _, err := pdcmd.Template(text); err != nil {
+				return invocation(fmt.Errorf("-o %s: %w", v, err))
+			}
+		}
+	}
+
+	return next(ctx)
 }
 
 // tenantNamed refuses `tenant add` that names no alias, by NAME or in REQ.
@@ -272,51 +305,6 @@ func tenantNamed(ctx context.Context, cl *xli.Command, next xli.Next) error {
 
 	return invocation(errors.New("NAME: which tenant, as @alias -- roster tenant add @contoso -- or an alias in REQ. " +
 		"A tenant is not erased, so one added under an alias nobody chose costs a close and a forget"))
-}
-
-// formatsFirst puts [formatsOf] in front of every command of `cs`, and of the
-// commands under them, that reads `-o` or `--in`: before the connection is
-// opened, which each generated command opens first.
-//
-// payday's verbs resolved the printer only after the call: `roster --as admin
-// holder add -o yaml @acme/f1` answered `-o yaml: not a format` with status 1,
-// and the person had been added (#284). payday refuses a wrong `-o` before the
-// call now, as a wrong flag (#531), but after its connection is opened, which
-// at the box is the database and the `--as` it looks up; and it reads `--in`
-// only as it merges the request, as an error that is not a wrong flag's. So
-// this stays for both: a command line that is wrong is refused before
-// anything is opened, with status 2 (`docs/usage/cli.md` § *Exit statuses*).
-func formatsFirst(cs xli.Commands) {
-	for _, v := range cs {
-		formatsFirst(v.Commands)
-		if v.Flags.Get("output") == nil && v.Flags.Get("in") == nil {
-			continue
-		}
-
-		v.Handler = xli.Chain(xli.OnRun(formatsOf), v.Handler)
-	}
-}
-
-// formatsOf refuses an `-o` or an `--in` that is none of payday's, in payday's
-// own words, and lets every other through: a format it names, and a template
-// that parses.
-func formatsOf(ctx context.Context, cl *xli.Command, next xli.Next) error {
-	if v, ok := flg.Find[string](cl, "output"); ok && v != "" {
-		switch {
-		case slices.Contains([]string{"pretty", "json", "protojson", "prototext", "name", "table", "wide"}, v):
-		case strings.HasPrefix(v, "template="):
-			if _, err := pdcmd.Template(strings.TrimPrefix(v, "template=")); err != nil {
-				return invocation(fmt.Errorf("-o %s: %w", v, err))
-			}
-		default:
-			return invocation(fmt.Errorf("-o %s: not a format; one of pretty, json, prototext, protojson, name, table, wide, template=...", v))
-		}
-	}
-	if v, ok := flg.Find[string](cl, "in"); ok && v != "" && v != "json" && v != "protojson" {
-		return invocation(fmt.Errorf("--in %s: not an input format; one of json, protojson", v))
-	}
-
-	return next(ctx)
 }
 
 // nowhere takes out of `t` the commands the schema builds that work in neither

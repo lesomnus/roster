@@ -471,6 +471,10 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 	}{
 		{"a body that cannot be read as the request", http.MethodPost, "/roster.GroupService/Get", "application/json", "not json"},
 		{"a body that cannot be read as the request", http.MethodPost, "/roster.GroupService/Get", "application/json", `{"ref":"a group"}`},
+		// A protobuf body that does not parse, which grpc-go answered 500
+		// `internal` in a sentence of its own that payday no longer reads
+		// (#531): a field whose length runs past the end.
+		{"a body that cannot be read as the request", http.MethodPost, "/roster.GroupService/Get", "application/proto", "\x0a\xff"},
 		{"a body of a type the call does not take", http.MethodPost, "/roster.GroupService/Get", "text/plain", "{}"},
 		{"a body larger than the server takes", http.MethodPost, "/roster.GroupService/Get", "application/json", `{"ref":{"id":"` + strings.Repeat("A", 8<<20) + `"}}`},
 		{"an HTTP method a call does not take", http.MethodPut, "/roster.GroupService/Get", "application/json", "{}"},
