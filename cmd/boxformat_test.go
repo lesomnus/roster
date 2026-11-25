@@ -18,7 +18,8 @@ import (
 // format` with status 1, and the person was added; `erase` the same, and the
 // person was erased. Answered: a failure, after the write; right is the
 // refusal, before it, with status 2. payday refuses each before its connector
-// is asked now (#531), and this holds roster's tree to it.
+// is asked now (#531), a template that does not parse naming the flag as it is
+// typed, and this holds roster's tree to it.
 func TestAWrongFormatIsRefusedBeforeTheWrite(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -34,7 +35,7 @@ func TestAWrongFormatIsRefusedBeforeTheWrite(t *testing.T) {
 	}{
 		{[]string{"holder", "add", "-o", "yaml", "@newco/f1"}, "-o yaml: not a format"},
 		{[]string{"holder", "erase", "-o", "yaml", "@newco/kept"}, "-o yaml: not a format"},
-		{[]string{"holder", "add", "-o", "template={{.alias", "@newco/f1"}, "-o template="},
+		{[]string{"holder", "add", "-o", "template={{.alias", "@newco/f1"}, "-o template={{.alias: line 1: unclosed action"},
 		{[]string{"holder", "add", "--in", "yaml", "@newco/f1", `{"name":"F"}`}, "--in yaml: not an input format"},
 		{[]string{"control", "holder", "add", "-o", "yaml", "@owner/f1"}, "-o yaml: not a format"},
 		{[]string{"tenant", "close", "-o", "yaml", "@newco"}, "-o yaml: not a format"},
