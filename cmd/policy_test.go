@@ -16,6 +16,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -496,8 +497,7 @@ func TestARoleMayNameAServiceOrAPackage(t *testing.T) {
 			SetDesc("").
 			SetLabels(map[string]string{}).
 			SetMethods([]string{"*Get*", "/roster.Holder*/Get", "roster.HolderService/Get"}).
-			SetDateUpdated(time.Now()).
-			Save(ctx)
+			SetDateUpdated(time.Now()).Save(bare.TrustAdmission(ctx))
 		x.NoError(err)
 		b.binds(t, who, pdid.Id(r.Id), nil)
 

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -493,6 +494,36 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 		x.Equal(row.statuses[0], res.StatusCode, "%s, %s %s over HTTP: the page says %d: %s %s", row.failure, c.verb, c.path, row.statuses[0], said.Code, said.Message)
 		x.Equal(connectCodeOf(row.codes[0]), said.Code, "%s, %s %s: %s", row.failure, c.verb, c.path, said.Message)
 		x.NotContains(said.Message, "grpc:", "%s: gRPC's own words", row.failure)
+	}
+
+	// A deployment's hook refusing a write, and not there to answer one
+	// (`cmd/hook.go`).
+	{
+		_, refusing := hookListening(t, func(context.Context, *app.WriteReview) (*app.WriteVerdict, error) {
+			return app.WriteVerdict_builder{Refused: true, Why: "no"}.Build(), nil
+		})
+		closed, err := net.Listen("tcp", "127.0.0.1:0")
+		x.NoError(err)
+		nobody := closed.Addr().String()
+		x.NoError(closed.Close())
+
+		for row, addr := range map[string]string{
+			"a deployment's hook refusing":      refusing,
+			"a deployment's hook not answering": nobody,
+		} {
+			b, ctx := build(t, hookAt(addr, app.GroupMembershipService_Add_FullMethodName))
+			at := failureServe(t, b, cmd.Config{})
+			admin := b.holder(t, ctx, b.Contoso, "failures-admin")
+			b.mayAnything(admin, b.Contoso)
+			group := hookGroup(t, ctx, b.Server, b.Contoso, "failures")
+
+			c := failureCall{row, 0, admin, app.GroupMembershipService_Add_FullMethodName,
+				`{"group":` + failureRef(group) + `,"holder":` + failureRef(admin) + `}`}
+			r := failureRowStarting(t, rows, c.row)
+			made[r.failure] = true
+			x.Equal(r.codes[c.nth].String(), at.code(t, c).String(), "%s, %s", r.failure, c.method)
+			x.Equal(r.statuses[c.nth], at.status(t, c), "%s, %s over HTTP", r.failure, c.method)
+		}
 	}
 
 	// What a test does not make, and why. Each is a row of the page all the

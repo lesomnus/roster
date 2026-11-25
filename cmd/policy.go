@@ -35,6 +35,7 @@ import (
 	entteam "github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	enttenant "github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/me"
 	"github.com/lesomnus/roster/server/pd"
@@ -830,6 +831,11 @@ func (p policy) of(ctx context.Context, who uuid.UUID, app uuid.UUID) (held, err
 // identifier.
 func Locking(db *ent.Client) core.Lock {
 	return func(ctx context.Context, drv dialect.Driver, who pdid.Id) error {
+		// A lock is no write anybody asked for: it writes a column to what it
+		// holds, past the recorder, so it is the deployment's own and asks no
+		// hook (`cmd/hook.go`).
+		ctx = bare.TrustAdmission(ctx)
+
 		// On the driver it is handed, which is the transaction `server/core`
 		// opened or was rebuilt on. A write on the client this was built from
 		// would be a write outside it, and then there is nothing to contend

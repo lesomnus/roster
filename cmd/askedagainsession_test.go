@@ -17,6 +17,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent"
 	entholder "github.com/lesomnus/roster/internal/ent/holder"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 )
 
 // TestAskingAnOpenStreamAgainIsNotUseOfItsSession: a console session whose
@@ -121,7 +122,7 @@ func TestAskingAnOpenStreamAgainIsNotUseOfItsSession(t *testing.T) {
 			row, err := v.rows.Session.Query().Only(ctx)
 			x.NoError(err)
 			idle := time.Now().Add(authsession.DefaultIdle / 4).Truncate(time.Second)
-			x.NoError(row.Update().SetDateIdle(idle).Exec(ctx))
+			x.NoError(row.Update().SetDateIdle(idle).Exec(bare.TrustAdmission(ctx)))
 
 			// Asked again a few times over, the stream still open.
 			time.Sleep(6 * every)

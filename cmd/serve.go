@@ -185,6 +185,15 @@ type Server struct {
 	// is asked as a call asks it. Nil is [Server.Auth].
 	again auth.Handler
 
+	// admits is whether this plane's writes are asked of a hook
+	// (`cmd/hook.go`), for the listeners to capture the request a caller sent
+	// before a layer changes it (`pd.AdmissionUnary`).
+	admits bool
+
+	// hook is the connection to the service this plane's writes are asked
+	// of, where they are asked of one; [Server.Close] closes it with the rest.
+	hook *grpc.ClientConn
+
 	// owners is who answers which control-plane holder a deployment key hangs
 	// off, for this plane's rules ([keyOwners]).
 	owners *keyOwners
@@ -597,7 +606,34 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 
 	opts := []bare.Option{bare.WithMinter(pd.Minter()), bare.WithRecorder(rec)}
 
-	sink, err := pd.NewSink(client, opts...)
+	// And a hook, where this deployment named one or an app handed one over
+	// (`cmd/hook.go`): payday's admission, installed once, on the sink every
+	// stack of this plane is built from, so that the walled, the operators' and
+	// the unwalled stacks are one client with one guard on it. The data plane
+	// alone: the control plane's rows are the deployment's own. With none,
+	// nothing of it is installed and the servers are built as they were.
+	var admits *hooked
+	var hook *grpc.ClientConn
+	if prefix == keys.PrefixTenant {
+		if admits, hook, err = c.admitting(log.From(ctx), client); err != nil {
+			db.Close()
+			return nil, err
+		}
+	}
+	// A build refused below gives the hook's connection back, as
+	// [Server.Close] does once there is a server.
+	built := false
+	defer func() {
+		if !built && hook != nil {
+			_ = hook.Close()
+		}
+	}()
+	sinkOpts := opts
+	if admits != nil {
+		sinkOpts = append(slices.Clone(opts), admissionOf(admits, c, log.From(ctx)))
+	}
+
+	sink, err := pd.NewSink(client, sinkOpts...)
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -618,7 +654,16 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	sets := Sets(client, policySources...)
 	narrow := bare.Scopes{pd.Wall(), pd.Grouped(sets), People(sets), Apps(client, policySources...)}
 
-	walled, err := pd.NewSink(client, append(opts, bare.WithScope(narrow))...)
+	var walled pd.Sink
+	if admits == nil {
+		walled, err = pd.NewSink(client, append(opts, bare.WithScope(narrow))...)
+	} else {
+		// The sink copied, for its wall, rather than built again: a second
+		// admission on the same client is a second guard on it, and payday
+		// refuses a write the first has not accounted for.
+		walled = sink
+		err = bare.WithScope(narrow)(&walled.Server)
+	}
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -709,7 +754,15 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// what this app means -- an identity linked by `init` or by an admin console
 	// is still an identity, and a subject that is an email address is still
 	// wrong.
-	ungated, err := app.Build(sink.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithBadge(badge), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin), core.WithDelegationLife(c.Delegation.Life)), pd.AuditBuild())
+	//
+	// And with a hook, every call into it is the deployment's own, which no
+	// hook is asked about ([trustedUnary]): what writes through it is `init`,
+	// a sweep, a sign-in, a key noting its use -- nobody a caller is.
+	ungatedLayers := []app.Builder{core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithBadge(badge), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin), core.WithDelegationLife(c.Delegation.Life)), pd.AuditBuild()}
+	if admits != nil {
+		ungatedLayers = append(ungatedLayers, pd.InterceptBuild([]grpc.UnaryServerInterceptor{trustedUnary}, nil))
+	}
+	ungated, err := app.Build(sink.WithWatch(w), ungatedLayers...)
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -721,6 +774,8 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password, Badge: badge, DelegationLife: c.Delegation.Life,
 		RestoreWithin: c.Tenant.RestoreWithin,
 		recheck:       c.Stream.Recheck,
+		admits:        admits != nil,
+		hook:          hook,
 		owners:        owners,
 		served:        served,
 		contents:      content,
@@ -1149,6 +1204,8 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		s.Spin = append(s.Spin, loop(prefix, "outbox", pd.Drain(client, b, c.Watch.Every())))
 	}
 
+	built = true
+
 	return s, nil
 }
 
@@ -1163,15 +1220,29 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 // payday gives its own (`payday.trail`, `payday.outbox`) are not kept: both
 // planes may have an outbox, and two loops of one name are refused before any
 // of them starts.
+//
+// And as the deployment's own: what a loop writes -- a sweep collecting what
+// has expired, a person forgotten when their window ran out -- nobody asked
+// for, so no hook is asked about it (`cmd/hook.go`, [owned]).
 func loop(prefix string, name string, s spin.Spinner) spin.Spinner {
 	if prefix == keys.PrefixTenant {
-		return spin.Called("roster."+name, s)
+		return spin.Called("roster."+name, owned{s})
 	}
 
-	return spin.Called("roster.control."+name, s)
+	return spin.Called("roster.control."+name, owned{s})
 }
 
-// Close gives back what this deployment holds, which is **both** planes.
+// owned is a loop whose writes are the deployment's own
+// (`bare.TrustAdmission`): where a hook is installed, a sweep's direct write
+// is one payday's guard would otherwise refuse, and nobody's frame is on it
+// for a hook to be told of.
+type owned struct{ spin.Spinner }
+
+func (o owned) Spin(ctx context.Context) error { return o.Spinner.Spin(bare.TrustAdmission(ctx)) }
+func (o owned) Unwrap() spin.Spinner           { return o.Spinner }
+
+// Close gives back what this deployment holds, which is **both** planes, and
+// the connection to a hook it asks (`cmd/hook.go`).
 //
 // `Build` is recursive, so a deployment that names a `control:` plane is two
 // servers with a database and a pool each. This was one line closing the outer
@@ -1191,6 +1262,11 @@ func loop(prefix string, name string, s spin.Spinner) spin.Spinner {
 // control plane's connections held as well.
 func (s *Server) Close() error {
 	err := s.Db.Close()
+	if s.hook != nil {
+		if e := s.hook.Close(); err == nil {
+			err = e
+		}
+	}
 	if s.Control != nil {
 		if e := s.Control.Close(); err == nil {
 			err = e
@@ -1296,6 +1372,7 @@ func (s *Server) Grpc(ctx context.Context, c Config, opts ...grpc.ServerOption) 
 		WithUnary(callingUnary()).
 		WithStream(callingStream()).
 		With(gate.Interceptor(policy)).
+		WithUnary(s.admitted()...).
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(shut)).
 		WithStream(grpcx.ClosedStream(shut)).

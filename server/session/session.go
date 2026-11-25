@@ -54,6 +54,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/session"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -207,6 +208,12 @@ func (s *Store) written(
 	ctx context.Context, act string, id pdid.Id, who uuid.UUID,
 	write func(context.Context, *ent.Client) (bool, error),
 ) error {
+	// The store's own write, through ent and in a transaction of its own: a
+	// session is minted before anybody is anybody and moved by reading its
+	// cookie, so it is the deployment's and no hook is asked about it
+	// (`cmd/hook.go`).
+	ctx = bare.TrustAdmission(ctx)
+
 	tx, err := s.db.Tx(ctx)
 	if err != nil {
 		return err

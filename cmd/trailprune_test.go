@@ -14,6 +14,7 @@ import (
 	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/internal/ent/audit"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -170,7 +171,7 @@ func TestADiscardByHandIsTakenBesideAnArchive(t *testing.T) {
 	b.holder(t, ctx, b.Fabrikam, "held")
 
 	// A hold on one of the two tenants, as `roster hold place` leaves it.
-	x.NoError(b.Ent.Tenant.UpdateOneId(b.Fabrikam.Uuid()).SetDateHeld(time.Now()).SetHold("case 77").Exec(ctx))
+	x.NoError(b.Ent.Tenant.UpdateOneId(b.Fabrikam.Uuid()).SetDateHeld(time.Now()).SetHold("case 77").Exec(bare.TrustAdmission(ctx)))
 	held, err := b.Ent.Audit.Query().Where(audit.TenantId(b.Fabrikam.Uuid())).Count(ctx)
 	x.NoError(err)
 	x.NotZero(held)

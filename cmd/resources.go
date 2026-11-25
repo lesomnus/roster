@@ -26,6 +26,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/core"
 )
 
@@ -558,6 +559,10 @@ func (r Resource) where() string {
 // to find out a year on that the file still says so. A closed tenant that is
 // restored is the file's again at the next start.
 func ApplyResources(ctx context.Context, s *Server, rs []Resource, dry bool) (Applied, error) {
+	// What a file declares is the deployment's own, and no hook it names is
+	// asked about it (`cmd/hook.go`): the file is the deployment saying so.
+	ctx = bare.TrustAdmission(ctx)
+
 	out := Applied{}
 	if err := checkResources(rs); err != nil {
 		return out, err

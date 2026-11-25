@@ -38,7 +38,7 @@ func TestTheLiveRowsAreCheckedAgainstTheTrail(t *testing.T) {
 	run := func(args ...string) error { return cli.Cmd(&c).Run(ctx, args) }
 	x.NoError(run("trail", "rows"))
 
-	x.NoError(b.Ent.Holder.UpdateOneId(h.Uuid()).SetDateDisabled(time.Now()).Exec(ctx))
+	x.NoError(b.Ent.Holder.UpdateOneId(h.Uuid()).SetDateDisabled(time.Now()).Exec(bare.TrustAdmission(ctx)))
 	out, err := stderrOf(t, cli.Cmd(&c), "trail", "rows")
 	x.ErrorContains(err, "1 finding(s)")
 	of := digestOf(t, out)
@@ -98,7 +98,7 @@ func TestARowRemovedPastTheServersFailsTheCheck(t *testing.T) {
 	x.NoError(err)
 	x.NoError(run("trail", "rows"))
 
-	n, err := b.Ent.Email.Delete().Where(email.HasHolderWith(holder.IdEQ(h.Uuid()))).Exec(ctx)
+	n, err := b.Ent.Email.Delete().Where(email.HasHolderWith(holder.IdEQ(h.Uuid()))).Exec(bare.TrustAdmission(ctx))
 	x.NoError(err)
 	x.Equal(1, n)
 	out, err := stderrOf(t, cli.Cmd(&c), "trail", "rows")
@@ -148,7 +148,7 @@ func TestWhatTheDeploymentWritesPastItsServersIsOnTheTrailAsItsAct(t *testing.T)
 	run := func(args ...string) error { return cli.Cmd(&c).Run(ctx, args) }
 
 	h := b.holder(t, ctx, b.Contoso, "another")
-	x.NoError(b.Ent.Holder.UpdateOneId(h.Uuid()).SetDateErased(time.Now()).Exec(ctx))
+	x.NoError(b.Ent.Holder.UpdateOneId(h.Uuid()).SetDateErased(time.Now()).Exec(bare.TrustAdmission(ctx)))
 	x.NoError(forget.Restore(ctx, b.Ent, h, cs, nil))
 	x.NoError(run("trail", "rows"))
 
@@ -165,7 +165,7 @@ func TestWhatTheDeploymentWritesPastItsServersIsOnTheTrailAsItsAct(t *testing.T)
 	x.NoError(err)
 	x.Contains(out, "; 1 forgotten;")
 
-	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now()).Exec(ctx))
+	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now()).Exec(bare.TrustAdmission(ctx)))
 	_, err = forget.DestroyTenant(ctx, b.Ent, b.Contoso, p, cs, nil)
 	x.NoError(err)
 

@@ -41,6 +41,7 @@ import (
 	entsite "github.com/lesomnus/roster/internal/ent/site"
 	entteam "github.com/lesomnus/roster/internal/ent/team"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/forget"
 )
 
@@ -585,7 +586,7 @@ func TestAFrontDoorIsNotAnsweredInATenantThatIsGone(t *testing.T) {
 	// A destruction under way: stamped, its people forgotten, and its names
 	// still there, which is where one an operator holds waits.
 	closes(t, ctx, s.Ungated, bolt)
-	x.NoError(s.Ent.Tenant.UpdateOneId(bolt.Uuid()).SetDateDestroyed(time.Now()).Exec(ctx))
+	x.NoError(s.Ent.Tenant.UpdateOneId(bolt.Uuid()).SetDateDestroyed(time.Now()).Exec(bare.TrustAdmission(ctx)))
 	who, err := s.Ent.Holder.Query().Where(entholder.TenantId(bolt.Uuid())).Ids(ctx)
 	x.NoError(err)
 	for _, h := range who {

@@ -38,8 +38,8 @@ client for exactly the RPC of that name.
 ## 4. Run it
 
 [operating.md](operating.md) -- which database, the two planes, the listeners, the
-console, one process or four, the audit trail and its retention, destroying
-somebody, replicas, TLS.
+console, one process or four, a hook that refuses writes, the audit trail and
+its retention, destroying somebody, replicas, TLS.
 
 [usage/file-policy.md](usage/file-policy.md) — deployment-owned roles, groups
 and bindings from a read-only file.

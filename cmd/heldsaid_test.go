@@ -15,6 +15,7 @@ import (
 	entemail "github.com/lesomnus/roster/internal/ent/email"
 	entholder "github.com/lesomnus/roster/internal/ent/holder"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/forget"
 )
 
@@ -136,7 +137,7 @@ func TestNobodyIsRestoredIntoATenantThatIsDestroyed(t *testing.T) {
 
 	// Stamped destroyed, as the first write of a destruction, and held before
 	// it reached anybody.
-	x.NoError(b.Ent.Tenant.UpdateOneId(b.Fabrikam.Uuid()).SetDateDestroyed(time.Now()).Exec(ctx))
+	x.NoError(b.Ent.Tenant.UpdateOneId(b.Fabrikam.Uuid()).SetDateDestroyed(time.Now()).Exec(bare.TrustAdmission(ctx)))
 	x.NoError(forget.Hold(ctx, b.Ungated, b.Fabrikam, "a claim"))
 
 	err = forget.Restore(ctx, b.Ent, ivan, audit.Contents{}, nil)
@@ -187,7 +188,7 @@ func TestAHoldPlacedOnAClosedTenantSaysItsGraceRunsOn(t *testing.T) {
 
 	t.Run("and one whose grace has run out, that it cannot come back", func(t *testing.T) {
 		x := require.New(t)
-		x.NoError(b.Server.Ent.Tenant.UpdateOneId(newco.Uuid()).SetDateClosed(time.Now().Add(-721 * time.Hour)).Exec(ctx))
+		x.NoError(b.Server.Ent.Tenant.UpdateOneId(newco.Uuid()).SetDateClosed(time.Now().Add(-721 * time.Hour)).Exec(bare.TrustAdmission(ctx)))
 
 		out, err := stderrOf(t, cli.NewCmdHold(&local), "place", "--why", "Newco v. Somebody, 2026-123", "@newco")
 		x.NoError(err)

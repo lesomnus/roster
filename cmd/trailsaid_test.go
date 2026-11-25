@@ -20,6 +20,7 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/forget"
 	"github.com/lesomnus/roster/server/pd"
 )
@@ -107,7 +108,7 @@ func TestForgettingAtTheBoxSaysWhenTheArchivesHalfIsStillOwed(t *testing.T) {
 		c = *cc
 	})
 	who := b.holder(t, ctx, b.Contoso, "leaver")
-	x.NoError(b.Ent.Holder.UpdateOneId(who.Uuid()).SetDateErased(time.Now()).Exec(ctx))
+	x.NoError(b.Ent.Holder.UpdateOneId(who.Uuid()).SetDateErased(time.Now()).Exec(bare.TrustAdmission(ctx)))
 
 	said, err := stderrOf(t, cli.Cmd(&c), "forget", who.String())
 	x.Error(err, "answered nil though the archive's half was not paid; right is an error")
@@ -211,7 +212,7 @@ func TestAnAcceptanceOfRowsSaysWhoAndWhy(t *testing.T) {
 	changed := func() string {
 		t.Helper()
 
-		x.NoError(s.Ent.Holder.UpdateOneId(admin.Uuid()).SetDateDisabled(time.Now()).Exec(ctx))
+		x.NoError(s.Ent.Holder.UpdateOneId(admin.Uuid()).SetDateDisabled(time.Now()).Exec(bare.TrustAdmission(ctx)))
 		said, err := stderrOf(t, cli.Cmd(&c), "trail", "rows")
 		x.ErrorContains(err, "1 finding(s)")
 
@@ -250,7 +251,7 @@ func TestAnAcceptanceOfRowsSaysWhoAndWhy(t *testing.T) {
 
 	// Not told who, it says the shell, and the line names nobody, as a line
 	// a command at the box writes does.
-	x.NoError(s.Ent.Holder.UpdateOneId(admin.Uuid()).ClearDateDisabled().Exec(ctx))
+	x.NoError(s.Ent.Holder.UpdateOneId(admin.Uuid()).ClearDateDisabled().Exec(bare.TrustAdmission(ctx)))
 	said, err = stderrOf(t, cli.Cmd(&c), "trail", "rows")
 	x.ErrorContains(err, "1 finding(s)")
 	said, err = stderrOf(t, cli.Cmd(&c), "trail", "rows", "--accept", "--of", digestOf(t, said), "--why", why)

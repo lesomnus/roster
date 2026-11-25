@@ -10,6 +10,12 @@ import "payday.proto";
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/roster/rstr";
 
+// `roster` is this app's own package, where payday's entities are copied: said
+// since a second package beside it, `roster.hook.v1`, is the contract of a
+// service a deployment serves and roster calls (`hook.proto`). One file of
+// the package says it for all of them, and this is the first.
+option (payday.app) = {};
+
 // ApiKey is what one service may call this deployment for.
 //
 // # Where these live

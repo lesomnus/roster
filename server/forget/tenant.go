@@ -137,6 +137,12 @@ func (r TenantResult) String() string {
 // closed tenant's people were heard shut out when it closed, and this is them
 // heard erased.
 func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Policy, cs audit.Contents, q bare.Recorder) (TenantResult, error) {
+	// Through ent, past the servers, on purpose, and the deployment's own
+	// whoever runs it -- a person's window running out, an operator at the
+	// box: so where a hook is installed it is asked nothing, and payday's
+	// guard is told so (`cmd/hook.go`).
+	ctx = bare.TrustAdmission(ctx)
+
 	var out TenantResult
 
 	v, err := db.Tenant.Get(ctx, t.Uuid())

@@ -27,6 +27,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/audit"
 	entsession "github.com/lesomnus/roster/internal/ent/session"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/pd"
 	"github.com/lesomnus/roster/server/session"
 )
@@ -241,8 +242,7 @@ func TestASessionMadeAtRostersOwnDoorIsOnTheTrail(t *testing.T) {
 			SetGrant([]byte{}).
 			SetDateExpired(time.Now().Add(-time.Minute)).
 			SetDateUpdated(time.Now()).
-			SetDateCreated(time.Now()).
-			Exec(ctx))
+			SetDateCreated(time.Now()).Exec(bare.TrustAdmission(ctx)))
 
 		found, err := findingsOf(t, &c)
 		x.ErrorContains(err, "1 finding(s)")

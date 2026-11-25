@@ -222,6 +222,20 @@ type Config struct {
 	// Delegation is how long a delegation somebody hands an app may live
 	// (`DelegationService/Issue`). See [DelegationConfig].
 	Delegation DelegationConfig `yaml:"delegation"`
+
+	// Hook is a service this deployment names to be asked about the writes
+	// roster's rules let through, which may refuse them and do nothing else
+	// (`cmd/hook.go`, #305). Empty is none, and then nothing of it is
+	// installed. See [HookConfig].
+	Hook HookConfig `yaml:"hook"`
+
+	// Admission is the same for an app that runs roster in its own process:
+	// a policy in Go, where a file names a service. Not in the file, as
+	// [ClientConfig.Local] is not. See [Admission].
+	Admission Admission `yaml:"-"`
+
+	// box is [Config.AtTheBox]: a command at a shell, which asks no hook.
+	box bool
 }
 
 // DelegationConfig bounds the delegations people hand apps.
@@ -666,6 +680,7 @@ func (c Config) Meant() error {
 		formed,
 		noEffect,
 		severalOverSqlite,
+		hookMeant,
 	} {
 		if err := v(c); err != nil {
 			return err

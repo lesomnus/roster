@@ -22,6 +22,7 @@ import (
 	enthost "github.com/lesomnus/roster/internal/ent/host"
 	entrole "github.com/lesomnus/roster/internal/ent/role"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/forget"
 	"github.com/lesomnus/roster/server/front"
 )
@@ -136,8 +137,7 @@ func TestADestructionThatStoppedAfterItsLastPersonIsFinished(t *testing.T) {
 		SetName("late." + name).
 		SetDesc("").
 		SetDateUpdated(time.Now()).
-		SetDateCreated(time.Now()).
-		Exec(ctx))
+		SetDateCreated(time.Now()).Exec(bare.TrustAdmission(ctx)))
 	vs, err = forget.Unfinished(ctx, b.Ent)
 	x.NoError(err)
 	x.Equal([]pdid.Id{b.Contoso}, vs, "a row written into a destroyed tenant is found by nothing")

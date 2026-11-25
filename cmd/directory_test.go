@@ -14,6 +14,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 )
 
 // directory is a tenant whose `entra` connection names people by `oid` and is
@@ -354,8 +355,7 @@ func TestADirectoryProvisionsThroughItsOrganisationsOwnDoor(t *testing.T) {
 		// Past every write above: a row from before the rule, or one a database
 		// was edited into.
 		x.NoError(b.Ent.Connection.UpdateOneId(mustId(t, entra.GetId()).Uuid()).
-			SetIssuer("https://login.microsoftonline.com/common/v2.0").
-			Exec(ctx))
+			SetIssuer("https://login.microsoftonline.com/common/v2.0").Exec(bare.TrustAdmission(ctx)))
 
 		_, err := b.provision(as, "zoe", fredOid, "zoe@contoso.example")
 		x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)

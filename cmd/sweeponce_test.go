@@ -20,6 +20,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent"
 	entaudit "github.com/lesomnus/roster/internal/ent/audit"
 	entsession "github.com/lesomnus/roster/internal/ent/session"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/expire"
 	"github.com/lesomnus/roster/server/session"
 )
@@ -131,7 +132,7 @@ func TestAPassSaysOnlyTheRowsItsOwnDeleteRemoved(t *testing.T) {
 	for i, v := range vs {
 		read[i] = expire.Row{Id: v.Id}
 	}
-	x.NoError(db.Session.DeleteOneId(vs[0].Id).Exec(ctx))
+	x.NoError(db.Session.DeleteOneId(vs[0].Id).Exec(bare.TrustAdmission(ctx)))
 
 	const act = "roster.test.expire"
 	first := true
@@ -154,7 +155,7 @@ func TestAPassSaysOnlyTheRowsItsOwnDeleteRemoved(t *testing.T) {
 			return rows, nil
 		},
 		func(ctx context.Context, db *ent.Client, ids []uuid.UUID) (int, error) {
-			return db.Session.Delete().Where(entsession.IdIn(ids...)).Exec(ctx)
+			return db.Session.Delete().Where(entsession.IdIn(ids...)).Exec(bare.TrustAdmission(ctx))
 		},
 	)
 	x.NoError(err)

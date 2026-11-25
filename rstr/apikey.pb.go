@@ -509,7 +509,7 @@ const file_app_apikey_proto_rawDesc = "" +
 	"\x03ref\x1a\b\n" +
 	"\x06holder\x1a\x05\n" +
 	"\x03app \x14(d\"\x0f\n" +
-	"\rholder.tenantB&Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
+	"\rholder.tenantB*\xca\xc7\x16\x00Z\x1fgithub.com/lesomnus/roster/rstr\x92\x03\x02\b\x02b\beditionsp\xe8\a"
 
 var file_app_apikey_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_app_apikey_proto_goTypes = []any{

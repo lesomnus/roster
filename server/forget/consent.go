@@ -17,6 +17,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/predicate"
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/expire"
 )
 
@@ -69,6 +70,12 @@ func dueConsent(before time.Time) predicate.Consent {
 // unmade for the next pass rather than putting on the trail a row that is
 // still there.
 func DestroyConsents(ctx context.Context, db *ent.Client, ids []uuid.UUID, before time.Time, cs audit.Contents) (int, error) {
+	// Through ent, past the servers, on purpose, and the deployment's own
+	// whoever runs it -- a person's window running out, an operator at the
+	// box: so where a hook is installed it is asked nothing, and payday's
+	// guard is told so (`cmd/hook.go`).
+	ctx = bare.TrustAdmission(ctx)
+
 	if len(ids) == 0 {
 		return 0, nil
 	}

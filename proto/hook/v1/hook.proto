@@ -1,0 +1,170 @@
+edition = "2023";
+
+// The one contract here that roster calls rather than serves.
+//
+// A deployment that wants a say in a write roster's own rules already let
+// through names a service in its configuration (`hook:`), and roster asks it
+// about each such write before the write commits. This file is that service's
+// contract: what a deployment's author implements, and all of what they are
+// told. Versioned apart from roster's entities, in a package of its own,
+// because the two move for different reasons -- an entity gains a field when
+// roster learns something, and this changes only when what a hook is told
+// does.
+//
+// # What it can do
+//
+// Refuse. It cannot allow what roster refused, since it is asked only once
+// the gate, the wall and every rule of roster's have let the write through;
+// it cannot change the write, and it cannot add one. It is not asked about a
+// read, nor about a way in -- signing in, proving an address, recovering an
+// account -- whatever its patterns say (`docs/operating.md`, *A hook a
+// deployment refuses a write by*).
+//
+// # Why it is no entity's service
+//
+// It belongs to no entity, and it is not roster's to serve: a deployment
+// serves it, and roster is its client. Nothing registers it on any port of
+// roster's.
+package roster.hook.v1;
+
+import "google/protobuf/any.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// HookService is what a deployment serves for roster to ask.
+service HookService {
+  // Review is asked about one row a write is about to commit, inside the
+  // write's transaction: so the row as it was and the row as it would be are
+  // both there, and a refusal undoes everything the write did.
+  //
+  // A write that changes several rows asks once for each, in the order it
+  // writes them, each with the method the caller called -- so a hand-written
+  // verb that writes three rows asks three times under its own name, and a
+  // refusal of any of them refuses the call.
+  //
+  // An answer that is an error, or no answer within `hook.timeout`, refuses
+  // the write too: roster's caller is told that this deployment's hook did
+  // not answer and that nothing was written. A hook is never taken to have
+  // said *go on* by saying nothing.
+  rpc Review(WriteReview) returns (WriteVerdict);
+}
+
+// WriteReview is one row of one write, and who is making it.
+//
+// Nothing secret is in it. What the schema declares a secret -- a password's
+// hash, a key's, a delegation's token -- is cleared from the request and from
+// both rows, as is anything inside a `google.protobuf.Any` in them, which
+// roster cannot read to clear; and no credential of the caller's travels: no
+// key, no cookie, no header of theirs.
+message WriteReview {
+  // The method the caller called, as gRPC dispatched it:
+  // "/roster.GroupMembershipService/Add". A verb that writes through others
+  // underneath is asked about under its own name and never under theirs.
+  string method = 1;
+
+  // Who is making the write, and how they arrived.
+  WriteAsker asker = 2;
+
+  // What the caller sent, as they sent it, with its secrets cleared.
+  google.protobuf.Any request = 3;
+
+  // The entity of the row, by its full name: "roster.GroupMembership".
+  string entity = 4;
+
+  // The row's identifier.
+  bytes id = 5;
+
+  // The tenant the row is in, by identifier: the tenant itself for a row of
+  // `roster.Tenant`.
+  //
+  // **Absent means roster could not tell, and not that the row is in no
+  // tenant.** Most rows name their tenant. A row that hangs off a person, a
+  // role or a group -- an address, a place in a group, a binding -- is in
+  // theirs, and that is read past the write's transaction, which a hook is
+  // asked from inside of: where the person, role or group was made by this
+  // same write and was not asked about before it, it is not found, and this
+  // is absent. Who is asking is always told, `asker.tenant` among it, which
+  // is empty only for a deployment key calling as itself.
+  bytes tenant = 6;
+
+  // The row as it was before this write, and absent for a row this write
+  // adds.
+  google.protobuf.Any before = 7;
+
+  // The row as it will be once this write commits, and absent for a row this
+  // write erases.
+  google.protobuf.Any after = 8;
+
+  // The row's `labels` before and after, lifted out of `before` and `after`
+  // so that a hook that decides by them need not unpack a row. Empty where
+  // that row is absent or has none.
+  map<string, string> labels_before = 9;
+  map<string, string> labels_after = 10;
+}
+
+// WriteAsker is who is making a write.
+//
+// A person at a console, a customer's key, or an app acting for a person by a
+// delegation they handed it. In the last case `kind`, `id` and `tenant` are
+// the app that called, and `on_behalf_of` is the person it called for.
+message WriteAsker {
+  // The entity the identifier is of: "roster.Holder" for a person or an app's
+  // holder, "roster.ApiKey" for a deployment key that calls as itself.
+  string kind = 1;
+
+  // Their identifier.
+  bytes id = 2;
+
+  // The tenant that holds them, and empty for a deployment key calling as
+  // itself, which no tenant holds.
+  bytes tenant = 3;
+
+  // How the call that is writing came to be theirs.
+  WriteArrival arrived = 4;
+
+  // The delegation the call was made by, where it was made by one.
+  bytes delegation = 5;
+
+  // The person they act for, where they act for somebody: whoever handed them
+  // `delegation`. Absent for a call made as oneself.
+  WriteParty on_behalf_of = 6;
+}
+
+// WriteParty is somebody, by the entity they are of, their identifier and
+// their tenant.
+message WriteParty {
+  string kind = 1;
+  bytes id = 2;
+  bytes tenant = 3;
+}
+
+// WriteArrival is how a call was authenticated.
+enum WriteArrival {
+  // Said by nothing: a deployment with no control plane, which believes its
+  // callers by name, or an app that runs roster in its own process and calls
+  // it there.
+  WRITE_ARRIVAL_UNSPECIFIED = 0;
+
+  // A session cookie: a person at a console or at the account page.
+  WRITE_ARRIVAL_SESSION = 1;
+
+  // A key: a deployment's or a tenant's, presented as the caller's own.
+  WRITE_ARRIVAL_KEY = 2;
+
+  // A key presented beside a delegation, acting for the person who handed
+  // it over.
+  WRITE_ARRIVAL_DELEGATION = 3;
+}
+
+// WriteVerdict is the hook's answer, and the whole of what it can say.
+message WriteVerdict {
+  // Whether the write is refused. False is *go on*.
+  bool refused = 1;
+
+  // Why, in the hook's own words, which roster's caller is told as they are
+  // written: `refused by this deployment's hook: <why>`. Bounded and cleared
+  // of control characters before they are repeated; read only when
+  // `refused`.
+  string why = 2;
+}

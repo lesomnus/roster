@@ -22,6 +22,7 @@ import (
 	entaudit "github.com/lesomnus/roster/internal/ent/audit"
 	entconsent "github.com/lesomnus/roster/internal/ent/consent"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/forget"
 )
 
@@ -332,7 +333,7 @@ func TestAConsentOutlivesItsAccountForAsLongAsItIsKept(t *testing.T) {
 	x.Equal(kept, of(), "forgetting the person took their consents")
 
 	// An hour on, under a keep of one.
-	x.NoError(c.Ent.Holder.UpdateOneId(c.account.Uuid()).SetDateErased(time.Now().Add(-2 * time.Hour)).Exec(c.ctx))
+	x.NoError(c.Ent.Holder.UpdateOneId(c.account.Uuid()).SetDateErased(time.Now().Add(-2 * time.Hour)).Exec(bare.TrustAdmission(c.ctx)))
 
 	t.Run("not under a hold", func(t *testing.T) {
 		x := require.New(t)
@@ -371,7 +372,7 @@ func TestARestoredAccountKeepsItsConsents(t *testing.T) {
 	x.NoError(err)
 	_, err = c.Ungated.Holder().Erase(c.ctx, c.erin())
 	x.NoError(err)
-	x.NoError(c.Ent.Holder.UpdateOneId(c.account.Uuid()).SetDateErased(time.Now().Add(-2 * time.Hour)).Exec(c.ctx))
+	x.NoError(c.Ent.Holder.UpdateOneId(c.account.Uuid()).SetDateErased(time.Now().Add(-2 * time.Hour)).Exec(bare.TrustAdmission(c.ctx)))
 	x.NoError(forget.Restore(c.ctx, c.Ent, c.account, audit.Contents{}, nil))
 
 	vs, err := forget.DueConsents(c.ctx, c.Ent, time.Now().Add(-time.Hour))

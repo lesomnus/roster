@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/pd"
 )
@@ -155,7 +156,7 @@ func TestWhereSomebodyReachesIsSaidOnceAndInOrder(t *testing.T) {
 			x.NoError(b.Ent.ApiKey.Create().
 				SetId(pdid.New(pd.ApiKeyDomain).Uuid()).SetHolderId(park.Uuid()).
 				SetAlias(fmt.Sprintf("key-%d", i)).SetDesc("").SetSecret(sum).
-				SetDateCreated(when).SetDateUpdated(when).Exec(ctx))
+				SetDateCreated(when).SetDateUpdated(when).Exec(bare.TrustAdmission(ctx)))
 		}
 
 		me, err := app.NewMeServiceClient(conn).Get(asOverTheWire(ctx, park), app.MeGetRequest_builder{}.Build())

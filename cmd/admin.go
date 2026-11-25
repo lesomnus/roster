@@ -374,6 +374,7 @@ func (s *Server) GrpcAdmin(ctx context.Context, c Config, opts ...grpc.ServerOpt
 		With(s.accessed().Interceptor()).
 		With(gate.Interceptor(policy)).
 		WithUnary(Intent(s.Control.Ent)).
+		WithUnary(s.admitted()...).
 		With(s.Watch.Interceptor()).
 		WithUnary(grpcx.ClosedUnary(shut)).
 		WithStream(grpcx.ClosedStream(shut)).

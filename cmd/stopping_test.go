@@ -17,6 +17,7 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	entsession "github.com/lesomnus/roster/internal/ent/session"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/session"
 )
 
@@ -129,8 +130,7 @@ func TestInvalidateEndsTheConsolesOwnSessions(t *testing.T) {
 				SetGrant(was.Grant).
 				SetDateExpired(time.Now().Add(time.Hour)).
 				SetDateUpdated(at).
-				SetDateCreated(at).
-				Exec(ctx))
+				SetDateCreated(at).Exec(bare.TrustAdmission(ctx)))
 
 			return with(one.Name, key)
 		}

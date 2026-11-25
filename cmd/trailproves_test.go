@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/pd"
 )
 
@@ -139,8 +140,8 @@ func TestWhatNeitherCheckOfTheTrailFinds(t *testing.T) {
 	for _, v := range after[had:] {
 		x.NoError(b.Ent.Audit.DeleteOneId(v.Id).Exec(ctx))
 	}
-	x.NoError(b.Ent.Holder.UpdateOneId(kim.Uuid()).ClearDateDisabled().SetDateUpdated(row.DateUpdated).Exec(ctx))
-	x.NoError(b.Ent.RowSeal.UpdateOneId(kim.Uuid()).SetSum(seal.Sum).SetFields(seal.Fields).Exec(ctx))
+	x.NoError(b.Ent.Holder.UpdateOneId(kim.Uuid()).ClearDateDisabled().SetDateUpdated(row.DateUpdated).Exec(bare.TrustAdmission(ctx)))
+	x.NoError(b.Ent.RowSeal.UpdateOneId(kim.Uuid()).SetSum(seal.Sum).SetFields(seal.Fields).Exec(bare.TrustAdmission(ctx)))
 
 	now, err := b.Ent.Holder.Query().Where(holder.IdEQ(kim.Uuid())).Only(ctx)
 	x.NoError(err)
@@ -182,8 +183,8 @@ func TestNeitherCheckReadsTheControlPlaneOrTheAccessRecord(t *testing.T) {
 	// everything done there gone.
 	operator, err := cmd.ControlHolder(ctx, s.Control, "admin")
 	x.NoError(err)
-	x.NoError(s.Control.Ent.Holder.UpdateOneId(operator.Uuid()).SetDateDisabled(time.Now()).Exec(ctx))
-	gone, err := s.Control.Ent.Audit.Delete().Exec(ctx)
+	x.NoError(s.Control.Ent.Holder.UpdateOneId(operator.Uuid()).SetDateDisabled(time.Now()).Exec(bare.TrustAdmission(ctx)))
+	gone, err := s.Control.Ent.Audit.Delete().Exec(bare.TrustAdmission(ctx))
 	x.NoError(err)
 	x.NotZero(gone, "the control plane had no trail, so this proves nothing")
 
