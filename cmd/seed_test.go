@@ -165,7 +165,7 @@ func TestInitRefusesToRunTwice(t *testing.T) {
 // TestASecondSeedStopsBeforeTheOperator is [cmd.Seed] interrupted where it
 // actually can be, which is not where the test above stops it.
 //
-// `Seed` is a sequence of Rpcs and not a transaction: a tenant, a holder, a
+// `Seed` is a sequence of RPCs and not a transaction: a tenant, a holder, a
 // role, a binding, and then the control plane's operator in a second database
 // that no transaction could have spanned anyway. The run above never gets past
 // the first call, so it says nothing about what a partial one leaves.

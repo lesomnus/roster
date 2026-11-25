@@ -794,7 +794,7 @@ func newCmdVouchRevoke(c *cmd.Config) *xli.Command {
 func newCmdVouchEnrol(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "enrol",
-		Brief: "make a second factor for somebody, printed once as an otpauth:// Uri",
+		Brief: "make a second factor for somebody, printed once as an otpauth:// URI",
 
 		Args: arg.Args{
 			&pdcmd.ArgRef{Name: "WHO", Brief: "who, as @tenant/alias or an identifier"},
@@ -846,7 +846,7 @@ func newCmdVouchEnrol(c *cmd.Config) *xli.Command {
 
 			fmt.Fprintf(os.Stdout, "%s\n", v.GetUri())
 			fmt.Fprintf(os.Stderr,
-				"the seed is the `secret` parameter of the Uri, and this is the only time it is "+
+				"the seed is the `secret` parameter of the URI, and this is the only time it is "+
 					"shown. It does not count until it is proved: one code, via\n  roster vouch "+
 					"verify --kind %s%s --secret-stdin %s\n",
 				kind, nameFlag(name), whoTyped(cl))

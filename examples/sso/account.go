@@ -29,7 +29,7 @@ import (
 // the delegation. The browser never holds one and never sees roster: it holds a
 // cookie for the app in front of it, which is D21's split drawn as a page.
 //
-// And the three Rpcs behind it take no subject. That is not a coincidence -- a
+// And the three RPCs behind it take no subject. That is not a coincidence -- a
 // screen a person draws about themselves is exactly where a method that took
 // one would be a permission over everybody in their tenant.
 

@@ -254,7 +254,7 @@ func deref(v *time.Time) time.Time {
 //
 // `time.Time` and not the message, because what is compared is the instant and
 // keeping the message would keep a row this stream deliberately does not send.
-// holderService is the prefix of every Rpc of that service, which is how a
+// holderService is the prefix of every RPC of that service, which is how a
 // change is known to be about a Holder.
 //
 // Through `watch.ServiceOf` and not `ServiceDesc.ServiceName`, which is the

@@ -467,7 +467,7 @@ func (s Core) spelled(ctx context.Context, ref *app.IdentityRef) (*app.IdentityR
 // subjectIsStable refuses a subject that is obviously the wrong value.
 //
 // A provider's subject has to be the identifier that provider treats as
-// immutable -- a numeric Id for GitHub, `objectGuid` or `entryUuid` for LDAP,
+// immutable -- a numeric ID for GitHub, `objectGUID` or `entryUUID` for LDAP,
 // `oid` for Entra. What gets written by mistake is the username or the email
 // address, because both are visible in the same claims and both read like a
 // name.

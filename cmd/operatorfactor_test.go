@@ -60,7 +60,7 @@ func TestAnOperatorHoldsASecondFactor(t *testing.T) {
 	// Enrolled at the box, and printed once as what an authenticator app scans.
 	uri := stdoutOf(t, cli.NewCmdControl(&c), "vouch", "enrol", "@admin")
 	u, err := url.Parse(uri)
-	x.NoError(err, "what `enrol` printed is not a Uri: %q", uri)
+	x.NoError(err, "what `enrol` printed is not a URI: %q", uri)
 	x.Equal("otpauth", u.Scheme)
 	seed := seedOf(t, u.Query().Get("secret"))
 

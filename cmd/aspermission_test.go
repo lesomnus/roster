@@ -72,7 +72,7 @@ const (
 //	Alice patches that membership to name the tenant's admin role.
 //	Alice may now erase anybody.
 //
-// Two Rpcs, no method she did not already hold, and the second one is the one
+// Two RPCs, no method she did not already hold, and the second one is the one
 // `Add` was taught to refuse. It is the same mistake `Role.Patch` was found to
 // have -- a rule wired to `Add` and not to the write that can change the same
 // column afterwards -- and that one was closed in the layer rather than left to
@@ -136,7 +136,7 @@ func TestNobodyAttachesARoleByPatchingAMembership(t *testing.T) {
 //
 // The decision has since been taken for every entity at once: no port serves a
 // general write, whatever it is told (`TestNoGeneralWriteIsServed`). So this
-// is the same two Rpcs against a server handed the setting, and the first is
+// is the same two RPCs against a server handed the setting, and the first is
 // not served. The layer's own check is still there for what does not come over
 // the wire, and the test above is what holds it.
 func TestAGeneralWriteIsNotAWayRoundTheEscalationRule(t *testing.T) {
@@ -177,7 +177,7 @@ func TestAGeneralWriteIsNotAWayRoundTheEscalationRule(t *testing.T) {
 	_, err = app.NewHolderServiceClient(conn).Erase(wire,
 		app.HolderRef_builder{Id: b.holder(t, ctx, b.Contoso, "victim").Bytes()}.Build())
 	x.Equal(codes.PermissionDenied, status.Code(err),
-		"two Rpcs from 'she manages who is in what team' and she erased somebody")
+		"two RPCs from 'she manages who is in what team' and she erased somebody")
 }
 
 // TestNobodyMintsAKeyOnSomebodyElsesHolder.

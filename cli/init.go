@@ -111,7 +111,7 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 		Brief: "put up the operator who runs this deployment, and what they may do",
 
 		Flags: flg.Flags{
-			&flg.String{Name: "operator", Brief: "the alias of the control plane holder who runs the console"},
+			&flg.String{Name: "operator", Brief: "the alias of the control plane holder who signs in to the admin console"},
 			&flg.Switch{Name: "password-stdin", Brief: "read the operator's password from stdin instead of generating one"},
 		},
 
@@ -229,7 +229,7 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			} else {
 				say("  holder %s is %s\n", operator, v.Operator)
 			}
-			say("  bound to role %q = %s -- every Rpc roster serves, now and after an upgrade\n", cmd.Everyverb, cmd.EveryRosterMethod)
+			say("  bound to role %q = %s -- every RPC roster serves, now and after an upgrade\n", cmd.Everyverb, cmd.EveryRosterMethod)
 			// A password this made is printed, once, since here is the only
 			// place it is. One that was **given** is not: `--password-stdin`
 			// exists so that a secret is in no argument and no process list,
@@ -238,10 +238,10 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			// piped it in (#275).
 			if given != "" {
 				say("  password  the one given on stdin\n")
-				say("\nsign in to the console as %s, with the password you gave.\n", operator)
+				say("\nsign in to the admin console as %s, with the password you gave.\n", operator)
 			} else {
 				say("  password  on standard output, alone\n")
-				say("\nsign in to the console as %s. that password is shown once and is not stored -- write it down now.\n", operator)
+				say("\nsign in to the admin console as %s. that password is shown once and is not stored -- write it down now.\n", operator)
 				cl.Printf("%s\n", v.Password)
 			}
 
@@ -253,8 +253,8 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 			// customer nobody asked for. What replaces it is the admin console, where
 			// the first one is made the same way the hundredth is.
 			say("\nthere are no customers yet, which is the right state to start in.\n")
-			say("the console makes the first one -- a tenant, somebody in it, and the role\n")
-			say("that lets them administer it. see docs/operating.md.\n")
+			say("the admin console makes the first one -- a tenant, somebody in it, and the\n")
+			say("role that lets them administer it. see docs/operating.md.\n")
 
 			return nil
 		}),

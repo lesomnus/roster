@@ -1301,7 +1301,7 @@ const Released = "roster.host.release"
 // and flattened into a single list the two are the same strings. That is not
 // hypothetical: somebody bound to a role in Seoul had those methods in a flat
 // list with no trace of Seoul on them, so `mayGrant` compared them against a
-// tenant-wide write and agreed. Two Rpcs later they held the tenant.
+// tenant-wide write and agreed. Two RPCs later they held the tenant.
 //
 // Kept together, `mayGrant` takes the scope being written to and only what
 // reaches it counts. A site administrator delegates inside their own site,

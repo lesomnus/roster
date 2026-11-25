@@ -194,7 +194,7 @@ func (s *Server) mint(ctx context.Context, res *app.VouchVerifyResponse, who, is
 //
 // # How hard it bites
 //
-// As hard as the caller is narrow, by either reading. `auth.Plain` and mTls
+// As hard as the caller is narrow, by either reading. `auth.Plain` and mTLS
 // carry `frame.Whole`, because a header and a certificate have nowhere to put
 // an attenuation, and what bounds a caller there is what they are bound.
 //

@@ -130,7 +130,7 @@ func CustomerOf(ctx context.Context, s *Server, tenant string, alias string) (pd
 	return pdid.From(v.GetId())
 }
 
-// tenantRef is what somebody typed, as the reference an Rpc takes.
+// tenantRef is what somebody typed, as the reference an RPC takes.
 //
 // An identifier if it parses as one and an alias otherwise. There is no
 // ambiguity to resolve: an alias is `[a-z0-9-]` shaped and a UUID is not

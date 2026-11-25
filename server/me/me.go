@@ -3,7 +3,7 @@
 // # Why the join is roster's and not a page's
 //
 // Every part of the answer is readable on its own. What is not is the
-// **union**: which Rpcs somebody effectively holds is bindings, plus the groups
+// **union**: which RPCs somebody effectively holds is bindings, plus the groups
 // carrying bindings, plus a role held in a team, and an app that added those up
 // from the parts would be a second implementation of `gate.Policy` -- one that
 // decides what to show, drifting from the one that decides what is allowed.
