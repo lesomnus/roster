@@ -28,6 +28,7 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/internal/ent"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/pd"
 )
@@ -526,8 +527,7 @@ func TestNothingDeclaredSecretReachesTheRecord(t *testing.T) {
 				SetGrant([]byte{0}).
 				SetDateExpired(soon.AsTime()).
 				SetDateUpdated(now).
-				SetDateCreated(now).
-				Exec(ctx)
+				SetDateCreated(now).Exec(bare.TrustAdmission(ctx))
 		},
 	}
 
@@ -552,7 +552,7 @@ func TestNothingDeclaredSecretReachesTheRecord(t *testing.T) {
 			_, secret, err := keys.Mint(keys.PrefixTenant)
 			x.NoError(err)
 			x.NoError(made[arm](secret))
-			_, err = b.Ent.Access.Delete().Exec(ctx)
+			_, err = b.Ent.Access.Delete().Exec(bare.TrustAdmission(ctx))
 			x.NoError(err)
 
 			// `Get`, by that arm, with a `select` that reaches the holder's

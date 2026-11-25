@@ -2008,6 +2008,122 @@ one of them until they are linked, so its suspension of them is refused.
 `roster --as <operator> scim adopt --tenant …` lists who that is, and links them
 once the list is believed ([scim.md](scim.md) § *What it does with a person*).
 
+## A hook a deployment refuses a write by
+
+roster's rules are roster's, and some of what they leave a deployment wants a
+say in: which groups its people may leave, who may take whom out of one,
+suspending somebody wider than oneself ([usage/rules.md](usage/rules.md) §
+*What is not a rule, on purpose*). A **hook** is where it says so: a service the
+deployment runs, which roster asks about each write it names once every rule of
+roster's has let the write through, and which may refuse it. That is all it
+can do. It cannot allow what roster refused, change a write or add one.
+
+```yaml
+hook:
+  addr: hook.internal:9443       # the service asked; none is no hook
+  ca: ${file:/etc/roster/hook-ca.pem}   # what its certificate is verified by
+  timeout: 2s                    # unless said; at most 30s
+  writes:                        # which writes it is asked about
+    - /roster.GroupMembershipService/*
+    - /roster.HolderService/Disable
+```
+
+`writes` are written as a role's methods are, where a `*` is a whole part, and a
+write no pattern covers asks nobody. It is dialled over TLS, and its
+certificate is verified against `ca` where one is named -- a PEM bundle, a value
+of the file as a listener's `tls.client_ca` is, since a hook is usually behind
+an authority of the deployment's own -- and against the system's roots where
+none is. `insecure: true` dials it without TLS, as `ldap.insecure` dials
+roster. No client certificate is presented. With no `hook:` nothing of this is
+installed. Refused as the server starts, each by its key: an address with no
+`writes`; `writes`, a timeout, `ca` or `insecure` with no address; a timeout
+below none or past thirty seconds; `ca` beside `insecure`, a `ca` that cannot
+be read, and one that holds no certificate; and a pattern that covers no
+method roster serves, only reads, or a way in -- `/roster.*/*` is taken as
+every write but those. How many questions wait on it at once is payday's
+bound, thirty-two, and is not a setting.
+
+An app that runs roster in its own process hands `cmd` the same thing in Go
+rather than naming a service: `cmd.Config.Admission`, payday's
+`admission.Policy` and the patterns it is asked about. Its answers are told a
+caller in the same words a service's are.
+
+**What it is told** is `proto/hook/v1/hook.proto`, package `roster.hook.v1`:
+`HookService.Review(WriteReview) returns (WriteVerdict)`. It is asked inside the
+write's transaction, before it commits, **once for each row the write
+writes**, and always under the method the caller called: `Holder.Disable` asks
+about the person it suspends and about each row it writes besides, every one as
+`/roster.HolderService/Disable`, and never under the generated write
+underneath. A review is that method; who is asking -- the kind and identifier
+of the person or key, their tenant, whether they arrived by a session, a key
+or a delegation and which, and whom they act for; the request as it was sent;
+the entity and the row's identifier and tenant -- absent where roster could
+not tell it, which `proto/hook/v1/hook.proto` says when, and never because a
+row is in none; the row before and the row after, either absent where there is none; and the row's `labels` before and
+after, lifted out. Nothing secret is in it: what the schema declares a secret
+is cleared from the request and from both rows, and no credential of the
+caller's is sent on.
+
+**What it answers** is `refused` and `why`. A refusal undoes the whole write,
+and its caller is told `PermissionDenied`, *refused by this deployment's hook:
+"…"*, with its words cut to eighty bytes and quoted. It is on the access
+record as any refusal is, by its code, and the hook's words are not kept
+there: they are on the log, a warning with the method, the entity, the row and
+the words. Nothing is on the
+trail: nothing was written.
+
+**When it does not answer** -- past its timeout or the caller's deadline,
+whichever is sooner; nothing listening; an answer that is an error -- the
+write is refused too, `Unavailable`, *this deployment's hook did not answer,
+and nothing was written*, and the log has an error naming the method and the
+entity and nothing of the request. A hook is never taken to have said *go on*
+by saying nothing, so a hook that is down stops every write it names.
+
+**And only those.** A deployment whose hook is down is still one its people
+get into: what the hook is not asked about -- a write no pattern covers, a
+read, a sign-in, a wrong password counted -- is let through before anything
+waits on the hook, so it is not held up even while thirty-two writes the hook
+is asked about wait on it, each until its deadline. A further write it is
+asked about, with all thirty-two waiting, is refused at once,
+`ResourceExhausted`. That is on PostgreSQL. **SQLite takes one write at a
+time**, so there a write waiting on its hook holds every other write, of any
+kind, until the hook answers or the write's deadline passes: a deployment on
+SQLite with a hook that is down signs people in a `hook.timeout` late.
+
+**A way in never asks it**, whatever its patterns say, so that a hook that is
+down shuts nobody out: signing in, proving a secret, spending a link, a
+delegation, a person setting or recovering their own password, second factor,
+badge or key, an address being proved, and what a sign-in writes on a
+provider's word (`cmd.WayIn` is the list). Making a person is not a way in: a
+hook that covers `HolderService/Add` is asked about a person a first sign-in
+makes where a tenant enrols them (`login.enrol: enrolling`), so while such a
+hook is down nobody new is made, and everybody who exists still signs in. Nor
+is it asked about a read; about
+the control plane's own rows; about what roster writes for itself -- a sweep, a
+session, what a file of `resources` declares, `init`; or about a command at a
+shell on the box, which has no caller.
+
+A hook in Go, which refuses any write of a row that was labelled `frozen`
+(`examples/hook`, built and run by its tests):
+
+```go
+type hook struct {
+	rstr.UnimplementedHookServiceServer
+}
+
+// Review refuses a write of a row that was frozen, and lets every other be.
+func (hook) Review(ctx context.Context, r *rstr.WriteReview) (*rstr.WriteVerdict, error) {
+	if r.GetLabelsBefore()["frozen"] == "true" {
+		return rstr.WriteVerdict_builder{
+			Refused: true,
+			Why:     "this row is frozen; the people team takes the label off",
+		}.Build(), nil
+	}
+
+	return &rstr.WriteVerdict{}, nil
+}
+```
+
 ## The audit trail
 
 **Forever, until you say otherwise.** That is the default and it is deliberate: a

@@ -21,6 +21,7 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/internal/ent/audit"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/forget"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/pd"
@@ -245,7 +246,7 @@ func TestWhatGoesWithAPersonOrATenantIsSaidUnderThatTenant(t *testing.T) {
 
 	seoul := b.site(t, ctx, b.Fabrikam, "seoul")
 	ops := b.team(t, ctx, seoul, "ops")
-	x.NoError(b.Ent.Tenant.UpdateOneId(b.Fabrikam.Uuid()).SetDateClosed(time.Now()).Exec(ctx))
+	x.NoError(b.Ent.Tenant.UpdateOneId(b.Fabrikam.Uuid()).SetDateClosed(time.Now()).Exec(bare.TrustAdmission(ctx)))
 	_, err = forget.DestroyTenant(ctx, b.Ent, b.Fabrikam, p, cs, nil)
 	x.NoError(err)
 	wentUnder(t, ctx, b, map[pdid.Id]pdid.Id{seoul: b.Fabrikam, ops: b.Fabrikam}, forget.DestroyedTenant)

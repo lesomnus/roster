@@ -20,6 +20,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/group"
 	"github.com/lesomnus/roster/internal/ent/role"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/forget"
 	"github.com/lesomnus/roster/server/keys"
 )
@@ -138,7 +139,7 @@ func TestAnAppsRowsKeepTheHolderItIsFrom(t *testing.T) {
 
 			// Underneath every server, as only the database's own words
 			// would: the row is refused, and nothing moved.
-			err := b.Ent.Holder.DeleteOneId(of.Uuid()).Exec(ctx)
+			err := b.Ent.Holder.DeleteOneId(of.Uuid()).Exec(bare.TrustAdmission(ctx))
 			x.Error(err, "the holder %s names as its app was deleted", k.name)
 
 			_, err = b.Ent.Holder.Get(ctx, of.Uuid())
@@ -151,7 +152,7 @@ func TestAnAppsRowsKeepTheHolderItIsFrom(t *testing.T) {
 		x := require.New(t)
 
 		alone := b.holder(t, ctx, b.Contoso, "rows-alone")
-		x.NoError(b.Ent.Holder.DeleteOneId(alone.Uuid()).Exec(ctx))
+		x.NoError(b.Ent.Holder.DeleteOneId(alone.Uuid()).Exec(bare.TrustAdmission(ctx)))
 	})
 }
 

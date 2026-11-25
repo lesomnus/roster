@@ -19,6 +19,7 @@ import (
 	entapikey "github.com/lesomnus/roster/internal/ent/apikey"
 	entdelegation "github.com/lesomnus/roster/internal/ent/delegation"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/forget"
 	"github.com/lesomnus/roster/server/keys"
 	"github.com/lesomnus/roster/server/me"
@@ -43,7 +44,7 @@ func offersLeave(t *testing.T, ctx context.Context, s *cmd.Server, tenant pdid.I
 		cfg = proto.Clone(v.Config).(*app.TenantConfig)
 	}
 	cfg.SetLeave(on)
-	x.NoError(s.Ent.Tenant.UpdateOneId(tenant.Uuid()).SetConfig(cfg).Exec(ctx))
+	x.NoError(s.Ent.Tenant.UpdateOneId(tenant.Uuid()).SetConfig(cfg).Exec(bare.TrustAdmission(ctx)))
 }
 
 // signedInAt is a delegation for somebody who proved who they are at `at`:

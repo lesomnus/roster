@@ -177,7 +177,10 @@ func built(ctx context.Context, c cmd.Config) (*cmd.Server, error) {
 			"are me, front, sync, issue and the entity commands, with client.addr")
 	}
 
-	s, err := cmd.Build(ctx, c.Queued())
+	// At the box, which is where the line falls between a write a hook is
+	// asked about and one that is the deployment's own: a command here has no
+	// caller (`cmd/hook.go`).
+	s, err := cmd.Build(ctx, c.Queued().AtTheBox())
 	if err != nil {
 		return nil, err
 	}

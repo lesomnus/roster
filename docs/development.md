@@ -36,6 +36,13 @@ packages cannot have an edge between them and the tenant wall is an edge.
 `pd gen` refuses the alternative rather than generating an app whose wall has
 nothing to stand on.
 
+**And one file in a second proto package, `roster.hook.v1`**: `proto/hook/v1/hook.proto`,
+the contract of the service a deployment names to refuse writes, which roster
+calls and does not serve. It is versioned apart from the entities, and in the
+same Go package as everything generated, since an app is one; so
+`proto/app/apikey.proto` says `option (payday.app) = {}`, which tells `pd gen`
+that `roster` is the package payday's entities are copied into.
+
 ## Generating
 
 ```sh
@@ -217,6 +224,24 @@ hands `set-cookie` metadata to the browser as one -- so the admin console's sign
 `AuthService.SignIn`, an RPC like every other call the page makes. It also
 removed what the route cost, which was the data plane's port answering an
 operator's password with a cookie that opened nothing.
+
+## Running the suite with every write asked of a hook
+
+```sh
+ROSTERTEST_ADMIT_EVERYTHING=1 go test ./...
+```
+
+builds every data plane the suite builds with a policy that lets every write
+through, asked about every write a hook could be (`/roster.*/*`), over every
+entity payday's admission can be installed for (`cmd.AdmitEverything`). The
+suite passes with it as it does without. That is what holds the promise a hook
+rests on: payday guards a direct write of an entity it protects, so every write
+roster makes beneath its own servers -- a sweep, a session the store writes, a
+lock, what `server/forget` destroys -- either goes through them or says it is
+the deployment's own (`bare.TrustAdmission`), and a write that does neither
+fails here and nowhere else. A test that writes a row past the servers to set
+something up says so the same way. The variable is read in a test binary
+alone; `go test` of one package takes it too.
 
 ## What the generator refuses
 

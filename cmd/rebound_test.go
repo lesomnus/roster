@@ -16,6 +16,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/prove"
 )
 
@@ -40,7 +41,7 @@ func TestARestoreInsideATransactionKeepsTheGrace(t *testing.T) {
 	as := b.as(ctx, b.ContosoUser, b.Contoso)
 
 	closes(t, ctx, b.Ungated, b.Contoso)
-	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now().Add(-2 * time.Hour)).Exec(ctx))
+	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now().Add(-2 * time.Hour)).Exec(bare.TrustAdmission(ctx)))
 	restore := app.TenantRestoreRequest_builder{Ref: app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()}.Build()
 
 	_, err := b.Walled.Tenant().Restore(as, restore)

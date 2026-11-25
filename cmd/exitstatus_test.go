@@ -21,6 +21,7 @@ import (
 	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
 	entcredential "github.com/lesomnus/roster/internal/ent/credential"
+	"github.com/lesomnus/roster/server/bare"
 )
 
 // exitStatusCase is one invocation and the status the process ends with.
@@ -94,7 +95,7 @@ func exitStatusChanged(t *testing.T) (with, without *cmd.Config) {
 		c = *cc
 	})
 	h := b.holder(t, ctx, b.Contoso, "another")
-	require.NoError(t, b.Ent.Holder.UpdateOneId(h.Uuid()).SetDateDisabled(time.Now()).Exec(ctx))
+	require.NoError(t, b.Ent.Holder.UpdateOneId(h.Uuid()).SetDateDisabled(time.Now()).Exec(bare.TrustAdmission(ctx)))
 
 	none := c
 	none.Audit.Digest.Key = ""
@@ -161,7 +162,7 @@ func TestAnExitStatusSaysWhichKindOfFailure(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, b.Server.Ent.Credential.Update().
 		Where(entcredential.HolderIdEQ(bob.Uuid())).
-		SetDateUnlocked(time.Now().Add(time.Hour)).Exec(t.Context()))
+		SetDateUnlocked(time.Now().Add(time.Hour)).Exec(bare.TrustAdmission(t.Context())))
 
 	// The operator's authenticator, enrolled and not yet proved.
 	_, said, err := pipedErr(t, "", cli.Cmd(&b.Local), "control", "vouch", "enrol", "@admin")

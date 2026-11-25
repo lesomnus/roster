@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/delegation"
 	"github.com/lesomnus/roster/internal/ent/holder"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/expire"
 )
 
@@ -87,6 +88,11 @@ func Sweep(db *ent.Client, cs audit.Contents, every time.Duration) spin.Func {
 // deployment with an opinion about when this happens -- a cron, a maintenance
 // window -- has something to call.
 func Collect(ctx context.Context, db *ent.Client, cs audit.Contents) (int, error) {
+	// What has expired, collected by the deployment through ent: its own
+	// write, which no hook is asked about and payday's guard is told so
+	// (`cmd/hook.go`).
+	ctx = bare.TrustAdmission(ctx)
+
 	now := time.Now()
 
 	return expire.Rows(ctx, db, cs, Expired,

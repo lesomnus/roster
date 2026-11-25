@@ -17,6 +17,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/holder"
 	entrole "github.com/lesomnus/roster/internal/ent/role"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/core"
 )
 
@@ -403,8 +404,7 @@ func TestTheRoleEverybodyHoldsNamesOnlyWhatIsTheirOwn(t *testing.T) {
 	x.NoError(err)
 	n, err := b.Ent.Role.Update().
 		Where(entrole.TenantIdEQ(b.Contoso.Uuid()), entrole.AliasEQ(core.Owns), entrole.DateErasedIsNil()).
-		SetMethods([]string{"/roster.*/*"}).
-		Save(ctx)
+		SetMethods([]string{"/roster.*/*"}).Save(bare.TrustAdmission(ctx))
 	x.NoError(err)
 	x.Equal(1, n)
 

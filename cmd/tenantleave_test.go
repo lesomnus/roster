@@ -37,6 +37,7 @@ import (
 	entsite "github.com/lesomnus/roster/internal/ent/site"
 	entteam "github.com/lesomnus/roster/internal/ent/team"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/forget"
 	"github.com/lesomnus/roster/server/front"
@@ -219,7 +220,7 @@ func TestClosingIsRefusedWhereNobodyCouldUndoIt(t *testing.T) {
 		t0 := add(t, ctx, b.Server, "declared")
 		who := addHolder(t, ctx, b.Server, t0, "someone")
 		// The mark `roster resources` leaves, written as it writes it.
-		x.NoError(b.Ent.Tenant.UpdateOneId(t0.Uuid()).SetLabels(map[string]string{cmd.Declared: "customers.yaml"}).Exec(ctx))
+		x.NoError(b.Ent.Tenant.UpdateOneId(t0.Uuid()).SetLabels(map[string]string{cmd.Declared: "customers.yaml"}).Exec(bare.TrustAdmission(ctx)))
 
 		// As somebody who may close it -- across the tenant, since a close
 		// reaches all of it -- so that what refuses is the file.
@@ -256,7 +257,7 @@ func TestARestoreHasAGrace(t *testing.T) {
 	x.Equal(codes.FailedPrecondition, status.Code(restores(ctx, b.Ungated, b.Contoso)), "nothing to undo on an open tenant")
 
 	closes(t, ctx, b.Ungated, b.Contoso)
-	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now().Add(-2 * time.Hour)).Exec(ctx))
+	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now().Add(-2 * time.Hour)).Exec(bare.TrustAdmission(ctx)))
 	x.Equal(codes.FailedPrecondition, status.Code(restores(ctx, b.Ungated, b.Contoso)), "a close restored after its grace ran out")
 
 	vs, err := forget.DueTenants(ctx, b.Ent, time.Now().Add(-time.Hour))
@@ -389,7 +390,7 @@ func TestADestroyedTenantLeavesNothingOfItsOwn(t *testing.T) {
 		t0 := b.tenant(t, ctx, "halfway")
 		b.holder(t, ctx, t0, "left")
 		closes(t, ctx, b.Ungated, t0)
-		x.NoError(b.Ent.Tenant.UpdateOneId(t0.Uuid()).SetDateDestroyed(time.Now()).Exec(ctx))
+		x.NoError(b.Ent.Tenant.UpdateOneId(t0.Uuid()).SetDateDestroyed(time.Now()).Exec(bare.TrustAdmission(ctx)))
 
 		x.Equal(codes.FailedPrecondition, status.Code(restores(ctx, b.Ungated, t0)), "a tenant half destroyed came back")
 
@@ -414,7 +415,7 @@ func TestAHoldStopsEveryDestruction(t *testing.T) {
 	_, err := b.Ungated.Holder().Erase(ctx, app.HolderRef_builder{Id: erin.Bytes()}.Build())
 	x.NoError(err)
 	closes(t, ctx, b.Ungated, b.Contoso)
-	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now().Add(-2 * time.Hour)).Exec(ctx))
+	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now().Add(-2 * time.Hour)).Exec(bare.TrustAdmission(ctx)))
 
 	x.Error(forget.Hold(ctx, b.Ungated, b.Contoso, "  "), "a hold nobody can read the reason for")
 	x.NoError(forget.Hold(ctx, b.Ungated, b.Contoso, "Contoso v. Fabrikam, 2026-123"))
@@ -506,7 +507,7 @@ func TestTheTenantSweepDestroysAndReleases(t *testing.T) {
 	b, ctx := build(t)
 
 	closes(t, ctx, b.Ungated, b.Contoso)
-	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now().Add(-2 * time.Hour)).Exec(ctx))
+	x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(time.Now().Add(-2 * time.Hour)).Exec(bare.TrustAdmission(ctx)))
 
 	// And one an operator began destroying and that stopped part way, which a
 	// pass finishes whatever the window -- so that a pass with none has
@@ -514,7 +515,7 @@ func TestTheTenantSweepDestroysAndReleases(t *testing.T) {
 	halfway := b.tenant(t, ctx, "halfway")
 	b.holder(t, ctx, halfway, "left")
 	closes(t, ctx, b.Ungated, halfway)
-	x.NoError(b.Ent.Tenant.UpdateOneId(halfway.Uuid()).SetDateDestroyed(time.Now()).Exec(ctx))
+	x.NoError(b.Ent.Tenant.UpdateOneId(halfway.Uuid()).SetDateDestroyed(time.Now()).Exec(bare.TrustAdmission(ctx)))
 
 	contoso := func() *ent.Tenant {
 		t.Helper()
@@ -799,7 +800,7 @@ func TestAHoldBeforeTheStampLeavesTheTenantWhole(t *testing.T) {
 			v, err := next.Query(ctx, q)
 			once.Do(func() {
 				x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).
-					SetDateHeld(time.Now()).SetHold("a claim that arrived in between").Exec(ctx))
+					SetDateHeld(time.Now()).SetHold("a claim that arrived in between").Exec(bare.TrustAdmission(ctx)))
 			})
 
 			return v, err
@@ -833,7 +834,7 @@ func TestARestoreThatReadBeforeADestroyLeavesItClosed(t *testing.T) {
 	// the stamp: the order two processes can put the two in.
 	racing := tenantsRacing{Overlay: app.NewOverlay(b.Ungated), after: func() {
 		x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).
-			SetDateDestroyed(time.Now()).SetDateUpdated(time.Now()).Exec(ctx))
+			SetDateDestroyed(time.Now()).SetDateUpdated(time.Now()).Exec(bare.TrustAdmission(ctx)))
 	}}
 	s, err := app.Build(racing, core.Build(cmd.Rules(b.Ent), core.WithPrefix(keys.PrefixTenant)))
 	x.NoError(err)
@@ -883,7 +884,7 @@ func TestTwoClosesStampOnce(t *testing.T) {
 
 	first := time.Now().Add(-time.Minute).Truncate(time.Second)
 	racing := tenantsRacing{Overlay: app.NewOverlay(b.Ungated), after: func() {
-		x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(first).SetDateUpdated(time.Now()).Exec(ctx))
+		x.NoError(b.Ent.Tenant.UpdateOneId(b.Contoso.Uuid()).SetDateClosed(first).SetDateUpdated(time.Now()).Exec(bare.TrustAdmission(ctx)))
 	}}
 	s, err := app.Build(racing, core.Build(cmd.Rules(b.Ent), core.WithPrefix(keys.PrefixTenant)))
 	x.NoError(err)

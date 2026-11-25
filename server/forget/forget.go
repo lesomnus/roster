@@ -202,6 +202,12 @@ func (r Result) String() string {
 // was true a moment ago, because it is the one of the two that cannot be
 // taken back; asked again, of the person as they are, it is made.
 func Forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs audit.Contents, q bare.Recorder) (Result, error) {
+	// Through ent, past the servers, on purpose, and the deployment's own
+	// whoever runs it -- a person's window running out, an operator at the
+	// box: so where a hook is installed it is asked nothing, and payday's
+	// guard is told so (`cmd/hook.go`).
+	ctx = bare.TrustAdmission(ctx)
+
 	was, err := db.Holder.Get(ctx, who.Uuid())
 	if err != nil {
 		return Result{}, err
@@ -261,6 +267,10 @@ type asked func(v *ent.Holder, in *ent.Tenant) error
 // transaction has it for itself ([mine]), and of their tenant's read after
 // that.
 func forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs audit.Contents, q bare.Recorder, still asked) (Result, error) {
+	// The deployment's own, as [Forget] says: a pass on the clock arrives
+	// here without it.
+	ctx = bare.TrustAdmission(ctx)
+
 	var out Result
 
 	tx, err := db.Tx(ctx)
@@ -457,6 +467,12 @@ func forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 // somebody of a tenant, and there is none for them to be of. Refused in
 // words ([standing]), and part of the write's condition.
 func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents, q bare.Recorder) error {
+	// Through ent, past the servers, on purpose, and the deployment's own
+	// whoever runs it -- a person's window running out, an operator at the
+	// box: so where a hook is installed it is asked nothing, and payday's
+	// guard is told so (`cmd/hook.go`).
+	ctx = bare.TrustAdmission(ctx)
+
 	v, err := db.Holder.Get(ctx, who.Uuid())
 	if err != nil {
 		return err

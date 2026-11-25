@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/session"
 )
 
@@ -185,8 +186,9 @@ func TestEveryPlaneWritesToTheSameQueue(t *testing.T) {
 	x.NoError(err)
 	x.NotNil(admin, "no admin stack was built")
 
-	// Through the admin stack, as an operator: no wall, no gate.
-	_, err = admin.Holder().Add(ctx, app.HolderAddRequest_builder{
+	// Through the admin stack, as an operator: no wall, no gate. Framed by
+	// nobody, so the deployment's own where a hook is installed.
+	_, err = admin.Holder().Add(bare.TrustAdmission(ctx), app.HolderAddRequest_builder{
 		Tenant: app.TenantRef_builder{Id: tenant.GetId()}.Build(),
 		Alias:  "written-by-an-operator",
 	}.Build())
