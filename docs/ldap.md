@@ -78,7 +78,8 @@ TLS in front and pass the plain port on a private network.
 certificate is a value of the file, as a listener's `tls:` is:
 `${file:/path}`, `${env:NAME}` or the PEM itself, read when the listener is
 built, so a certificate that is replaced takes a restart. `roster config`
-shows `ldap.tls.cert` and leaves `ldap.tls.key` out.
+shows `ldap.tls.cert` and never what `ldap.tls.key` holds: the reference where
+it is one, and `<redacted>` where it is the PEM itself.
 
 ```yaml
 ldap:
@@ -417,7 +418,9 @@ imports users filters them out by what the tenant knows of them: a group, or
 none, the name, `member` the DNs of who is in it -- read from
 `GroupMembership.List` and `TeamMembership.List`. A
 team's DN carries its site, because a team is a group of people **within one
-site** (`entity.md`). A site is an `organizationalUnit`. Nested groups are not
+site** (`entity.md`). A site is an `organizationalUnit`, `ou` the alias and
+`description` as a group's. Each of the three carries its `entryUUID`, as a
+person does, answered only when asked for. Nested groups are not
 here because they are not in roster (`position.md` § What we deliberately do
 not have).
 
@@ -491,7 +494,7 @@ a filter becomes:
 | a substring on `uid`, `cn`, `sn`, `displayName` | `Holder.Search{q}`, for its longest fragment |
 | a value with nothing in it | nothing: it matches nobody |
 | `(departmentNumber=…)`, `(employeeNumber=…)` | `Holder.Search{department}`, `{employee_no}` |
-| `(memberOf=cn=payroll,…)` | `GroupMembership.List` or `TeamMembership.List` by the group or team named, and `Holder.List` for its members, thirty-two a call. A member is not asked again which groups they are in |
+| `(memberOf=cn=payroll,…)` | `Group.List` or `Team.List` (and `Site.List`, for a team in a site) to find the group or team named, once a search; `GroupMembership.List` or `TeamMembership.List` by it, and `Holder.List` for its members, thirty-two a call. A member is not asked again which groups they are in |
 | anything else, or nothing | `Holder.List`, and the filter is evaluated on what comes back |
 
 In an `&`, the most selective child is the plan and the whole filter is then
@@ -561,8 +564,10 @@ The row a page ended at is the last one **read**, shown or not: the identifier
 of somebody suspended, who has no entry, can be in a cookie, with the moment
 their account was made. It names nobody and opens nothing -- each read it
 resumes is made with the key of the tenant the connection is bound in, so a
-cookie presented by somebody bound elsewhere reads their own tenant. One that
-is no cursor is refused `protocolError` (2); one whose `n` a client rewrote
+cookie presented by somebody bound elsewhere reads their own tenant. One whose
+`a` is no cursor is refused `protocolError` (2); one that is not JSON at all is
+read as no cookie, from the start; one whose `s` names a part the search does
+not have answers nothing, and no cookie; one whose `n` a client rewrote
 moves that client's own size limit and nothing else.
 
 The reads of groups, teams, sites and people one search makes are kept for
@@ -644,7 +649,7 @@ name, mints with `[/roster.MeService/Get]`, shows the token once, and says
 where to paste it. No new RPC, no new screen; `roster me issue-key --name nas
 --allow /roster.MeService/Get` is the same thing from a shell. The Playwright
 account spec walks it (`ts/e2e/account.spec.ts`, *an app password is a key
-minted by the app's name*).
+minted by the app's name, shown once*).
 
 ## Where it goes
 
