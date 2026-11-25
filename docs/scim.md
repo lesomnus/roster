@@ -272,6 +272,10 @@ somewhere else takes them out of the mapping and must not have them wiped every
 cycle. Taking a value away is a `remove`. The person it is about is told so: the
 account page says, on the form somebody a directory provisions edits their
 profile in, that what the directory says of them is written over what is there.
+Of that, their department, employee number and title are not theirs to change
+on their own profile at all: they are what their organisation says of them,
+written by the directory and by the tenant's administrators
+([usage/permissions.md](usage/permissions.md)).
 What it sends that is not kept here --
 a postal address, a nickname -- is answered as accepted and written to the log.
 An attribute written behind its schema's URN, as RFC 7644 §3.10 allows --

@@ -35,7 +35,9 @@ import (
 // looser setting. Two fields, both of them things a holder carries **about
 // itself**, and neither of them anything the wall, the trail or a permission
 // reads. Nothing here moves somebody between tenants, renames them into
-// somebody else's alias, or changes what they may do.
+// somebody else's alias, or changes what they may do. And of the profile, what
+// an organisation says of somebody is not theirs to change on their own row
+// ([Organisational]).
 //
 // # Why it is implemented with `Patch`
 //
@@ -83,6 +85,15 @@ func (s coreHolder) Update(ctx context.Context, req *app.HolderUpdateRequest) (*
 	// neither -- so a caller updating a profile does not have to know what is
 	// in `data`, and cannot erase it by not knowing.
 	if req.HasProfile() {
+		// What their organisation says of them is kept, where the row is the
+		// caller's own (`own.go`).
+		whose, err := pdid.From(got.GetId())
+		if err != nil {
+			return nil, err
+		}
+		if err := s.keepsWhatTheOrganisationSays(ctx, whose, got.GetProfile(), req.GetProfile()); err != nil {
+			return nil, err
+		}
 		patch.Profile = req.GetProfile()
 
 		// One picture in two forms (`holder_svc.ext.proto`): a profile naming
