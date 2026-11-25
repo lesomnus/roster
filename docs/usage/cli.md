@@ -268,7 +268,7 @@ person's tenant, in one call -- each read by its own rule
 row's own fields are one, and each row it brings is one more. A deeper one is
 refused, `InvalidArgument`. A field not selected is absent, a stamp as much as
 any: `date_updated` is the version a write sends back, so select it with
-whatever you mean to write. `date_erased` is a field of twenty-six entities,
+whatever you mean to write. `date_erased` is a field of twenty-seven entities,
 and of each one's `select`, and no read fills it: every read leaves the erased
 out.
 
@@ -285,8 +285,8 @@ hundred. A request carries thirty-two filters at most, and
 more is refused rather than cut short. Rows come in the order they were made
 (`reverse` turns it round), the trail's and the access record's newest first. Where there are more,
 the answer's `next` is the next call's `after`. A list with nothing in it is
-`{"items": []}` as `-o json` prints it, and `{}` over HTTP, where an empty list
-is no field: read a missing `items` as none.
+`{"items": []}` as `-o json` prints it, and `{"items":[],"next":""}` over
+HTTP.
 
 **What a read leaves on the access record** follows the fields an answer
 carries that are declared somebody's. `HolderService/Reaches`,
@@ -353,17 +353,17 @@ decision rather than a gap:
 | | |
 | --- | --- |
 | `Apply` | one of payday's two general writes, which three entities have because roster's own verbs write through it (`role`, `tenant`, `connection`). No port serves either and no setting opens one (`cmd/serve.go`); `patch`, the other, is a command because the box reaches it |
-| `AuthService` | it mints the admin console's session, and a session cookie is a browser's credential where a terminal's is a key |
+| `AuthService` | it mints the admin console's session, and the user console's where `sign_in.enabled`, and a session cookie is a browser's credential where a terminal's is a key |
 | a *service's* key over the wire | minting is granting, the grant rule reads bindings, and a key holds none. The mints for a service are `roster control key add` and a console |
 
 payday's own framework service gets no `roster` command either:
 `TokenService/Introspect` is what an app calls to check a credential, and it
 is not roster's to wrap.
 
-And ten have none yet, and are reached only by a client of the RPC:
+And eleven have none yet, and are reached only by a client of the RPC:
 `HolderService` `Activate`, `Deactivate`, `Provision` and `Tell`;
 `EmailService/Attest` and `IdentityService/Attest`;
-`DelegationService/Exchange`; and over the wire
+`DelegationService/Exchange` and `DelegationService/Issue`; and over the wire
 `CredentialService` `Set`, `Unlock` and `Issue` by reference, whose commands
 (`vouch set`, `unlock`, `reset`) are the box's.
 

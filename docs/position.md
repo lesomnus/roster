@@ -31,7 +31,7 @@ argued from nothing.
 | mint and check a magic link | send the mail |
 | verify a TOTP code or a WebAuthn assertion | decide when a second factor is needed |
 | an opaque API key a product app asks about | a signed token a product app verifies alone |
-| the admin console's own cookie, where roster is the server the browser is talking to | a session cookie for somebody else's browser |
+| the admin and user consoles' own cookie, where roster is the server the browser is talking to | a session cookie for somebody else's browser |
 
 The two columns are not the same kind of thing, and that is the whole of it:
 **verifying is a question answered in one place, now. Issuing is a credential
@@ -41,14 +41,14 @@ that outlives the answer and has to be believed by people who cannot ask.**
 
 | | |
 | --- | --- |
-| **Who a request is from** | `Holder` -- a person, or an app acting in a tenant; the row does not say which. Its identifier is the `sub` every product knows them by, which is why it is roster's and not a provider's |
+| **Who a request is from** | `Holder` -- a person, or an app acting in a tenant; nothing but a label a directory reads (`roster.app`, `roster.declared`) says which. Its identifier is the `sub` every product knows them by, which is why it is roster's and not a provider's |
 | **How they sign in elsewhere** | `Identity` — `(tenant, provider, subject)`, unique, so Entra at work and GitHub for the same human is one person |
 | **Addresses** | `Email`, several per person, each with whether anybody checked it |
 | **Where else they are reached, and who they are to each other** | `Phone`, a number and what it is to them, written onto somebody by whoever may write an address there; `Relation`, one person being something to another -- a manager, as a directory says it -- with roster not saying what |
 | **How they sign in here** | `Credential` — a password when there is no provider in front, and the second factor beside it. Verified here, never handed out |
 | **Where they belong** | `Tenant`, `Site`, `Team`, and the memberships between |
-| **Who may call this** | `ApiKey` in both planes — `rk_` on the control plane for an app a roster operator runs across tenants, `rt_` on a holder in a tenant — and `Role`/`Group`/`Binding` in the data plane |
-| **On whose behalf** | `Delegation` — a short-lived credential an app holds for somebody it just signed in. Never a bearer on its own, and never wider than the person |
+| **Who may call this** | `ApiKey` in both planes — `rk_` on the control plane for an app a roster operator runs across tenants, `rt_` on a holder in a tenant — and `Role`/`Group`/`Binding` in both as well |
+| **On whose behalf** | `Delegation` — a short-lived credential an app holds for somebody it just signed in, or that somebody handed it. Never a bearer on its own, and never wider than the person |
 | **Which name is whose** | `Host` — the name a front door answers at, and the tenant it belongs to — and `MailDomain`, where the people at an address authenticate |
 | **Who an app is, in each tenant** | `Nomination` — the holder a deployment key is answered as in one tenant, so a roster-hosted app acts there as one of that tenant's own ([apps.md](apps.md)) |
 
@@ -63,7 +63,7 @@ protocol and a Login App is the flow. roster answers the question they both ask
 — *who is this?* — and owns the answer.
 
 One qualification, because the earlier wording said "or hold a session" and the
-code says otherwise: roster **does** hold a session for its own console, through
+code says otherwise: roster **does** hold a session for its own consoles, through
 `payday/auth/authsession`. That is not an exception to anything. A cookie is set
 by the server the browser is talking to, and for the admin console that server is
 roster. What roster does not do is mint a session for **somebody else's**
@@ -183,8 +183,8 @@ way to a product's page.
 roster ships those callers, and none of them moves the line. The account app
 (`account/`, `roster account serve`) is a login app: a separate process holding
 one deployment key narrowed per request to the holder each tenant nominated for
-it (#76), doing the OIDC exchange with the providers an
-operator wrote down as `Connection` rows, minting the delegation through
+it (#76), or one tenant key per tenant it fronts, doing the OIDC exchange with
+the providers an operator wrote down as `Connection` rows, minting the delegation through
 `Vouch.Accept`/`Delegate`, and handing the page's calls on to roster as the
 person. It is a consumer -- it reaches roster only over the wire -- and
 `examples/sso` stays beside it, for a reason that is not its size: the account
@@ -228,15 +228,15 @@ front door does.
 **It moves no line.** roster still signs nothing: the token a product verifies
 is Hydra's, and what this app contributes is the one string Hydra has no way to
 choose. It is a caller on the list above rather than an exception to it, holds
-one credential -- an `rk_` narrowed per request when a roster operator runs it
-for many tenants, an `rt_` when a tenant runs their own -- and reaches roster
-only over the wire.
+one credential -- an `rk_` narrowed per request, and an `rt_` is refused at
+start -- and reaches roster only over the wire.
 
 What it does take on is a **wire contract with somebody else's product** --
-Hydra's admin API, four endpoints, whose field names break this at run time if
-they change. That is the whole of the coupling and it is in one file
+Hydra's admin API (its login, consent, logout and device requests, its
+clients, and the sessions it forgets), whose field names break this at run time
+if they change. That is the whole of the coupling and it is in one file
 (`login/hydra.go`), spoken with `net/http`, so `go.mod` still names no client
-of anything.
+of Hydra's.
 
 Which of the two you want is the table below: one relying party, or many.
 
@@ -271,7 +271,7 @@ boundary is not id/pw versus OIDC — it is **one relying party versus many**:
 | several apps, one sign-in | **yes.** App A's cookie means nothing to app B, and a signed credential with an issuer, a JWKS, expiry and revocation *is* OIDC |
 
 The no-Hydra half is `payday/auth/authsession` — an opaque cookie, a `Session`
-row the serving app owns, revocation as a delete — and roster's own console runs
+row the serving app owns, revocation as a delete — and roster's own consoles run
 on it. An opaque session key is worth nothing to a second app **by
 construction**; that is not a shortcoming to fix, it is the reason the table
 ends in Hydra, and the line at the top of this document is why roster does not

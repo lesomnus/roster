@@ -146,7 +146,7 @@ extra there: its one tenant is the deployment itself, and its first holder is
 same act.
 
 A roster operator with no shell does the same from the admin console's customers
-screen, over `admin.addr`, as a session and through every rule. Nothing is only
+screen, over `admin.http`, as a session and through every rule. Nothing is only
 in one path: [operating.md](../operating.md) § "The admin console" is why that
 works, and what it costs.
 

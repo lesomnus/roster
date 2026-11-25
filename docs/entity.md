@@ -76,8 +76,8 @@ that names a site at field 3 is narrowed by both.
 The dashed arrows are the exception worth knowing about. 📖 `Audit` and
 📤 `Outbox` hold `tenant_id`, `actor_id` and `object_id` as **plain columns and
 not foreign keys**, because the trail has to outlive the rows it names -- a
-foreign key would mean either that a tenant can never be erased, or that erasing
-one erases the record of what was done in it.
+foreign key would mean either that a tenant can never be destroyed, or that
+destroying one destroys the record of what was done in it.
 
 ## Tenancy
 
@@ -586,10 +586,10 @@ own check.
 
 > erin's address is `erin@contoso.com`, and `vouched_by` names the 🪪 `Identity`
 > above -- Entra is what asserted it. Whether anybody **checked** is the
-> separate `date_verified`, and no request may assert that one: `server/core`
-> refuses an `Add` that tries. alice adding an address to erin's holder is
-> refused unless alice already reaches erin, because an address is where a
-> recovery link goes.
+> separate `date_verified`, and no request may assert that one: it is declared
+> `stamped`, and the generated layer refuses an `Add` that tries. alice adding
+> an address to erin's holder is refused unless alice already reaches erin,
+> because an address is where a recovery link goes.
 
 ### 🔑 `ApiKey` — what one service may call this deployment for
 
@@ -637,7 +637,8 @@ credentials -- a sign-in offers each as a second factor, the last-way-in rule
 counts them -- and a row nothing signs in with is one no such walk can reach.
 The PIN's verifier is its hash sealed under `vouch.keys`, as a TOTP seed is,
 because four digits are ten thousand guesses against a copy of the rows; and
-five wrong answers lock it until somebody unlocks it. Written whole by
+five wrong answers lock it until somebody unlocks it (`BadgeService/Unlock`),
+unless `vouch.badge.lockout` says otherwise. Written whole by
 `BadgeService/Enrol`, checked by `BadgeService/Verify`, which a station's holder
 is given and which makes no session.
 
@@ -735,11 +736,12 @@ saying why. payday ships the seam and roster ships the table. What is stored is
 a **digest** of the cookie value and not the value: a backup of the map it
 replaces would be a set of signed-in browsers.
 
-> This is the one row in the file that is not a customer's. **admin** signs in to
-> the admin console, and the digest of that cookie is a row here on the **control
-> plane** -- alice never gets one, because the admin console is the deployment's and
-> she is a customer's. A second replica can read it, which is the whole reason
-> it is a table.
+> This row is not a customer's. **admin** signs in to the admin console, and
+> the digest of that cookie is a row here on the **control plane** -- alice
+> never gets one there, because the admin console is the deployment's and she is
+> a customer's; where `sign_in.enabled`, her own session at the user console is
+> a row of the data plane. A second replica can read it, which is the whole
+> reason it is a table.
 
 ## The front door
 
@@ -901,17 +903,18 @@ or a workspace of the app's. An erase and `forget` leave the rows, and
 None of these six has a foreign key, which is the one place in the schema that
 is true: `tenant_id`, `actor_id` and `object_id` are plain columns, because a
 record has to outlive what it names. A foreign key would mean either
-that a tenant can never be erased, or that erasing one erases the record of what
-was done in it.
+that a tenant can never be destroyed, or that destroying one destroys the record
+of what was done in it.
 
 ### 📖 `Audit` — one write that happened, and who made it
 
 Written for every request that changed something, **inside the transaction that
 changed it**, so the trail and the data it is about hold or fall together.
-Nothing writes one by hand: a deployment refuses the RPCs that write, since a
-trail somebody can edit is evidence of nothing. It is filed under the tenant of
-the **object** and not the actor -- `object_id` is what a history is asked with,
-and filing it under the actor would hide from a tenant what was done to it.
+Nothing writes one by hand: a deployment refuses `Add`, the one RPC that
+writes, since a trail somebody can edit is evidence of nothing. It is filed
+under the tenant of the **object** and not the actor -- `object_id` is what a
+history is asked with, and filing it under the actor would hide from a tenant
+what was done to it.
 
 The wall is the OR of three columns (`tenant_id`, `actor_tenant_id`,
 `counterpart_tenant_id`), so both parties to a cross-tenant write can read the
@@ -1079,7 +1082,8 @@ one datum has no verb for it short of that.
 | 🔌 `Connection` | 25 | `tenant` edge | -- | soft | `proto/app/connection.proto` |
 | ✍️ `Consent` | 29 | via `holder.tenant`, stamped | -- | soft | `proto/app/consent.proto` |
 
-`id` and `date_created` are on everything and are left out above, and so are
+`id` is on everything and `date_created` on everything but 🔏 `RowSeal`, and
+both are left out above, and so are
 `date_updated` and `date_erased` wherever an entity has them. Neither is
 everywhere. `date_created` is when the row was made, stamped as it is made: an
 `Add` carries the field, and a request at a port that fills it in is refused
