@@ -45,21 +45,21 @@ roster --as "${SEED_OPERATOR}" holder add "@${t}/${u}" >/dev/null
 printf '{"role":{"slug":{"alias":"everything","tenant":{"alias":"%s"}}},"holder":{"slug":{"alias":"%s","tenant":{"alias":"%s"}}}}' "${t}" "${u}" "${t}" \
 	| roster --as "${SEED_OPERATOR}" binding add - >/dev/null
 printf '%s' "${SEED_PASSWORD}" | roster --as "${SEED_OPERATOR}" vouch set --password-stdin "@${t}/${u}" >/dev/null 2>&1
-# Every name a browser reaches this tenant at, and there are four of them
+# Every name a browser reaches this tenant at, and there are three of them
 # because this rig publishes on some and resolves others inside its own network.
 #
 # All of them, and not just the public one, because a `Host` row is what says
 # which tenant a name is -- and #36 made the Login App read it: a flow resolves
-# to a tenant through the **redirect** the authorization request named, so a
-# client registered at `http://127.0.0.1:5555/callback` reaches nobody unless
-# something here says `127.0.0.1` is contoso's. `roster login doctor` is what
-# tells a deployment it forgot one.
+# to a tenant through the **redirect** the authorization request named.
+# `roster login doctor` is what tells a deployment it forgot one. Not
+# `127.0.0.1`, where the demo product and its command line are sent back: a
+# loopback address says nothing about the tenant (#450), and those clients
+# are contoso's by `product.test`, registered beside it.
 #
 #	${PUBLIC_HOST}   the user console, the account app, a browser
-#	127.0.0.1        the demo product, as the host publishes it
 #	behind.test      `oauth2-proxy`, inside the compose network
 #	product.test     the relying party that is the app itself
-for h in "${PUBLIC_HOST}" 127.0.0.1 behind.test product.test; do
+for h in "${PUBLIC_HOST}" behind.test product.test; do
 	printf '{"tenant":{"alias":"%s"},"name":"%s"}' "${t}" "${h}" | roster --as "${SEED_OPERATOR}" host add - >/dev/null
 done
 

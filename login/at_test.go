@@ -148,3 +148,125 @@ func TestANameThatMovedSignsInTheTenantItMovedTo(t *testing.T) {
 	subject, _ = d.hydra.told()
 	x.Equal(d.who["fabrikam"].String(), subject, "the name was still the tenant's that had it before")
 }
+
+// commandLine is a flow a command line raised through somebody's browser: its
+// authorization request names `redirect`, a loopback address on whatever port
+// it opened, and its client registered `registered`.
+func (h *hydra) commandLine(challenge, client, redirect string, registered ...string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.client[challenge] = client
+	h.sendsTo[challenge] = redirect
+	h.registers[client] = registered
+}
+
+// TestACommandLinesLoopbackRedirectIsTheTenantItsClientRegistered: a loopback
+// redirect says nothing about the tenant, so the client's registration does.
+//
+// A command line signing somebody in through their browser redirects to the
+// loopback interface on whatever port it could open (RFC 8252 §7.3). The host
+// of that redirect was read as the tenant's, and `127.0.0.1` is nobody's: the
+// right password was answered 502, *this login is not working*. Registered
+// beside the tenant's own host, the loopback address is now read as a request
+// that named no redirect, and the registration's one other host is the
+// tenant.
+func TestACommandLinesLoopbackRedirectIsTheTenantItsClientRegistered(t *testing.T) {
+	for name, loopback := range map[string]string{
+		"IPv4": "http://127.0.0.1:53117/callback",
+		"IPv6": "http://[::1]:53117/callback",
+	} {
+		t.Run(name, func(t *testing.T) {
+			x := require.New(t)
+			d := serve(t)
+
+			d.hydra.commandLine("c1", "contoso-cli", loopback,
+				"http://127.0.0.1/callback", "http://[::1]/callback", "https://contoso.app.test/callback")
+			_, code := d.signIn(t, d.browser(t), "c1", "erin", password)
+			x.Equal(http.StatusOK, code, "a loopback redirect was read as a tenant's host")
+
+			subject, _ := d.hydra.told()
+			x.Equal(d.who["contoso"].String(), subject)
+		})
+	}
+}
+
+// TestLocalhostIsANameATenantAnswersAt: `localhost` is not a loopback address
+// here, and is read as any other name is.
+//
+// RFC 8252 §8.3 says a native app does not use it, and a name is something a
+// tenant can claim with a `Host` row; so a redirect at `localhost` is about
+// the tenant that claimed it, and not about the client's registration.
+func TestLocalhostIsANameATenantAnswersAt(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+	d := serve(t)
+
+	_, err := d.s.Ungated.Host().Add(ctx, rstr.HostAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Alias: proto.String("fabrikam")}.Build(), Name: "localhost",
+	}.Build())
+	x.NoError(err)
+
+	d.hydra.commandLine("c1", "contoso-cli", "http://localhost:53117/callback",
+		"http://localhost/callback", "https://contoso.app.test/callback")
+	_, code := d.signIn(t, d.browser(t), "c1", "erin", password)
+	x.Equal(http.StatusOK, code)
+
+	subject, _ := d.hydra.told()
+	x.Equal(d.who["fabrikam"].String(), subject, "localhost was read as a loopback address and not as the name fabrikam claimed")
+}
+
+// TestAClientOfLoopbackAddressesAloneNamesNoTenant: with nothing registered but
+// loopback addresses, no flow of its client is about anybody, and nobody is
+// signed in.
+//
+// `login/at.go` says so in the refusal, and what to register beside them; the
+// sentence itself is held by `TestALoopbackAddressIsNeverATenantsHost`.
+func TestAClientOfLoopbackAddressesAloneNamesNoTenant(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+
+	d.hydra.commandLine("c1", "contoso-cli", "http://127.0.0.1:53117/callback",
+		"http://127.0.0.1/callback", "http://[::1]/callback")
+	_, code := d.signIn(t, d.browser(t), "c1", "erin", password)
+	x.Equal(http.StatusBadGateway, code)
+
+	accepted, _ := d.hydra.said()
+	x.Zero(accepted, "a flow that named no tenant signed somebody in")
+}
+
+// TestALoopbackAddressBesideTwoTenantsHostsLeavesTwoAnswers: leaving loopback
+// addresses out of a registration does not make two tenants' hosts one.
+func TestALoopbackAddressBesideTwoTenantsHostsLeavesTwoAnswers(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+
+	d.hydra.commandLine("c1", "contoso-cli", "http://127.0.0.1:53117/callback",
+		"http://127.0.0.1/callback", "https://contoso.app.test/callback", "https://fabrikam.app.test/callback")
+	_, code := d.signIn(t, d.browser(t), "c1", "erin", password)
+	x.Equal(http.StatusBadGateway, code)
+
+	accepted, _ := d.hydra.said()
+	x.Zero(accepted, "a flow with two answers was signed in as one of them")
+}
+
+// TestADeviceWhoseClientRegisteredALoopbackAddressToo: a client that does the
+// device grant and a command line's loopback redirect beside it is still the
+// tenant's whose host it registered.
+//
+// A device flow names no redirect, so its tenant is read off the client's
+// registration -- which, with a loopback address beside the tenant's host,
+// was two hosts and refused, so registering a command line broke the device
+// grant of the same client.
+func TestADeviceWhoseClientRegisteredALoopbackAddressToo(t *testing.T) {
+	x := require.New(t)
+	d := serve(t)
+
+	d.hydra.printedFor("c1", "contoso-cli")
+	d.hydra.registers["contoso-cli"] = []string{"http://127.0.0.1/callback", "https://contoso.app.test/callback"}
+
+	_, code := d.signIn(t, d.browser(t), "c1", "erin", password)
+	x.Equal(http.StatusOK, code, "a device flow's client registered a loopback address and resolved no tenant")
+
+	subject, _ := d.hydra.told()
+	x.Equal(d.who["contoso"].String(), subject)
+}

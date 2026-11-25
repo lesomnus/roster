@@ -667,6 +667,15 @@ is `urn:ietf:params:oauth:grant-type:device_code`. What it keeps is
 flow carries no redirect and that is what the answer is read off. A device client
 with none has the right password refused, and `roster login doctor` says so.
 
+A **command line** that signs somebody in through their browser registers its
+loopback address beside the tenant's own host:
+`"redirect_uris": ["http://127.0.0.1/callback", "https://contoso.app.example/callback"]`.
+The port is whatever the command opened when it runs, and Hydra matches any port
+against a registration of the same address, path and query. A loopback address
+says nothing about the tenant, so the tenant comes from the other address, which
+nothing redirects to; the same client can do the device grant too.
+[login.md](login.md) § *What changes when Hydra is in front* says the rule.
+
 And Hydra, five variables of it (`compose.yaml`, and the same five in
 `deploy/hydra.yaml`):
 

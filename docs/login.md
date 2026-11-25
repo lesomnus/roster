@@ -224,6 +224,36 @@ of somebody*). The one such client that is broken is one that can do the device
 grant: a device flow names no redirect, so of two tenants' it is about neither
 (§ *A device with no browser*).
 
+**A command line** that signs somebody in through their browser redirects to
+the loopback interface on whatever port it could open,
+`http://127.0.0.1:<port>/callback` (RFC 8252 §7.3), and that address is the same
+on every machine and in every tenant: it **says nothing about the tenant**. A
+loopback redirect -- `http`, at the IP literal `127.0.0.1` or `[::1]`, any port,
+any path -- is read as a flow that named no redirect, and the client's
+registration answers, with its one host that is not a loopback address. So a
+command line's client registers its loopback address **beside** a redirect at
+the tenant's own host, which nothing redirects to and which is what says whose
+it is:
+
+```json
+"redirect_uris": ["http://127.0.0.1/callback", "https://contoso.app.example/callback"]
+```
+
+What Hydra (v26.2.0) asks of the registration for **any port** to match is a
+registered redirect with the same IP literal, path and query as the request's:
+it leaves the port out of the comparison on both sides, so `http://127.0.0.1/callback`
+matches `http://127.0.0.1:53117/callback`. `127.0.0.1` and `[::1]` are two
+registrations, for a command line that listens on either. `localhost` is not a
+loopback address here -- RFC 8252 §8.3 tells a native app not to use it, Hydra
+compares it exactly, and it is a name, which a tenant can claim with a `Host` row
+and is then that tenant's like any other. A client of loopback addresses alone
+names no tenant and every flow of it is refused, saying so; and with two
+tenants' hosts beside them it is two answers, as without them. `roster login
+doctor` counts no loopback address as a tenant's, so a client of one tenant's
+host and loopback addresses passes, device grant or not, and one of loopback
+addresses alone is reported broken (`TestACommandLinesLoopbackRedirectIsTheTenantItsClientRegistered`,
+`TestDoctorCountsNoLoopbackAddressAsATenant`).
+
 The consent hop **grants what the client asked for and draws nothing**, which is
 `consent: skip`, the default and a decision: every client this app can have was
 registered by the deployment for one of its own operators, and a screen for an app
@@ -888,7 +918,15 @@ Three things to know before deploying it:
   password being refused**, which is why `roster login doctor` reports it as broken
   and says why. Register the tenant's own host; nothing will redirect to it. And
   one tenant's: with redirects at two tenants' names a device flow is about
-  neither and is refused, which `doctor` reports as broken too.
+  neither and is refused, which `doctor` reports as broken too. A command line's
+  loopback address beside it is not counted (§ *What changes when Hydra is in
+  front*, *A command line*), so one client can do both.
+- **A device asks for an API as a client's redirect does**: `audience` on its
+  `POST /oauth2/device/auth`, for an API its client is registered for, and the
+  access token it is handed at the end is for that API -- Hydra's own
+  introspection answers `aud: ["urn:roster:demo:api"]` for the token
+  `docker/device.sh` polls for (v26.2.0). It is held to the client's
+  registration at consent, as every flow's audience is.
 - **The screen cannot say what is being authorised.** Hydra offers no way to read a
   device challenge -- there is `.../requests/device/accept` and no getter beside it
   -- so there is no `/flow` for this screen, no client name and no brand on it. What

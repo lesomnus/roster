@@ -210,6 +210,18 @@ func (a *App) at(ctx context.Context, name string) (*tenant, error) {
 // finds out before somebody tries to sign in: a client that can do the device
 // grant, with redirects of several tenants, is the one such client it reports
 // broken.
+//
+// # A command line's redirect is no answer
+//
+// A [loopback] redirect -- `http://127.0.0.1:<port>/callback`, where a command
+// line signing somebody in through their browser is listening -- is read as a
+// request that named none, and the registration answers: the one host of its
+// redirects that are not loopback addresses. It was read as the name
+// `127.0.0.1`, which is no tenant's, and a registration with one beside the
+// tenant's host was two hosts, which broke the device grant of that client
+// too. So a command line is registered with its loopback address **beside**
+// the tenant's own host, and a client of loopback addresses alone is about
+// nobody.
 func (a *App) arrivedAt(ctx context.Context, requested, client string) (string, error) {
 	if h := redirectHost(requested); h != "" {
 		return h, nil
@@ -217,22 +229,34 @@ func (a *App) arrivedAt(ctx context.Context, requested, client string) (string, 
 
 	v, err := a.admin.registered(ctx, client)
 	if err != nil {
-		return "", fmt.Errorf("login: %q named no redirect and its client could not be read: %w", client, err)
+		return "", fmt.Errorf("login: %q named no redirect a tenant answers at and its client could not be read: %w", client, err)
 	}
 
 	var one string
+	loopbacks := false
 	for _, u := range v.Redirects {
+		if loopback(u) {
+			loopbacks = true
+
+			continue
+		}
 		h := front.Hostname(hostOf(u))
 		if h == "" || h == one {
 			continue
 		}
 		if one != "" {
 			return "", fmt.Errorf(
-				"login: %q named no redirect, and its client is registered across %s and %s, "+
+				"login: %q named no redirect a tenant answers at, and its client is registered across %s and %s, "+
 					"so which tenant this flow is about has two answers (roster login doctor)",
 				client, one, h)
 		}
 		one = h
+	}
+	if one == "" && loopbacks {
+		return "", fmt.Errorf(
+			"login: %q named no redirect a tenant answers at, and its client registered loopback addresses alone; "+
+				"a loopback address names no tenant, so register a redirect at the tenant's own host beside them (roster login doctor)",
+			client)
 	}
 	if one == "" {
 		return "", fmt.Errorf("login: %q named no redirect and its client has none registered", client)
@@ -245,7 +269,8 @@ func (a *App) arrivedAt(ctx context.Context, requested, client string) (string, 
 // empty where there is none to read.
 //
 // Empty for anything malformed as well, deliberately: what follows is the
-// fallback above, which asks Hydra rather than this app's parsing.
+// fallback above, which asks Hydra rather than this app's parsing. And empty
+// for a [loopback] redirect, which says nothing about the tenant.
 func redirectHost(requested string) string {
 	if requested == "" {
 		return ""
@@ -256,7 +281,36 @@ func redirectHost(requested string) string {
 		return ""
 	}
 
-	return front.Hostname(hostOf(u.Query().Get("redirect_uri")))
+	to := u.Query().Get("redirect_uri")
+	if loopback(to) {
+		return ""
+	}
+
+	return front.Hostname(hostOf(to))
+}
+
+// loopback is whether a redirect is a loopback address: `http`, at the IP
+// literal `127.0.0.1` or `[::1]`, on any port and with any path.
+//
+// It is where a command line that signs somebody in through their browser
+// sends that browser back, on whatever port it could open (RFC 8252 §7.3), and
+// it says nothing about the tenant: it is the same address on every machine and
+// in every tenant. So it is never read as a tenant's host, here or in `roster
+// login doctor`; a flow that names one is a flow that named no redirect, and a
+// registration's answer leaves them out.
+//
+// The two literals and not `localhost`: RFC 8252 §8.3 tells a native app not to
+// use it, and it is a name, which a tenant can claim with a `Host` row like any
+// other. Nor the rest of `127.0.0.0/8`, which no command line is told to use.
+func loopback(raw string) bool {
+	u, err := url.Parse(raw)
+	if err != nil || u.Scheme != "http" {
+		return false
+	}
+
+	h := u.Hostname()
+
+	return h == "127.0.0.1" || h == "::1"
 }
 
 // hostOf is the host of a URL, without the port, or empty.

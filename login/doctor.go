@@ -266,8 +266,17 @@ func ambiguous(ctx context.Context, whose Whose, id string, v *hydraClient) []Fi
 		}}
 	}
 
+	// A loopback address is not asked about: the Login App reads no tenant off
+	// one ([loopback]), so a `Host` row that claims `127.0.0.1` would make it a
+	// tenant here and nowhere else.
 	seen := map[string]bool{}
+	loopbacks := false
 	for _, u := range v.Redirects {
+		if loopback(u) {
+			loopbacks = true
+
+			continue
+		}
 		h := front.Hostname(hostOf(u))
 		if h == "" {
 			continue
@@ -281,6 +290,15 @@ func ambiguous(ctx context.Context, whose Whose, id string, v *hydraClient) []Fi
 
 	switch len(seen) {
 	case 0:
+		if loopbacks {
+			return []Finding{{
+				Severity: Broken,
+				About:    id,
+				What:     "no tenant answers at any of its redirect_uris, and a loopback address names none",
+				Costs:    "every flow raised for it reaches a page saying the login is not working; a command line registers its loopback address beside a redirect at the tenant's own host, which is what says whose it is",
+			}}
+		}
+
 		return []Finding{{
 			Severity: Broken,
 			About:    id,
