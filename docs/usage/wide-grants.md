@@ -376,7 +376,8 @@ trail -- is the other kind, and should be the only kind that is not narrowed
 
 ### A key that mints keys
 
-A key, or a delegation, that lists `ApiKeyService/Issue`. **Reads as** a
+A key, or a delegation, that lists `ApiKeyService/Issue` or
+`DelegationService/Issue`. **Reads as** a
 narrow credential: its list says one method. **Is** as wide as whoever it
 is for. What a caller may put on a key is what its **holder** is bound, and
 the list on the credential it called with is not asked -- so a key that lists
@@ -387,6 +388,17 @@ anything they hold.
 > `ApiKeyService/Issue` alone, to mint short-lived keys for its steps.
 > Whoever reads that job's environment mints one listing `/roster.*/*`.
 
+`DelegationService/Issue` is the same act, for a delegation: what one carries
+is asked of what the person it is of may call, and not of the list of the
+credential that asks. It is handed to any holder of the tenant but them -- an
+app's, or anybody's, since roster does not tell an app from a person -- and
+everybody holds it over their own, in the tenant's `self-service` role.
+
+> erin's key lists `DelegationService/Issue` and nothing else. With it Foo is
+> handed a delegation of erin's naming `GroupMembershipService/Add`, which the
+> key does not list, and Foo puts people into its group as erin
+> (`TestSomebodyHandsAnAppADelegationOfTheirOwn`).
+
 It is meant. A terminal is signed in this way: the account page's delegation
 lists the dozen methods the page calls, and when somebody approves
 `roster sign-in` it mints the key the terminal asked for, as wide as the
@@ -396,9 +408,9 @@ be narrow does not list `Issue`, and a key that has to mint is put on a holder
 bound only what it should hand out -- which is the bound that is asked
 (`TestAKeyThatMintsKeysMintsWhatItsHolderHolds`).
 
-A **delegation** is the other way round: an app is handed one for the methods
-it may itself call, by its key's list and by what it is bound, and for no other
-([rules.md](rules.md)).
+A **delegation** an app is handed at a sign-in (`Exchange`) is the other way
+round: it is for the methods the app may itself call, by its key's list and by
+what it is bound, and for no other ([rules.md](rules.md)).
 
 ### A directory's key
 

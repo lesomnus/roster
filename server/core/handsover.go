@@ -329,11 +329,20 @@ var handsOver = []handedOver{
 		// (`account`, the device grant). Said of the tenant, where a key is
 		// held: a key names no site, so what is held in one is put on none,
 		// and a key of the deployment's own hands out nothing.
-		grant:   "a-key-that-mints-keys",
-		methods: []string{app.ApiKeyService_Issue_FullMethodName},
+		//
+		// And `DelegationService/Issue`, which #567 added, by the same rule
+		// (`delegation.go`, `Issue`): what a delegation carries is asked of
+		// what the person may call, and not of the credential that asks, so
+		// one listed alone hands an app of the tenant a delegation of anything
+		// they may call.
+		grant: "a-key-that-mints-keys",
+		methods: []string{
+			app.ApiKeyService_Issue_FullMethodName,
+			app.DelegationService_Issue_FullMethodName,
+		},
 		readsAs: "on a key, one method",
 		tenant: "listed on a key or a delegation, everything whoever it is for holds across the tenant: the key " +
-			"it mints lists anything they are bound, and the list it was itself minted with is not asked",
+			"or the delegation it mints lists anything they are bound, and the list it was itself minted with is not asked",
 	},
 	{
 		// The directory is whoever holds its verbs (`directory.go`): nothing
