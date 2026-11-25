@@ -121,6 +121,10 @@ func newCmdResourcesApply(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command
 // is about to change. The kind and the tenant, because a `Host` and a
 // `MailDomain` of one name printed alike and said nothing of whose they were.
 //
+// A dry run asks of each row what the run asks, but for what only the writes
+// ahead of it can answer, and says that on a line of its own under the row,
+// indented, `not asked yet: …` (`cmd.ApplyResources`).
+//
 // By what was done, as it always was: what is added, then what is changed,
 // then what is the same; and last, `!`, what the files declare of a tenant
 // that is closed or destroyed, which is not written and not compared
@@ -137,6 +141,9 @@ func printApplied(w io.Writer, v cmd.Applied) {
 				line += ": " + strings.Join(r.Fields, ", ")
 			}
 			fmt.Fprintln(w, line)
+			if r.Unasked != "" {
+				fmt.Fprintf(w, "    not asked yet: %s\n", r.Unasked)
+			}
 		}
 	}
 }

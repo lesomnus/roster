@@ -349,14 +349,17 @@ func connected(issuer, client, secret string, scopes []string) error {
 	)
 }
 
-// held is a write made once what it says has passed [written].
+// held is a write made once what it says has passed [written], and not made
+// in a dry run ([Dry]), which it answers [ErrDry].
 func held[Q interface {
 	ProtoReflect() protoreflect.Message
 }, R any](ctx context.Context, req Q, write func(context.Context, Q) (R, error)) (R, error) {
+	var none R
 	if err := written(req); err != nil {
-		var none R
-
 		return none, err
+	}
+	if dry(ctx) {
+		return none, ErrDry
 	}
 
 	return write(ctx, req)
