@@ -41,6 +41,7 @@ type changes struct {
 	display    *string
 	formatted  *string
 	department *string
+	title      *string
 	employeeNo *string
 	locale     *string
 	active     *bool
@@ -94,7 +95,7 @@ func (c *changes) name() string {
 }
 
 func (c *changes) profiled() bool {
-	return c.called() != nil || c.department != nil || c.employeeNo != nil || c.locale != nil
+	return c.called() != nil || c.department != nil || c.title != nil || c.employeeNo != nil || c.locale != nil
 }
 
 // called is what a write says somebody is called: its `displayName`, or its
@@ -168,6 +169,15 @@ func (c *changes) set(path string, raw json.RawMessage) error {
 			return badRequest("invalidValue", "active: "+err.Error())
 		}
 		c.active = &v
+
+	case p == "title":
+		// The core schema's (RFC 7643 §4.1.1), and not the enterprise
+		// extension's: a job title, as the company writes it.
+		v, err := text(raw)
+		if err != nil {
+			return badRequest("invalidValue", "title: "+err.Error())
+		}
+		c.title = &v
 
 	case p == "preferredlanguage", p == "locale":
 		v, err := text(raw)
@@ -280,6 +290,8 @@ func (c *changes) clear(path string) {
 		c.display = &empty
 	case "preferredlanguage", "locale":
 		c.locale = &empty
+	case "title":
+		c.title = &empty
 	case ext + ":department":
 		c.department = &empty
 	case ext + ":employeenumber":
@@ -718,6 +730,9 @@ func (p *person) user() map[string]any {
 	if name != "" {
 		u["displayName"] = name
 		u["name"] = map[string]any{"formatted": name}
+	}
+	if v := h.GetProfile().GetTitle(); v != "" {
+		u["title"] = v
 	}
 	if v := h.GetProfile().GetLocale(); v != "" {
 		u["preferredLanguage"] = v

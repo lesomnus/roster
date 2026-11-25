@@ -60,9 +60,9 @@ import (
 // every one of them is compared and none is read.
 const (
 	// MaxName is the most characters a `name` has, of anything -- a person, a
-	// team, a tenant -- and the most a profile's display name or department
-	// has. What a directory lets a display name be (Entra's is 256), and what
-	// `Fill` has always written at most.
+	// team, a tenant -- and the most a profile's display name, department or
+	// title has. What a directory lets a display name be (Entra's is 256), and
+	// what `Fill` has always written at most.
 	MaxName = 256
 
 	// MaxDesc is the most characters a `desc` has: a note of a paragraph.
@@ -282,6 +282,7 @@ func personal(p *app.Profile, data *anypb.Any) error {
 		}{
 			{"display_name", p.GetDisplayName(), MaxName},
 			{"department", p.GetDepartment(), MaxName},
+			{"title", p.GetTitle(), MaxName},
 			{"employee_no", p.GetEmployeeNo(), MaxEmployeeNo},
 			{"locale", p.GetLocale(), MaxLocale},
 		} {

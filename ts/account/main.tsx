@@ -267,6 +267,9 @@ function Profile(props: {
 									department: s('department'),
 									employeeNo: s('employee_no'),
 									locale: s('locale'),
+									// Not on this form, and carried as it is: the
+									// profile is replaced whole.
+									title: row.data?.profile?.title ?? '',
 								},
 							})
 							.then(() => setNote({ ok: true, text: 'saved' }))

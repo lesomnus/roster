@@ -118,6 +118,7 @@ func userSchemaDoc() map[string]any {
 			// not a second name kept beside it -- so a schema that listed it
 			// would be a directory told two values were stored when one was.
 			str("displayName", "What they are called.", "readWrite"),
+			str("title", "Their job title, as the company writes it.", "readWrite"),
 			str("preferredLanguage", "Their locale.", "readWrite"),
 			{
 				"name": "phoneNumbers", "type": "complex", "multiValued": true, "required": false,

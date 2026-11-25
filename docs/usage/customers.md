@@ -60,7 +60,7 @@ organisation's list of people unreadable by what they write about themselves.
 | a `name`, of anything -- a person, a team, a site, a group, a role, a tenant | 256 | characters |
 | a `desc`, of anything | 1,024 | characters |
 | `labels` | 32 on one row; a key 128, a value 256 | bytes |
-| a profile's `display_name` and `department` | 256 each | characters |
+| a profile's `display_name`, `department` and `title` | 256 each | characters |
 | a profile's `employee_no` | 64 | characters |
 | a profile's `locale` | 35 | characters |
 | a profile's `picture` | 2,048 | bytes; an `https` address |

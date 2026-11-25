@@ -959,6 +959,9 @@ function Profile(props: { holder: Holder; may: (method: string) => boolean }): R
 								department: s('department'),
 								employeeNo: s('employee_no'),
 								locale: s('locale'),
+								// Not on this form, and carried as it is: the
+								// profile is replaced whole.
+								title: p?.title ?? '',
 							},
 						})
 						.then(() => say({ kind: 'done', text: 'saved' }))

@@ -28,6 +28,7 @@ const (
 	attrMail         = "mail"
 	attrEmployeeNo   = "employeeNumber"
 	attrDepartment   = "departmentNumber"
+	attrTitle        = "title"
 	attrLanguage     = "preferredLanguage"
 	attrLabeledURI   = "labeledURI"
 	attrMemberOf     = "memberOf"
@@ -286,6 +287,7 @@ func (d *Directory) personEntry(t *tenant, v *rstr.Holder) (*entry, error) {
 	p := v.GetProfile()
 	e.add(attrEmployeeNo, p.GetEmployeeNo())
 	e.add(attrDepartment, p.GetDepartment())
+	e.add(attrTitle, p.GetTitle())
 	e.add(attrLanguage, p.GetLocale())
 	e.add(attrLabeledURI, p.GetPicture())
 	e.add(attrEntryUUID, id.Uuid().String())
