@@ -418,12 +418,13 @@ func TestWhatEndsAnAppsHolderEndsItsRoles(t *testing.T) {
 
 // TestNoRoadThatDestroysAHolderLeavesARoleOfRosters.
 //
-// A role's `app` is `ON DELETE SET NULL`, and a role whose app is NULL is
-// roster's: a holder's row deleted under its roles would make each a role of
-// roster's naming the app's methods. No road deletes a holder's row -- an
-// erase is a stamp, a forget blanks the row, and a tenant destroyed blanks
-// its people and deletes its roles -- and this holds the last of them: a
-// tenant destroyed keeps no role of its own, of an app's or of roster's.
+// A role whose app is NULL is roster's, so a holder's row deleted under its
+// roles would make each a role of roster's naming the app's methods. The
+// database refuses that delete now (`ON DELETE RESTRICT`,
+// `TestAnAppsRowsKeepTheHolderItIsFrom`), and no road tries it -- an erase is
+// a stamp, a forget blanks the row, and a tenant destroyed blanks its people
+// and deletes its roles -- and this holds the last of them: a tenant
+// destroyed keeps no role of its own, of an app's or of roster's.
 func TestNoRoadThatDestroysAHolderLeavesARoleOfRosters(t *testing.T) {
 	x := require.New(t)
 	b, ctx := build(t)

@@ -883,19 +883,18 @@ func subjects() []subject {
 		//
 		// And there is an asymmetry underneath worth knowing about, which
 		// nothing else states: of the twenty-two foreign keys into `holder`,
-		// seventeen are `NO ACTION`, and `binding_holder_holder`,
-		// `binding_holder_app`, `role_holder_app`, `group_holder_app` and
-		// `apikey_holder_app` are `SET NULL` -- see
+		// seventeen are `NO ACTION`, `binding_holder_holder` is `SET NULL`,
+		// and `binding_holder_app`, `role_holder_app`, `group_holder_app` and
+		// `apikey_holder_app` are `RESTRICT` -- see
 		// `internal/ent/migrate/schema.go`. Nothing depends on it today,
 		// because an erase is an UPDATE and no `ON DELETE` rule fires. It
 		// would matter the day somebody builds a **hard** erase of a person:
-		// seventeen children would block it, `Binding` would quietly keep a row
-		// whose holder is NULL, and a role, a group, a binding or a key of the
-		// app they were would become one of roster's own or the tenant's
-		// (`Role.app`, `Group.app`, `Binding.app` -- a grant across the tenant
-		// -- and `ApiKey.app`, a key for that app that would be a credential
-		// at roster). Removing the bindings here is what makes the first
-		// irrelevant either way; the rest is the day's to settle.
+		// twenty-one children would block it, and `Binding` would quietly keep
+		// a row whose holder is NULL. The four that name an app refuse rather
+		// than clear, since a role, a group, a binding or a key whose app is
+		// NULL is roster's own (#567). Removing the bindings here is what makes
+		// the one `SET NULL` irrelevant either way; the rest is the day's to
+		// settle.
 		{
 			name: "binding",
 			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {

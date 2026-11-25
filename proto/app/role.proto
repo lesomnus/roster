@@ -127,7 +127,14 @@ message Role {
   //
   // Its alias is still one within the tenant, whichever app's it is:
   // `@acme/viewer` names one role.
-  Holder app = 9 [(orm.edge) = {immutable: true, nullable: true}];
+  //
+  // The holder's row is not deleted while a role names it here: the store
+  // refuses it, since a role that named no app would be one of roster's.
+  Holder app = 9 [(orm.edge) = {
+    immutable: true
+    nullable: true
+    on_delete: ON_DELETE_RESTRICT
+  }];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
@@ -255,7 +262,14 @@ message Binding {
   //
   // One of the tenant's and not erased, set when the binding is made and never
   // after.
-  Holder app = 10 [(orm.edge) = {immutable: true, nullable: true}];
+  //
+  // The holder's row is not deleted while a binding names it here: the store
+  // refuses it, since a binding that named no app would be held for roster.
+  Holder app = 10 [(orm.edge) = {
+    immutable: true
+    nullable: true
+    on_delete: ON_DELETE_RESTRICT
+  }];
 
   // Whatever the deployment keeps about this row that the schema does not name.
   //

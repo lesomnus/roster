@@ -443,6 +443,9 @@ type ApiKey_builder struct {
 	// One of the key's holder's tenant and not erased, and nothing more is
 	// asked of it. Set when the key is minted and never after. A key of the
 	// control plane's (`rk_`) is the deployment's own and is for no app.
+	//
+	// The holder's row is not deleted while a key names it here: the store
+	// refuses it, since a key that named no app would be one of roster's.
 	App         *Holder
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
@@ -473,7 +476,7 @@ var File_app_apikey_proto protoreflect.FileDescriptor
 
 const file_app_apikey_proto_rawDesc = "" +
 	"\n" +
-	"\x10app/apikey.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe2\x06\n" +
+	"\x10app/apikey.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xe4\x06\n" +
 	"\x06ApiKey\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x1c\n" +
@@ -484,8 +487,9 @@ const file_app_apikey_proto_rawDesc = "" +
 	"\tdate_used\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\bdateUsed\x12E\n" +
 	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateExpired\x12Y\n" +
-	"\x12date_authenticated\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x0e\xea\x82\x16\x048\x01@\x01\xaa\xc1\x16\x02\x10\x01R\x11dateAuthenticated\x12*\n" +
-	"\x03app\x18\x10 \x01(\v2\x0e.roster.HolderB\b\xf2\x82\x16\x048\x01@\x01R\x03app\x12F\n" +
+	"\x12date_authenticated\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x0e\xea\x82\x16\x048\x01@\x01\xaa\xc1\x16\x02\x10\x01R\x11dateAuthenticated\x12,\n" +
+	"\x03app\x18\x10 \x01(\v2\x0e.roster.HolderB\n" +
+	"\xf2\x82\x16\x068\x01@\x01H\x01R\x03app\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +

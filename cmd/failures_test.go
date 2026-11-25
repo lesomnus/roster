@@ -500,7 +500,8 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 	notMade := map[string]string{
 		"a deadline":            "a test does not time anything",
 		"roster itself failing": "the store taken away under a running server, which is not a refusal of anybody's",
-		"an Erase of a row another row still names": "no Erase a caller is served deletes a row, so none meets a foreign key",
+		"an Erase of a row another row still names": "no Erase a caller is served deletes a row, so none meets a foreign key; " +
+			"the database refusing one is TestAnAppsRowsKeepTheHolderItIsFrom",
 	}
 	for _, row := range rows {
 		if made[row.failure] {
