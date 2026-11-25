@@ -104,6 +104,10 @@ type Core struct {
 	// password is what a new password has to be, beyond not being leaked.
 	password Password
 
+	// badges is what a station's badge and PIN are held to (`vouch.badge`),
+	// which `BadgeService` reads and nothing about a password does.
+	badges Badge
+
 	// restoreWithin is `tenant.restore_within`: how long after a tenant closed
 	// [coreTenant.Restore] may still undo it. Zero is no window, which makes
 	// destroying an operator's act and leaves a close undoable until then.
@@ -455,6 +459,7 @@ func New(next app.Server, rules Rules, opts ...Option) Core {
 	}
 	s.lockout = s.lockout.Or(vouch.DefaultLockout)
 	s.password = s.password.Or()
+	s.badges = s.badges.Or()
 
 	return s
 }

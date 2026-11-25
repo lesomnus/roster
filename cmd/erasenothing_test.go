@@ -65,6 +65,8 @@ func (b *built) erasableRows(t *testing.T, ctx context.Context, tenant, site pdi
 	x.NoError(err)
 	x.Len(cs.GetItems(), 1)
 	made("Credential", cs.GetItems()[0].GetId(), nil)
+	badge, err := b.Ungated.Badge().Enrol(ctx, app.BadgeEnrolRequest_builder{Holder: who, Code: "erasable-" + sfx, Pin: "2580"}.Build())
+	made("Badge", badge.GetId(), err)
 
 	// A password beside the account below, so that the account is not their
 	// one way in and is erased as any row is.
@@ -134,7 +136,7 @@ func erasedTogether(t *testing.T, ctx context.Context, conn *grpc.ClientConn, ro
 
 	for _, entity := range []string{
 		"TeamMembership", "Team", "GroupMembership", "GroupExposure", "Group", "Binding", "Role", "SiteMembership", "Site",
-		"Identity", "Email", "Phone", "ApiKey", "Credential", "Delegation", "Relation", "Nomination",
+		"Identity", "Email", "Phone", "ApiKey", "Credential", "Badge", "Delegation", "Relation", "Nomination",
 		"Connection", "Host", "HostProof", "MailDomain", "Holder",
 	} {
 		method := "/roster." + entity + "Service/Erase"

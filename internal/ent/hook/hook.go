@@ -57,6 +57,18 @@ func (f AuditFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.AuditMutation", m)
 }
 
+// The BadgeFunc type is an adapter to allow the use of ordinary
+// function as Badge mutator.
+type BadgeFunc func(context.Context, *ent.BadgeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f BadgeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.BadgeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BadgeMutation", m)
+}
+
 // The BindingFunc type is an adapter to allow the use of ordinary
 // function as Binding mutator.
 type BindingFunc func(context.Context, *ent.BindingMutation) (ent.Value, error)

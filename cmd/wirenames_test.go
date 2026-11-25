@@ -242,6 +242,11 @@ func TestVouchTenantIsATenantRef(t *testing.T) {
 // account was locked, on `Credential` and in the four messages that answer
 // it. Answered: a name for the start that holds the end; right is
 // `date_unlocked`, the moment somebody may try again.
+//
+// A badge's is the other moment, and named for it: when the badge locked,
+// which a lock that lasts until somebody unlocks it has and an end does not
+// (`badge.proto`). So `Badge` and the messages that answer it say
+// `date_locked`, and only they.
 func TestNoFieldIsNamedDateLocked(t *testing.T) {
 	x := require.New(t)
 
@@ -251,7 +256,7 @@ func TestNoFieldIsNamedDateLocked(t *testing.T) {
 		for i := range ms.Len() {
 			m := ms.Get(i)
 			walk(m.Messages())
-			if m.Fields().ByName("date_locked") != nil {
+			if m.Fields().ByName("date_locked") != nil && !badgeSays(m) {
 				named = append(named, string(m.FullName()))
 			}
 		}
@@ -261,6 +266,14 @@ func TestNoFieldIsNamedDateLocked(t *testing.T) {
 		return true
 	})
 	x.Empty(named, "a field named for when a lock began holds when it ends")
+}
+
+// badgeSays is whether a message is `Badge` or one that answers about it,
+// where `date_locked` is when it locked.
+func badgeSays(m protoreflect.MessageDescriptor) bool {
+	n := string(m.Name())
+
+	return strings.HasPrefix(n, "Badge") || n == "SignInBadge"
 }
 
 // TestNoFieldIsNamedForWhenItExpires: the same rule, for the moment something
@@ -331,7 +344,8 @@ func TestWhatADirectorySaysIsOneMessage(t *testing.T) {
 }
 
 // TestOnlyAVouchChecksBeforeItAnswers: `Verify` is one act, checking a secret,
-// and so an RPC of `VouchService` alone.
+// and so an RPC of `VouchService` and of `BadgeService` alone, which checks a
+// PIN.
 //
 // `EmailService/Verify` checked nothing: it minted a link to be mailed, which
 // `EmailService/Confirm` spends, while `VouchService/Verify` checks a secret.
@@ -351,7 +365,8 @@ func TestOnlyAVouchChecksBeforeItAnswers(t *testing.T) {
 		}
 		return true
 	})
-	x.Equal([]string{"VouchService"}, has)
+	slices.Sort(has)
+	x.Equal([]string{"BadgeService", "VouchService"}, has)
 }
 
 // TestADirectorysWordForSomebodyIsAClosedSet: what a directory said of

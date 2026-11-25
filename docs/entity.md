@@ -1,6 +1,6 @@
 # The entities
 
-roster is thirty-three tables and the arguments for why each is a table. This
+roster is thirty-four tables and the arguments for why each is a table. This
 file is the map: the shape they make, and a paragraph on each.
 
 It is **not** where the reasoning lives. Every entity is declared in a `.proto`
@@ -11,7 +11,7 @@ is short enough to read in one sitting and points at them.
 `docs/position.md` is what roster is for and where it stops. `docs/roadmap.md`
 is the order it was built in.
 
-## One story, told thirty-three times
+## One story, told thirty-four times
 
 Every entity below ends with a line or two about the same deployment, so that
 what a row is **next to** is visible from its own section. Read them in order
@@ -43,7 +43,7 @@ flowchart TB
   T --> S
   T --> H
 
-  W["ways in<br/>🔒 Credential · 🪪 Identity<br/>📧 Email · 🔑 ApiKey"]
+  W["ways in<br/>🔒 Credential · 🪪 Identity<br/>📧 Email · 🔑 ApiKey · 📛 Badge"]
   B["with a clock on them<br/>🎫 Delegation · ⏳ Continuation<br/>✨ Link · 🍪 Session"]
   M["what they may do<br/>📜 Role · 🔗 Binding<br/>👥 Group · 🫂 GroupMembership · 📣 GroupExposure<br/>🎽 Team · 🏅 TeamMembership"]
   K["what is kept of them<br/>📞 Phone · 🤝 Relation · ✍️ Consent"]
@@ -67,7 +67,7 @@ flowchart TB
 it: there is no binding that makes somebody see another customer.
 
 **👤 `Holder` is who.** A credential resolves to one, the trail names one on
-every line, and twenty-one foreign keys point at one.
+every line, and twenty-two foreign keys point at one.
 
 **📍 `Site` is the second axis.** A tenant is the wall between customers and a
 site is the wall inside one -- a factory, a region, an environment. An entity
@@ -524,12 +524,14 @@ erDiagram
   "👤 Holder"  ||--o{  "🪪 Identity" : "arrives as"
   "👤 Holder"  ||--o{  "📧 Email" : "is reachable at"
   "👤 Holder"  ||--o{  "🔑 ApiKey" : "is acted as by"
+  "👤 Holder"  ||--o|  "📛 Badge" : "opens a station with"
   "🪪 Identity"  |o--o{  "📧 Email" : "vouched for"
 ```
 
-> **Nobody writes a way into an account wider than their own.** All four of
-> these are ways to sign in as whoever the row is about, so all four are refused
-> unless that person's permissions are a subset of the caller's.
+> **Nobody writes a way into an account wider than their own.** The first four
+> of these are ways to sign in as whoever the row is about, and a badge is a way
+> in at a station as them, so all five are refused unless that person's
+> permissions are a subset of the caller's.
 > `server/core/escalate.go`; its file comment is the whole argument.
 
 ### 🔒 `Credential` — a secret somebody proves themselves with **here**
@@ -625,6 +627,24 @@ the keys that are for it. An `rk_` is the deployment's own and is for no app.
 > narrowed to the two methods it calls. It is never wider than erin is, and
 > revoking it is one row erased -- which is why *sign out everywhere*
 > deliberately leaves it alone.
+
+### 📛 `Badge` — what opens a station for somebody, and nothing else
+
+A card that says who it is and a PIN that says it is them, for an app's stations
+on a factory floor. One for a person (`holder` is unique), and `code`, what the
+card says, unique in the tenant and compared as written. A table of its own and
+not a kind of 🔒 `Credential`, because every door roster has walks a person's
+credentials -- a sign-in offers each as a second factor, the last-way-in rule
+counts them -- and a row nothing signs in with is one no such walk can reach.
+The PIN's verifier is its hash sealed under `vouch.keys`, as a TOTP seed is,
+because four digits are ten thousand guesses against a copy of the rows; and
+five wrong answers lock it until somebody unlocks it. Written whole by
+`BadgeService/Enrol`, checked by `BadgeService/Verify`, which a station's holder
+is given and which makes no session.
+
+> park, on contoso's seoul line, has a badge that says `0042-7781`. The station
+> at line 3 is a holder bound `BadgeService/Verify` in seoul: it is told park for
+> the right PIN, and for a busan card nothing, as for a card nobody has.
 
 ## Credentials with a clock on them
 
@@ -1043,6 +1063,7 @@ one datum has no verb for it short of that.
 | 🏅 `TeamMembership` | 12 | via `holder.tenant` | yes | soft | `proto/app/membership.proto` |
 | 🔒 `Credential` | 13 | via `holder.tenant` | yes | soft | `proto/app/credential.proto` |
 | 🔑 `ApiKey` | 14 | via `holder.tenant` | -- | soft | `proto/app/apikey.proto` |
+| 📛 `Badge` | 32 | via `holder.tenant`, stamped | -- | soft | `proto/app/badge.proto` |
 | 📜 `Role` | 15 | `tenant` edge | -- | soft | `proto/app/role.proto` |
 | 👥 `Group` | 16 | `tenant` edge | -- | soft | `proto/app/group.proto` |
 | 🫂 `GroupMembership` | 17 | via `holder.tenant` | -- | soft | `proto/app/membership.proto` |

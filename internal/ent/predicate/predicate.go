@@ -18,6 +18,9 @@ type Archived func(*sql.Selector)
 // Audit is the predicate function for audit builders.
 type Audit func(*sql.Selector)
 
+// Badge is the predicate function for badge builders.
+type Badge func(*sql.Selector)
+
 // Binding is the predicate function for binding builders.
 type Binding func(*sql.Selector)
 

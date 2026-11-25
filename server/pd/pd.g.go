@@ -40,6 +40,7 @@ import (
 	entApiKey "github.com/lesomnus/roster/internal/ent/apikey"
 	entArchived "github.com/lesomnus/roster/internal/ent/archived"
 	entAudit "github.com/lesomnus/roster/internal/ent/audit"
+	entBadge "github.com/lesomnus/roster/internal/ent/badge"
 	entBinding "github.com/lesomnus/roster/internal/ent/binding"
 	entConnection "github.com/lesomnus/roster/internal/ent/connection"
 	entConsent "github.com/lesomnus/roster/internal/ent/consent"
@@ -123,6 +124,7 @@ const (
 	ApiKeyDomain          pdid.Domain = 14  // "api-key"
 	ArchivedDomain        pdid.Domain = 5   // "archived"
 	AuditDomain           pdid.Domain = 3   // "audit"
+	BadgeDomain           pdid.Domain = 32  // "badge"
 	BindingDomain         pdid.Domain = 18  // "binding"
 	ConnectionDomain      pdid.Domain = 25  // "connection"
 	ConsentDomain         pdid.Domain = 29  // "consent"
@@ -159,6 +161,7 @@ func init() {
 	pdid.Register("roster.ApiKey", ApiKeyDomain, "api-key")
 	pdid.Register("roster.Archived", ArchivedDomain, "archived")
 	pdid.Register("roster.Audit", AuditDomain, "audit")
+	pdid.Register("roster.Badge", BadgeDomain, "badge")
 	pdid.Register("roster.Binding", BindingDomain, "binding")
 	pdid.Register("roster.Connection", ConnectionDomain, "connection")
 	pdid.Register("roster.Consent", ConsentDomain, "consent")
@@ -199,6 +202,7 @@ var Domains = map[string]pdid.Domain{
 	"roster.ApiKey":          ApiKeyDomain,
 	"roster.Archived":        ArchivedDomain,
 	"roster.Audit":           AuditDomain,
+	"roster.Badge":           BadgeDomain,
 	"roster.Binding":         BindingDomain,
 	"roster.Connection":      ConnectionDomain,
 	"roster.Consent":         ConsentDomain,
@@ -349,6 +353,21 @@ func (wall) AuditScope(ctx context.Context) (predicate.Audit, error) {
 	}
 
 	return entAudit.Or(entAudit.TenantIdIn(vs...), entAudit.ActorTenantIdIn(vs...), entAudit.CounterpartTenantIdIn(vs...)), nil
+}
+
+// BadgeScope: a row belongs to the tenant its "holder.tenant" reaches, read off "tenant_id" -- which the
+// server stamped when the row was written and no step of that path can move.
+func (wall) BadgeScope(ctx context.Context) (predicate.Badge, error) {
+	if _, ok := frame.AccountOf(ctx); ok {
+		return nothing[predicate.Badge](), nil
+	}
+
+	vs, all, err := frame.Narrow(ctx)
+	if all || err != nil {
+		return nil, err
+	}
+
+	return entBadge.TenantIdIn(vs...), nil
 }
 
 // BindingScope: a row belongs to the tenant its "role.tenant" reaches.
@@ -805,6 +824,11 @@ func (x grouped) ArchivedScope(ctx context.Context) (predicate.Archived, error) 
 
 // AuditScope: in no set -- it declared no field 3, so this narrows nothing.
 func (x grouped) AuditScope(ctx context.Context) (predicate.Audit, error) {
+	return nil, nil
+}
+
+// BadgeScope: in no set -- it declared no field 3, so this narrows nothing.
+func (x grouped) BadgeScope(ctx context.Context) (predicate.Badge, error) {
 	return nil, nil
 }
 
@@ -1826,6 +1850,305 @@ func filterAudit(f *rstr.AuditFilter) (predicate.Audit, error) {
 	}
 
 	return entAudit.And(ps...), nil
+}
+
+type sinkBadge struct {
+	rstr.BadgeServiceServer
+	store  bare.Store
+	w      *watch.Watch
+	namer  slug.Namer
+	joined bool
+}
+
+func (s Sink) Badge() rstr.BadgeServiceServer {
+	v := sinkBadge{s.Server.Badge(), s.Server.Store, s.w, s.namer, s.joined}
+	v.BadgeServiceServer = bare.BadgeWithAddRule(v.BadgeServiceServer, v.admit)
+	return v
+}
+
+// admit is what is said of the tenancy of a row an Add of Badge writes: it
+// stamps its tenant.
+//
+// It is asked of an Add and of every item of an AddMany; see [Sink.Badge].
+func (s sinkBadge) admit(ctx context.Context, req *rstr.BadgeAddRequest) (*rstr.BadgeAddRequest, error) {
+	// Copied rather than written to: the request belongs to whoever called,
+	// and for a call made in this process that is a message they may still
+	// be holding -- a server that changed a caller's own field would be
+	// changing a value they can read back.
+	r := proto.CloneOf(req)
+
+	if err := s.tenancy(ctx, r); err != nil {
+		return nil, err
+	}
+
+	return r, nil
+}
+
+// Erase forgets what the transaction was told about the row, before it is
+// erased: whether a frame may see it, and where a walk from it arrives.
+// Neither is true of a row that is gone, nor of another put under its
+// key. See [seen.Forget].
+func (s sinkBadge) Erase(ctx context.Context, req *rstr.BadgeRef) (*rstr.BadgeEraseResponse, error) {
+	seen.Forget(s.store.Db.Driver(), "Badge", req)
+
+	return s.BadgeServiceServer.Erase(ctx, req)
+}
+
+// Apply forgets what the transaction was told about the row, before it is
+// written: a document may move it to a set the caller cannot see. See
+// [seen.Forget].
+func (s sinkBadge) Apply(ctx context.Context, req *rstr.BadgeApplyRequest) (*rstr.Badge, error) {
+	seen.Forget(s.store.Db.Driver(), "Badge", req.GetRef())
+
+	return s.BadgeServiceServer.Apply(ctx, req)
+}
+
+// Patch forgets what the transaction was told about the row, before it is
+// written; see [sinkBadge.Apply].
+func (s sinkBadge) Patch(ctx context.Context, req *rstr.BadgePatchRequest) (*rstr.Badge, error) {
+	seen.Forget(s.store.Db.Driver(), "Badge", req.GetRef())
+
+	return s.BadgeServiceServer.Patch(ctx, req)
+}
+
+// tenantAtHolderTenant is the tenant "holder.tenant" arrives at.
+func (s sinkBadge) tenantAtHolderTenant(ctx context.Context, ref *rstr.HolderRef) ([]byte, error) {
+	if ref == nil {
+		return nil, pderr.Invalidf("holder", "required: it is what says which tenant this belongs to")
+	}
+
+	// Asked once a transaction: no step past the first can be repointed, so
+	// where this walk arrives from a row is decided until the row is
+	// written. See [seen.Tenant].
+	return seen.Tenant(s.store.Db.Driver(), "Holder", "tenant", ref, func() ([]byte, error) {
+		// The row the edge names, picked the way every other reference is.
+		pick, err := bare.HolderPick(ref)
+		if err != nil {
+			return nil, pderr.At("holder", err)
+		}
+
+		k, err := s.store.Db.Holder.Query().Where(pick).QueryTenant().OnlyId(ctx)
+		if err != nil {
+			// Not there, or more than one -- both are the reference being wrong,
+			// and both are the caller's to fix.
+			return nil, pderr.Invalidf("holder", "it does not name one row")
+		}
+
+		return k[:], nil
+	})
+}
+
+// tenancy fills what the schema says this row's tenant is, and refuses a
+// row whose other paths do not agree with it.
+//
+// The request is already this server's copy by the time it arrives, so it
+// is written to rather than cloned again.
+func (s sinkBadge) tenancy(ctx context.Context, req *rstr.BadgeAddRequest) error {
+	want, err := s.tenantAtHolderTenant(ctx, req.GetHolder())
+	if err != nil {
+		return err
+	}
+
+	// Stamped, whatever the caller said. It is not a field of the request
+	// and a caller that reached this server another way does not get to
+	// keep what they put there.
+	req.SetTenantId(want)
+
+	return nil
+}
+
+// orderBadge is how Badges come back.
+//
+// The last column is the key, and it is not decoration: a cursor cannot
+// tell apart two rows equal in every column of the order, so the page after
+// the first of them either repeats the second or skips it. Rows written by
+// one request are stamped a moment apart at best.
+var orderBadge = []sqlpage.Order{
+	{Column: entBadge.FieldDateCreated, Desc: false},
+	{Column: entBadge.FieldId, Desc: false},
+}
+
+func afterBadge(v string, by []sqlpage.Order, tag string) (func(*sql.Selector), error) {
+	var (
+		at0 time.Time
+		at1 uuid.UUID
+	)
+	if err := pdAfter(v, tag, &at0, &at1); err != nil {
+		return nil, err
+	}
+
+	return sqlpage.After(by, []any{at0, at1})
+}
+
+func nextBadge(last *ent.Badge, tag string) (string, error) {
+	return pdNext(tag, last.DateCreated, last.Id)
+}
+
+// orderByBadge is an order as ent orders a query by it.
+func orderByBadge(by []sqlpage.Order) []entBadge.OrderOption {
+	out := make([]entBadge.OrderOption, len(by))
+	for i, o := range by {
+		if o.Desc {
+			out[i] = sql.OrderByField(o.Column, sql.OrderDesc()).ToFunc()
+			continue
+		}
+
+		out[i] = sql.OrderByField(o.Column).ToFunc()
+	}
+
+	return out
+}
+
+const (
+	// BadgePageSize is what a request that did not say gets, and
+	// BadgePageLimit is the most it gets however loudly it asks.
+	BadgePageSize  = 20
+	BadgePageLimit = 100
+
+	// BadgeFilterLimit is how many filters one request may carry. Each is a
+	// predicate in the same query, so it is what says how much of the
+	// database a request may ask to read -- and it is refused rather than
+	// clamped, because dropping half the filters would answer a question
+	// nobody asked.
+	BadgeFilterLimit = 32
+)
+
+// List answers with the Badges that match any of the given filters, or with
+// every one there is if the request named none, a page at a time.
+func (s sinkBadge) List(ctx context.Context, req *rstr.BadgeListRequest) (*rstr.BadgeListResponse, error) {
+	q := s.store.Db.Badge.Query()
+
+	// Through the same narrowing every generated read goes through, and not
+	// by asking the scope alone: what narrows a read is the wall today and
+	// the wall and something else tomorrow, and a list that reached past it
+	// would be the one read that missed the something else.
+	if p, err := bare.BadgeNarrow(ctx, s.store.Scope, nil); err != nil {
+		return nil, err
+	} else if p != nil {
+		q.Where(p)
+	}
+
+	if fs := req.GetFilters(); len(fs) > 0 {
+		if len(fs) > BadgeFilterLimit {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"filters: %d of them, and %d is the most one list carries", len(fs), BadgeFilterLimit)
+		}
+
+		ps := make([]predicate.Badge, 0, len(fs))
+		for i, f := range fs {
+			p, err := filterBadge(f)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "filters[%d]: %s", i, err)
+			}
+
+			ps = append(ps, p)
+		}
+
+		q.Where(entBadge.Or(ps...))
+	}
+
+	// Which order, and which way: one the schema declared, and never one a
+	// request makes up, since an order is a walk of an index.
+	by, after, next, tag := orderBadge, afterBadge, nextBadge, ""
+	if req.GetReverse() {
+		// The same index, walked from the other end.
+		by, tag = pdReverse(by), tag+"/reverse"
+	}
+
+	if v := req.GetAfter(); v != "" {
+		p, err := after(v, by, tag)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "after: %s", err)
+		}
+
+		q.Where(p)
+	}
+
+	// One row more than the page, which is how "is there another" is answered
+	// without a second query and without a count. The extra is dropped before
+	// the answer is built; it was only ever asked for to see whether it was
+	// there -- so a full last page answers with no cursor rather than sending
+	// the caller back for an empty one.
+	size := sqlpage.Size(int(req.GetSize()), BadgePageSize, BadgePageLimit)
+	us, err := q.Order(orderByBadge(by)...).Limit(size + 1).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	more := len(us) > size
+	if more {
+		us = us[:size]
+	}
+
+	items := make([]*rstr.Badge, len(us))
+	for i, u := range us {
+		items[i] = u.Proto()
+	}
+
+	res := rstr.BadgeListResponse_builder{Items: items}.Build()
+	if more {
+		v, err := next(us[len(us)-1], tag)
+		if err != nil {
+			return nil, status.Errorf(codes.Internal, "next: %s", err)
+		}
+
+		res.SetNext(v)
+	}
+
+	return res, nil
+}
+
+// filterBadge turns one filter into the predicate that selects what it
+// names. Naming nothing is refused, since the request asked for "these" and
+// did not say which.
+func filterBadge(f *rstr.BadgeFilter) (predicate.Badge, error) {
+	ps := make([]predicate.Badge, 0, 1)
+	if f.HasRef() {
+		p, err := bare.BadgePick(f.GetRef())
+		if err != nil {
+			return nil, err
+		}
+
+		ps = append(ps, p)
+	}
+	if f.HasHolder() {
+		w := f.GetHolder()
+		if b := w.GetId(); len(b) > 0 {
+			// The **foreign key column** on this row, which is what an
+			// edge is. A subquery for a comparison against an indexed
+			// column is work nobody asked for.
+			k, err := entuuid.FromBytes(b)
+			if err != nil {
+				return nil, status.Errorf(codes.InvalidArgument, "holder: %s", err)
+			}
+
+			ps = append(ps, entBadge.HolderIdEQ(k))
+		} else {
+			// Named some other way -- an alias, a slug. Resolving it
+			// would be a read, and a predicate is built without one, so
+			// it becomes a condition on the target instead. One hop,
+			// against whatever index that column has.
+			q, err := bare.HolderPick(w)
+			if err != nil {
+				return nil, err
+			}
+
+			ps = append(ps, entBadge.HasHolderWith(q))
+		}
+	}
+	if f.HasTenantId() {
+		k, err := entuuid.FromBytes(f.GetTenantId())
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "tenant_id: %s", err)
+		}
+
+		ps = append(ps, entBadge.TenantIdEQ(k))
+	}
+	if len(ps) == 0 {
+		return nil, status.Error(codes.InvalidArgument, "a filter that names nothing")
+	}
+
+	return entBadge.And(ps...), nil
 }
 
 type sinkBinding struct {
@@ -10535,6 +10858,50 @@ func (s gateApiKey) admit(ctx context.Context, req *rstr.ApiKeyAddRequest) (*rst
 	return req, nil
 }
 
+type gateBadge struct {
+	Gate
+	rstr.BadgeServiceServer
+}
+
+func (s Gate) Badge() rstr.BadgeServiceServer {
+	v := gateBadge{s, s.Next().Badge()}
+	v.BadgeServiceServer = bare.BadgeWithAddRule(v.BadgeServiceServer, v.admit)
+	return guardedBadge{v}
+}
+
+// admit refuses a Badge put into a Holder this caller cannot see.
+//
+// The wall is a predicate and an Add has no query, so without this the
+// identifier in `holder` becomes a foreign key with nothing consulted.
+// The row is then invisible to whoever planted it and visible to whoever
+// holds that Holder, which is the shape of the bug rather than a
+// mitigation of it.
+//
+// NotFound rather than a refusal, for the reason on `gateHolder.admit`:
+// that a row exists is itself something a caller who may not see it
+// should not be told.
+//
+// It is what an Add is asked, and an AddMany of every item it carries;
+// see [Gate.Badge].
+func (s gateBadge) admit(ctx context.Context, req *rstr.BadgeAddRequest) (*rstr.BadgeAddRequest, error) {
+	if ref := req.GetHolder(); ref != nil {
+		if err := seen.Visible(ctx, s.Gate.drv, "Holder", ref, func() error {
+			_, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
+				Ref: ref,
+			}.Build())
+			return err
+		}); err != nil {
+			if status.Code(err) == codes.NotFound {
+				return nil, gate.ErrNotFound("Holder")
+			}
+
+			return nil, err
+		}
+	}
+
+	return req, nil
+}
+
 type gateBinding struct {
 	Gate
 	rstr.BindingServiceServer
@@ -12446,6 +12813,81 @@ func (s guardedApiKey) Issue(ctx context.Context, req *rstr.ApiKeyIssueRequest) 
 	return s.ApiKeyServiceServer.Issue(ctx, req)
 }
 
+// guardedBadge enforces method declarations on in-process calls too.
+type guardedBadge struct{ rstr.BadgeServiceServer }
+
+func (s guardedBadge) Add(ctx context.Context, req *rstr.BadgeAddRequest) (*rstr.Badge, error) {
+	if err := gate.Direct(ctx, rstr.BadgeService_Add_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.BadgeServiceServer.Add(ctx, req)
+}
+
+func (s guardedBadge) Get(ctx context.Context, req *rstr.BadgeGetRequest) (*rstr.Badge, error) {
+	if err := gate.Direct(ctx, rstr.BadgeService_Get_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.BadgeServiceServer.Get(ctx, req)
+}
+
+func (s guardedBadge) Patch(ctx context.Context, req *rstr.BadgePatchRequest) (*rstr.Badge, error) {
+	if err := gate.Direct(ctx, rstr.BadgeService_Patch_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.BadgeServiceServer.Patch(ctx, req)
+}
+
+func (s guardedBadge) Apply(ctx context.Context, req *rstr.BadgeApplyRequest) (*rstr.Badge, error) {
+	if err := gate.Direct(ctx, rstr.BadgeService_Apply_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.BadgeServiceServer.Apply(ctx, req)
+}
+
+func (s guardedBadge) Erase(ctx context.Context, req *rstr.BadgeRef) (*rstr.BadgeEraseResponse, error) {
+	if err := gate.Direct(ctx, rstr.BadgeService_Erase_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.BadgeServiceServer.Erase(ctx, req)
+}
+
+func (s guardedBadge) List(ctx context.Context, req *rstr.BadgeListRequest) (*rstr.BadgeListResponse, error) {
+	if err := gate.Direct(ctx, rstr.BadgeService_List_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.BadgeServiceServer.List(ctx, req)
+}
+
+func (s guardedBadge) Enrol(ctx context.Context, req *rstr.BadgeEnrolRequest) (*rstr.Badge, error) {
+	if err := gate.Direct(ctx, rstr.BadgeService_Enrol_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.BadgeServiceServer.Enrol(ctx, req)
+}
+
+func (s guardedBadge) Unlock(ctx context.Context, req *rstr.BadgeUnlockRequest) (*rstr.BadgeUnlockResponse, error) {
+	if err := gate.Direct(ctx, rstr.BadgeService_Unlock_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.BadgeServiceServer.Unlock(ctx, req)
+}
+
+func (s guardedBadge) Verify(ctx context.Context, req *rstr.BadgeVerifyRequest) (*rstr.BadgeVerifyResponse, error) {
+	if err := gate.Direct(ctx, rstr.BadgeService_Verify_FullMethodName); err != nil {
+		return nil, err
+	}
+
+	return s.BadgeServiceServer.Verify(ctx, req)
+}
+
 // guardedConnection enforces method declarations on in-process calls too.
 type guardedConnection struct{ rstr.ConnectionServiceServer }
 
@@ -14210,6 +14652,8 @@ func described(key pdid.Id) (protoreflect.MessageDescriptor, []protoreflect.Fiel
 		return describedArchived.md, describedArchived.secret, describedArchived.personal
 	case AuditDomain:
 		return describedAudit.md, describedAudit.secret, describedAudit.personal
+	case BadgeDomain:
+		return describedBadge.md, describedBadge.secret, describedBadge.personal
 	case BindingDomain:
 		return describedBinding.md, describedBinding.secret, describedBinding.personal
 	case ConnectionDomain:
@@ -14305,6 +14749,9 @@ var (
 	describedAudit = describe((*rstr.Audit)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{})
+	describedBadge = describe((*rstr.Badge)(nil),
+		[]protoreflect.FieldNumber{9},
+		[]protoreflect.FieldNumber{8})
 	describedBinding = describe((*rstr.Binding)(nil),
 		[]protoreflect.FieldNumber{},
 		[]protoreflect.FieldNumber{7})
@@ -14414,6 +14861,7 @@ func added(by string) bool {
 	switch by {
 	case rstr.ApiKeyService_Add_FullMethodName,
 		rstr.AuditService_Add_FullMethodName,
+		rstr.BadgeService_Add_FullMethodName,
 		rstr.BindingService_Add_FullMethodName,
 		rstr.ConnectionService_Add_FullMethodName,
 		rstr.ConsentService_Add_FullMethodName,
@@ -14539,6 +14987,48 @@ func subject(ctx context.Context, s bare.Server, key pdid.Id, image proto.Messag
 		}
 
 		k, err := entuuid.FromBytes(row.GetTenantId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		return k, b, nil
+
+	case BadgeDomain:
+		row, ok := image.(*rstr.Badge)
+		if !ok {
+			return uuid.Nil(), []byte{}, nil
+		}
+
+		b := []byte{}
+		if keep {
+			kept := row
+			kept = proto.Clone(row).(*rstr.Badge)
+			_, secret, personal := described(key)
+			audit.Clear(kept, secret)
+			audit.Clear(kept, personal)
+
+			v, err := proto.Marshal(kept)
+			if err != nil {
+				return uuid.Nil(), nil, err
+			}
+			b = v
+		}
+
+		if !row.HasHolder() {
+			return uuid.Nil(), b, nil
+		}
+
+		up, err := pdid.From(row.GetHolder().GetId())
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		parent, err := left(ctx, s, up, nil)
+		if err != nil {
+			return uuid.Nil(), nil, err
+		}
+
+		k, _, err := subject(ctx, s, up, parent, false)
 		if err != nil {
 			return uuid.Nil(), nil, err
 		}
@@ -15475,6 +15965,8 @@ func left(ctx context.Context, s bare.Server, key pdid.Id, image proto.Message) 
 	switch key.Domain() {
 	case ApiKeyDomain:
 		vs, err = rowsApiKey(ctx, s.Db, entApiKey.IdEQ(uuid.UUID(key)))
+	case BadgeDomain:
+		vs, err = rowsBadge(ctx, s.Db, entBadge.IdEQ(uuid.UUID(key)))
 	case BindingDomain:
 		vs, err = rowsBinding(ctx, s.Db, entBinding.IdEQ(uuid.UUID(key)))
 	case ConnectionDomain:
@@ -15671,7 +16163,7 @@ func (v *keptTrail) write(ctx context.Context) error {
 // row's seal covers (payday#115).
 func isSealed(key pdid.Id) bool {
 	switch key.Domain() {
-	case ApiKeyDomain, BindingDomain, CredentialDomain, EmailDomain, HolderDomain, IdentityDomain, NominationDomain, PhoneDomain, RelationDomain:
+	case ApiKeyDomain, BadgeDomain, BindingDomain, CredentialDomain, EmailDomain, HolderDomain, IdentityDomain, NominationDomain, PhoneDomain, RelationDomain:
 		return true
 	}
 
@@ -15892,6 +16384,9 @@ func Digests(ctx context.Context, db *ent.Client, d *audit.Digest, p trail.Polic
 	if err := audit.CheckKind(ctx, d, checkedApiKey(db), archived, &out); err != nil {
 		return out, fmt.Errorf("api-key: %w", err)
 	}
+	if err := audit.CheckKind(ctx, d, checkedBadge(db), archived, &out); err != nil {
+		return out, fmt.Errorf("badge: %w", err)
+	}
 	if err := audit.CheckKind(ctx, d, checkedBinding(db), archived, &out); err != nil {
 		return out, fmt.Errorf("binding: %w", err)
 	}
@@ -16013,6 +16508,58 @@ func checkedApiKey(db *ent.Client) audit.Kind {
 			var out map[pdid.Id]*audit.Recorded
 			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
 				rows, err := rowsApiKey(ctx, db, entApiKey.IdIn(uuids(ids)...))
+				if err != nil {
+					return err
+				}
+
+				out, err = goneOf(ctx, db, ids, rows)
+				return err
+			})
+
+			return out, err
+		},
+	}
+}
+
+// checkedBadge is what a check of the rows reads of the badge kind.
+func checkedBadge(db *ent.Client) audit.Kind {
+	read := func(ctx context.Context, ps ...predicate.Badge) (audit.Page, error) {
+		var out audit.Page
+		err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+			rows, err := rowsBadge(ctx, db, ps...)
+			if err != nil {
+				return err
+			}
+
+			recorded, err := newestDigests(ctx, db, objects(rows))
+			if err != nil {
+				return err
+			}
+
+			seals, err := sealsOf(ctx, db, objects(rows))
+			out = audit.Page{Rows: rows, Recorded: recorded, Seals: seals}
+			return err
+		})
+
+		return out, err
+	}
+
+	return audit.Kind{
+		Domain: BadgeDomain,
+		Sealed: true,
+		After: func(ctx context.Context, after pdid.Id) (audit.Page, error) {
+			return read(ctx, entBadge.IdGT(uuid.UUID(after)))
+		},
+		Of: func(ctx context.Context, ids []pdid.Id) (audit.Page, error) {
+			return read(ctx, entBadge.IdIn(uuids(ids)...))
+		},
+		Trail: func(ctx context.Context, yield func([]pdid.Id) error) error {
+			return trailObjects(ctx, db, BadgeDomain, yield)
+		},
+		Gone: func(ctx context.Context, ids []pdid.Id) (map[pdid.Id]*audit.Recorded, error) {
+			var out map[pdid.Id]*audit.Recorded
+			err := snapshot(ctx, db, func(ctx context.Context, db *ent.Client) error {
+				rows, err := rowsBadge(ctx, db, entBadge.IdIn(uuids(ids)...))
 				if err != nil {
 					return err
 				}
@@ -17292,6 +17839,28 @@ func rowsApiKey(ctx context.Context, db *ent.Client, ps ...predicate.ApiKey) ([]
 	return out, nil
 }
 
+// rowsBadge is the rows `ps` says of the badge kind -- every row there is,
+// live or erased softly -- at most a page of them in identifier order, each as
+// a Get reads it.
+func rowsBadge(ctx context.Context, db *ent.Client, ps ...predicate.Badge) ([]audit.Live, error) {
+	q := db.Badge.Query().Where(ps...)
+	if err := bare.BadgeSelectInit(ctx, nil, q, nil); err != nil {
+		return nil, err
+	}
+
+	vs, err := q.Order(entBadge.ById()).Limit(audit.RowsPage).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	out := make([]audit.Live, len(vs))
+	for i, v := range vs {
+		out[i] = audit.Live{Object: pdid.Id(v.Id), Row: v.Proto()}
+	}
+
+	return out, nil
+}
+
 // rowsBinding is the rows `ps` says of the binding kind -- every row there is,
 // live or erased softly -- at most a page of them in identifier order, each as
 // a Get reads it.
@@ -18089,6 +18658,8 @@ func record(ctx context.Context, db *ent.Client, content audit.Contents, action 
 			switch d {
 			case ApiKeyDomain:
 				rows, err = rowsApiKey(ctx, db, entApiKey.IdIn(uuids(page)...))
+			case BadgeDomain:
+				rows, err = rowsBadge(ctx, db, entBadge.IdIn(uuids(page)...))
 			case BindingDomain:
 				rows, err = rowsBinding(ctx, db, entBinding.IdIn(uuids(page)...))
 			case ConnectionDomain:
@@ -18257,6 +18828,8 @@ func (s trailStore) Carry(ctx context.Context, digest *audit.Digest, d pdid.Doma
 		switch d {
 		case ApiKeyDomain:
 			rows, err = rowsApiKey(ctx, s.db, entApiKey.IdIn(uuids(ids)...))
+		case BadgeDomain:
+			rows, err = rowsBadge(ctx, s.db, entBadge.IdIn(uuids(ids)...))
 		case BindingDomain:
 			rows, err = rowsBinding(ctx, s.db, entBinding.IdIn(uuids(ids)...))
 		case ConnectionDomain:
@@ -18497,6 +19070,83 @@ func (s secretApiKey) List(ctx context.Context, req *rstr.ApiKeyListRequest) (*r
 // And the numbers are the ones `hidden` filters the trail's patch by, so
 // the two cannot come to disagree about which fields they are.
 func hideApiKey(v *rstr.ApiKey) *rstr.ApiKey {
+	if v == nil {
+		return nil
+	}
+
+	m := v.ProtoReflect()
+	fs := m.Descriptor().Fields()
+	for _, n := range []protoreflect.FieldNumber{9} {
+		m.Clear(fs.ByNumber(n))
+	}
+
+	return v
+}
+
+func (s Secret) Badge() rstr.BadgeServiceServer {
+	return secretBadge{s, s.Next().Badge()}
+}
+
+type secretBadge struct {
+	Secret
+	rstr.BadgeServiceServer
+}
+
+func (s secretBadge) Add(ctx context.Context, req *rstr.BadgeAddRequest) (*rstr.Badge, error) {
+	v, err := s.BadgeServiceServer.Add(ctx, req)
+
+	return hideBadge(v), err
+}
+
+func (s secretBadge) Get(ctx context.Context, req *rstr.BadgeGetRequest) (*rstr.Badge, error) {
+	v, err := s.BadgeServiceServer.Get(ctx, req)
+
+	return hideBadge(v), err
+}
+
+func (s secretBadge) Patch(ctx context.Context, req *rstr.BadgePatchRequest) (*rstr.Badge, error) {
+	v, err := s.BadgeServiceServer.Patch(ctx, req)
+
+	return hideBadge(v), err
+}
+
+func (s secretBadge) Apply(ctx context.Context, req *rstr.BadgeApplyRequest) (*rstr.Badge, error) {
+	v, err := s.BadgeServiceServer.Apply(ctx, req)
+
+	return hideBadge(v), err
+}
+
+func (s secretBadge) List(ctx context.Context, req *rstr.BadgeListRequest) (*rstr.BadgeListResponse, error) {
+	v, err := s.BadgeServiceServer.List(ctx, req)
+	if v == nil {
+		return v, err
+	}
+
+	for _, w := range v.GetItems() {
+		hideBadge(w)
+	}
+
+	return v, err
+}
+
+// hideBadge clears what this entity declared it never answers with.
+//
+// A nil row passes through, because an error is answered with one and the
+// caller of this is handing both on.
+//
+// By field number and through the descriptor, rather than a setter per
+// field, because a setter's argument has a type and this has to hold for
+// every field a row can carry. A `Set<F>(nil)` per secret is what this
+// was, and it compiled only while every secret anybody had declared was
+// `bytes`: a `string` one ended the build in a generated file, and an
+// enum would have needed its own type spelled out here to say zero.
+//
+// Clear is also the truer word. A field with presence is **absent**
+// afterwards rather than present and empty, which is what "never answered
+// with" says; one without presence reads as its zero value either way.
+// And the numbers are the ones `hidden` filters the trail's patch by, so
+// the two cannot come to disagree about which fields they are.
+func hideBadge(v *rstr.Badge) *rstr.Badge {
 	if v == nil {
 		return nil
 	}
@@ -19161,6 +19811,60 @@ func (s interceptApiKey) List(ctx context.Context, req *rstr.ApiKeyListRequest) 
 func (s interceptApiKey) Issue(ctx context.Context, req *rstr.ApiKeyIssueRequest) (*rstr.ApiKeyIssueResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ApiKeyServiceServer,
 		rstr.ApiKeyService_Issue_FullMethodName, req, s.ApiKeyServiceServer.Issue)
+}
+
+func (s Intercept) Badge() rstr.BadgeServiceServer {
+	return interceptBadge{s, s.Next().Badge()}
+}
+
+type interceptBadge struct {
+	Intercept
+	rstr.BadgeServiceServer
+}
+
+func (s interceptBadge) Add(ctx context.Context, req *rstr.BadgeAddRequest) (*rstr.Badge, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.BadgeServiceServer,
+		rstr.BadgeService_Add_FullMethodName, req, s.BadgeServiceServer.Add)
+}
+
+func (s interceptBadge) Get(ctx context.Context, req *rstr.BadgeGetRequest) (*rstr.Badge, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.BadgeServiceServer,
+		rstr.BadgeService_Get_FullMethodName, req, s.BadgeServiceServer.Get)
+}
+
+func (s interceptBadge) Patch(ctx context.Context, req *rstr.BadgePatchRequest) (*rstr.Badge, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.BadgeServiceServer,
+		rstr.BadgeService_Patch_FullMethodName, req, s.BadgeServiceServer.Patch)
+}
+
+func (s interceptBadge) Apply(ctx context.Context, req *rstr.BadgeApplyRequest) (*rstr.Badge, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.BadgeServiceServer,
+		rstr.BadgeService_Apply_FullMethodName, req, s.BadgeServiceServer.Apply)
+}
+
+func (s interceptBadge) Erase(ctx context.Context, req *rstr.BadgeRef) (*rstr.BadgeEraseResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.BadgeServiceServer,
+		rstr.BadgeService_Erase_FullMethodName, req, s.BadgeServiceServer.Erase)
+}
+
+func (s interceptBadge) List(ctx context.Context, req *rstr.BadgeListRequest) (*rstr.BadgeListResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.BadgeServiceServer,
+		rstr.BadgeService_List_FullMethodName, req, s.BadgeServiceServer.List)
+}
+
+func (s interceptBadge) Enrol(ctx context.Context, req *rstr.BadgeEnrolRequest) (*rstr.Badge, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.BadgeServiceServer,
+		rstr.BadgeService_Enrol_FullMethodName, req, s.BadgeServiceServer.Enrol)
+}
+
+func (s interceptBadge) Unlock(ctx context.Context, req *rstr.BadgeUnlockRequest) (*rstr.BadgeUnlockResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.BadgeServiceServer,
+		rstr.BadgeService_Unlock_FullMethodName, req, s.BadgeServiceServer.Unlock)
+}
+
+func (s interceptBadge) Verify(ctx context.Context, req *rstr.BadgeVerifyRequest) (*rstr.BadgeVerifyResponse, error) {
+	return grpcx.RunUnary(ctx, s.unary, s.BadgeServiceServer,
+		rstr.BadgeService_Verify_FullMethodName, req, s.BadgeServiceServer.Verify)
 }
 
 func (s Intercept) Connection() rstr.ConnectionServiceServer {
@@ -21452,6 +22156,21 @@ func init() {
 		refs[r.FullName()] = r.Fields().ByName("id")
 	}
 	{
+		md := (&rstr.Badge{}).ProtoReflect().Descriptor()
+		fs := md.Fields()
+		personals[md.FullName()] = personal{
+			key: fs.ByNumber(1),
+			fields: []protoreflect.FieldDescriptor{
+				fs.ByNumber(8),
+			},
+			tenant: func(m protoreflect.Message) pdid.Id {
+				return accessIdOf(m.Get(fs.ByName("tenant_id")).Bytes())
+			},
+		}
+		r := (&rstr.BadgeRef{}).ProtoReflect().Descriptor()
+		refs[r.FullName()] = r.Fields().ByName("id")
+	}
+	{
 		md := (&rstr.Binding{}).ProtoReflect().Descriptor()
 		fs := md.Fields()
 		personals[md.FullName()] = personal{
@@ -21820,6 +22539,9 @@ func (accessRecorder) Snapshots(method string) bare.SnapshotOptions {
 	case rstr.ApiKeyService_Add_FullMethodName,
 		rstr.ApiKeyService_Patch_FullMethodName,
 		rstr.ApiKeyService_Apply_FullMethodName,
+		rstr.BadgeService_Add_FullMethodName,
+		rstr.BadgeService_Patch_FullMethodName,
+		rstr.BadgeService_Apply_FullMethodName,
 		rstr.BindingService_Add_FullMethodName,
 		rstr.BindingService_Patch_FullMethodName,
 		rstr.BindingService_Apply_FullMethodName,
@@ -21846,6 +22568,7 @@ func (accessRecorder) Snapshots(method string) bare.SnapshotOptions {
 		rstr.RelationService_Apply_FullMethodName:
 		return bare.SnapshotOptions{Value: true}
 	case rstr.ApiKeyService_Erase_FullMethodName,
+		rstr.BadgeService_Erase_FullMethodName,
 		rstr.BindingService_Erase_FullMethodName,
 		rstr.CredentialService_Erase_FullMethodName,
 		rstr.EmailService_Erase_FullMethodName,
@@ -21993,6 +22716,7 @@ func Resources(w *watch.Watch, project resource.Project) (*resource.Server, erro
 		&rstr.ApiKey{},
 		&rstr.Archived{},
 		&rstr.Audit{},
+		&rstr.Badge{},
 		&rstr.Binding{},
 		&rstr.Connection{},
 		&rstr.Consent{},
@@ -22027,6 +22751,9 @@ func Resources(w *watch.Watch, project resource.Project) (*resource.Server, erro
 
 var resourceSecrets = map[protoreflect.FullName][]protoreflect.FieldNumber{
 	"roster.ApiKey": {
+		9,
+	},
+	"roster.Badge": {
 		9,
 	},
 	"roster.Continuation": {
@@ -22166,6 +22893,43 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				return nil, err
 			}
 			query := db.Audit.Query()
+			if pred != nil {
+				query.Where(pred)
+			}
+			ok, err := query.Modify(func(q *sql.Selector) { q.From(row) }).Exist(ctx)
+			if err != nil || !ok {
+				return nil, err
+			}
+			return publicResource(v), nil
+		case *rstr.Badge:
+			ctx, err := guard.Allow(ctx, rstr.BadgeService_Get_FullMethodName)
+			if err != nil {
+				switch status.Code(err) {
+				case codes.PermissionDenied, codes.Unauthenticated, codes.Unimplemented:
+					return nil, nil
+				}
+				return nil, err
+			}
+			pred, err := bare.BadgeNarrow(ctx, scope, nil)
+			if err != nil {
+				return nil, err
+			}
+			row, err := resourcesql.Row(db.Dialect(), entBadge.Table, []resourcesql.Column{
+				{Number: 1, Name: entBadge.FieldId, Type: 64, Nullable: false, Key: 0},
+				{Number: 2, Name: entBadge.HolderColumn, Type: 64, Nullable: false, Key: 1},
+				{Number: 8, Name: entBadge.FieldCode, Type: 9, Nullable: false, Key: 0},
+				{Number: 10, Name: entBadge.FieldFailures, Type: 5, Nullable: false, Key: 0},
+				{Number: 11, Name: entBadge.FieldDateLocked, Type: 65, Nullable: true, Key: 0},
+				{Number: 12, Name: entBadge.FieldDateRotated, Type: 65, Nullable: true, Key: 0},
+				{Number: 16, Name: entBadge.FieldTenantId, Type: 64, Nullable: false, Key: 0},
+				{Number: 13, Name: entBadge.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
+				{Number: 14, Name: entBadge.FieldDateErased, Type: 65, Nullable: true, Key: 0},
+				{Number: 15, Name: entBadge.FieldDateCreated, Type: 65, Nullable: false, Key: 0},
+			}, v)
+			if err != nil {
+				return nil, err
+			}
+			query := db.Badge.Query()
 			if pred != nil {
 				query.Where(pred)
 			}
@@ -23159,6 +23923,14 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.AuditService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
+	case rstr.BadgeService_Add_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_CREATED
+	case rstr.BadgeService_Patch_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case rstr.BadgeService_Apply_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
+	case rstr.BadgeService_Erase_FullMethodName:
+		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.BindingService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.BindingService_Patch_FullMethodName:
@@ -23369,7 +24141,7 @@ func (r resourceRecorder) Record(ctx context.Context, s bare.Server, c bare.Chan
 		return nil
 	}
 	switch image.ProtoReflect().Descriptor().FullName() {
-	case "roster.Access", "roster.ApiKey", "roster.Audit", "roster.Binding", "roster.Connection", "roster.Consent", "roster.Continuation", "roster.Credential", "roster.Delegation", "roster.Email", "roster.Group", "roster.GroupExposure", "roster.GroupMembership", "roster.Holder", "roster.Host", "roster.HostProof", "roster.Identity", "roster.Link", "roster.MailDomain", "roster.Nomination", "roster.Phone", "roster.Relation", "roster.Role", "roster.Session", "roster.Site", "roster.SiteMembership", "roster.Team", "roster.TeamMembership", "roster.Tenant":
+	case "roster.Access", "roster.ApiKey", "roster.Audit", "roster.Badge", "roster.Binding", "roster.Connection", "roster.Consent", "roster.Continuation", "roster.Credential", "roster.Delegation", "roster.Email", "roster.Group", "roster.GroupExposure", "roster.GroupMembership", "roster.Holder", "roster.Host", "roster.HostProof", "roster.Identity", "roster.Link", "roster.MailDomain", "roster.Nomination", "roster.Phone", "roster.Relation", "roster.Role", "roster.Session", "roster.Site", "roster.SiteMembership", "roster.Team", "roster.TeamMembership", "roster.Tenant":
 	default:
 		return nil
 	}
@@ -23431,6 +24203,7 @@ func Admission(policy admission.Policy, options admission.Options) bare.Option {
 	return func(s *bare.Server) error {
 		names, err := admission.Select(options.Entities, []string{
 			"roster.ApiKey",
+			"roster.Badge",
 			"roster.Binding",
 			"roster.Connection",
 			"roster.Consent",
@@ -23475,6 +24248,11 @@ func Admission(policy admission.Policy, options admission.Options) bare.Option {
 				&rstr.AuditRef{},
 				&rstr.AuditAddRequest{},
 				&rstr.AuditPatchRequest{},
+			}},
+			{Row: &rstr.Badge{}, Requests: []proto.Message{
+				&rstr.BadgeRef{},
+				&rstr.BadgeAddRequest{},
+				&rstr.BadgePatchRequest{},
 			}},
 			{Row: &rstr.Binding{}, Requests: []proto.Message{
 				&rstr.BindingRef{},

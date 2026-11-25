@@ -37,7 +37,7 @@
 // gone, and [subjects] says what it was read as once it named nothing.
 //
 // The `Holder` row itself **stays, blank**. Its identifier is referenced --
-// `Audit.actor_id` is it, and twenty-one foreign keys point at it -- and what makes
+// `Audit.actor_id` is it, and twenty-two foreign keys point at it -- and what makes
 // it personal data is that it resolves to a name. Emptied of the columns that
 // name somebody -- every one the schema declares personal, their picture and
 // what their directory called them among them -- it is a stable pseudonym
@@ -67,6 +67,7 @@ import (
 
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/apikey"
+	"github.com/lesomnus/roster/internal/ent/badge"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/continuation"
 	"github.com/lesomnus/roster/internal/ent/credential"
@@ -827,6 +828,17 @@ func subjects() []subject {
 				return db.Credential.Delete().Where(credential.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
 			},
 		},
+		// The badge that opened a station for them: what it says is personal,
+		// and a forgotten person opens nothing.
+		{
+			name: "badge",
+			ids: func(ctx context.Context, db *ent.Client, k uuid.UUID) ([]uuid.UUID, error) {
+				return db.Badge.Query().Where(badge.HasHolderWith(holder.IdEQ(k))).Ids(ctx)
+			},
+			remove: func(ctx context.Context, db *ent.Client, k uuid.UUID) (int, error) {
+				return db.Badge.Delete().Where(badge.HasHolderWith(holder.IdEQ(k))).Exec(ctx)
+			},
+		},
 		// The credentials issued to them, and the half-finished sign-ins. These
 		// expire anyway; taking them now is the difference between *cannot sign
 		// in* and *whatever was already issued still works*.
@@ -870,14 +882,14 @@ func subjects() []subject {
 		// waiting to be a surprise.
 		//
 		// And there is an asymmetry underneath worth knowing about, which
-		// nothing else states: of the twenty-one foreign keys into `holder`,
-		// sixteen are `NO ACTION`, and `binding_holder_holder`,
+		// nothing else states: of the twenty-two foreign keys into `holder`,
+		// seventeen are `NO ACTION`, and `binding_holder_holder`,
 		// `binding_holder_app`, `role_holder_app`, `group_holder_app` and
 		// `apikey_holder_app` are `SET NULL` -- see
 		// `internal/ent/migrate/schema.go`. Nothing depends on it today,
 		// because an erase is an UPDATE and no `ON DELETE` rule fires. It
 		// would matter the day somebody builds a **hard** erase of a person:
-		// sixteen children would block it, `Binding` would quietly keep a row
+		// seventeen children would block it, `Binding` would quietly keep a row
 		// whose holder is NULL, and a role, a group, a binding or a key of the
 		// app they were would become one of roster's own or the tenant's
 		// (`Role.app`, `Group.app`, `Binding.app` -- a grant across the tenant

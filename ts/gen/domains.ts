@@ -24,6 +24,9 @@ export const ArchivedDomain = 5
 /** The domain identifiers of roster.Audit carry. */
 export const AuditDomain = 3
 
+/** The domain identifiers of roster.Badge carry. */
+export const BadgeDomain = 32
+
 /** The domain identifiers of roster.Binding carry. */
 export const BindingDomain = 18
 
@@ -117,6 +120,7 @@ pdid.register("roster.Access", AccessDomain, "access")
 pdid.register("roster.ApiKey", ApiKeyDomain, "api-key")
 pdid.register("roster.Archived", ArchivedDomain, "archived")
 pdid.register("roster.Audit", AuditDomain, "audit")
+pdid.register("roster.Badge", BadgeDomain, "badge")
 pdid.register("roster.Binding", BindingDomain, "binding")
 pdid.register("roster.Connection", ConnectionDomain, "connection")
 pdid.register("roster.Consent", ConsentDomain, "consent")

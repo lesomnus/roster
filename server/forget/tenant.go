@@ -60,7 +60,7 @@ import (
 // # What stays
 //
 // The tenant row, and the blank `Holder` rows, because the trail names them by
-// identifier and twenty-one foreign keys reach a holder. A forgotten person is a
+// identifier and twenty-two foreign keys reach a holder. A forgotten person is a
 // pseudonym reaching nothing; a destroyed tenant is the same, and for a while
 // it keeps its alias so that nobody else can be that name to its former people
 // (`Tenant.date_destroyed`).

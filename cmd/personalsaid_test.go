@@ -135,6 +135,7 @@ func TestWhatIsDeclaredPersonalOrSecretIsThisList(t *testing.T) {
 	personal := []string{
 		"ApiKey.alias",
 		"ApiKey.desc",
+		"Badge.code",
 		"Binding.labels",
 		"Credential.name",
 		"Email.address",
@@ -156,6 +157,7 @@ func TestWhatIsDeclaredPersonalOrSecretIsThisList(t *testing.T) {
 	}
 	secret := []string{
 		"ApiKey.secret",
+		"Badge.secret",
 		"Continuation.secret",
 		"Credential.previous",
 		"Credential.secret",

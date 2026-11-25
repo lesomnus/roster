@@ -20,6 +20,8 @@ type Tx struct {
 	Archived *ArchivedClient
 	// Audit is the client for interacting with the Audit builders.
 	Audit *AuditClient
+	// Badge is the client for interacting with the Badge builders.
+	Badge *BadgeClient
 	// Binding is the client for interacting with the Binding builders.
 	Binding *BindingClient
 	// Connection is the client for interacting with the Connection builders.
@@ -213,6 +215,7 @@ func (tx *Tx) init() {
 	tx.ApiKey = NewApiKeyClient(tx.config)
 	tx.Archived = NewArchivedClient(tx.config)
 	tx.Audit = NewAuditClient(tx.config)
+	tx.Badge = NewBadgeClient(tx.config)
 	tx.Binding = NewBindingClient(tx.config)
 	tx.Connection = NewConnectionClient(tx.config)
 	tx.Consent = NewConsentClient(tx.config)

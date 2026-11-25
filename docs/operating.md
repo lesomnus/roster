@@ -3046,7 +3046,7 @@ the rows that say what they may do, and any app's nomination to act as them. A l
 that names an address of theirs goes with the address, whoever it was mailed for:
 somebody else's claim of it has nothing left to prove, and is not left to be read as
 a link that signs its claimant in. The `Holder` row **stays, blank**: its
-identifier is `Audit.actor_id` and twenty-one foreign keys point at it, and what makes
+identifier is `Audit.actor_id` and twenty-two foreign keys point at it, and what makes
 it personal data is that it *resolves*. Emptied, it is a stable pseudonym reaching
 nothing.
 
