@@ -83,6 +83,7 @@ func validatorUser(t *testing.T) map[string]any {
 		"userName":          "login-" + n + "@contoso.example",
 		"externalId":        guid(t),
 		"displayName":       "Display " + n,
+		"title":             "Title " + n,
 		"preferredLanguage": "sr-Latn-ME",
 		"active":            true,
 		"emails":            []map[string]any{{"type": "work", "value": "mail-" + n + "@contoso.example"}},
@@ -131,7 +132,7 @@ func TestWhatMicrosoftsValidatorAsks(t *testing.T) {
 	same := func(t *testing.T, sent, got map[string]any) {
 		t.Helper()
 		x := require.New(t)
-		for _, k := range []string{"userName", "externalId", "displayName", "preferredLanguage", "active"} {
+		for _, k := range []string{"userName", "externalId", "displayName", "title", "preferredLanguage", "active"} {
 			x.Equal(sent[k], got[k], k)
 		}
 		x.Equal(sent["emails"].([]map[string]any)[0]["value"], got["emails"].([]any)[0].(map[string]any)["value"], "emails")

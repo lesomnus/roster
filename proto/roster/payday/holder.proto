@@ -453,6 +453,13 @@ message Profile {
   string department = 3;
   string employee_no = 4;
   string locale = 5;
+
+  // Their job title, as the company writes it: free text, beside
+  // `department`, and bounded as it is. An app that keeps who approved
+  // something, and in what capacity, takes it from here with the department
+  // (#415). A directory provisioning them fills it from the core User's
+  // `title` (`docs/scim.md`), and the LDAP directory publishes it as `title`.
+  string title = 6;
 }
 
 // Profile is what a person is called, and it is replaced whole.

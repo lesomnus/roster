@@ -92,6 +92,7 @@ func TestWhatSomebodyWritesOfThemselvesHasALength(t *testing.T) {
 	}{
 		{"profile.display_name", core.MaxName, func(v string) *app.Profile { return app.Profile_builder{DisplayName: v}.Build() }},
 		{"profile.department", core.MaxName, func(v string) *app.Profile { return app.Profile_builder{Department: v}.Build() }},
+		{"profile.title", core.MaxName, func(v string) *app.Profile { return app.Profile_builder{Title: v}.Build() }},
 		{"profile.employee_no", core.MaxEmployeeNo, func(v string) *app.Profile { return app.Profile_builder{EmployeeNo: v}.Build() }},
 		{"profile.locale", core.MaxLocale, func(v string) *app.Profile { return app.Profile_builder{Locale: v}.Build() }},
 	} {
@@ -310,6 +311,7 @@ func (b *built) longest(t *testing.T, ctx context.Context, alias string, picture
 		Profile: app.Profile_builder{
 			DisplayName: strings.Repeat(wide, core.MaxName),
 			Department:  strings.Repeat(wide, core.MaxName),
+			Title:       strings.Repeat(wide, core.MaxName),
 			EmployeeNo:  strings.Repeat(wide, core.MaxEmployeeNo),
 			Locale:      strings.Repeat(wide, core.MaxLocale),
 		}.Build(),

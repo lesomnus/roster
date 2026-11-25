@@ -460,6 +460,9 @@ func (s *Server) createUser(ctx context.Context, w http.ResponseWriter, r *http.
 	if u.department != nil {
 		profile.Department = *u.department
 	}
+	if u.title != nil {
+		profile.Title = *u.title
+	}
 	if u.employeeNo != nil {
 		profile.EmployeeNo = *u.employeeNo
 	}
@@ -685,6 +688,9 @@ func (s *Server) reprofile(ctx context.Context, ref *rstr.HolderRef, c *changes)
 	}
 	if c.department != nil {
 		now.SetDepartment(*c.department)
+	}
+	if c.title != nil {
+		now.SetTitle(*c.title)
 	}
 	if c.employeeNo != nil {
 		now.SetEmployeeNo(*c.employeeNo)

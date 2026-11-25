@@ -260,6 +260,7 @@ reaches, and one that can write any record of the zone: the environment is of
 | `userName` | what the directory looks them up by, kept where it is not their address (`Holder.directory_name`) |
 | `displayName` | `Holder.name` when made, `profile.display_name` after; `name.formatted` is read as it where a directory says no `displayName` |
 | enterprise `department`, `employeeNumber` | `profile.department`, `profile.employee_no` |
+| `title` | `profile.title`: the core User's (RFC 7643 §4.1.1), not the enterprise extension's |
 | enterprise `manager` | a `Relation` from them to their manager, labelled `manager` |
 | `preferredLanguage`, `locale` | `profile.locale` |
 | `phoneNumbers` | a `Phone` row each, one number a kind (`type`) |
@@ -272,7 +273,7 @@ cycle. Taking a value away is a `remove`. The person it is about is told so: the
 account page says, on the form somebody a directory provisions edits their
 profile in, that what the directory says of them is written over what is there.
 What it sends that is not kept here --
-a title, a postal address -- is answered as accepted and written to the log.
+a postal address, a nickname -- is answered as accepted and written to the log.
 An attribute written behind its schema's URN, as RFC 7644 §3.10 allows --
 `urn:ietf:params:scim:schemas:core:2.0:User:active`, in a path or as a key of
 an operation with no path -- is the attribute it names, and so for a group's

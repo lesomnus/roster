@@ -349,6 +349,7 @@ and two deployments of roster should agree on it.
 | `mail` | `Email.address`, **verified rows only** | an unverified address is somebody's claim, and a directory is what other systems believe. In the order they were proved, so the first value is the address a token's `email` says |
 | `employeeNumber` | `Profile.employee_no` | compared as the characters it is written in: `(employeeNumber=ab07)` does not find `AB07` (§ [Search](#search)) |
 | `departmentNumber` | `Profile.department` | |
+| `title` | `Profile.title` | absent for somebody with none. Roster has no search by it, so a filter on it reads everybody the bind may see and is evaluated over each (§ [Search](#search)) |
 | `preferredLanguage` | `Profile.locale` | |
 | `labeledURI` | `Profile.picture` | |
 | `telephoneNumber`, `mobile`, `facsimileTelephoneNumber`, `homePhone`, `pager` | `Phone.number`, by its `kind` | one of no kind, or of a kind with no attribute of its own, is a `telephoneNumber`, and a number that is two of those is there once; read only when asked for or filtered on, since it costs a list |
@@ -379,7 +380,7 @@ profile unless it says otherwise -- the role `self-service` names
 `HolderService/Update`, and a tenant turns that off by taking it out
 ([usage/permissions.md](usage/permissions.md)). Where they may, these are what
 the person says of themselves, checked by nobody: `displayName` and so `cn`
-and `sn`, `departmentNumber`, `employeeNumber`, `preferredLanguage` and
+and `sn`, `departmentNumber`, `title`, `employeeNumber`, `preferredLanguage` and
 `labeledURI`; and their numbers, which they add the same way
 (`PhoneService/Add`). A filter on a department, or a rule a client keeps
 about an employee number, reads a value its subject can write. `mail` is the

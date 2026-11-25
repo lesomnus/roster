@@ -723,6 +723,7 @@ type Profile struct {
 	xxx_hidden_Department  string                 `protobuf:"bytes,3,opt,name=department"`
 	xxx_hidden_EmployeeNo  string                 `protobuf:"bytes,4,opt,name=employee_no,json=employeeNo"`
 	xxx_hidden_Locale      string                 `protobuf:"bytes,5,opt,name=locale"`
+	xxx_hidden_Title       string                 `protobuf:"bytes,6,opt,name=title"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -787,6 +788,13 @@ func (x *Profile) GetLocale() string {
 	return ""
 }
 
+func (x *Profile) GetTitle() string {
+	if x != nil {
+		return x.xxx_hidden_Title
+	}
+	return ""
+}
+
 func (x *Profile) SetDisplayName(v string) {
 	x.xxx_hidden_DisplayName = v
 }
@@ -807,6 +815,10 @@ func (x *Profile) SetLocale(v string) {
 	x.xxx_hidden_Locale = v
 }
 
+func (x *Profile) SetTitle(v string) {
+	x.xxx_hidden_Title = v
+}
+
 type Profile_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
@@ -817,6 +829,12 @@ type Profile_builder struct {
 	Department string
 	EmployeeNo string
 	Locale     string
+	// Their job title, as the company writes it: free text, beside
+	// `department`, and bounded as it is. An app that keeps who approved
+	// something, and in what capacity, takes it from here with the department
+	// (#415). A directory provisioning them fills it from the core User's
+	// `title` (`docs/scim.md`), and the LDAP directory publishes it as `title`.
+	Title string
 }
 
 func (b0 Profile_builder) Build() *Profile {
@@ -828,6 +846,7 @@ func (b0 Profile_builder) Build() *Profile {
 	x.xxx_hidden_Department = b.Department
 	x.xxx_hidden_EmployeeNo = b.EmployeeNo
 	x.xxx_hidden_Locale = b.Locale
+	x.xxx_hidden_Title = b.Title
 	return m0
 }
 
@@ -1043,7 +1062,7 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"\x02id\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
 	"\x06tenant\x1a\b\n" +
-	"\x06labels \x14(d:\x00H\x02J\x04\b\b\x10\t\"\x9f\x01\n" +
+	"\x06labels \x14(d:\x00H\x02J\x04\b\b\x10\t\"\xb5\x01\n" +
 	"\aProfile\x12!\n" +
 	"\fdisplay_name\x18\x01 \x01(\tR\vdisplayName\x12\x18\n" +
 	"\apicture\x18\x02 \x01(\tR\apicture\x12\x1e\n" +
@@ -1052,7 +1071,8 @@ const file_roster_payday_holder_proto_rawDesc = "" +
 	"department\x12\x1f\n" +
 	"\vemployee_no\x18\x04 \x01(\tR\n" +
 	"employeeNo\x12\x16\n" +
-	"\x06locale\x18\x05 \x01(\tR\x06locale\"=\n" +
+	"\x06locale\x18\x05 \x01(\tR\x06locale\x12\x14\n" +
+	"\x05title\x18\x06 \x01(\tR\x05title\"=\n" +
 	"\bPortrait\x121\n" +
 	"\n" +
 	"renditions\x18\x01 \x03(\v2\x11.roster.RenditionR\n" +

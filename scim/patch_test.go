@@ -44,11 +44,11 @@ func TestBothDialectsOfAPatchReadTheSame(t *testing.T) {
 		x := require.New(t)
 		c, err := parsePatch([]byte(`{"Operations":[
 			{"op":"remove","path":"displayName"},
-			{"op":"replace","path":"title","value":"Engineer"},
+			{"op":"replace","path":"nickName","value":"Erin"},
 			{"op":"add","path":"addresses[type eq \"work\"].locality","value":"Seoul"}]}`))
 		x.NoError(err)
 		x.Equal("", *c.display)
-		x.Equal([]string{"title", `addresses[type eq "work"].locality`}, c.ignored)
+		x.Equal([]string{"nickName", `addresses[type eq "work"].locality`}, c.ignored)
 	})
 
 	t.Run("a number is said for its kind, each way a directory writes one", func(t *testing.T) {
