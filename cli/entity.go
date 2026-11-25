@@ -195,6 +195,7 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 	}
 
 	overlays(t)
+	handsOverSaid(t)
 	nowhere(t)
 
 	if err := t.Add("tenant/erase", newCmdTenantNotErased()); err != nil {
