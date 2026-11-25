@@ -88,6 +88,12 @@ message Tenant {
   // whoever writes it writes a case and not a person: *Contoso v. Fabrikam,
   // 2026-123*, and never somebody's name (#280).
   string hold = 12 [(payday.field) = {personal: false}];
+
+  // payday's Tenant declares no `Apply`; roster's contract had one, and keeps
+  // it until something says it is not called.
+  option (orm.message) = {
+    rpc: {apply: {}}
+  };
 }
 
 // TenantConfig is the settings, and each one is a **fact roster enforces**

@@ -1554,6 +1554,7 @@ type ConsentListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *ConsentSelect         `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1613,6 +1614,13 @@ func (x *ConsentListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *ConsentListRequest) GetSelect() *ConsentSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *ConsentListRequest) SetFilters(v []*ConsentFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1627,6 +1635,21 @@ func (x *ConsentListRequest) SetAfter(v string) {
 
 func (x *ConsentListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *ConsentListRequest) SetSelect(v *ConsentSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *ConsentListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *ConsentListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type ConsentListRequest_builder struct {
@@ -1649,6 +1672,15 @@ type ConsentListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *ConsentSelect
 }
 
 func (b0 ConsentListRequest_builder) Build() *ConsentListRequest {
@@ -1659,6 +1691,7 @@ func (b0 ConsentListRequest_builder) Build() *ConsentListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -2595,12 +2628,13 @@ const file_app_consent_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x12.roster.ConsentRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\".\n" +
 	"\x14ConsentEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9e\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xcd\x01\n" +
 	"\x12ConsentListRequest\x12/\n" +
 	"\afilters\x18\x01 \x03(\v2\x15.roster.ConsentFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"W\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12-\n" +
+	"\x06select\x18\x06 \x01(\v2\x15.roster.ConsentSelectR\x06select\"W\n" +
 	"\x13ConsentListResponse\x12%\n" +
 	"\x05items\x18\x01 \x03(\v2\x0f.roster.ConsentR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xc6\x01\n" +
@@ -2686,39 +2720,40 @@ var file_app_consent_svc_g_proto_depIdxs = []int32{
 	2,  // 10: roster.ConsentApplyRequest.ref:type_name -> roster.ConsentRef
 	21, // 11: roster.ConsentApplyRequest.patch:type_name -> patch.Patch
 	10, // 12: roster.ConsentListRequest.filters:type_name -> roster.ConsentFilter
-	22, // 13: roster.ConsentListResponse.items:type_name -> roster.Consent
-	2,  // 14: roster.ConsentFilter.ref:type_name -> roster.ConsentRef
-	17, // 15: roster.ConsentFilter.holder:type_name -> roster.HolderRef
-	17, // 16: roster.ConsentAgreeRequest.holder:type_name -> roster.HolderRef
-	13, // 17: roster.ConsentAgreeRequest.documents:type_name -> roster.ConsentDocument
-	22, // 18: roster.ConsentAgreeResponse.acts:type_name -> roster.Consent
-	17, // 19: roster.ConsentWithdrawRequest.holder:type_name -> roster.HolderRef
-	17, // 20: roster.ConsentSettledRequest.holder:type_name -> roster.HolderRef
-	13, // 21: roster.ConsentSettledRequest.documents:type_name -> roster.ConsentDocument
-	13, // 22: roster.ConsentSettledResponse.owed:type_name -> roster.ConsentDocument
-	0,  // 23: roster.ConsentService.Add:input_type -> roster.ConsentAddRequest
-	1,  // 24: roster.ConsentService.Get:input_type -> roster.ConsentGetRequest
-	5,  // 25: roster.ConsentService.Patch:input_type -> roster.ConsentPatchRequest
-	6,  // 26: roster.ConsentService.Apply:input_type -> roster.ConsentApplyRequest
-	2,  // 27: roster.ConsentService.Erase:input_type -> roster.ConsentRef
-	8,  // 28: roster.ConsentService.List:input_type -> roster.ConsentListRequest
-	11, // 29: roster.ConsentService.Agree:input_type -> roster.ConsentAgreeRequest
-	14, // 30: roster.ConsentService.Withdraw:input_type -> roster.ConsentWithdrawRequest
-	15, // 31: roster.ConsentService.Settled:input_type -> roster.ConsentSettledRequest
-	22, // 32: roster.ConsentService.Add:output_type -> roster.Consent
-	22, // 33: roster.ConsentService.Get:output_type -> roster.Consent
-	22, // 34: roster.ConsentService.Patch:output_type -> roster.Consent
-	22, // 35: roster.ConsentService.Apply:output_type -> roster.Consent
-	7,  // 36: roster.ConsentService.Erase:output_type -> roster.ConsentEraseResponse
-	9,  // 37: roster.ConsentService.List:output_type -> roster.ConsentListResponse
-	12, // 38: roster.ConsentService.Agree:output_type -> roster.ConsentAgreeResponse
-	22, // 39: roster.ConsentService.Withdraw:output_type -> roster.Consent
-	16, // 40: roster.ConsentService.Settled:output_type -> roster.ConsentSettledResponse
-	32, // [32:41] is the sub-list for method output_type
-	23, // [23:32] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	4,  // 13: roster.ConsentListRequest.select:type_name -> roster.ConsentSelect
+	22, // 14: roster.ConsentListResponse.items:type_name -> roster.Consent
+	2,  // 15: roster.ConsentFilter.ref:type_name -> roster.ConsentRef
+	17, // 16: roster.ConsentFilter.holder:type_name -> roster.HolderRef
+	17, // 17: roster.ConsentAgreeRequest.holder:type_name -> roster.HolderRef
+	13, // 18: roster.ConsentAgreeRequest.documents:type_name -> roster.ConsentDocument
+	22, // 19: roster.ConsentAgreeResponse.acts:type_name -> roster.Consent
+	17, // 20: roster.ConsentWithdrawRequest.holder:type_name -> roster.HolderRef
+	17, // 21: roster.ConsentSettledRequest.holder:type_name -> roster.HolderRef
+	13, // 22: roster.ConsentSettledRequest.documents:type_name -> roster.ConsentDocument
+	13, // 23: roster.ConsentSettledResponse.owed:type_name -> roster.ConsentDocument
+	0,  // 24: roster.ConsentService.Add:input_type -> roster.ConsentAddRequest
+	1,  // 25: roster.ConsentService.Get:input_type -> roster.ConsentGetRequest
+	5,  // 26: roster.ConsentService.Patch:input_type -> roster.ConsentPatchRequest
+	6,  // 27: roster.ConsentService.Apply:input_type -> roster.ConsentApplyRequest
+	2,  // 28: roster.ConsentService.Erase:input_type -> roster.ConsentRef
+	8,  // 29: roster.ConsentService.List:input_type -> roster.ConsentListRequest
+	11, // 30: roster.ConsentService.Agree:input_type -> roster.ConsentAgreeRequest
+	14, // 31: roster.ConsentService.Withdraw:input_type -> roster.ConsentWithdrawRequest
+	15, // 32: roster.ConsentService.Settled:input_type -> roster.ConsentSettledRequest
+	22, // 33: roster.ConsentService.Add:output_type -> roster.Consent
+	22, // 34: roster.ConsentService.Get:output_type -> roster.Consent
+	22, // 35: roster.ConsentService.Patch:output_type -> roster.Consent
+	22, // 36: roster.ConsentService.Apply:output_type -> roster.Consent
+	7,  // 37: roster.ConsentService.Erase:output_type -> roster.ConsentEraseResponse
+	9,  // 38: roster.ConsentService.List:output_type -> roster.ConsentListResponse
+	12, // 39: roster.ConsentService.Agree:output_type -> roster.ConsentAgreeResponse
+	22, // 40: roster.ConsentService.Withdraw:output_type -> roster.Consent
+	16, // 41: roster.ConsentService.Settled:output_type -> roster.ConsentSettledResponse
+	33, // [33:42] is the sub-list for method output_type
+	24, // [24:33] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_app_consent_svc_g_proto_init() }

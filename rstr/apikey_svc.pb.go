@@ -1691,6 +1691,7 @@ type ApiKeyListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *ApiKeySelect          `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1750,6 +1751,13 @@ func (x *ApiKeyListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *ApiKeyListRequest) GetSelect() *ApiKeySelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *ApiKeyListRequest) SetFilters(v []*ApiKeyFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1764,6 +1772,21 @@ func (x *ApiKeyListRequest) SetAfter(v string) {
 
 func (x *ApiKeyListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *ApiKeyListRequest) SetSelect(v *ApiKeySelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *ApiKeyListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *ApiKeyListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type ApiKeyListRequest_builder struct {
@@ -1786,6 +1809,15 @@ type ApiKeyListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *ApiKeySelect
 }
 
 func (b0 ApiKeyListRequest_builder) Build() *ApiKeyListRequest {
@@ -1796,6 +1828,7 @@ func (b0 ApiKeyListRequest_builder) Build() *ApiKeyListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -2389,12 +2422,13 @@ const file_app_apikey_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.ApiKeyRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
 	"\x13ApiKeyEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9c\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xca\x01\n" +
 	"\x11ApiKeyListRequest\x12.\n" +
 	"\afilters\x18\x01 \x03(\v2\x14.roster.ApiKeyFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"U\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12,\n" +
+	"\x06select\x18\x06 \x01(\v2\x14.roster.ApiKeySelectR\x06select\"U\n" +
 	"\x12ApiKeyListResponse\x12$\n" +
 	"\x05items\x18\x01 \x03(\v2\x0e.roster.ApiKeyR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"^\n" +
@@ -2462,32 +2496,33 @@ var file_app_apikey_svc_g_proto_depIdxs = []int32{
 	2,  // 16: roster.ApiKeyApplyRequest.ref:type_name -> roster.ApiKeyRef
 	16, // 17: roster.ApiKeyApplyRequest.patch:type_name -> patch.Patch
 	10, // 18: roster.ApiKeyListRequest.filters:type_name -> roster.ApiKeyFilter
-	17, // 19: roster.ApiKeyListResponse.items:type_name -> roster.ApiKey
-	2,  // 20: roster.ApiKeyFilter.ref:type_name -> roster.ApiKeyRef
-	13, // 21: roster.ApiKeyFilter.holder:type_name -> roster.HolderRef
-	13, // 22: roster.ApiKeyIssueRequest.holder:type_name -> roster.HolderRef
-	14, // 23: roster.ApiKeyIssueRequest.date_expired:type_name -> google.protobuf.Timestamp
-	13, // 24: roster.ApiKeyIssueRequest.app:type_name -> roster.HolderRef
-	17, // 25: roster.ApiKeyIssueResponse.key:type_name -> roster.ApiKey
-	0,  // 26: roster.ApiKeyService.Add:input_type -> roster.ApiKeyAddRequest
-	1,  // 27: roster.ApiKeyService.Get:input_type -> roster.ApiKeyGetRequest
-	5,  // 28: roster.ApiKeyService.Patch:input_type -> roster.ApiKeyPatchRequest
-	6,  // 29: roster.ApiKeyService.Apply:input_type -> roster.ApiKeyApplyRequest
-	2,  // 30: roster.ApiKeyService.Erase:input_type -> roster.ApiKeyRef
-	8,  // 31: roster.ApiKeyService.List:input_type -> roster.ApiKeyListRequest
-	11, // 32: roster.ApiKeyService.Issue:input_type -> roster.ApiKeyIssueRequest
-	17, // 33: roster.ApiKeyService.Add:output_type -> roster.ApiKey
-	17, // 34: roster.ApiKeyService.Get:output_type -> roster.ApiKey
-	17, // 35: roster.ApiKeyService.Patch:output_type -> roster.ApiKey
-	17, // 36: roster.ApiKeyService.Apply:output_type -> roster.ApiKey
-	7,  // 37: roster.ApiKeyService.Erase:output_type -> roster.ApiKeyEraseResponse
-	9,  // 38: roster.ApiKeyService.List:output_type -> roster.ApiKeyListResponse
-	12, // 39: roster.ApiKeyService.Issue:output_type -> roster.ApiKeyIssueResponse
-	33, // [33:40] is the sub-list for method output_type
-	26, // [26:33] is the sub-list for method input_type
-	26, // [26:26] is the sub-list for extension type_name
-	26, // [26:26] is the sub-list for extension extendee
-	0,  // [0:26] is the sub-list for field type_name
+	4,  // 19: roster.ApiKeyListRequest.select:type_name -> roster.ApiKeySelect
+	17, // 20: roster.ApiKeyListResponse.items:type_name -> roster.ApiKey
+	2,  // 21: roster.ApiKeyFilter.ref:type_name -> roster.ApiKeyRef
+	13, // 22: roster.ApiKeyFilter.holder:type_name -> roster.HolderRef
+	13, // 23: roster.ApiKeyIssueRequest.holder:type_name -> roster.HolderRef
+	14, // 24: roster.ApiKeyIssueRequest.date_expired:type_name -> google.protobuf.Timestamp
+	13, // 25: roster.ApiKeyIssueRequest.app:type_name -> roster.HolderRef
+	17, // 26: roster.ApiKeyIssueResponse.key:type_name -> roster.ApiKey
+	0,  // 27: roster.ApiKeyService.Add:input_type -> roster.ApiKeyAddRequest
+	1,  // 28: roster.ApiKeyService.Get:input_type -> roster.ApiKeyGetRequest
+	5,  // 29: roster.ApiKeyService.Patch:input_type -> roster.ApiKeyPatchRequest
+	6,  // 30: roster.ApiKeyService.Apply:input_type -> roster.ApiKeyApplyRequest
+	2,  // 31: roster.ApiKeyService.Erase:input_type -> roster.ApiKeyRef
+	8,  // 32: roster.ApiKeyService.List:input_type -> roster.ApiKeyListRequest
+	11, // 33: roster.ApiKeyService.Issue:input_type -> roster.ApiKeyIssueRequest
+	17, // 34: roster.ApiKeyService.Add:output_type -> roster.ApiKey
+	17, // 35: roster.ApiKeyService.Get:output_type -> roster.ApiKey
+	17, // 36: roster.ApiKeyService.Patch:output_type -> roster.ApiKey
+	17, // 37: roster.ApiKeyService.Apply:output_type -> roster.ApiKey
+	7,  // 38: roster.ApiKeyService.Erase:output_type -> roster.ApiKeyEraseResponse
+	9,  // 39: roster.ApiKeyService.List:output_type -> roster.ApiKeyListResponse
+	12, // 40: roster.ApiKeyService.Issue:output_type -> roster.ApiKeyIssueResponse
+	34, // [34:41] is the sub-list for method output_type
+	27, // [27:34] is the sub-list for method input_type
+	27, // [27:27] is the sub-list for extension type_name
+	27, // [27:27] is the sub-list for extension extendee
+	0,  // [0:27] is the sub-list for field type_name
 }
 
 func init() { file_app_apikey_svc_g_proto_init() }

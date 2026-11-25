@@ -46,15 +46,23 @@ type SiteMembershipServiceClient interface {
 	List(ctx context.Context, in *SiteMembershipListRequest, opts ...grpc.CallOption) (*SiteMembershipListResponse, error)
 	// Watch the SiteMemberships this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *SiteMembershipWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[SiteMembershipWatchResponse], error)
 }
 
@@ -163,15 +171,23 @@ type SiteMembershipServiceServer interface {
 	List(context.Context, *SiteMembershipListRequest) (*SiteMembershipListResponse, error)
 	// Watch the SiteMemberships this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*SiteMembershipWatchRequest, grpc.ServerStreamingServer[SiteMembershipWatchResponse]) error
 	mustEmbedUnimplementedSiteMembershipServiceServer()
 }
@@ -414,15 +430,23 @@ type TeamMembershipServiceClient interface {
 	List(ctx context.Context, in *TeamMembershipListRequest, opts ...grpc.CallOption) (*TeamMembershipListResponse, error)
 	// Watch the TeamMemberships this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(ctx context.Context, in *TeamMembershipWatchRequest, opts ...grpc.CallOption) (grpc.ServerStreamingClient[TeamMembershipWatchResponse], error)
 }
 
@@ -531,15 +555,23 @@ type TeamMembershipServiceServer interface {
 	List(context.Context, *TeamMembershipListRequest) (*TeamMembershipListResponse, error)
 	// Watch the TeamMemberships this caller may see, as they are now and as they change.
 	//
-	// What arrives is **state and never a delta**, so a client converges rather
-	// than replays: it keeps what it was last told about a row and replaces it.
-	// An event it did not receive is one it does not need, since the next one
-	// about that row carries the whole of it.
+	// What arrives is **state and never a delta**: an item is the whole of a row
+	// as this caller's Get reads it when the item is sent, and a client replaces
+	// what it held of that row. An item is sent when a write touches a row the
+	// stream is about, so a row erased, or taken out of this caller's sight by a
+	// write, arrives with no value. A row that leaves this caller's sight with no
+	// write to it -- what they may see changed, not the row -- is not said, and a
+	// client goes on holding it for as long as the stream is open.
+	//
+	// A stream that cannot keep up is ended, and is not let skip: an open stream
+	// has missed nothing. One that ended has, and asking again is how it is put
+	// right, since the first message of the new one is everything that matches
+	// then; a row that stopped matching in between is in no message of either.
 	//
 	// The first message is everything that matches right now, so a client does
 	// not have to List first and race the subscription. A row may arrive twice --
 	// once in that first message and once as a change that happened while it was
-	// being read -- and that is harmless for the same reason.
+	// being read -- and that is harmless, since each is the whole row.
 	Watch(*TeamMembershipWatchRequest, grpc.ServerStreamingServer[TeamMembershipWatchResponse]) error
 	mustEmbedUnimplementedTeamMembershipServiceServer()
 }

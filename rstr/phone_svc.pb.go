@@ -1257,6 +1257,7 @@ type PhoneListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *PhoneSelect           `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1316,6 +1317,13 @@ func (x *PhoneListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *PhoneListRequest) GetSelect() *PhoneSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *PhoneListRequest) SetFilters(v []*PhoneFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1330,6 +1338,21 @@ func (x *PhoneListRequest) SetAfter(v string) {
 
 func (x *PhoneListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *PhoneListRequest) SetSelect(v *PhoneSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *PhoneListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *PhoneListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type PhoneListRequest_builder struct {
@@ -1352,6 +1375,15 @@ type PhoneListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *PhoneSelect
 }
 
 func (b0 PhoneListRequest_builder) Build() *PhoneListRequest {
@@ -1362,6 +1394,7 @@ func (b0 PhoneListRequest_builder) Build() *PhoneListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1581,12 +1614,13 @@ const file_app_phone_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.PhoneRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\",\n" +
 	"\x12PhoneEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9a\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xc7\x01\n" +
 	"\x10PhoneListRequest\x12-\n" +
 	"\afilters\x18\x01 \x03(\v2\x13.roster.PhoneFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"S\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12+\n" +
+	"\x06select\x18\x06 \x01(\v2\x13.roster.PhoneSelectR\x06select\"S\n" +
 	"\x11PhoneListResponse\x12#\n" +
 	"\x05items\x18\x01 \x03(\v2\r.roster.PhoneR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\\\n" +
@@ -1633,26 +1667,27 @@ var file_app_phone_svc_g_proto_depIdxs = []int32{
 	2,  // 9: roster.PhoneApplyRequest.ref:type_name -> roster.PhoneRef
 	14, // 10: roster.PhoneApplyRequest.patch:type_name -> patch.Patch
 	10, // 11: roster.PhoneListRequest.filters:type_name -> roster.PhoneFilter
-	15, // 12: roster.PhoneListResponse.items:type_name -> roster.Phone
-	2,  // 13: roster.PhoneFilter.ref:type_name -> roster.PhoneRef
-	11, // 14: roster.PhoneFilter.holder:type_name -> roster.HolderRef
-	0,  // 15: roster.PhoneService.Add:input_type -> roster.PhoneAddRequest
-	1,  // 16: roster.PhoneService.Get:input_type -> roster.PhoneGetRequest
-	5,  // 17: roster.PhoneService.Patch:input_type -> roster.PhonePatchRequest
-	6,  // 18: roster.PhoneService.Apply:input_type -> roster.PhoneApplyRequest
-	2,  // 19: roster.PhoneService.Erase:input_type -> roster.PhoneRef
-	8,  // 20: roster.PhoneService.List:input_type -> roster.PhoneListRequest
-	15, // 21: roster.PhoneService.Add:output_type -> roster.Phone
-	15, // 22: roster.PhoneService.Get:output_type -> roster.Phone
-	15, // 23: roster.PhoneService.Patch:output_type -> roster.Phone
-	15, // 24: roster.PhoneService.Apply:output_type -> roster.Phone
-	7,  // 25: roster.PhoneService.Erase:output_type -> roster.PhoneEraseResponse
-	9,  // 26: roster.PhoneService.List:output_type -> roster.PhoneListResponse
-	21, // [21:27] is the sub-list for method output_type
-	15, // [15:21] is the sub-list for method input_type
-	15, // [15:15] is the sub-list for extension type_name
-	15, // [15:15] is the sub-list for extension extendee
-	0,  // [0:15] is the sub-list for field type_name
+	4,  // 12: roster.PhoneListRequest.select:type_name -> roster.PhoneSelect
+	15, // 13: roster.PhoneListResponse.items:type_name -> roster.Phone
+	2,  // 14: roster.PhoneFilter.ref:type_name -> roster.PhoneRef
+	11, // 15: roster.PhoneFilter.holder:type_name -> roster.HolderRef
+	0,  // 16: roster.PhoneService.Add:input_type -> roster.PhoneAddRequest
+	1,  // 17: roster.PhoneService.Get:input_type -> roster.PhoneGetRequest
+	5,  // 18: roster.PhoneService.Patch:input_type -> roster.PhonePatchRequest
+	6,  // 19: roster.PhoneService.Apply:input_type -> roster.PhoneApplyRequest
+	2,  // 20: roster.PhoneService.Erase:input_type -> roster.PhoneRef
+	8,  // 21: roster.PhoneService.List:input_type -> roster.PhoneListRequest
+	15, // 22: roster.PhoneService.Add:output_type -> roster.Phone
+	15, // 23: roster.PhoneService.Get:output_type -> roster.Phone
+	15, // 24: roster.PhoneService.Patch:output_type -> roster.Phone
+	15, // 25: roster.PhoneService.Apply:output_type -> roster.Phone
+	7,  // 26: roster.PhoneService.Erase:output_type -> roster.PhoneEraseResponse
+	9,  // 27: roster.PhoneService.List:output_type -> roster.PhoneListResponse
+	22, // [22:28] is the sub-list for method output_type
+	16, // [16:22] is the sub-list for method input_type
+	16, // [16:16] is the sub-list for extension type_name
+	16, // [16:16] is the sub-list for extension extendee
+	0,  // [0:16] is the sub-list for field type_name
 }
 
 func init() { file_app_phone_svc_g_proto_init() }

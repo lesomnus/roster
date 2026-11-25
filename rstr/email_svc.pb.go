@@ -1588,6 +1588,7 @@ type EmailListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *EmailSelect           `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1647,6 +1648,13 @@ func (x *EmailListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *EmailListRequest) GetSelect() *EmailSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *EmailListRequest) SetFilters(v []*EmailFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1661,6 +1669,21 @@ func (x *EmailListRequest) SetAfter(v string) {
 
 func (x *EmailListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *EmailListRequest) SetSelect(v *EmailSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *EmailListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *EmailListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type EmailListRequest_builder struct {
@@ -1683,6 +1706,15 @@ type EmailListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *EmailSelect
 }
 
 func (b0 EmailListRequest_builder) Build() *EmailListRequest {
@@ -1693,6 +1725,7 @@ func (b0 EmailListRequest_builder) Build() *EmailListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1929,13 +1962,15 @@ func (x *EmailWatchRequest) SetSkipSnapshot(v bool) {
 type EmailWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*EmailFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -2116,7 +2151,7 @@ type EmailWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -2124,7 +2159,8 @@ type EmailWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *Email
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -2690,12 +2726,13 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\",\n" +
 	"\x12EmailEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9a\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xc7\x01\n" +
 	"\x10EmailListRequest\x12-\n" +
 	"\afilters\x18\x01 \x03(\v2\x13.roster.EmailFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"S\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12+\n" +
+	"\x06select\x18\x06 \x01(\v2\x13.roster.EmailSelectR\x06select\"S\n" +
 	"\x11EmailListResponse\x12#\n" +
 	"\x05items\x18\x01 \x03(\v2\r.roster.EmailR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\\\n" +
@@ -2790,44 +2827,45 @@ var file_app_email_svc_g_proto_depIdxs = []int32{
 	2,  // 15: roster.EmailApplyRequest.ref:type_name -> roster.EmailRef
 	25, // 16: roster.EmailApplyRequest.patch:type_name -> patch.Patch
 	11, // 17: roster.EmailListRequest.filters:type_name -> roster.EmailFilter
-	26, // 18: roster.EmailListResponse.items:type_name -> roster.Email
-	2,  // 19: roster.EmailFilter.ref:type_name -> roster.EmailRef
-	20, // 20: roster.EmailFilter.holder:type_name -> roster.HolderRef
-	11, // 21: roster.EmailWatchRequest.filters:type_name -> roster.EmailFilter
-	14, // 22: roster.EmailWatchResponse.items:type_name -> roster.EmailWatchItem
-	26, // 23: roster.EmailWatchItem.value:type_name -> roster.Email
-	2,  // 24: roster.EmailClaimRequest.ref:type_name -> roster.EmailRef
-	20, // 25: roster.EmailClaimRequest.holder:type_name -> roster.HolderRef
-	21, // 26: roster.EmailClaimRequest.date_expired:type_name -> google.protobuf.Timestamp
-	21, // 27: roster.EmailClaimResponse.date_expired:type_name -> google.protobuf.Timestamp
-	26, // 28: roster.EmailConfirmResponse.email:type_name -> roster.Email
-	20, // 29: roster.EmailAttestRequest.holder:type_name -> roster.HolderRef
-	22, // 30: roster.EmailAttestRequest.vouched_by:type_name -> roster.IdentityRef
-	0,  // 31: roster.EmailService.Add:input_type -> roster.EmailAddRequest
-	1,  // 32: roster.EmailService.Get:input_type -> roster.EmailGetRequest
-	6,  // 33: roster.EmailService.Patch:input_type -> roster.EmailPatchRequest
-	7,  // 34: roster.EmailService.Apply:input_type -> roster.EmailApplyRequest
-	2,  // 35: roster.EmailService.Erase:input_type -> roster.EmailRef
-	9,  // 36: roster.EmailService.List:input_type -> roster.EmailListRequest
-	12, // 37: roster.EmailService.Watch:input_type -> roster.EmailWatchRequest
-	15, // 38: roster.EmailService.Claim:input_type -> roster.EmailClaimRequest
-	17, // 39: roster.EmailService.Confirm:input_type -> roster.EmailConfirmRequest
-	19, // 40: roster.EmailService.Attest:input_type -> roster.EmailAttestRequest
-	26, // 41: roster.EmailService.Add:output_type -> roster.Email
-	26, // 42: roster.EmailService.Get:output_type -> roster.Email
-	26, // 43: roster.EmailService.Patch:output_type -> roster.Email
-	26, // 44: roster.EmailService.Apply:output_type -> roster.Email
-	8,  // 45: roster.EmailService.Erase:output_type -> roster.EmailEraseResponse
-	10, // 46: roster.EmailService.List:output_type -> roster.EmailListResponse
-	13, // 47: roster.EmailService.Watch:output_type -> roster.EmailWatchResponse
-	16, // 48: roster.EmailService.Claim:output_type -> roster.EmailClaimResponse
-	18, // 49: roster.EmailService.Confirm:output_type -> roster.EmailConfirmResponse
-	26, // 50: roster.EmailService.Attest:output_type -> roster.Email
-	41, // [41:51] is the sub-list for method output_type
-	31, // [31:41] is the sub-list for method input_type
-	31, // [31:31] is the sub-list for extension type_name
-	31, // [31:31] is the sub-list for extension extendee
-	0,  // [0:31] is the sub-list for field type_name
+	5,  // 18: roster.EmailListRequest.select:type_name -> roster.EmailSelect
+	26, // 19: roster.EmailListResponse.items:type_name -> roster.Email
+	2,  // 20: roster.EmailFilter.ref:type_name -> roster.EmailRef
+	20, // 21: roster.EmailFilter.holder:type_name -> roster.HolderRef
+	11, // 22: roster.EmailWatchRequest.filters:type_name -> roster.EmailFilter
+	14, // 23: roster.EmailWatchResponse.items:type_name -> roster.EmailWatchItem
+	26, // 24: roster.EmailWatchItem.value:type_name -> roster.Email
+	2,  // 25: roster.EmailClaimRequest.ref:type_name -> roster.EmailRef
+	20, // 26: roster.EmailClaimRequest.holder:type_name -> roster.HolderRef
+	21, // 27: roster.EmailClaimRequest.date_expired:type_name -> google.protobuf.Timestamp
+	21, // 28: roster.EmailClaimResponse.date_expired:type_name -> google.protobuf.Timestamp
+	26, // 29: roster.EmailConfirmResponse.email:type_name -> roster.Email
+	20, // 30: roster.EmailAttestRequest.holder:type_name -> roster.HolderRef
+	22, // 31: roster.EmailAttestRequest.vouched_by:type_name -> roster.IdentityRef
+	0,  // 32: roster.EmailService.Add:input_type -> roster.EmailAddRequest
+	1,  // 33: roster.EmailService.Get:input_type -> roster.EmailGetRequest
+	6,  // 34: roster.EmailService.Patch:input_type -> roster.EmailPatchRequest
+	7,  // 35: roster.EmailService.Apply:input_type -> roster.EmailApplyRequest
+	2,  // 36: roster.EmailService.Erase:input_type -> roster.EmailRef
+	9,  // 37: roster.EmailService.List:input_type -> roster.EmailListRequest
+	12, // 38: roster.EmailService.Watch:input_type -> roster.EmailWatchRequest
+	15, // 39: roster.EmailService.Claim:input_type -> roster.EmailClaimRequest
+	17, // 40: roster.EmailService.Confirm:input_type -> roster.EmailConfirmRequest
+	19, // 41: roster.EmailService.Attest:input_type -> roster.EmailAttestRequest
+	26, // 42: roster.EmailService.Add:output_type -> roster.Email
+	26, // 43: roster.EmailService.Get:output_type -> roster.Email
+	26, // 44: roster.EmailService.Patch:output_type -> roster.Email
+	26, // 45: roster.EmailService.Apply:output_type -> roster.Email
+	8,  // 46: roster.EmailService.Erase:output_type -> roster.EmailEraseResponse
+	10, // 47: roster.EmailService.List:output_type -> roster.EmailListResponse
+	13, // 48: roster.EmailService.Watch:output_type -> roster.EmailWatchResponse
+	16, // 49: roster.EmailService.Claim:output_type -> roster.EmailClaimResponse
+	18, // 50: roster.EmailService.Confirm:output_type -> roster.EmailConfirmResponse
+	26, // 51: roster.EmailService.Attest:output_type -> roster.Email
+	42, // [42:52] is the sub-list for method output_type
+	32, // [32:42] is the sub-list for method input_type
+	32, // [32:32] is the sub-list for extension type_name
+	32, // [32:32] is the sub-list for extension extendee
+	0,  // [0:32] is the sub-list for field type_name
 }
 
 func init() { file_app_email_svc_g_proto_init() }

@@ -1168,6 +1168,7 @@ type RelationListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *RelationSelect        `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1227,6 +1228,13 @@ func (x *RelationListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *RelationListRequest) GetSelect() *RelationSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *RelationListRequest) SetFilters(v []*RelationFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1241,6 +1249,21 @@ func (x *RelationListRequest) SetAfter(v string) {
 
 func (x *RelationListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *RelationListRequest) SetSelect(v *RelationSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *RelationListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *RelationListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type RelationListRequest_builder struct {
@@ -1263,6 +1286,15 @@ type RelationListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *RelationSelect
 }
 
 func (b0 RelationListRequest_builder) Build() *RelationListRequest {
@@ -1273,6 +1305,7 @@ func (b0 RelationListRequest_builder) Build() *RelationListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1521,12 +1554,13 @@ const file_app_relation_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x13.roster.RelationRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"/\n" +
 	"\x15RelationEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa0\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xd0\x01\n" +
 	"\x13RelationListRequest\x120\n" +
 	"\afilters\x18\x01 \x03(\v2\x16.roster.RelationFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"Y\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12.\n" +
+	"\x06select\x18\x06 \x01(\v2\x16.roster.RelationSelectR\x06select\"Y\n" +
 	"\x14RelationListResponse\x12&\n" +
 	"\x05items\x18\x01 \x03(\v2\x10.roster.RelationR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x8b\x01\n" +
@@ -1581,27 +1615,28 @@ var file_app_relation_svc_g_proto_depIdxs = []int32{
 	2,  // 14: roster.RelationApplyRequest.ref:type_name -> roster.RelationRef
 	16, // 15: roster.RelationApplyRequest.patch:type_name -> patch.Patch
 	10, // 16: roster.RelationListRequest.filters:type_name -> roster.RelationFilter
-	17, // 17: roster.RelationListResponse.items:type_name -> roster.Relation
-	2,  // 18: roster.RelationFilter.ref:type_name -> roster.RelationRef
-	13, // 19: roster.RelationFilter.holder:type_name -> roster.HolderRef
-	13, // 20: roster.RelationFilter.other:type_name -> roster.HolderRef
-	0,  // 21: roster.RelationService.Add:input_type -> roster.RelationAddRequest
-	1,  // 22: roster.RelationService.Get:input_type -> roster.RelationGetRequest
-	5,  // 23: roster.RelationService.Patch:input_type -> roster.RelationPatchRequest
-	6,  // 24: roster.RelationService.Apply:input_type -> roster.RelationApplyRequest
-	2,  // 25: roster.RelationService.Erase:input_type -> roster.RelationRef
-	8,  // 26: roster.RelationService.List:input_type -> roster.RelationListRequest
-	17, // 27: roster.RelationService.Add:output_type -> roster.Relation
-	17, // 28: roster.RelationService.Get:output_type -> roster.Relation
-	17, // 29: roster.RelationService.Patch:output_type -> roster.Relation
-	17, // 30: roster.RelationService.Apply:output_type -> roster.Relation
-	7,  // 31: roster.RelationService.Erase:output_type -> roster.RelationEraseResponse
-	9,  // 32: roster.RelationService.List:output_type -> roster.RelationListResponse
-	27, // [27:33] is the sub-list for method output_type
-	21, // [21:27] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	4,  // 17: roster.RelationListRequest.select:type_name -> roster.RelationSelect
+	17, // 18: roster.RelationListResponse.items:type_name -> roster.Relation
+	2,  // 19: roster.RelationFilter.ref:type_name -> roster.RelationRef
+	13, // 20: roster.RelationFilter.holder:type_name -> roster.HolderRef
+	13, // 21: roster.RelationFilter.other:type_name -> roster.HolderRef
+	0,  // 22: roster.RelationService.Add:input_type -> roster.RelationAddRequest
+	1,  // 23: roster.RelationService.Get:input_type -> roster.RelationGetRequest
+	5,  // 24: roster.RelationService.Patch:input_type -> roster.RelationPatchRequest
+	6,  // 25: roster.RelationService.Apply:input_type -> roster.RelationApplyRequest
+	2,  // 26: roster.RelationService.Erase:input_type -> roster.RelationRef
+	8,  // 27: roster.RelationService.List:input_type -> roster.RelationListRequest
+	17, // 28: roster.RelationService.Add:output_type -> roster.Relation
+	17, // 29: roster.RelationService.Get:output_type -> roster.Relation
+	17, // 30: roster.RelationService.Patch:output_type -> roster.Relation
+	17, // 31: roster.RelationService.Apply:output_type -> roster.Relation
+	7,  // 32: roster.RelationService.Erase:output_type -> roster.RelationEraseResponse
+	9,  // 33: roster.RelationService.List:output_type -> roster.RelationListResponse
+	28, // [28:34] is the sub-list for method output_type
+	22, // [22:28] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_app_relation_svc_g_proto_init() }

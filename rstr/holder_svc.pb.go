@@ -2790,6 +2790,7 @@ type HolderListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *HolderSelect          `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -2849,6 +2850,13 @@ func (x *HolderListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *HolderListRequest) GetSelect() *HolderSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *HolderListRequest) SetFilters(v []*HolderFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -2863,6 +2871,21 @@ func (x *HolderListRequest) SetAfter(v string) {
 
 func (x *HolderListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *HolderListRequest) SetSelect(v *HolderSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *HolderListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *HolderListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type HolderListRequest_builder struct {
@@ -2885,6 +2908,15 @@ type HolderListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *HolderSelect
 }
 
 func (b0 HolderListRequest_builder) Build() *HolderListRequest {
@@ -2895,6 +2927,7 @@ func (b0 HolderListRequest_builder) Build() *HolderListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -3145,13 +3178,15 @@ func (x *HolderWatchRequest) SetSkipSnapshot(v bool) {
 type HolderWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*HolderFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -3332,7 +3367,7 @@ type HolderWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -3340,7 +3375,8 @@ type HolderWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *Holder
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -5902,12 +5938,13 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
 	"\x13HolderEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9c\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xca\x01\n" +
 	"\x11HolderListRequest\x12.\n" +
 	"\afilters\x18\x01 \x03(\v2\x14.roster.HolderFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"U\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12,\n" +
+	"\x06select\x18\x06 \x01(\v2\x14.roster.HolderSelectR\x06select\"U\n" +
 	"\x12HolderListResponse\x12$\n" +
 	"\x05items\x18\x01 \x03(\v2\x0e.roster.HolderR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xd3\x01\n" +
@@ -6137,95 +6174,96 @@ var file_roster_payday_holder_svc_g_proto_depIdxs = []int32{
 	2,  // 29: roster.HolderApplyRequest.ref:type_name -> roster.HolderRef
 	47, // 30: roster.HolderApplyRequest.patch:type_name -> patch.Patch
 	13, // 31: roster.HolderListRequest.filters:type_name -> roster.HolderFilter
-	48, // 32: roster.HolderListResponse.items:type_name -> roster.Holder
-	2,  // 33: roster.HolderFilter.ref:type_name -> roster.HolderRef
-	40, // 34: roster.HolderFilter.tenant:type_name -> roster.TenantRef
-	39, // 35: roster.HolderFilter.labels:type_name -> roster.HolderFilter.LabelsEntry
-	13, // 36: roster.HolderWatchRequest.filters:type_name -> roster.HolderFilter
-	16, // 37: roster.HolderWatchResponse.items:type_name -> roster.HolderWatchItem
-	48, // 38: roster.HolderWatchItem.value:type_name -> roster.Holder
-	2,  // 39: roster.HolderUpdateRequest.ref:type_name -> roster.HolderRef
-	41, // 40: roster.HolderUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	42, // 41: roster.HolderUpdateRequest.profile:type_name -> roster.Profile
-	43, // 42: roster.HolderUpdateRequest.data:type_name -> google.protobuf.Any
-	2,  // 43: roster.HolderRealiasRequest.ref:type_name -> roster.HolderRef
-	41, // 44: roster.HolderRealiasRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 45: roster.HolderDisableRequest.ref:type_name -> roster.HolderRef
-	41, // 46: roster.HolderDisableRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 47: roster.HolderEnableRequest.ref:type_name -> roster.HolderRef
-	41, // 48: roster.HolderEnableRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 49: roster.HolderInvalidateRequest.ref:type_name -> roster.HolderRef
-	41, // 50: roster.HolderInvalidateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 51: roster.HolderSignsInRequest.ref:type_name -> roster.HolderRef
-	49, // 52: roster.HolderSignsInResponse.identities:type_name -> roster.SignInIdentity
-	50, // 53: roster.HolderSignsInResponse.credentials:type_name -> roster.SignInCredential
-	51, // 54: roster.HolderSignsInResponse.keys:type_name -> roster.SignInKey
-	24, // 55: roster.HolderSignsInResponse.badge:type_name -> roster.SignInBadge
-	41, // 56: roster.SignInBadge.date_rotated:type_name -> google.protobuf.Timestamp
-	41, // 57: roster.SignInBadge.date_locked:type_name -> google.protobuf.Timestamp
-	2,  // 58: roster.HolderReachesRequest.ref:type_name -> roster.HolderRef
-	2,  // 59: roster.HolderReachesRequest.app:type_name -> roster.HolderRef
-	13, // 60: roster.HolderSearchRequest.filters:type_name -> roster.HolderFilter
-	48, // 61: roster.HolderSearchResponse.items:type_name -> roster.Holder
-	2,  // 62: roster.HolderFillRequest.ref:type_name -> roster.HolderRef
-	2,  // 63: roster.HolderPortrayRequest.ref:type_name -> roster.HolderRef
-	41, // 64: roster.HolderPortrayRequest.date_updated:type_name -> google.protobuf.Timestamp
-	40, // 65: roster.HolderProvisionRequest.tenant:type_name -> roster.TenantRef
-	42, // 66: roster.HolderProvisionRequest.profile:type_name -> roster.Profile
-	2,  // 67: roster.HolderDeactivateRequest.ref:type_name -> roster.HolderRef
-	41, // 68: roster.HolderDeactivateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 69: roster.HolderActivateRequest.ref:type_name -> roster.HolderRef
-	41, // 70: roster.HolderActivateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 71: roster.HolderTellRequest.ref:type_name -> roster.HolderRef
-	36, // 72: roster.HolderTellRequest.entry:type_name -> roster.DirectoryEntry
-	41, // 73: roster.HolderTellRequest.date_updated:type_name -> google.protobuf.Timestamp
-	0,  // 74: roster.HolderService.Add:input_type -> roster.HolderAddRequest
-	1,  // 75: roster.HolderService.Get:input_type -> roster.HolderGetRequest
-	8,  // 76: roster.HolderService.Patch:input_type -> roster.HolderPatchRequest
-	9,  // 77: roster.HolderService.Apply:input_type -> roster.HolderApplyRequest
-	2,  // 78: roster.HolderService.Erase:input_type -> roster.HolderRef
-	11, // 79: roster.HolderService.List:input_type -> roster.HolderListRequest
-	14, // 80: roster.HolderService.Watch:input_type -> roster.HolderWatchRequest
-	17, // 81: roster.HolderService.Update:input_type -> roster.HolderUpdateRequest
-	18, // 82: roster.HolderService.Realias:input_type -> roster.HolderRealiasRequest
-	19, // 83: roster.HolderService.Disable:input_type -> roster.HolderDisableRequest
-	20, // 84: roster.HolderService.Enable:input_type -> roster.HolderEnableRequest
-	21, // 85: roster.HolderService.Invalidate:input_type -> roster.HolderInvalidateRequest
-	22, // 86: roster.HolderService.SignsIn:input_type -> roster.HolderSignsInRequest
-	25, // 87: roster.HolderService.Reaches:input_type -> roster.HolderReachesRequest
-	27, // 88: roster.HolderService.Search:input_type -> roster.HolderSearchRequest
-	29, // 89: roster.HolderService.Fill:input_type -> roster.HolderFillRequest
-	31, // 90: roster.HolderService.Portray:input_type -> roster.HolderPortrayRequest
-	32, // 91: roster.HolderService.Provision:input_type -> roster.HolderProvisionRequest
-	33, // 92: roster.HolderService.Deactivate:input_type -> roster.HolderDeactivateRequest
-	34, // 93: roster.HolderService.Activate:input_type -> roster.HolderActivateRequest
-	35, // 94: roster.HolderService.Tell:input_type -> roster.HolderTellRequest
-	48, // 95: roster.HolderService.Add:output_type -> roster.Holder
-	48, // 96: roster.HolderService.Get:output_type -> roster.Holder
-	48, // 97: roster.HolderService.Patch:output_type -> roster.Holder
-	48, // 98: roster.HolderService.Apply:output_type -> roster.Holder
-	10, // 99: roster.HolderService.Erase:output_type -> roster.HolderEraseResponse
-	12, // 100: roster.HolderService.List:output_type -> roster.HolderListResponse
-	15, // 101: roster.HolderService.Watch:output_type -> roster.HolderWatchResponse
-	48, // 102: roster.HolderService.Update:output_type -> roster.Holder
-	48, // 103: roster.HolderService.Realias:output_type -> roster.Holder
-	48, // 104: roster.HolderService.Disable:output_type -> roster.Holder
-	48, // 105: roster.HolderService.Enable:output_type -> roster.Holder
-	48, // 106: roster.HolderService.Invalidate:output_type -> roster.Holder
-	23, // 107: roster.HolderService.SignsIn:output_type -> roster.HolderSignsInResponse
-	26, // 108: roster.HolderService.Reaches:output_type -> roster.HolderReachesResponse
-	28, // 109: roster.HolderService.Search:output_type -> roster.HolderSearchResponse
-	30, // 110: roster.HolderService.Fill:output_type -> roster.HolderFillResponse
-	48, // 111: roster.HolderService.Portray:output_type -> roster.Holder
-	48, // 112: roster.HolderService.Provision:output_type -> roster.Holder
-	48, // 113: roster.HolderService.Deactivate:output_type -> roster.Holder
-	48, // 114: roster.HolderService.Activate:output_type -> roster.Holder
-	48, // 115: roster.HolderService.Tell:output_type -> roster.Holder
-	95, // [95:116] is the sub-list for method output_type
-	74, // [74:95] is the sub-list for method input_type
-	74, // [74:74] is the sub-list for extension type_name
-	74, // [74:74] is the sub-list for extension extendee
-	0,  // [0:74] is the sub-list for field type_name
+	7,  // 32: roster.HolderListRequest.select:type_name -> roster.HolderSelect
+	48, // 33: roster.HolderListResponse.items:type_name -> roster.Holder
+	2,  // 34: roster.HolderFilter.ref:type_name -> roster.HolderRef
+	40, // 35: roster.HolderFilter.tenant:type_name -> roster.TenantRef
+	39, // 36: roster.HolderFilter.labels:type_name -> roster.HolderFilter.LabelsEntry
+	13, // 37: roster.HolderWatchRequest.filters:type_name -> roster.HolderFilter
+	16, // 38: roster.HolderWatchResponse.items:type_name -> roster.HolderWatchItem
+	48, // 39: roster.HolderWatchItem.value:type_name -> roster.Holder
+	2,  // 40: roster.HolderUpdateRequest.ref:type_name -> roster.HolderRef
+	41, // 41: roster.HolderUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	42, // 42: roster.HolderUpdateRequest.profile:type_name -> roster.Profile
+	43, // 43: roster.HolderUpdateRequest.data:type_name -> google.protobuf.Any
+	2,  // 44: roster.HolderRealiasRequest.ref:type_name -> roster.HolderRef
+	41, // 45: roster.HolderRealiasRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 46: roster.HolderDisableRequest.ref:type_name -> roster.HolderRef
+	41, // 47: roster.HolderDisableRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 48: roster.HolderEnableRequest.ref:type_name -> roster.HolderRef
+	41, // 49: roster.HolderEnableRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 50: roster.HolderInvalidateRequest.ref:type_name -> roster.HolderRef
+	41, // 51: roster.HolderInvalidateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 52: roster.HolderSignsInRequest.ref:type_name -> roster.HolderRef
+	49, // 53: roster.HolderSignsInResponse.identities:type_name -> roster.SignInIdentity
+	50, // 54: roster.HolderSignsInResponse.credentials:type_name -> roster.SignInCredential
+	51, // 55: roster.HolderSignsInResponse.keys:type_name -> roster.SignInKey
+	24, // 56: roster.HolderSignsInResponse.badge:type_name -> roster.SignInBadge
+	41, // 57: roster.SignInBadge.date_rotated:type_name -> google.protobuf.Timestamp
+	41, // 58: roster.SignInBadge.date_locked:type_name -> google.protobuf.Timestamp
+	2,  // 59: roster.HolderReachesRequest.ref:type_name -> roster.HolderRef
+	2,  // 60: roster.HolderReachesRequest.app:type_name -> roster.HolderRef
+	13, // 61: roster.HolderSearchRequest.filters:type_name -> roster.HolderFilter
+	48, // 62: roster.HolderSearchResponse.items:type_name -> roster.Holder
+	2,  // 63: roster.HolderFillRequest.ref:type_name -> roster.HolderRef
+	2,  // 64: roster.HolderPortrayRequest.ref:type_name -> roster.HolderRef
+	41, // 65: roster.HolderPortrayRequest.date_updated:type_name -> google.protobuf.Timestamp
+	40, // 66: roster.HolderProvisionRequest.tenant:type_name -> roster.TenantRef
+	42, // 67: roster.HolderProvisionRequest.profile:type_name -> roster.Profile
+	2,  // 68: roster.HolderDeactivateRequest.ref:type_name -> roster.HolderRef
+	41, // 69: roster.HolderDeactivateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 70: roster.HolderActivateRequest.ref:type_name -> roster.HolderRef
+	41, // 71: roster.HolderActivateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 72: roster.HolderTellRequest.ref:type_name -> roster.HolderRef
+	36, // 73: roster.HolderTellRequest.entry:type_name -> roster.DirectoryEntry
+	41, // 74: roster.HolderTellRequest.date_updated:type_name -> google.protobuf.Timestamp
+	0,  // 75: roster.HolderService.Add:input_type -> roster.HolderAddRequest
+	1,  // 76: roster.HolderService.Get:input_type -> roster.HolderGetRequest
+	8,  // 77: roster.HolderService.Patch:input_type -> roster.HolderPatchRequest
+	9,  // 78: roster.HolderService.Apply:input_type -> roster.HolderApplyRequest
+	2,  // 79: roster.HolderService.Erase:input_type -> roster.HolderRef
+	11, // 80: roster.HolderService.List:input_type -> roster.HolderListRequest
+	14, // 81: roster.HolderService.Watch:input_type -> roster.HolderWatchRequest
+	17, // 82: roster.HolderService.Update:input_type -> roster.HolderUpdateRequest
+	18, // 83: roster.HolderService.Realias:input_type -> roster.HolderRealiasRequest
+	19, // 84: roster.HolderService.Disable:input_type -> roster.HolderDisableRequest
+	20, // 85: roster.HolderService.Enable:input_type -> roster.HolderEnableRequest
+	21, // 86: roster.HolderService.Invalidate:input_type -> roster.HolderInvalidateRequest
+	22, // 87: roster.HolderService.SignsIn:input_type -> roster.HolderSignsInRequest
+	25, // 88: roster.HolderService.Reaches:input_type -> roster.HolderReachesRequest
+	27, // 89: roster.HolderService.Search:input_type -> roster.HolderSearchRequest
+	29, // 90: roster.HolderService.Fill:input_type -> roster.HolderFillRequest
+	31, // 91: roster.HolderService.Portray:input_type -> roster.HolderPortrayRequest
+	32, // 92: roster.HolderService.Provision:input_type -> roster.HolderProvisionRequest
+	33, // 93: roster.HolderService.Deactivate:input_type -> roster.HolderDeactivateRequest
+	34, // 94: roster.HolderService.Activate:input_type -> roster.HolderActivateRequest
+	35, // 95: roster.HolderService.Tell:input_type -> roster.HolderTellRequest
+	48, // 96: roster.HolderService.Add:output_type -> roster.Holder
+	48, // 97: roster.HolderService.Get:output_type -> roster.Holder
+	48, // 98: roster.HolderService.Patch:output_type -> roster.Holder
+	48, // 99: roster.HolderService.Apply:output_type -> roster.Holder
+	10, // 100: roster.HolderService.Erase:output_type -> roster.HolderEraseResponse
+	12, // 101: roster.HolderService.List:output_type -> roster.HolderListResponse
+	15, // 102: roster.HolderService.Watch:output_type -> roster.HolderWatchResponse
+	48, // 103: roster.HolderService.Update:output_type -> roster.Holder
+	48, // 104: roster.HolderService.Realias:output_type -> roster.Holder
+	48, // 105: roster.HolderService.Disable:output_type -> roster.Holder
+	48, // 106: roster.HolderService.Enable:output_type -> roster.Holder
+	48, // 107: roster.HolderService.Invalidate:output_type -> roster.Holder
+	23, // 108: roster.HolderService.SignsIn:output_type -> roster.HolderSignsInResponse
+	26, // 109: roster.HolderService.Reaches:output_type -> roster.HolderReachesResponse
+	28, // 110: roster.HolderService.Search:output_type -> roster.HolderSearchResponse
+	30, // 111: roster.HolderService.Fill:output_type -> roster.HolderFillResponse
+	48, // 112: roster.HolderService.Portray:output_type -> roster.Holder
+	48, // 113: roster.HolderService.Provision:output_type -> roster.Holder
+	48, // 114: roster.HolderService.Deactivate:output_type -> roster.Holder
+	48, // 115: roster.HolderService.Activate:output_type -> roster.Holder
+	48, // 116: roster.HolderService.Tell:output_type -> roster.Holder
+	96, // [96:117] is the sub-list for method output_type
+	75, // [75:96] is the sub-list for method input_type
+	75, // [75:75] is the sub-list for extension type_name
+	75, // [75:75] is the sub-list for extension extendee
+	0,  // [0:75] is the sub-list for field type_name
 }
 
 func init() { file_roster_payday_holder_svc_g_proto_init() }

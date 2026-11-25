@@ -25,8 +25,8 @@ import (
 // So a session is read, which the box still lists, and nothing writes one by
 // a call; a link and a continuation are added, read and erased, as
 // `server/vouch` and `server/core` do. `List` comes with `Get` from the
-// generator and is kept with it. Putting `crud: true` back on any of the
-// three fails here.
+// generator and is kept with it. Naming a write back on any of the three
+// fails here.
 func TestNoRpcIsDeclaredThatNothingServesAndNothingCalls(t *testing.T) {
 	x := require.New(t)
 

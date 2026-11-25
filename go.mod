@@ -40,14 +40,14 @@ require (
 	github.com/lesomnus/mkot/otlp v0.0.0-20261017184153-a69c4c1f08ca
 	github.com/lesomnus/otx v0.0.0-20261017184159-4cba7a26b155
 	github.com/lesomnus/otx/otxgrpc v0.0.0-20261017184159-4cba7a26b155
-	github.com/lesomnus/payday v0.0.0-20261124144140-6810df59de18
+	github.com/lesomnus/payday v0.0.0-20261125072328-3de66a95d952
 	github.com/lesomnus/protobuf-patch v0.0.0-20260907061053-07bbf2b842da
 	github.com/lesomnus/xli v0.0.0-20261009121920-4ce270c7448c
 	github.com/lesomnus/xli/cfg v0.1.4-0.20261123042429-3e6291b33598
 	github.com/lesomnus/z v0.0.0-20260907061127-c3858eb05878
 	github.com/protobuf-orm/ent v0.0.0-20261024205432-0dd7dadc81bc
-	github.com/protobuf-orm/protobuf-orm v0.0.0-20261017212716-3430237a8656
-	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20260906232518-fa1777a2628d
+	github.com/protobuf-orm/protobuf-orm v0.0.0-20261125011452-a062a5dd25fc
+	github.com/protobuf-orm/protoc-gen-orm-ent/runtime v0.0.0-20261125034236-6d3766bf5cdb
 	github.com/stretchr/testify v1.12.1
 	go.opentelemetry.io/otel/trace v1.47.0
 	golang.org/x/crypto v0.59.0
@@ -106,10 +106,10 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/petermattis/goid v0.0.0-20260716134002-a9b348f0a2b9 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect
-	github.com/protobuf-orm/protobuf-merge v0.0.0-20261009205601-8502fad9e678 // indirect
-	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261121161445-42bbeb7810e8 // indirect
-	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20261010065542-f9ac5b66df3e // indirect
-	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20261121165649-aa6870b89525 // indirect
+	github.com/protobuf-orm/protobuf-merge v0.0.0-20261125032619-9acf880182c7 // indirect
+	github.com/protobuf-orm/protoc-gen-orm-ent v0.0.0-20261125034236-6d3766bf5cdb // indirect
+	github.com/protobuf-orm/protoc-gen-orm-go v0.0.0-20261125034134-c681581d9964 // indirect
+	github.com/protobuf-orm/protoc-gen-orm-service v0.0.0-20261125031855-95c68cb76ee6 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/tidwall/btree v1.8.1 // indirect
 	github.com/tinylib/msgp v1.6.4 // indirect

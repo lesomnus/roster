@@ -1675,6 +1675,7 @@ type ConnectionListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *ConnectionSelect      `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1734,6 +1735,13 @@ func (x *ConnectionListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *ConnectionListRequest) GetSelect() *ConnectionSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *ConnectionListRequest) SetFilters(v []*ConnectionFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1748,6 +1756,21 @@ func (x *ConnectionListRequest) SetAfter(v string) {
 
 func (x *ConnectionListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *ConnectionListRequest) SetSelect(v *ConnectionSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *ConnectionListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *ConnectionListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type ConnectionListRequest_builder struct {
@@ -1770,6 +1793,15 @@ type ConnectionListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *ConnectionSelect
 }
 
 func (b0 ConnectionListRequest_builder) Build() *ConnectionListRequest {
@@ -1780,6 +1812,7 @@ func (b0 ConnectionListRequest_builder) Build() *ConnectionListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -2345,12 +2378,13 @@ const file_app_connection_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.ConnectionRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
 	"\x17ConnectionEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa4\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xd6\x01\n" +
 	"\x15ConnectionListRequest\x122\n" +
 	"\afilters\x18\x01 \x03(\v2\x18.roster.ConnectionFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"]\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x120\n" +
+	"\x06select\x18\x06 \x01(\v2\x18.roster.ConnectionSelectR\x06select\"]\n" +
 	"\x16ConnectionListResponse\x12(\n" +
 	"\x05items\x18\x01 \x03(\v2\x12.roster.ConnectionR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"f\n" +
@@ -2417,30 +2451,31 @@ var file_app_connection_svc_g_proto_depIdxs = []int32{
 	2,  // 11: roster.ConnectionApplyRequest.ref:type_name -> roster.ConnectionRef
 	17, // 12: roster.ConnectionApplyRequest.patch:type_name -> patch.Patch
 	10, // 13: roster.ConnectionListRequest.filters:type_name -> roster.ConnectionFilter
-	18, // 14: roster.ConnectionListResponse.items:type_name -> roster.Connection
-	2,  // 15: roster.ConnectionFilter.ref:type_name -> roster.ConnectionRef
-	14, // 16: roster.ConnectionFilter.tenant:type_name -> roster.TenantRef
-	2,  // 17: roster.ConnectionUpdateRequest.ref:type_name -> roster.ConnectionRef
-	15, // 18: roster.ConnectionUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	0,  // 19: roster.ConnectionService.Add:input_type -> roster.ConnectionAddRequest
-	1,  // 20: roster.ConnectionService.Get:input_type -> roster.ConnectionGetRequest
-	5,  // 21: roster.ConnectionService.Patch:input_type -> roster.ConnectionPatchRequest
-	6,  // 22: roster.ConnectionService.Apply:input_type -> roster.ConnectionApplyRequest
-	2,  // 23: roster.ConnectionService.Erase:input_type -> roster.ConnectionRef
-	8,  // 24: roster.ConnectionService.List:input_type -> roster.ConnectionListRequest
-	11, // 25: roster.ConnectionService.Update:input_type -> roster.ConnectionUpdateRequest
-	18, // 26: roster.ConnectionService.Add:output_type -> roster.Connection
-	18, // 27: roster.ConnectionService.Get:output_type -> roster.Connection
-	18, // 28: roster.ConnectionService.Patch:output_type -> roster.Connection
-	18, // 29: roster.ConnectionService.Apply:output_type -> roster.Connection
-	7,  // 30: roster.ConnectionService.Erase:output_type -> roster.ConnectionEraseResponse
-	9,  // 31: roster.ConnectionService.List:output_type -> roster.ConnectionListResponse
-	18, // 32: roster.ConnectionService.Update:output_type -> roster.Connection
-	26, // [26:33] is the sub-list for method output_type
-	19, // [19:26] is the sub-list for method input_type
-	19, // [19:19] is the sub-list for extension type_name
-	19, // [19:19] is the sub-list for extension extendee
-	0,  // [0:19] is the sub-list for field type_name
+	4,  // 14: roster.ConnectionListRequest.select:type_name -> roster.ConnectionSelect
+	18, // 15: roster.ConnectionListResponse.items:type_name -> roster.Connection
+	2,  // 16: roster.ConnectionFilter.ref:type_name -> roster.ConnectionRef
+	14, // 17: roster.ConnectionFilter.tenant:type_name -> roster.TenantRef
+	2,  // 18: roster.ConnectionUpdateRequest.ref:type_name -> roster.ConnectionRef
+	15, // 19: roster.ConnectionUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	0,  // 20: roster.ConnectionService.Add:input_type -> roster.ConnectionAddRequest
+	1,  // 21: roster.ConnectionService.Get:input_type -> roster.ConnectionGetRequest
+	5,  // 22: roster.ConnectionService.Patch:input_type -> roster.ConnectionPatchRequest
+	6,  // 23: roster.ConnectionService.Apply:input_type -> roster.ConnectionApplyRequest
+	2,  // 24: roster.ConnectionService.Erase:input_type -> roster.ConnectionRef
+	8,  // 25: roster.ConnectionService.List:input_type -> roster.ConnectionListRequest
+	11, // 26: roster.ConnectionService.Update:input_type -> roster.ConnectionUpdateRequest
+	18, // 27: roster.ConnectionService.Add:output_type -> roster.Connection
+	18, // 28: roster.ConnectionService.Get:output_type -> roster.Connection
+	18, // 29: roster.ConnectionService.Patch:output_type -> roster.Connection
+	18, // 30: roster.ConnectionService.Apply:output_type -> roster.Connection
+	7,  // 31: roster.ConnectionService.Erase:output_type -> roster.ConnectionEraseResponse
+	9,  // 32: roster.ConnectionService.List:output_type -> roster.ConnectionListResponse
+	18, // 33: roster.ConnectionService.Update:output_type -> roster.Connection
+	27, // [27:34] is the sub-list for method output_type
+	20, // [20:27] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_app_connection_svc_g_proto_init() }

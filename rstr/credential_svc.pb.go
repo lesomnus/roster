@@ -1724,6 +1724,7 @@ type CredentialListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *CredentialSelect      `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1783,6 +1784,13 @@ func (x *CredentialListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *CredentialListRequest) GetSelect() *CredentialSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *CredentialListRequest) SetFilters(v []*CredentialFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1797,6 +1805,21 @@ func (x *CredentialListRequest) SetAfter(v string) {
 
 func (x *CredentialListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *CredentialListRequest) SetSelect(v *CredentialSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *CredentialListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *CredentialListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type CredentialListRequest_builder struct {
@@ -1819,6 +1842,15 @@ type CredentialListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *CredentialSelect
 }
 
 func (b0 CredentialListRequest_builder) Build() *CredentialListRequest {
@@ -1829,6 +1861,7 @@ func (b0 CredentialListRequest_builder) Build() *CredentialListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -2065,13 +2098,15 @@ func (x *CredentialWatchRequest) SetSkipSnapshot(v bool) {
 type CredentialWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*CredentialFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -2252,7 +2287,7 @@ type CredentialWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -2260,7 +2295,8 @@ type CredentialWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *Credential
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -3191,12 +3227,13 @@ const file_app_credential_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.CredentialRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
 	"\x17CredentialEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa4\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xd6\x01\n" +
 	"\x15CredentialListRequest\x122\n" +
 	"\afilters\x18\x01 \x03(\v2\x18.roster.CredentialFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"]\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x120\n" +
+	"\x06select\x18\x06 \x01(\v2\x18.roster.CredentialSelectR\x06select\"]\n" +
 	"\x16CredentialListResponse\x12(\n" +
 	"\x05items\x18\x01 \x03(\v2\x12.roster.CredentialR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"f\n" +
@@ -3301,45 +3338,46 @@ var file_app_credential_svc_g_proto_depIdxs = []int32{
 	2,  // 13: roster.CredentialApplyRequest.ref:type_name -> roster.CredentialRef
 	25, // 14: roster.CredentialApplyRequest.patch:type_name -> patch.Patch
 	10, // 15: roster.CredentialListRequest.filters:type_name -> roster.CredentialFilter
-	26, // 16: roster.CredentialListResponse.items:type_name -> roster.Credential
-	2,  // 17: roster.CredentialFilter.ref:type_name -> roster.CredentialRef
-	22, // 18: roster.CredentialFilter.holder:type_name -> roster.HolderRef
-	10, // 19: roster.CredentialWatchRequest.filters:type_name -> roster.CredentialFilter
-	13, // 20: roster.CredentialWatchResponse.items:type_name -> roster.CredentialWatchItem
-	26, // 21: roster.CredentialWatchItem.value:type_name -> roster.Credential
-	22, // 22: roster.CredentialUnlockRequest.holder:type_name -> roster.HolderRef
-	23, // 23: roster.CredentialUnlockResponse.date_unlocked:type_name -> google.protobuf.Timestamp
-	22, // 24: roster.CredentialSetRequest.holder:type_name -> roster.HolderRef
-	22, // 25: roster.CredentialEnrolRequest.holder:type_name -> roster.HolderRef
-	22, // 26: roster.CredentialIssueRequest.holder:type_name -> roster.HolderRef
-	27, // 27: roster.CredentialIssueRequest.email:type_name -> roster.EmailRef
-	0,  // 28: roster.CredentialService.Add:input_type -> roster.CredentialAddRequest
-	1,  // 29: roster.CredentialService.Get:input_type -> roster.CredentialGetRequest
-	5,  // 30: roster.CredentialService.Patch:input_type -> roster.CredentialPatchRequest
-	6,  // 31: roster.CredentialService.Apply:input_type -> roster.CredentialApplyRequest
-	2,  // 32: roster.CredentialService.Erase:input_type -> roster.CredentialRef
-	8,  // 33: roster.CredentialService.List:input_type -> roster.CredentialListRequest
-	11, // 34: roster.CredentialService.Watch:input_type -> roster.CredentialWatchRequest
-	14, // 35: roster.CredentialService.Unlock:input_type -> roster.CredentialUnlockRequest
-	16, // 36: roster.CredentialService.Set:input_type -> roster.CredentialSetRequest
-	18, // 37: roster.CredentialService.Enrol:input_type -> roster.CredentialEnrolRequest
-	20, // 38: roster.CredentialService.Issue:input_type -> roster.CredentialIssueRequest
-	26, // 39: roster.CredentialService.Add:output_type -> roster.Credential
-	26, // 40: roster.CredentialService.Get:output_type -> roster.Credential
-	26, // 41: roster.CredentialService.Patch:output_type -> roster.Credential
-	26, // 42: roster.CredentialService.Apply:output_type -> roster.Credential
-	7,  // 43: roster.CredentialService.Erase:output_type -> roster.CredentialEraseResponse
-	9,  // 44: roster.CredentialService.List:output_type -> roster.CredentialListResponse
-	12, // 45: roster.CredentialService.Watch:output_type -> roster.CredentialWatchResponse
-	15, // 46: roster.CredentialService.Unlock:output_type -> roster.CredentialUnlockResponse
-	17, // 47: roster.CredentialService.Set:output_type -> roster.CredentialSetResponse
-	19, // 48: roster.CredentialService.Enrol:output_type -> roster.CredentialEnrolResponse
-	21, // 49: roster.CredentialService.Issue:output_type -> roster.CredentialIssueResponse
-	39, // [39:50] is the sub-list for method output_type
-	28, // [28:39] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	4,  // 16: roster.CredentialListRequest.select:type_name -> roster.CredentialSelect
+	26, // 17: roster.CredentialListResponse.items:type_name -> roster.Credential
+	2,  // 18: roster.CredentialFilter.ref:type_name -> roster.CredentialRef
+	22, // 19: roster.CredentialFilter.holder:type_name -> roster.HolderRef
+	10, // 20: roster.CredentialWatchRequest.filters:type_name -> roster.CredentialFilter
+	13, // 21: roster.CredentialWatchResponse.items:type_name -> roster.CredentialWatchItem
+	26, // 22: roster.CredentialWatchItem.value:type_name -> roster.Credential
+	22, // 23: roster.CredentialUnlockRequest.holder:type_name -> roster.HolderRef
+	23, // 24: roster.CredentialUnlockResponse.date_unlocked:type_name -> google.protobuf.Timestamp
+	22, // 25: roster.CredentialSetRequest.holder:type_name -> roster.HolderRef
+	22, // 26: roster.CredentialEnrolRequest.holder:type_name -> roster.HolderRef
+	22, // 27: roster.CredentialIssueRequest.holder:type_name -> roster.HolderRef
+	27, // 28: roster.CredentialIssueRequest.email:type_name -> roster.EmailRef
+	0,  // 29: roster.CredentialService.Add:input_type -> roster.CredentialAddRequest
+	1,  // 30: roster.CredentialService.Get:input_type -> roster.CredentialGetRequest
+	5,  // 31: roster.CredentialService.Patch:input_type -> roster.CredentialPatchRequest
+	6,  // 32: roster.CredentialService.Apply:input_type -> roster.CredentialApplyRequest
+	2,  // 33: roster.CredentialService.Erase:input_type -> roster.CredentialRef
+	8,  // 34: roster.CredentialService.List:input_type -> roster.CredentialListRequest
+	11, // 35: roster.CredentialService.Watch:input_type -> roster.CredentialWatchRequest
+	14, // 36: roster.CredentialService.Unlock:input_type -> roster.CredentialUnlockRequest
+	16, // 37: roster.CredentialService.Set:input_type -> roster.CredentialSetRequest
+	18, // 38: roster.CredentialService.Enrol:input_type -> roster.CredentialEnrolRequest
+	20, // 39: roster.CredentialService.Issue:input_type -> roster.CredentialIssueRequest
+	26, // 40: roster.CredentialService.Add:output_type -> roster.Credential
+	26, // 41: roster.CredentialService.Get:output_type -> roster.Credential
+	26, // 42: roster.CredentialService.Patch:output_type -> roster.Credential
+	26, // 43: roster.CredentialService.Apply:output_type -> roster.Credential
+	7,  // 44: roster.CredentialService.Erase:output_type -> roster.CredentialEraseResponse
+	9,  // 45: roster.CredentialService.List:output_type -> roster.CredentialListResponse
+	12, // 46: roster.CredentialService.Watch:output_type -> roster.CredentialWatchResponse
+	15, // 47: roster.CredentialService.Unlock:output_type -> roster.CredentialUnlockResponse
+	17, // 48: roster.CredentialService.Set:output_type -> roster.CredentialSetResponse
+	19, // 49: roster.CredentialService.Enrol:output_type -> roster.CredentialEnrolResponse
+	21, // 50: roster.CredentialService.Issue:output_type -> roster.CredentialIssueResponse
+	40, // [40:51] is the sub-list for method output_type
+	29, // [29:40] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_app_credential_svc_g_proto_init() }

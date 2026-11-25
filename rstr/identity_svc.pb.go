@@ -1265,6 +1265,7 @@ type IdentityListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *IdentitySelect        `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1324,6 +1325,13 @@ func (x *IdentityListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *IdentityListRequest) GetSelect() *IdentitySelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *IdentityListRequest) SetFilters(v []*IdentityFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1338,6 +1346,21 @@ func (x *IdentityListRequest) SetAfter(v string) {
 
 func (x *IdentityListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *IdentityListRequest) SetSelect(v *IdentitySelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *IdentityListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *IdentityListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type IdentityListRequest_builder struct {
@@ -1360,6 +1383,15 @@ type IdentityListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *IdentitySelect
 }
 
 func (b0 IdentityListRequest_builder) Build() *IdentityListRequest {
@@ -1370,6 +1402,7 @@ func (b0 IdentityListRequest_builder) Build() *IdentityListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1641,13 +1674,15 @@ func (x *IdentityWatchRequest) SetSkipSnapshot(v bool) {
 type IdentityWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*IdentityFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -1828,7 +1863,7 @@ type IdentityWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -1836,7 +1871,8 @@ type IdentityWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *Identity
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -2119,12 +2155,13 @@ const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"/\n" +
 	"\x15IdentityEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa0\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xd0\x01\n" +
 	"\x13IdentityListRequest\x120\n" +
 	"\afilters\x18\x01 \x03(\v2\x16.roster.IdentityFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"Y\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12.\n" +
+	"\x06select\x18\x06 \x01(\v2\x16.roster.IdentitySelectR\x06select\"Y\n" +
 	"\x14IdentityListResponse\x12&\n" +
 	"\x05items\x18\x01 \x03(\v2\x10.roster.IdentityR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x87\x01\n" +
@@ -2196,38 +2233,39 @@ var file_app_identity_svc_g_proto_depIdxs = []int32{
 	2,  // 8: roster.IdentityApplyRequest.ref:type_name -> roster.IdentityRef
 	19, // 9: roster.IdentityApplyRequest.patch:type_name -> patch.Patch
 	10, // 10: roster.IdentityListRequest.filters:type_name -> roster.IdentityFilter
-	20, // 11: roster.IdentityListResponse.items:type_name -> roster.Identity
-	2,  // 12: roster.IdentityFilter.ref:type_name -> roster.IdentityRef
-	16, // 13: roster.IdentityFilter.holder:type_name -> roster.HolderRef
-	10, // 14: roster.IdentityWatchRequest.filters:type_name -> roster.IdentityFilter
-	13, // 15: roster.IdentityWatchResponse.items:type_name -> roster.IdentityWatchItem
-	20, // 16: roster.IdentityWatchItem.value:type_name -> roster.Identity
-	2,  // 17: roster.IdentityResubjectRequest.ref:type_name -> roster.IdentityRef
-	17, // 18: roster.IdentityResubjectRequest.date_updated:type_name -> google.protobuf.Timestamp
-	16, // 19: roster.IdentityAttestRequest.holder:type_name -> roster.HolderRef
-	0,  // 20: roster.IdentityService.Add:input_type -> roster.IdentityAddRequest
-	1,  // 21: roster.IdentityService.Get:input_type -> roster.IdentityGetRequest
-	5,  // 22: roster.IdentityService.Patch:input_type -> roster.IdentityPatchRequest
-	6,  // 23: roster.IdentityService.Apply:input_type -> roster.IdentityApplyRequest
-	2,  // 24: roster.IdentityService.Erase:input_type -> roster.IdentityRef
-	8,  // 25: roster.IdentityService.List:input_type -> roster.IdentityListRequest
-	11, // 26: roster.IdentityService.Watch:input_type -> roster.IdentityWatchRequest
-	14, // 27: roster.IdentityService.Resubject:input_type -> roster.IdentityResubjectRequest
-	15, // 28: roster.IdentityService.Attest:input_type -> roster.IdentityAttestRequest
-	20, // 29: roster.IdentityService.Add:output_type -> roster.Identity
-	20, // 30: roster.IdentityService.Get:output_type -> roster.Identity
-	20, // 31: roster.IdentityService.Patch:output_type -> roster.Identity
-	20, // 32: roster.IdentityService.Apply:output_type -> roster.Identity
-	7,  // 33: roster.IdentityService.Erase:output_type -> roster.IdentityEraseResponse
-	9,  // 34: roster.IdentityService.List:output_type -> roster.IdentityListResponse
-	12, // 35: roster.IdentityService.Watch:output_type -> roster.IdentityWatchResponse
-	20, // 36: roster.IdentityService.Resubject:output_type -> roster.Identity
-	20, // 37: roster.IdentityService.Attest:output_type -> roster.Identity
-	29, // [29:38] is the sub-list for method output_type
-	20, // [20:29] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	4,  // 11: roster.IdentityListRequest.select:type_name -> roster.IdentitySelect
+	20, // 12: roster.IdentityListResponse.items:type_name -> roster.Identity
+	2,  // 13: roster.IdentityFilter.ref:type_name -> roster.IdentityRef
+	16, // 14: roster.IdentityFilter.holder:type_name -> roster.HolderRef
+	10, // 15: roster.IdentityWatchRequest.filters:type_name -> roster.IdentityFilter
+	13, // 16: roster.IdentityWatchResponse.items:type_name -> roster.IdentityWatchItem
+	20, // 17: roster.IdentityWatchItem.value:type_name -> roster.Identity
+	2,  // 18: roster.IdentityResubjectRequest.ref:type_name -> roster.IdentityRef
+	17, // 19: roster.IdentityResubjectRequest.date_updated:type_name -> google.protobuf.Timestamp
+	16, // 20: roster.IdentityAttestRequest.holder:type_name -> roster.HolderRef
+	0,  // 21: roster.IdentityService.Add:input_type -> roster.IdentityAddRequest
+	1,  // 22: roster.IdentityService.Get:input_type -> roster.IdentityGetRequest
+	5,  // 23: roster.IdentityService.Patch:input_type -> roster.IdentityPatchRequest
+	6,  // 24: roster.IdentityService.Apply:input_type -> roster.IdentityApplyRequest
+	2,  // 25: roster.IdentityService.Erase:input_type -> roster.IdentityRef
+	8,  // 26: roster.IdentityService.List:input_type -> roster.IdentityListRequest
+	11, // 27: roster.IdentityService.Watch:input_type -> roster.IdentityWatchRequest
+	14, // 28: roster.IdentityService.Resubject:input_type -> roster.IdentityResubjectRequest
+	15, // 29: roster.IdentityService.Attest:input_type -> roster.IdentityAttestRequest
+	20, // 30: roster.IdentityService.Add:output_type -> roster.Identity
+	20, // 31: roster.IdentityService.Get:output_type -> roster.Identity
+	20, // 32: roster.IdentityService.Patch:output_type -> roster.Identity
+	20, // 33: roster.IdentityService.Apply:output_type -> roster.Identity
+	7,  // 34: roster.IdentityService.Erase:output_type -> roster.IdentityEraseResponse
+	9,  // 35: roster.IdentityService.List:output_type -> roster.IdentityListResponse
+	12, // 36: roster.IdentityService.Watch:output_type -> roster.IdentityWatchResponse
+	20, // 37: roster.IdentityService.Resubject:output_type -> roster.Identity
+	20, // 38: roster.IdentityService.Attest:output_type -> roster.Identity
+	30, // [30:39] is the sub-list for method output_type
+	21, // [21:30] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_app_identity_svc_g_proto_init() }

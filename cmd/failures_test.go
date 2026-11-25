@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -458,11 +459,48 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 		x.Equal(row.statuses[c.nth], at.status(t, c), "%s, %s over HTTP", row.failure, c.method)
 	}
 
+	// What the transcoder refuses before any server is asked, which has no
+	// gRPC call to make: the status, and the code in the error's JSON. And a
+	// method nobody serves, whose 404 was a line of text.
+	for _, c := range []struct {
+		row         string
+		verb, path  string
+		contentType string
+		body        string
+	}{
+		{"a body that cannot be read as the request", http.MethodPost, "/roster.GroupService/Get", "application/json", "not json"},
+		{"a body that cannot be read as the request", http.MethodPost, "/roster.GroupService/Get", "application/json", `{"ref":"a group"}`},
+		{"a body of a type the call does not take", http.MethodPost, "/roster.GroupService/Get", "text/plain", "{}"},
+		{"a body larger than the server takes", http.MethodPost, "/roster.GroupService/Get", "application/json", `{"ref":{"id":"` + strings.Repeat("A", 8<<20) + `"}}`},
+		{"an HTTP method a call does not take", http.MethodPut, "/roster.GroupService/Get", "application/json", "{}"},
+		{"a method nobody serves", http.MethodPost, "/roster.HolderService/Nope", "application/json", "{}"},
+		{"a method nobody serves", http.MethodPost, "/nothing", "application/json", "{}"},
+	} {
+		row := failureRowStarting(t, rows, c.row)
+		made[row.failure] = true
+
+		req, err := http.NewRequestWithContext(t.Context(), c.verb, at.url+c.path, strings.NewReader(c.body))
+		x.NoError(err)
+		req.Header.Set("Content-Type", c.contentType)
+		req.Header.Set("Connect-Protocol-Version", "1")
+		req.Header.Set("Authorization", "Plain "+admin.String())
+		res, err := http.DefaultClient.Do(req)
+		x.NoError(err)
+		var said struct{ Code, Message string }
+		x.NoError(json.NewDecoder(res.Body).Decode(&said), "%s %s: the answer is not the error's JSON", c.verb, c.path)
+		res.Body.Close()
+
+		x.Equal(row.statuses[0], res.StatusCode, "%s, %s %s over HTTP: the page says %d: %s %s", row.failure, c.verb, c.path, row.statuses[0], said.Code, said.Message)
+		x.Equal(connectCodeOf(row.codes[0]), said.Code, "%s, %s %s: %s", row.failure, c.verb, c.path, said.Message)
+		x.NotContains(said.Message, "grpc:", "%s: gRPC's own words", row.failure)
+	}
+
 	// What a test does not make, and why. Each is a row of the page all the
 	// same, and a row the page adds is one this list is told about.
 	notMade := map[string]string{
 		"a deadline":            "a test does not time anything",
 		"roster itself failing": "the store taken away under a running server, which is not a refusal of anybody's",
+		"an Erase of a row another row still names": "no Erase a caller is served deletes a row, so none meets a foreign key",
 	}
 	for _, row := range rows {
 		if made[row.failure] {
@@ -476,6 +514,19 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 		}
 		x.True(found, "the page's row %q is neither made here nor said why not", row.failure)
 	}
+}
+
+// connectCodeOf is `c` as the error's JSON names it: `invalid_argument`.
+func connectCodeOf(c codes.Code) string {
+	var b strings.Builder
+	for i, r := range c.String() {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			b.WriteByte('_')
+		}
+		b.WriteRune(r)
+	}
+
+	return strings.ToLower(b.String())
 }
 
 // failureRowStarting is the row of the page whose first cell begins with

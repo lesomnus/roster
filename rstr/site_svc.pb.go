@@ -1312,6 +1312,7 @@ type SiteListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *SiteSelect            `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1371,6 +1372,13 @@ func (x *SiteListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *SiteListRequest) GetSelect() *SiteSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *SiteListRequest) SetFilters(v []*SiteFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1385,6 +1393,21 @@ func (x *SiteListRequest) SetAfter(v string) {
 
 func (x *SiteListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *SiteListRequest) SetSelect(v *SiteSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *SiteListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *SiteListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type SiteListRequest_builder struct {
@@ -1407,6 +1430,15 @@ type SiteListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *SiteSelect
 }
 
 func (b0 SiteListRequest_builder) Build() *SiteListRequest {
@@ -1417,6 +1449,7 @@ func (b0 SiteListRequest_builder) Build() *SiteListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1653,13 +1686,15 @@ func (x *SiteWatchRequest) SetSkipSnapshot(v bool) {
 type SiteWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*SiteFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -1840,7 +1875,7 @@ type SiteWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -1848,7 +1883,8 @@ type SiteWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *Site
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -1926,12 +1962,13 @@ const file_app_site_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.SiteRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"+\n" +
 	"\x11SiteEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x98\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xc4\x01\n" +
 	"\x0fSiteListRequest\x12,\n" +
 	"\afilters\x18\x01 \x03(\v2\x12.roster.SiteFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"Q\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12*\n" +
+	"\x06select\x18\x06 \x01(\v2\x12.roster.SiteSelectR\x06select\"Q\n" +
 	"\x10SiteListResponse\x12\"\n" +
 	"\x05items\x18\x01 \x03(\v2\f.roster.SiteR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"Z\n" +
@@ -1996,31 +2033,32 @@ var file_app_site_svc_g_proto_depIdxs = []int32{
 	2,  // 11: roster.SiteApplyRequest.ref:type_name -> roster.SiteRef
 	19, // 12: roster.SiteApplyRequest.patch:type_name -> patch.Patch
 	10, // 13: roster.SiteListRequest.filters:type_name -> roster.SiteFilter
-	20, // 14: roster.SiteListResponse.items:type_name -> roster.Site
-	2,  // 15: roster.SiteFilter.ref:type_name -> roster.SiteRef
-	16, // 16: roster.SiteFilter.tenant:type_name -> roster.TenantRef
-	10, // 17: roster.SiteWatchRequest.filters:type_name -> roster.SiteFilter
-	13, // 18: roster.SiteWatchResponse.items:type_name -> roster.SiteWatchItem
-	20, // 19: roster.SiteWatchItem.value:type_name -> roster.Site
-	0,  // 20: roster.SiteService.Add:input_type -> roster.SiteAddRequest
-	1,  // 21: roster.SiteService.Get:input_type -> roster.SiteGetRequest
-	5,  // 22: roster.SiteService.Patch:input_type -> roster.SitePatchRequest
-	6,  // 23: roster.SiteService.Apply:input_type -> roster.SiteApplyRequest
-	2,  // 24: roster.SiteService.Erase:input_type -> roster.SiteRef
-	8,  // 25: roster.SiteService.List:input_type -> roster.SiteListRequest
-	11, // 26: roster.SiteService.Watch:input_type -> roster.SiteWatchRequest
-	20, // 27: roster.SiteService.Add:output_type -> roster.Site
-	20, // 28: roster.SiteService.Get:output_type -> roster.Site
-	20, // 29: roster.SiteService.Patch:output_type -> roster.Site
-	20, // 30: roster.SiteService.Apply:output_type -> roster.Site
-	7,  // 31: roster.SiteService.Erase:output_type -> roster.SiteEraseResponse
-	9,  // 32: roster.SiteService.List:output_type -> roster.SiteListResponse
-	12, // 33: roster.SiteService.Watch:output_type -> roster.SiteWatchResponse
-	27, // [27:34] is the sub-list for method output_type
-	20, // [20:27] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	4,  // 14: roster.SiteListRequest.select:type_name -> roster.SiteSelect
+	20, // 15: roster.SiteListResponse.items:type_name -> roster.Site
+	2,  // 16: roster.SiteFilter.ref:type_name -> roster.SiteRef
+	16, // 17: roster.SiteFilter.tenant:type_name -> roster.TenantRef
+	10, // 18: roster.SiteWatchRequest.filters:type_name -> roster.SiteFilter
+	13, // 19: roster.SiteWatchResponse.items:type_name -> roster.SiteWatchItem
+	20, // 20: roster.SiteWatchItem.value:type_name -> roster.Site
+	0,  // 21: roster.SiteService.Add:input_type -> roster.SiteAddRequest
+	1,  // 22: roster.SiteService.Get:input_type -> roster.SiteGetRequest
+	5,  // 23: roster.SiteService.Patch:input_type -> roster.SitePatchRequest
+	6,  // 24: roster.SiteService.Apply:input_type -> roster.SiteApplyRequest
+	2,  // 25: roster.SiteService.Erase:input_type -> roster.SiteRef
+	8,  // 26: roster.SiteService.List:input_type -> roster.SiteListRequest
+	11, // 27: roster.SiteService.Watch:input_type -> roster.SiteWatchRequest
+	20, // 28: roster.SiteService.Add:output_type -> roster.Site
+	20, // 29: roster.SiteService.Get:output_type -> roster.Site
+	20, // 30: roster.SiteService.Patch:output_type -> roster.Site
+	20, // 31: roster.SiteService.Apply:output_type -> roster.Site
+	7,  // 32: roster.SiteService.Erase:output_type -> roster.SiteEraseResponse
+	9,  // 33: roster.SiteService.List:output_type -> roster.SiteListResponse
+	12, // 34: roster.SiteService.Watch:output_type -> roster.SiteWatchResponse
+	28, // [28:35] is the sub-list for method output_type
+	21, // [21:28] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_app_site_svc_g_proto_init() }

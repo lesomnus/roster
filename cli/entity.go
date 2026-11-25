@@ -277,12 +277,14 @@ func tenantNamed(ctx context.Context, cl *xli.Command, next xli.Next) error {
 // commands under them, that reads `-o` or `--in`: before the connection is
 // opened, which each generated command opens first.
 //
-// payday's verbs merge the request, make the call, and only then resolve the
-// printer: `roster --as admin holder add -o yaml @acme/f1` answered `-o yaml:
-// not a format` with status 1, and the person had been added; `erase` the
-// same (#284). A failure said of a write that was made is worse than either
-// alone. The order is payday's to mend; until it is, the tree roster builds
-// asks first.
+// payday's verbs resolved the printer only after the call: `roster --as admin
+// holder add -o yaml @acme/f1` answered `-o yaml: not a format` with status 1,
+// and the person had been added (#284). payday refuses a wrong `-o` before the
+// call now, as a wrong flag (#531), but after its connection is opened, which
+// at the box is the database and the `--as` it looks up; and it reads `--in`
+// only as it merges the request, as an error that is not a wrong flag's. So
+// this stays for both: a command line that is wrong is refused before
+// anything is opened, with status 2 (`docs/usage/cli.md` § *Exit statuses*).
 func formatsFirst(cs xli.Commands) {
 	for _, v := range cs {
 		formatsFirst(v.Commands)
@@ -317,12 +319,12 @@ func formatsOf(ctx context.Context, cl *xli.Command, next xli.Next) error {
 }
 
 // nowhere takes out of `t` the commands the schema builds that work in neither
-// mode: the trail's general writes, which no server takes (*the trail is
-// written by what happened, not by anybody asking*). They were offered by
-// `--help` on both planes, and each could only refuse (#284). A function
-// because both trees have them, as [overlays] is.
+// mode: the trail's `add`, which payday's recorder calls in process and no
+// server takes from a caller (*the trail is written by what happened, not by
+// anybody asking*). It was offered by `--help` on both planes, and could only
+// refuse (#284). A function because both trees have them, as [overlays] is.
 func nowhere(t *pdcmd.Tree) {
-	for _, path := range []string{"audit/add", "audit/patch", "audit/erase"} {
+	for _, path := range []string{"audit/add"} {
 		if err := t.Drop(path); err != nil {
 			// A path the schema no longer has, which is a mistake in this
 			// file rather than something a deployment can cause.

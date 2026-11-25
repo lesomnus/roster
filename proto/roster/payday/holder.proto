@@ -69,7 +69,13 @@ message Holder {
     default: ""
   }];
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {
+      add: {}
+      get: {}
+      patch: {}
+      erase: {}
+      apply: {}
+    }
     indexes: [
       {
         name: "slug"

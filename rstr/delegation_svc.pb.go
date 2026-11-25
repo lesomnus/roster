@@ -1167,6 +1167,7 @@ type DelegationListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *DelegationSelect      `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1226,6 +1227,13 @@ func (x *DelegationListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *DelegationListRequest) GetSelect() *DelegationSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *DelegationListRequest) SetFilters(v []*DelegationFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1240,6 +1248,21 @@ func (x *DelegationListRequest) SetAfter(v string) {
 
 func (x *DelegationListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *DelegationListRequest) SetSelect(v *DelegationSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *DelegationListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *DelegationListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type DelegationListRequest_builder struct {
@@ -1262,6 +1285,15 @@ type DelegationListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *DelegationSelect
 }
 
 func (b0 DelegationListRequest_builder) Build() *DelegationListRequest {
@@ -1272,6 +1304,7 @@ func (b0 DelegationListRequest_builder) Build() *DelegationListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1998,12 +2031,13 @@ const file_app_delegation_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.DelegationRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
 	"\x17DelegationEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa4\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xd6\x01\n" +
 	"\x15DelegationListRequest\x122\n" +
 	"\afilters\x18\x01 \x03(\v2\x18.roster.DelegationFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"]\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x120\n" +
+	"\x06select\x18\x06 \x01(\v2\x18.roster.DelegationSelectR\x06select\"]\n" +
 	"\x16DelegationListResponse\x12(\n" +
 	"\x05items\x18\x01 \x03(\v2\x12.roster.DelegationR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"f\n" +
@@ -2077,38 +2111,39 @@ var file_app_delegation_svc_g_proto_depIdxs = []int32{
 	2,  // 9: roster.DelegationApplyRequest.ref:type_name -> roster.DelegationRef
 	19, // 10: roster.DelegationApplyRequest.patch:type_name -> patch.Patch
 	9,  // 11: roster.DelegationListRequest.filters:type_name -> roster.DelegationFilter
-	20, // 12: roster.DelegationListResponse.items:type_name -> roster.Delegation
-	2,  // 13: roster.DelegationFilter.ref:type_name -> roster.DelegationRef
-	16, // 14: roster.DelegationFilter.holder:type_name -> roster.HolderRef
-	16, // 15: roster.DelegationExchangeRequest.app:type_name -> roster.HolderRef
-	17, // 16: roster.DelegationExchangeResponse.date_expired:type_name -> google.protobuf.Timestamp
-	16, // 17: roster.DelegationIssueRequest.holder:type_name -> roster.HolderRef
-	16, // 18: roster.DelegationIssueRequest.app:type_name -> roster.HolderRef
-	17, // 19: roster.DelegationIssueRequest.date_expired:type_name -> google.protobuf.Timestamp
-	20, // 20: roster.DelegationIssueResponse.delegation:type_name -> roster.Delegation
-	0,  // 21: roster.DelegationService.Add:input_type -> roster.DelegationAddRequest
-	1,  // 22: roster.DelegationService.Get:input_type -> roster.DelegationGetRequest
-	4,  // 23: roster.DelegationService.Patch:input_type -> roster.DelegationPatchRequest
-	5,  // 24: roster.DelegationService.Apply:input_type -> roster.DelegationApplyRequest
-	2,  // 25: roster.DelegationService.Erase:input_type -> roster.DelegationRef
-	7,  // 26: roster.DelegationService.List:input_type -> roster.DelegationListRequest
-	10, // 27: roster.DelegationService.Revoke:input_type -> roster.DelegationRevokeRequest
-	12, // 28: roster.DelegationService.Exchange:input_type -> roster.DelegationExchangeRequest
-	14, // 29: roster.DelegationService.Issue:input_type -> roster.DelegationIssueRequest
-	20, // 30: roster.DelegationService.Add:output_type -> roster.Delegation
-	20, // 31: roster.DelegationService.Get:output_type -> roster.Delegation
-	20, // 32: roster.DelegationService.Patch:output_type -> roster.Delegation
-	20, // 33: roster.DelegationService.Apply:output_type -> roster.Delegation
-	6,  // 34: roster.DelegationService.Erase:output_type -> roster.DelegationEraseResponse
-	8,  // 35: roster.DelegationService.List:output_type -> roster.DelegationListResponse
-	11, // 36: roster.DelegationService.Revoke:output_type -> roster.DelegationRevokeResponse
-	13, // 37: roster.DelegationService.Exchange:output_type -> roster.DelegationExchangeResponse
-	15, // 38: roster.DelegationService.Issue:output_type -> roster.DelegationIssueResponse
-	30, // [30:39] is the sub-list for method output_type
-	21, // [21:30] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	3,  // 12: roster.DelegationListRequest.select:type_name -> roster.DelegationSelect
+	20, // 13: roster.DelegationListResponse.items:type_name -> roster.Delegation
+	2,  // 14: roster.DelegationFilter.ref:type_name -> roster.DelegationRef
+	16, // 15: roster.DelegationFilter.holder:type_name -> roster.HolderRef
+	16, // 16: roster.DelegationExchangeRequest.app:type_name -> roster.HolderRef
+	17, // 17: roster.DelegationExchangeResponse.date_expired:type_name -> google.protobuf.Timestamp
+	16, // 18: roster.DelegationIssueRequest.holder:type_name -> roster.HolderRef
+	16, // 19: roster.DelegationIssueRequest.app:type_name -> roster.HolderRef
+	17, // 20: roster.DelegationIssueRequest.date_expired:type_name -> google.protobuf.Timestamp
+	20, // 21: roster.DelegationIssueResponse.delegation:type_name -> roster.Delegation
+	0,  // 22: roster.DelegationService.Add:input_type -> roster.DelegationAddRequest
+	1,  // 23: roster.DelegationService.Get:input_type -> roster.DelegationGetRequest
+	4,  // 24: roster.DelegationService.Patch:input_type -> roster.DelegationPatchRequest
+	5,  // 25: roster.DelegationService.Apply:input_type -> roster.DelegationApplyRequest
+	2,  // 26: roster.DelegationService.Erase:input_type -> roster.DelegationRef
+	7,  // 27: roster.DelegationService.List:input_type -> roster.DelegationListRequest
+	10, // 28: roster.DelegationService.Revoke:input_type -> roster.DelegationRevokeRequest
+	12, // 29: roster.DelegationService.Exchange:input_type -> roster.DelegationExchangeRequest
+	14, // 30: roster.DelegationService.Issue:input_type -> roster.DelegationIssueRequest
+	20, // 31: roster.DelegationService.Add:output_type -> roster.Delegation
+	20, // 32: roster.DelegationService.Get:output_type -> roster.Delegation
+	20, // 33: roster.DelegationService.Patch:output_type -> roster.Delegation
+	20, // 34: roster.DelegationService.Apply:output_type -> roster.Delegation
+	6,  // 35: roster.DelegationService.Erase:output_type -> roster.DelegationEraseResponse
+	8,  // 36: roster.DelegationService.List:output_type -> roster.DelegationListResponse
+	11, // 37: roster.DelegationService.Revoke:output_type -> roster.DelegationRevokeResponse
+	13, // 38: roster.DelegationService.Exchange:output_type -> roster.DelegationExchangeResponse
+	15, // 39: roster.DelegationService.Issue:output_type -> roster.DelegationIssueResponse
+	31, // [31:40] is the sub-list for method output_type
+	22, // [22:31] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_app_delegation_svc_g_proto_init() }

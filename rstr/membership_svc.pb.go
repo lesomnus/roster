@@ -1063,6 +1063,7 @@ type SiteMembershipListRequest struct {
 	xxx_hidden_Size    int32                    `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                   `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                     `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *SiteMembershipSelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1122,6 +1123,13 @@ func (x *SiteMembershipListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *SiteMembershipListRequest) GetSelect() *SiteMembershipSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *SiteMembershipListRequest) SetFilters(v []*SiteMembershipFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1136,6 +1144,21 @@ func (x *SiteMembershipListRequest) SetAfter(v string) {
 
 func (x *SiteMembershipListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *SiteMembershipListRequest) SetSelect(v *SiteMembershipSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *SiteMembershipListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *SiteMembershipListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type SiteMembershipListRequest_builder struct {
@@ -1158,6 +1181,15 @@ type SiteMembershipListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *SiteMembershipSelect
 }
 
 func (b0 SiteMembershipListRequest_builder) Build() *SiteMembershipListRequest {
@@ -1168,6 +1200,7 @@ func (b0 SiteMembershipListRequest_builder) Build() *SiteMembershipListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1429,13 +1462,15 @@ func (x *SiteMembershipWatchRequest) SetSkipSnapshot(v bool) {
 type SiteMembershipWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*SiteMembershipFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -1616,7 +1651,7 @@ type SiteMembershipWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -1624,7 +1659,8 @@ type SiteMembershipWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *SiteMembership
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -2797,6 +2833,7 @@ type TeamMembershipListRequest struct {
 	xxx_hidden_Size    int32                    `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                   `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                     `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *TeamMembershipSelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -2856,6 +2893,13 @@ func (x *TeamMembershipListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *TeamMembershipListRequest) GetSelect() *TeamMembershipSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *TeamMembershipListRequest) SetFilters(v []*TeamMembershipFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -2870,6 +2914,21 @@ func (x *TeamMembershipListRequest) SetAfter(v string) {
 
 func (x *TeamMembershipListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *TeamMembershipListRequest) SetSelect(v *TeamMembershipSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *TeamMembershipListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *TeamMembershipListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type TeamMembershipListRequest_builder struct {
@@ -2892,6 +2951,15 @@ type TeamMembershipListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *TeamMembershipSelect
 }
 
 func (b0 TeamMembershipListRequest_builder) Build() *TeamMembershipListRequest {
@@ -2902,6 +2970,7 @@ func (b0 TeamMembershipListRequest_builder) Build() *TeamMembershipListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -3163,13 +3232,15 @@ func (x *TeamMembershipWatchRequest) SetSkipSnapshot(v bool) {
 type TeamMembershipWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*TeamMembershipFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -3350,7 +3421,7 @@ type TeamMembershipWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -3358,7 +3429,8 @@ type TeamMembershipWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *TeamMembership
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -4531,6 +4603,7 @@ type GroupMembershipListRequest struct {
 	xxx_hidden_Size    int32                     `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                    `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                      `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *GroupMembershipSelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -4590,6 +4663,13 @@ func (x *GroupMembershipListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *GroupMembershipListRequest) GetSelect() *GroupMembershipSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *GroupMembershipListRequest) SetFilters(v []*GroupMembershipFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -4604,6 +4684,21 @@ func (x *GroupMembershipListRequest) SetAfter(v string) {
 
 func (x *GroupMembershipListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *GroupMembershipListRequest) SetSelect(v *GroupMembershipSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *GroupMembershipListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *GroupMembershipListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type GroupMembershipListRequest_builder struct {
@@ -4626,6 +4721,15 @@ type GroupMembershipListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *GroupMembershipSelect
 }
 
 func (b0 GroupMembershipListRequest_builder) Build() *GroupMembershipListRequest {
@@ -4636,6 +4740,7 @@ func (b0 GroupMembershipListRequest_builder) Build() *GroupMembershipListRequest
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -4873,12 +4978,13 @@ const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x19.roster.SiteMembershipRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"5\n" +
 	"\x1bSiteMembershipEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xac\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xe2\x01\n" +
 	"\x19SiteMembershipListRequest\x126\n" +
 	"\afilters\x18\x01 \x03(\v2\x1c.roster.SiteMembershipFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"e\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x124\n" +
+	"\x06select\x18\x06 \x01(\v2\x1c.roster.SiteMembershipSelectR\x06select\"e\n" +
 	"\x1aSiteMembershipListResponse\x12,\n" +
 	"\x05items\x18\x01 \x03(\v2\x16.roster.SiteMembershipR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x93\x01\n" +
@@ -4930,12 +5036,13 @@ const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x19.roster.TeamMembershipRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"5\n" +
 	"\x1bTeamMembershipEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xac\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xe2\x01\n" +
 	"\x19TeamMembershipListRequest\x126\n" +
 	"\afilters\x18\x01 \x03(\v2\x1c.roster.TeamMembershipFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"e\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x124\n" +
+	"\x06select\x18\x06 \x01(\v2\x1c.roster.TeamMembershipSelectR\x06select\"e\n" +
 	"\x1aTeamMembershipListResponse\x12,\n" +
 	"\x05items\x18\x01 \x03(\v2\x16.roster.TeamMembershipR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x93\x01\n" +
@@ -4987,12 +5094,13 @@ const file_app_membership_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x1a.roster.GroupMembershipRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"6\n" +
 	"\x1cGroupMembershipEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xae\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xe5\x01\n" +
 	"\x1aGroupMembershipListRequest\x127\n" +
 	"\afilters\x18\x01 \x03(\v2\x1d.roster.GroupMembershipFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"g\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x125\n" +
+	"\x06select\x18\x06 \x01(\v2\x1d.roster.GroupMembershipSelectR\x06select\"g\n" +
 	"\x1bGroupMembershipListResponse\x12-\n" +
 	"\x05items\x18\x01 \x03(\v2\x17.roster.GroupMembershipR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x98\x01\n" +
@@ -5097,105 +5205,108 @@ var file_app_membership_svc_g_proto_depIdxs = []int32{
 	2,  // 12: roster.SiteMembershipApplyRequest.ref:type_name -> roster.SiteMembershipRef
 	44, // 13: roster.SiteMembershipApplyRequest.patch:type_name -> patch.Patch
 	10, // 14: roster.SiteMembershipListRequest.filters:type_name -> roster.SiteMembershipFilter
-	45, // 15: roster.SiteMembershipListResponse.items:type_name -> roster.SiteMembership
-	2,  // 16: roster.SiteMembershipFilter.ref:type_name -> roster.SiteMembershipRef
-	39, // 17: roster.SiteMembershipFilter.holder:type_name -> roster.HolderRef
-	40, // 18: roster.SiteMembershipFilter.site:type_name -> roster.SiteRef
-	10, // 19: roster.SiteMembershipWatchRequest.filters:type_name -> roster.SiteMembershipFilter
-	13, // 20: roster.SiteMembershipWatchResponse.items:type_name -> roster.SiteMembershipWatchItem
-	45, // 21: roster.SiteMembershipWatchItem.value:type_name -> roster.SiteMembership
-	39, // 22: roster.TeamMembershipAddRequest.holder:type_name -> roster.HolderRef
-	46, // 23: roster.TeamMembershipAddRequest.team:type_name -> roster.TeamRef
-	47, // 24: roster.TeamMembershipAddRequest.role:type_name -> roster.RoleRef
-	41, // 25: roster.TeamMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	16, // 26: roster.TeamMembershipGetRequest.ref:type_name -> roster.TeamMembershipRef
-	18, // 27: roster.TeamMembershipGetRequest.select:type_name -> roster.TeamMembershipSelect
-	17, // 28: roster.TeamMembershipRef.member:type_name -> roster.TeamMembershipRefByMember
-	39, // 29: roster.TeamMembershipRefByMember.holder:type_name -> roster.HolderRef
-	46, // 30: roster.TeamMembershipRefByMember.team:type_name -> roster.TeamRef
-	42, // 31: roster.TeamMembershipSelect.holder:type_name -> roster.HolderSelect
-	48, // 32: roster.TeamMembershipSelect.team:type_name -> roster.TeamSelect
-	49, // 33: roster.TeamMembershipSelect.role:type_name -> roster.RoleSelect
-	16, // 34: roster.TeamMembershipPatchRequest.ref:type_name -> roster.TeamMembershipRef
-	47, // 35: roster.TeamMembershipPatchRequest.role:type_name -> roster.RoleRef
-	41, // 36: roster.TeamMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	16, // 37: roster.TeamMembershipApplyRequest.ref:type_name -> roster.TeamMembershipRef
-	44, // 38: roster.TeamMembershipApplyRequest.patch:type_name -> patch.Patch
-	24, // 39: roster.TeamMembershipListRequest.filters:type_name -> roster.TeamMembershipFilter
-	50, // 40: roster.TeamMembershipListResponse.items:type_name -> roster.TeamMembership
-	16, // 41: roster.TeamMembershipFilter.ref:type_name -> roster.TeamMembershipRef
-	39, // 42: roster.TeamMembershipFilter.holder:type_name -> roster.HolderRef
-	46, // 43: roster.TeamMembershipFilter.team:type_name -> roster.TeamRef
-	24, // 44: roster.TeamMembershipWatchRequest.filters:type_name -> roster.TeamMembershipFilter
-	27, // 45: roster.TeamMembershipWatchResponse.items:type_name -> roster.TeamMembershipWatchItem
-	50, // 46: roster.TeamMembershipWatchItem.value:type_name -> roster.TeamMembership
-	39, // 47: roster.GroupMembershipAddRequest.holder:type_name -> roster.HolderRef
-	51, // 48: roster.GroupMembershipAddRequest.group:type_name -> roster.GroupRef
-	47, // 49: roster.GroupMembershipAddRequest.role:type_name -> roster.RoleRef
-	41, // 50: roster.GroupMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	30, // 51: roster.GroupMembershipGetRequest.ref:type_name -> roster.GroupMembershipRef
-	32, // 52: roster.GroupMembershipGetRequest.select:type_name -> roster.GroupMembershipSelect
-	31, // 53: roster.GroupMembershipRef.member:type_name -> roster.GroupMembershipRefByMember
-	39, // 54: roster.GroupMembershipRefByMember.holder:type_name -> roster.HolderRef
-	51, // 55: roster.GroupMembershipRefByMember.group:type_name -> roster.GroupRef
-	42, // 56: roster.GroupMembershipSelect.holder:type_name -> roster.HolderSelect
-	52, // 57: roster.GroupMembershipSelect.group:type_name -> roster.GroupSelect
-	49, // 58: roster.GroupMembershipSelect.role:type_name -> roster.RoleSelect
-	30, // 59: roster.GroupMembershipPatchRequest.ref:type_name -> roster.GroupMembershipRef
-	47, // 60: roster.GroupMembershipPatchRequest.role:type_name -> roster.RoleRef
-	41, // 61: roster.GroupMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	30, // 62: roster.GroupMembershipApplyRequest.ref:type_name -> roster.GroupMembershipRef
-	44, // 63: roster.GroupMembershipApplyRequest.patch:type_name -> patch.Patch
-	38, // 64: roster.GroupMembershipListRequest.filters:type_name -> roster.GroupMembershipFilter
-	53, // 65: roster.GroupMembershipListResponse.items:type_name -> roster.GroupMembership
-	30, // 66: roster.GroupMembershipFilter.ref:type_name -> roster.GroupMembershipRef
-	39, // 67: roster.GroupMembershipFilter.holder:type_name -> roster.HolderRef
-	51, // 68: roster.GroupMembershipFilter.group:type_name -> roster.GroupRef
-	0,  // 69: roster.SiteMembershipService.Add:input_type -> roster.SiteMembershipAddRequest
-	1,  // 70: roster.SiteMembershipService.Get:input_type -> roster.SiteMembershipGetRequest
-	5,  // 71: roster.SiteMembershipService.Patch:input_type -> roster.SiteMembershipPatchRequest
-	6,  // 72: roster.SiteMembershipService.Apply:input_type -> roster.SiteMembershipApplyRequest
-	2,  // 73: roster.SiteMembershipService.Erase:input_type -> roster.SiteMembershipRef
-	8,  // 74: roster.SiteMembershipService.List:input_type -> roster.SiteMembershipListRequest
-	11, // 75: roster.SiteMembershipService.Watch:input_type -> roster.SiteMembershipWatchRequest
-	14, // 76: roster.TeamMembershipService.Add:input_type -> roster.TeamMembershipAddRequest
-	15, // 77: roster.TeamMembershipService.Get:input_type -> roster.TeamMembershipGetRequest
-	19, // 78: roster.TeamMembershipService.Patch:input_type -> roster.TeamMembershipPatchRequest
-	20, // 79: roster.TeamMembershipService.Apply:input_type -> roster.TeamMembershipApplyRequest
-	16, // 80: roster.TeamMembershipService.Erase:input_type -> roster.TeamMembershipRef
-	22, // 81: roster.TeamMembershipService.List:input_type -> roster.TeamMembershipListRequest
-	25, // 82: roster.TeamMembershipService.Watch:input_type -> roster.TeamMembershipWatchRequest
-	28, // 83: roster.GroupMembershipService.Add:input_type -> roster.GroupMembershipAddRequest
-	29, // 84: roster.GroupMembershipService.Get:input_type -> roster.GroupMembershipGetRequest
-	33, // 85: roster.GroupMembershipService.Patch:input_type -> roster.GroupMembershipPatchRequest
-	34, // 86: roster.GroupMembershipService.Apply:input_type -> roster.GroupMembershipApplyRequest
-	30, // 87: roster.GroupMembershipService.Erase:input_type -> roster.GroupMembershipRef
-	36, // 88: roster.GroupMembershipService.List:input_type -> roster.GroupMembershipListRequest
-	45, // 89: roster.SiteMembershipService.Add:output_type -> roster.SiteMembership
-	45, // 90: roster.SiteMembershipService.Get:output_type -> roster.SiteMembership
-	45, // 91: roster.SiteMembershipService.Patch:output_type -> roster.SiteMembership
-	45, // 92: roster.SiteMembershipService.Apply:output_type -> roster.SiteMembership
-	7,  // 93: roster.SiteMembershipService.Erase:output_type -> roster.SiteMembershipEraseResponse
-	9,  // 94: roster.SiteMembershipService.List:output_type -> roster.SiteMembershipListResponse
-	12, // 95: roster.SiteMembershipService.Watch:output_type -> roster.SiteMembershipWatchResponse
-	50, // 96: roster.TeamMembershipService.Add:output_type -> roster.TeamMembership
-	50, // 97: roster.TeamMembershipService.Get:output_type -> roster.TeamMembership
-	50, // 98: roster.TeamMembershipService.Patch:output_type -> roster.TeamMembership
-	50, // 99: roster.TeamMembershipService.Apply:output_type -> roster.TeamMembership
-	21, // 100: roster.TeamMembershipService.Erase:output_type -> roster.TeamMembershipEraseResponse
-	23, // 101: roster.TeamMembershipService.List:output_type -> roster.TeamMembershipListResponse
-	26, // 102: roster.TeamMembershipService.Watch:output_type -> roster.TeamMembershipWatchResponse
-	53, // 103: roster.GroupMembershipService.Add:output_type -> roster.GroupMembership
-	53, // 104: roster.GroupMembershipService.Get:output_type -> roster.GroupMembership
-	53, // 105: roster.GroupMembershipService.Patch:output_type -> roster.GroupMembership
-	53, // 106: roster.GroupMembershipService.Apply:output_type -> roster.GroupMembership
-	35, // 107: roster.GroupMembershipService.Erase:output_type -> roster.GroupMembershipEraseResponse
-	37, // 108: roster.GroupMembershipService.List:output_type -> roster.GroupMembershipListResponse
-	89, // [89:109] is the sub-list for method output_type
-	69, // [69:89] is the sub-list for method input_type
-	69, // [69:69] is the sub-list for extension type_name
-	69, // [69:69] is the sub-list for extension extendee
-	0,  // [0:69] is the sub-list for field type_name
+	4,  // 15: roster.SiteMembershipListRequest.select:type_name -> roster.SiteMembershipSelect
+	45, // 16: roster.SiteMembershipListResponse.items:type_name -> roster.SiteMembership
+	2,  // 17: roster.SiteMembershipFilter.ref:type_name -> roster.SiteMembershipRef
+	39, // 18: roster.SiteMembershipFilter.holder:type_name -> roster.HolderRef
+	40, // 19: roster.SiteMembershipFilter.site:type_name -> roster.SiteRef
+	10, // 20: roster.SiteMembershipWatchRequest.filters:type_name -> roster.SiteMembershipFilter
+	13, // 21: roster.SiteMembershipWatchResponse.items:type_name -> roster.SiteMembershipWatchItem
+	45, // 22: roster.SiteMembershipWatchItem.value:type_name -> roster.SiteMembership
+	39, // 23: roster.TeamMembershipAddRequest.holder:type_name -> roster.HolderRef
+	46, // 24: roster.TeamMembershipAddRequest.team:type_name -> roster.TeamRef
+	47, // 25: roster.TeamMembershipAddRequest.role:type_name -> roster.RoleRef
+	41, // 26: roster.TeamMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	16, // 27: roster.TeamMembershipGetRequest.ref:type_name -> roster.TeamMembershipRef
+	18, // 28: roster.TeamMembershipGetRequest.select:type_name -> roster.TeamMembershipSelect
+	17, // 29: roster.TeamMembershipRef.member:type_name -> roster.TeamMembershipRefByMember
+	39, // 30: roster.TeamMembershipRefByMember.holder:type_name -> roster.HolderRef
+	46, // 31: roster.TeamMembershipRefByMember.team:type_name -> roster.TeamRef
+	42, // 32: roster.TeamMembershipSelect.holder:type_name -> roster.HolderSelect
+	48, // 33: roster.TeamMembershipSelect.team:type_name -> roster.TeamSelect
+	49, // 34: roster.TeamMembershipSelect.role:type_name -> roster.RoleSelect
+	16, // 35: roster.TeamMembershipPatchRequest.ref:type_name -> roster.TeamMembershipRef
+	47, // 36: roster.TeamMembershipPatchRequest.role:type_name -> roster.RoleRef
+	41, // 37: roster.TeamMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	16, // 38: roster.TeamMembershipApplyRequest.ref:type_name -> roster.TeamMembershipRef
+	44, // 39: roster.TeamMembershipApplyRequest.patch:type_name -> patch.Patch
+	24, // 40: roster.TeamMembershipListRequest.filters:type_name -> roster.TeamMembershipFilter
+	18, // 41: roster.TeamMembershipListRequest.select:type_name -> roster.TeamMembershipSelect
+	50, // 42: roster.TeamMembershipListResponse.items:type_name -> roster.TeamMembership
+	16, // 43: roster.TeamMembershipFilter.ref:type_name -> roster.TeamMembershipRef
+	39, // 44: roster.TeamMembershipFilter.holder:type_name -> roster.HolderRef
+	46, // 45: roster.TeamMembershipFilter.team:type_name -> roster.TeamRef
+	24, // 46: roster.TeamMembershipWatchRequest.filters:type_name -> roster.TeamMembershipFilter
+	27, // 47: roster.TeamMembershipWatchResponse.items:type_name -> roster.TeamMembershipWatchItem
+	50, // 48: roster.TeamMembershipWatchItem.value:type_name -> roster.TeamMembership
+	39, // 49: roster.GroupMembershipAddRequest.holder:type_name -> roster.HolderRef
+	51, // 50: roster.GroupMembershipAddRequest.group:type_name -> roster.GroupRef
+	47, // 51: roster.GroupMembershipAddRequest.role:type_name -> roster.RoleRef
+	41, // 52: roster.GroupMembershipAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	30, // 53: roster.GroupMembershipGetRequest.ref:type_name -> roster.GroupMembershipRef
+	32, // 54: roster.GroupMembershipGetRequest.select:type_name -> roster.GroupMembershipSelect
+	31, // 55: roster.GroupMembershipRef.member:type_name -> roster.GroupMembershipRefByMember
+	39, // 56: roster.GroupMembershipRefByMember.holder:type_name -> roster.HolderRef
+	51, // 57: roster.GroupMembershipRefByMember.group:type_name -> roster.GroupRef
+	42, // 58: roster.GroupMembershipSelect.holder:type_name -> roster.HolderSelect
+	52, // 59: roster.GroupMembershipSelect.group:type_name -> roster.GroupSelect
+	49, // 60: roster.GroupMembershipSelect.role:type_name -> roster.RoleSelect
+	30, // 61: roster.GroupMembershipPatchRequest.ref:type_name -> roster.GroupMembershipRef
+	47, // 62: roster.GroupMembershipPatchRequest.role:type_name -> roster.RoleRef
+	41, // 63: roster.GroupMembershipPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	30, // 64: roster.GroupMembershipApplyRequest.ref:type_name -> roster.GroupMembershipRef
+	44, // 65: roster.GroupMembershipApplyRequest.patch:type_name -> patch.Patch
+	38, // 66: roster.GroupMembershipListRequest.filters:type_name -> roster.GroupMembershipFilter
+	32, // 67: roster.GroupMembershipListRequest.select:type_name -> roster.GroupMembershipSelect
+	53, // 68: roster.GroupMembershipListResponse.items:type_name -> roster.GroupMembership
+	30, // 69: roster.GroupMembershipFilter.ref:type_name -> roster.GroupMembershipRef
+	39, // 70: roster.GroupMembershipFilter.holder:type_name -> roster.HolderRef
+	51, // 71: roster.GroupMembershipFilter.group:type_name -> roster.GroupRef
+	0,  // 72: roster.SiteMembershipService.Add:input_type -> roster.SiteMembershipAddRequest
+	1,  // 73: roster.SiteMembershipService.Get:input_type -> roster.SiteMembershipGetRequest
+	5,  // 74: roster.SiteMembershipService.Patch:input_type -> roster.SiteMembershipPatchRequest
+	6,  // 75: roster.SiteMembershipService.Apply:input_type -> roster.SiteMembershipApplyRequest
+	2,  // 76: roster.SiteMembershipService.Erase:input_type -> roster.SiteMembershipRef
+	8,  // 77: roster.SiteMembershipService.List:input_type -> roster.SiteMembershipListRequest
+	11, // 78: roster.SiteMembershipService.Watch:input_type -> roster.SiteMembershipWatchRequest
+	14, // 79: roster.TeamMembershipService.Add:input_type -> roster.TeamMembershipAddRequest
+	15, // 80: roster.TeamMembershipService.Get:input_type -> roster.TeamMembershipGetRequest
+	19, // 81: roster.TeamMembershipService.Patch:input_type -> roster.TeamMembershipPatchRequest
+	20, // 82: roster.TeamMembershipService.Apply:input_type -> roster.TeamMembershipApplyRequest
+	16, // 83: roster.TeamMembershipService.Erase:input_type -> roster.TeamMembershipRef
+	22, // 84: roster.TeamMembershipService.List:input_type -> roster.TeamMembershipListRequest
+	25, // 85: roster.TeamMembershipService.Watch:input_type -> roster.TeamMembershipWatchRequest
+	28, // 86: roster.GroupMembershipService.Add:input_type -> roster.GroupMembershipAddRequest
+	29, // 87: roster.GroupMembershipService.Get:input_type -> roster.GroupMembershipGetRequest
+	33, // 88: roster.GroupMembershipService.Patch:input_type -> roster.GroupMembershipPatchRequest
+	34, // 89: roster.GroupMembershipService.Apply:input_type -> roster.GroupMembershipApplyRequest
+	30, // 90: roster.GroupMembershipService.Erase:input_type -> roster.GroupMembershipRef
+	36, // 91: roster.GroupMembershipService.List:input_type -> roster.GroupMembershipListRequest
+	45, // 92: roster.SiteMembershipService.Add:output_type -> roster.SiteMembership
+	45, // 93: roster.SiteMembershipService.Get:output_type -> roster.SiteMembership
+	45, // 94: roster.SiteMembershipService.Patch:output_type -> roster.SiteMembership
+	45, // 95: roster.SiteMembershipService.Apply:output_type -> roster.SiteMembership
+	7,  // 96: roster.SiteMembershipService.Erase:output_type -> roster.SiteMembershipEraseResponse
+	9,  // 97: roster.SiteMembershipService.List:output_type -> roster.SiteMembershipListResponse
+	12, // 98: roster.SiteMembershipService.Watch:output_type -> roster.SiteMembershipWatchResponse
+	50, // 99: roster.TeamMembershipService.Add:output_type -> roster.TeamMembership
+	50, // 100: roster.TeamMembershipService.Get:output_type -> roster.TeamMembership
+	50, // 101: roster.TeamMembershipService.Patch:output_type -> roster.TeamMembership
+	50, // 102: roster.TeamMembershipService.Apply:output_type -> roster.TeamMembership
+	21, // 103: roster.TeamMembershipService.Erase:output_type -> roster.TeamMembershipEraseResponse
+	23, // 104: roster.TeamMembershipService.List:output_type -> roster.TeamMembershipListResponse
+	26, // 105: roster.TeamMembershipService.Watch:output_type -> roster.TeamMembershipWatchResponse
+	53, // 106: roster.GroupMembershipService.Add:output_type -> roster.GroupMembership
+	53, // 107: roster.GroupMembershipService.Get:output_type -> roster.GroupMembership
+	53, // 108: roster.GroupMembershipService.Patch:output_type -> roster.GroupMembership
+	53, // 109: roster.GroupMembershipService.Apply:output_type -> roster.GroupMembership
+	35, // 110: roster.GroupMembershipService.Erase:output_type -> roster.GroupMembershipEraseResponse
+	37, // 111: roster.GroupMembershipService.List:output_type -> roster.GroupMembershipListResponse
+	92, // [92:112] is the sub-list for method output_type
+	72, // [72:92] is the sub-list for method input_type
+	72, // [72:72] is the sub-list for extension type_name
+	72, // [72:72] is the sub-list for extension extendee
+	0,  // [0:72] is the sub-list for field type_name
 }
 
 func init() { file_app_membership_svc_g_proto_init() }

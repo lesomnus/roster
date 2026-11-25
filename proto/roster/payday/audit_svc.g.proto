@@ -3,7 +3,6 @@ package roster;
 
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
-import "patch/patch.proto";
 import "roster/payday/audit.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -13,12 +12,6 @@ service AuditService {
   rpc Add(AuditAddRequest) returns (Audit);
   // Get retrieves a Audit
   rpc Get(AuditGetRequest) returns (Audit);
-  // Patch updates an existing Audit
-  rpc Patch(AuditPatchRequest) returns (Audit);
-  // Apply applies a patch document to an existing Audit
-  rpc Apply(AuditApplyRequest) returns (Audit);
-  // Erase deletes a Audit
-  rpc Erase(AuditRef) returns (AuditEraseResponse);
   // List reads Audits a page at a time.
   rpc List(AuditListRequest) returns (AuditListResponse);
 }
@@ -88,60 +81,6 @@ message AuditSelect {
   bool digest_fields = 22;
 }
 
-message AuditPatchRequest {
-  AuditRef ref = 1;
-  bytes tenant_id = 4 [(orm.field) = {type: TYPE_UUID}];
-  bytes actor_id = 16 [(orm.field) = {type: TYPE_UUID}];
-  bytes caller_id = 46 [(orm.field) = {type: TYPE_UUID}];
-  // Clear caller_id instead of writing it.
-  // It takes a field of its own because an unset value already means
-  // "leave it alone", so no value could have meant NULL. It wins
-  // outright: setting both this and caller_id clears.
-  bool caller_id_null = 47;
-  bytes caller_tenant_id = 48 [(orm.field) = {type: TYPE_UUID}];
-  // Clear caller_tenant_id instead of writing it.
-  // It takes a field of its own because an unset value already means
-  // "leave it alone", so no value could have meant NULL. It wins
-  // outright: setting both this and caller_tenant_id clears.
-  bool caller_tenant_id_null = 49;
-  string presence = 50;
-  // Clear presence instead of writing it.
-  // It takes a field of its own because an unset value already means
-  // "leave it alone", so no value could have meant NULL. It wins
-  // outright: setting both this and presence clears.
-  bool presence_null = 51;
-  bytes trace_id = 18;
-  string action = 20;
-  bytes object_id = 22 [(orm.field) = {type: TYPE_UUID}];
-  bytes patch = 24;
-  bytes actor_tenant_id = 32 [(orm.field) = {type: TYPE_UUID}];
-  bytes value = 34;
-  bytes counterpart_tenant_id = 36 [(orm.field) = {type: TYPE_UUID}];
-  // Clear counterpart_tenant_id instead of writing it.
-  // It takes a field of its own because an unset value already means
-  // "leave it alone", so no value could have meant NULL. It wins
-  // outright: setting both this and counterpart_tenant_id clears.
-  bool counterpart_tenant_id_null = 37;
-  uint32 domain = 38;
-  repeated uint32 fields = 40;
-  bytes digest = 42;
-  repeated uint32 digest_fields = 44;
-}
-
-message AuditApplyRequest {
-  AuditRef ref = 1;
-  patch.Patch patch = 2;
-}
-
-message AuditEraseResponse {
-  // Erased is whether this call is the one that erased the row.
-  //
-  // False for a row that was already gone, was never there, or is out
-  // of this caller's reach -- which are one answer on purpose, and the
-  // reason the RPC does not fail instead.
-  bool erased = 1;
-}
-
 message AuditListRequest {
   // Bounded because the work is: each filter is a predicate in the same query,
   // so this is what says how much of the database one request may read.
@@ -163,6 +102,16 @@ message AuditListRequest {
   // from the other end. A cursor is of the way it was read, so the next page
   // carries on that way, and one of the other way is refused.
   bool reverse = 4 [features.field_presence = IMPLICIT];
+
+  // Which fields of each row to answer with, and which edges filled and how
+  // deep, as a Get's select says it. Unset is what a list answers without
+  // one. Each row is read as a Get of it with this select would read it, each
+  // edge through what the caller may see of its entity; a list costs one
+  // read for the rows and one for each edge selected, at any depth, however
+  // many rows the page holds.
+  //
+  // Field 6 in every entity: 5 is the order's, declared or not.
+  AuditSelect select = 6;
 }
 
 message AuditListResponse {

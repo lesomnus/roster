@@ -262,20 +262,21 @@ comment of theirs says. Each was seen on a run.
 **A `Get` answers what its `select` names.** With no `select` it answers what
 `{"all": true}` answers: every field of the row, and each row it points at as
 its identifier alone. The identifier is always answered. A row it points at
-that is selected comes nested, to any depth -- a place in a site with its
-person and that person's tenant, in one call -- each read by its own rule
-([rules.md](rules.md)). A field not selected is absent or empty, **but for
-the two stamps**: `date_created` and `date_updated` not selected are answered
-as year one, `0001-01-01T00:00:00Z`. Year one is *not selected*, and not a
-moment; `date_updated` is the version a write sends back,
-and year one sent back is refused as a version that moved. Select it with
+that is selected comes nested -- a place in a site with its person and that
+person's tenant, in one call -- each read by its own rule
+([rules.md](rules.md)), and a `select` goes eight levels deep at most: the
+row's own fields are one, and each row it brings is one more. A deeper one is
+refused, `InvalidArgument`. A field not selected is absent, a stamp as much as
+any: `date_updated` is the version a write sends back, so select it with
 whatever you mean to write. `date_erased` is a field of twenty-six entities,
 and of each one's `select`, and no read fills it: every read leaves the erased
 out.
 
-**A `List` takes no `select`.** A listed row carries each row it points at as
-its identifier alone, so a list of places with their people's names is the
-list, and then `HolderService/List` with a filter a person.
+**A `List` takes the same `select`**, meaning what it means on `Get`: each
+listed row answers what it names and no field it does not, and the rows it
+points at come nested, each read by its own rule. With no `select` a listed
+row carries every field and each row it points at as its identifier alone. So
+a list of places with their people's names is one call.
 
 **A list is a page.** Twenty rows where the request says no `size`, and a
 hundred at most however many it asks for; the trail's (`AuditService/List`)
@@ -284,7 +285,8 @@ hundred. A request carries thirty-two filters at most, and
 more is refused rather than cut short. Rows come in the order they were made
 (`reverse` turns it round), the trail's and the access record's newest first. Where there are more,
 the answer's `next` is the next call's `after`. A list with nothing in it is
-`{}` in JSON, with no `items` at all: read a missing `items` as none.
+`{"items": []}` as `-o json` prints it, and `{}` over HTTP, where an empty list
+is no field: read a missing `items` as none.
 
 **What a read leaves on the access record** follows the fields an answer
 carries that are declared somebody's. `HolderService/Reaches`,
@@ -296,8 +298,8 @@ none either, which #280 said. What somebody may call is declared nowhere.
 
 `roster holder watch @newco/alice` is `HolderService/Watch`: a stream that says
 what is there, and then what changes. The comments generated onto every
-`…WatchRequest` and `…WatchItem` say three things of it that are not so. This
-is what is so:
+`…WatchRequest` and `…WatchItem` say what it does; what a page's author meets
+of it is this:
 
 - **A watch names its rows.** Its filters have the shape a `list`'s have, and
   only one that names a row by reference is taken. A filter by tenant, by site

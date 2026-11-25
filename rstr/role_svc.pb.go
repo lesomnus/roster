@@ -1526,6 +1526,7 @@ type RoleListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *RoleSelect            `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1585,6 +1586,13 @@ func (x *RoleListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *RoleListRequest) GetSelect() *RoleSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *RoleListRequest) SetFilters(v []*RoleFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1599,6 +1607,21 @@ func (x *RoleListRequest) SetAfter(v string) {
 
 func (x *RoleListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *RoleListRequest) SetSelect(v *RoleSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *RoleListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *RoleListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type RoleListRequest_builder struct {
@@ -1621,6 +1644,15 @@ type RoleListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *RoleSelect
 }
 
 func (b0 RoleListRequest_builder) Build() *RoleListRequest {
@@ -1631,6 +1663,7 @@ func (b0 RoleListRequest_builder) Build() *RoleListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -3353,6 +3386,7 @@ type BindingListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *BindingSelect         `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -3412,6 +3446,13 @@ func (x *BindingListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *BindingListRequest) GetSelect() *BindingSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *BindingListRequest) SetFilters(v []*BindingFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -3426,6 +3467,21 @@ func (x *BindingListRequest) SetAfter(v string) {
 
 func (x *BindingListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *BindingListRequest) SetSelect(v *BindingSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *BindingListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *BindingListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type BindingListRequest_builder struct {
@@ -3448,6 +3504,15 @@ type BindingListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *BindingSelect
 }
 
 func (b0 BindingListRequest_builder) Build() *BindingListRequest {
@@ -3458,6 +3523,7 @@ func (b0 BindingListRequest_builder) Build() *BindingListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -3770,12 +3836,13 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.RoleRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"+\n" +
 	"\x11RoleEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x98\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xc4\x01\n" +
 	"\x0fRoleListRequest\x12,\n" +
 	"\afilters\x18\x01 \x03(\v2\x12.roster.RoleFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"Q\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12*\n" +
+	"\x06select\x18\x06 \x01(\v2\x12.roster.RoleSelectR\x06select\"Q\n" +
 	"\x10RoleListResponse\x12\"\n" +
 	"\x05items\x18\x01 \x03(\v2\f.roster.RoleR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x7f\n" +
@@ -3847,12 +3914,13 @@ const file_app_role_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x12.roster.BindingRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\".\n" +
 	"\x14BindingEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9e\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xcd\x01\n" +
 	"\x12BindingListRequest\x12/\n" +
 	"\afilters\x18\x01 \x03(\v2\x15.roster.BindingFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"W\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12-\n" +
+	"\x06select\x18\x06 \x01(\v2\x15.roster.BindingSelectR\x06select\"W\n" +
 	"\x13BindingListResponse\x12%\n" +
 	"\x05items\x18\x01 \x03(\v2\x0f.roster.BindingR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xd2\x01\n" +
@@ -3951,75 +4019,77 @@ var file_app_role_svc_g_proto_depIdxs = []int32{
 	3,  // 15: roster.RoleApplyRequest.ref:type_name -> roster.RoleRef
 	38, // 16: roster.RoleApplyRequest.patch:type_name -> patch.Patch
 	11, // 17: roster.RoleListRequest.filters:type_name -> roster.RoleFilter
-	39, // 18: roster.RoleListResponse.items:type_name -> roster.Role
-	3,  // 19: roster.RoleFilter.ref:type_name -> roster.RoleRef
-	31, // 20: roster.RoleFilter.tenant:type_name -> roster.TenantRef
-	32, // 21: roster.RoleFilter.site:type_name -> roster.SiteRef
-	3,  // 22: roster.RoleWidenRequest.ref:type_name -> roster.RoleRef
-	3,  // 23: roster.RoleNarrowRequest.ref:type_name -> roster.RoleRef
-	0,  // 24: roster.RoleHandsOverRequest.held:type_name -> roster.RoleHeld
-	16, // 25: roster.RoleHandsOverResponse.grants:type_name -> roster.RoleHandedOver
-	3,  // 26: roster.BindingAddRequest.role:type_name -> roster.RoleRef
-	32, // 27: roster.BindingAddRequest.site:type_name -> roster.SiteRef
-	33, // 28: roster.BindingAddRequest.holder:type_name -> roster.HolderRef
-	40, // 29: roster.BindingAddRequest.group:type_name -> roster.GroupRef
-	33, // 30: roster.BindingAddRequest.app:type_name -> roster.HolderRef
-	29, // 31: roster.BindingAddRequest.labels:type_name -> roster.BindingAddRequest.LabelsEntry
-	34, // 32: roster.BindingAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	19, // 33: roster.BindingGetRequest.ref:type_name -> roster.BindingRef
-	20, // 34: roster.BindingGetRequest.select:type_name -> roster.BindingSelect
-	5,  // 35: roster.BindingSelect.role:type_name -> roster.RoleSelect
-	36, // 36: roster.BindingSelect.site:type_name -> roster.SiteSelect
-	37, // 37: roster.BindingSelect.holder:type_name -> roster.HolderSelect
-	41, // 38: roster.BindingSelect.group:type_name -> roster.GroupSelect
-	37, // 39: roster.BindingSelect.app:type_name -> roster.HolderSelect
-	19, // 40: roster.BindingPatchRequest.ref:type_name -> roster.BindingRef
-	30, // 41: roster.BindingPatchRequest.labels:type_name -> roster.BindingPatchRequest.LabelsEntry
-	34, // 42: roster.BindingPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	19, // 43: roster.BindingApplyRequest.ref:type_name -> roster.BindingRef
-	38, // 44: roster.BindingApplyRequest.patch:type_name -> patch.Patch
-	26, // 45: roster.BindingListRequest.filters:type_name -> roster.BindingFilter
-	42, // 46: roster.BindingListResponse.items:type_name -> roster.Binding
-	19, // 47: roster.BindingFilter.ref:type_name -> roster.BindingRef
-	3,  // 48: roster.BindingFilter.role:type_name -> roster.RoleRef
-	33, // 49: roster.BindingFilter.holder:type_name -> roster.HolderRef
-	40, // 50: roster.BindingFilter.group:type_name -> roster.GroupRef
-	32, // 51: roster.BindingFilter.site:type_name -> roster.SiteRef
-	1,  // 52: roster.RoleService.Add:input_type -> roster.RoleAddRequest
-	2,  // 53: roster.RoleService.Get:input_type -> roster.RoleGetRequest
-	6,  // 54: roster.RoleService.Patch:input_type -> roster.RolePatchRequest
-	7,  // 55: roster.RoleService.Apply:input_type -> roster.RoleApplyRequest
-	3,  // 56: roster.RoleService.Erase:input_type -> roster.RoleRef
-	9,  // 57: roster.RoleService.List:input_type -> roster.RoleListRequest
-	12, // 58: roster.RoleService.Widen:input_type -> roster.RoleWidenRequest
-	13, // 59: roster.RoleService.Narrow:input_type -> roster.RoleNarrowRequest
-	14, // 60: roster.RoleService.HandsOver:input_type -> roster.RoleHandsOverRequest
-	17, // 61: roster.BindingService.Add:input_type -> roster.BindingAddRequest
-	18, // 62: roster.BindingService.Get:input_type -> roster.BindingGetRequest
-	21, // 63: roster.BindingService.Patch:input_type -> roster.BindingPatchRequest
-	22, // 64: roster.BindingService.Apply:input_type -> roster.BindingApplyRequest
-	19, // 65: roster.BindingService.Erase:input_type -> roster.BindingRef
-	24, // 66: roster.BindingService.List:input_type -> roster.BindingListRequest
-	39, // 67: roster.RoleService.Add:output_type -> roster.Role
-	39, // 68: roster.RoleService.Get:output_type -> roster.Role
-	39, // 69: roster.RoleService.Patch:output_type -> roster.Role
-	39, // 70: roster.RoleService.Apply:output_type -> roster.Role
-	8,  // 71: roster.RoleService.Erase:output_type -> roster.RoleEraseResponse
-	10, // 72: roster.RoleService.List:output_type -> roster.RoleListResponse
-	39, // 73: roster.RoleService.Widen:output_type -> roster.Role
-	39, // 74: roster.RoleService.Narrow:output_type -> roster.Role
-	15, // 75: roster.RoleService.HandsOver:output_type -> roster.RoleHandsOverResponse
-	42, // 76: roster.BindingService.Add:output_type -> roster.Binding
-	42, // 77: roster.BindingService.Get:output_type -> roster.Binding
-	42, // 78: roster.BindingService.Patch:output_type -> roster.Binding
-	42, // 79: roster.BindingService.Apply:output_type -> roster.Binding
-	23, // 80: roster.BindingService.Erase:output_type -> roster.BindingEraseResponse
-	25, // 81: roster.BindingService.List:output_type -> roster.BindingListResponse
-	67, // [67:82] is the sub-list for method output_type
-	52, // [52:67] is the sub-list for method input_type
-	52, // [52:52] is the sub-list for extension type_name
-	52, // [52:52] is the sub-list for extension extendee
-	0,  // [0:52] is the sub-list for field type_name
+	5,  // 18: roster.RoleListRequest.select:type_name -> roster.RoleSelect
+	39, // 19: roster.RoleListResponse.items:type_name -> roster.Role
+	3,  // 20: roster.RoleFilter.ref:type_name -> roster.RoleRef
+	31, // 21: roster.RoleFilter.tenant:type_name -> roster.TenantRef
+	32, // 22: roster.RoleFilter.site:type_name -> roster.SiteRef
+	3,  // 23: roster.RoleWidenRequest.ref:type_name -> roster.RoleRef
+	3,  // 24: roster.RoleNarrowRequest.ref:type_name -> roster.RoleRef
+	0,  // 25: roster.RoleHandsOverRequest.held:type_name -> roster.RoleHeld
+	16, // 26: roster.RoleHandsOverResponse.grants:type_name -> roster.RoleHandedOver
+	3,  // 27: roster.BindingAddRequest.role:type_name -> roster.RoleRef
+	32, // 28: roster.BindingAddRequest.site:type_name -> roster.SiteRef
+	33, // 29: roster.BindingAddRequest.holder:type_name -> roster.HolderRef
+	40, // 30: roster.BindingAddRequest.group:type_name -> roster.GroupRef
+	33, // 31: roster.BindingAddRequest.app:type_name -> roster.HolderRef
+	29, // 32: roster.BindingAddRequest.labels:type_name -> roster.BindingAddRequest.LabelsEntry
+	34, // 33: roster.BindingAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	19, // 34: roster.BindingGetRequest.ref:type_name -> roster.BindingRef
+	20, // 35: roster.BindingGetRequest.select:type_name -> roster.BindingSelect
+	5,  // 36: roster.BindingSelect.role:type_name -> roster.RoleSelect
+	36, // 37: roster.BindingSelect.site:type_name -> roster.SiteSelect
+	37, // 38: roster.BindingSelect.holder:type_name -> roster.HolderSelect
+	41, // 39: roster.BindingSelect.group:type_name -> roster.GroupSelect
+	37, // 40: roster.BindingSelect.app:type_name -> roster.HolderSelect
+	19, // 41: roster.BindingPatchRequest.ref:type_name -> roster.BindingRef
+	30, // 42: roster.BindingPatchRequest.labels:type_name -> roster.BindingPatchRequest.LabelsEntry
+	34, // 43: roster.BindingPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	19, // 44: roster.BindingApplyRequest.ref:type_name -> roster.BindingRef
+	38, // 45: roster.BindingApplyRequest.patch:type_name -> patch.Patch
+	26, // 46: roster.BindingListRequest.filters:type_name -> roster.BindingFilter
+	20, // 47: roster.BindingListRequest.select:type_name -> roster.BindingSelect
+	42, // 48: roster.BindingListResponse.items:type_name -> roster.Binding
+	19, // 49: roster.BindingFilter.ref:type_name -> roster.BindingRef
+	3,  // 50: roster.BindingFilter.role:type_name -> roster.RoleRef
+	33, // 51: roster.BindingFilter.holder:type_name -> roster.HolderRef
+	40, // 52: roster.BindingFilter.group:type_name -> roster.GroupRef
+	32, // 53: roster.BindingFilter.site:type_name -> roster.SiteRef
+	1,  // 54: roster.RoleService.Add:input_type -> roster.RoleAddRequest
+	2,  // 55: roster.RoleService.Get:input_type -> roster.RoleGetRequest
+	6,  // 56: roster.RoleService.Patch:input_type -> roster.RolePatchRequest
+	7,  // 57: roster.RoleService.Apply:input_type -> roster.RoleApplyRequest
+	3,  // 58: roster.RoleService.Erase:input_type -> roster.RoleRef
+	9,  // 59: roster.RoleService.List:input_type -> roster.RoleListRequest
+	12, // 60: roster.RoleService.Widen:input_type -> roster.RoleWidenRequest
+	13, // 61: roster.RoleService.Narrow:input_type -> roster.RoleNarrowRequest
+	14, // 62: roster.RoleService.HandsOver:input_type -> roster.RoleHandsOverRequest
+	17, // 63: roster.BindingService.Add:input_type -> roster.BindingAddRequest
+	18, // 64: roster.BindingService.Get:input_type -> roster.BindingGetRequest
+	21, // 65: roster.BindingService.Patch:input_type -> roster.BindingPatchRequest
+	22, // 66: roster.BindingService.Apply:input_type -> roster.BindingApplyRequest
+	19, // 67: roster.BindingService.Erase:input_type -> roster.BindingRef
+	24, // 68: roster.BindingService.List:input_type -> roster.BindingListRequest
+	39, // 69: roster.RoleService.Add:output_type -> roster.Role
+	39, // 70: roster.RoleService.Get:output_type -> roster.Role
+	39, // 71: roster.RoleService.Patch:output_type -> roster.Role
+	39, // 72: roster.RoleService.Apply:output_type -> roster.Role
+	8,  // 73: roster.RoleService.Erase:output_type -> roster.RoleEraseResponse
+	10, // 74: roster.RoleService.List:output_type -> roster.RoleListResponse
+	39, // 75: roster.RoleService.Widen:output_type -> roster.Role
+	39, // 76: roster.RoleService.Narrow:output_type -> roster.Role
+	15, // 77: roster.RoleService.HandsOver:output_type -> roster.RoleHandsOverResponse
+	42, // 78: roster.BindingService.Add:output_type -> roster.Binding
+	42, // 79: roster.BindingService.Get:output_type -> roster.Binding
+	42, // 80: roster.BindingService.Patch:output_type -> roster.Binding
+	42, // 81: roster.BindingService.Apply:output_type -> roster.Binding
+	23, // 82: roster.BindingService.Erase:output_type -> roster.BindingEraseResponse
+	25, // 83: roster.BindingService.List:output_type -> roster.BindingListResponse
+	69, // [69:84] is the sub-list for method output_type
+	54, // [54:69] is the sub-list for method input_type
+	54, // [54:54] is the sub-list for extension type_name
+	54, // [54:54] is the sub-list for extension extendee
+	0,  // [0:54] is the sub-list for field type_name
 }
 
 func init() { file_app_role_svc_g_proto_init() }
