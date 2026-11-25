@@ -9,8 +9,6 @@ import { file_app_identity } from "./identity_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
 import { file_roster_payday_holder_svc_g } from "../roster/payday/holder_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -19,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/identity_svc.g.proto.
  */
 export const file_app_identity_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChhhcHAvaWRlbnRpdHlfc3ZjLmcucHJvdG8SBnJvc3RlciLOAQoSSWRlbnRpdHlBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIXCghwcm92aWRlchgIIAEoCUIFqgECCAISFgoHc3ViamVjdBgJIAEoCUIFqgECCAISHgoJdGVuYW50X2lkGAogASgMQguqAQIIAuqCFgIQQBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIl4KEklkZW50aXR5R2V0UmVxdWVzdBIgCgNyZWYYASABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSJgoGc2VsZWN0GAIgASgLMhYucm9zdGVyLklkZW50aXR5U2VsZWN0IlsKC0lkZW50aXR5UmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABIvCgdzdWJqZWN0GAogASgLMhwucm9zdGVyLklkZW50aXR5UmVmQnlTdWJqZWN0SABCBQoDa2V5IlQKFElkZW50aXR5UmVmQnlTdWJqZWN0EhkKCXRlbmFudF9pZBgKIAEoDEIG6oIWAhBAEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkiugEKDklkZW50aXR5U2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhAKCHByb3ZpZGVyGAggASgIEg8KB3N1YmplY3QYCSABKAgSEQoJdGVuYW50X2lkGAogASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiqQEKFElkZW50aXR5UGF0Y2hSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIQCghwcm92aWRlchgQIAEoCRIPCgdzdWJqZWN0GBIgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIlUKFElkZW50aXR5QXBwbHlSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIicKFUlkZW50aXR5RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiqQEKE0lkZW50aXR5TGlzdFJlcXVlc3QSJwoHZmlsdGVycxgBIAMoCzIWLnJvc3Rlci5JZGVudGl0eUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISJgoGc2VsZWN0GAYgASgLMhYucm9zdGVyLklkZW50aXR5U2VsZWN0IkwKFElkZW50aXR5TGlzdFJlc3BvbnNlEh8KBWl0ZW1zGAEgAygLMhAucm9zdGVyLklkZW50aXR5EhMKBG5leHQYAiABKAlCBaoBAggCInAKDklkZW50aXR5RmlsdGVyEiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhkKCXRlbmFudF9pZBgDIAEoDEIG6oIWAhBAIl0KFElkZW50aXR5V2F0Y2hSZXF1ZXN0EicKB2ZpbHRlcnMYASADKAsyFi5yb3N0ZXIuSWRlbnRpdHlGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiQQoVSWRlbnRpdHlXYXRjaFJlc3BvbnNlEigKBWl0ZW1zGAEgAygLMhkucm9zdGVyLklkZW50aXR5V2F0Y2hJdGVtIlcKEUlkZW50aXR5V2F0Y2hJdGVtEgoKAmlkGAEgASgMEh8KBXZhbHVlGAIgASgLMhAucm9zdGVyLklkZW50aXR5EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIihgEKGElkZW50aXR5UmVzdWJqZWN0UmVxdWVzdBIgCgNyZWYYASABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSMAoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIWCgdzdWJqZWN0GAkgASgJQgWqAQIIAiJrChVJZGVudGl0eUF0dGVzdFJlcXVlc3QSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIXCghwcm92aWRlchgIIAEoCUIFqgECCAISFgoHc3ViamVjdBgJIAEoCUIFqgECCAIysQQKD0lkZW50aXR5U2VydmljZRIzCgNBZGQSGi5yb3N0ZXIuSWRlbnRpdHlBZGRSZXF1ZXN0GhAucm9zdGVyLklkZW50aXR5EjMKA0dldBIaLnJvc3Rlci5JZGVudGl0eUdldFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSNwoFUGF0Y2gSHC5yb3N0ZXIuSWRlbnRpdHlQYXRjaFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSNwoFQXBwbHkSHC5yb3N0ZXIuSWRlbnRpdHlBcHBseVJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSOwoFRXJhc2USEy5yb3N0ZXIuSWRlbnRpdHlSZWYaHS5yb3N0ZXIuSWRlbnRpdHlFcmFzZVJlc3BvbnNlEkEKBExpc3QSGy5yb3N0ZXIuSWRlbnRpdHlMaXN0UmVxdWVzdBocLnJvc3Rlci5JZGVudGl0eUxpc3RSZXNwb25zZRJGCgVXYXRjaBIcLnJvc3Rlci5JZGVudGl0eVdhdGNoUmVxdWVzdBodLnJvc3Rlci5JZGVudGl0eVdhdGNoUmVzcG9uc2UwARI/CglSZXN1YmplY3QSIC5yb3N0ZXIuSWRlbnRpdHlSZXN1YmplY3RSZXF1ZXN0GhAucm9zdGVyLklkZW50aXR5EjkKBkF0dGVzdBIdLnJvc3Rlci5JZGVudGl0eUF0dGVzdFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHlCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_identity, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChhhcHAvaWRlbnRpdHlfc3ZjLmcucHJvdG8SBnJvc3RlciLOAQoSSWRlbnRpdHlBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIXCghwcm92aWRlchgIIAEoCUIFqgECCAISFgoHc3ViamVjdBgJIAEoCUIFqgECCAISHgoJdGVuYW50X2lkGAogASgMQguqAQIIAuqCFgIQQBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIl4KEklkZW50aXR5R2V0UmVxdWVzdBIgCgNyZWYYASABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSJgoGc2VsZWN0GAIgASgLMhYucm9zdGVyLklkZW50aXR5U2VsZWN0IlsKC0lkZW50aXR5UmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABIvCgdzdWJqZWN0GAogASgLMhwucm9zdGVyLklkZW50aXR5UmVmQnlTdWJqZWN0SABCBQoDa2V5IlQKFElkZW50aXR5UmVmQnlTdWJqZWN0EhkKCXRlbmFudF9pZBgKIAEoDEIG6oIWAhBAEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkiugEKDklkZW50aXR5U2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhAKCHByb3ZpZGVyGAggASgIEg8KB3N1YmplY3QYCSABKAgSEQoJdGVuYW50X2lkGAogASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiqQEKFElkZW50aXR5UGF0Y2hSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIQCghwcm92aWRlchgQIAEoCRIPCgdzdWJqZWN0GBIgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIicKFUlkZW50aXR5RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiqQEKE0lkZW50aXR5TGlzdFJlcXVlc3QSJwoHZmlsdGVycxgBIAMoCzIWLnJvc3Rlci5JZGVudGl0eUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISJgoGc2VsZWN0GAYgASgLMhYucm9zdGVyLklkZW50aXR5U2VsZWN0IkwKFElkZW50aXR5TGlzdFJlc3BvbnNlEh8KBWl0ZW1zGAEgAygLMhAucm9zdGVyLklkZW50aXR5EhMKBG5leHQYAiABKAlCBaoBAggCInAKDklkZW50aXR5RmlsdGVyEiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhkKCXRlbmFudF9pZBgDIAEoDEIG6oIWAhBAIl0KFElkZW50aXR5V2F0Y2hSZXF1ZXN0EicKB2ZpbHRlcnMYASADKAsyFi5yb3N0ZXIuSWRlbnRpdHlGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiQQoVSWRlbnRpdHlXYXRjaFJlc3BvbnNlEigKBWl0ZW1zGAEgAygLMhkucm9zdGVyLklkZW50aXR5V2F0Y2hJdGVtIlcKEUlkZW50aXR5V2F0Y2hJdGVtEgoKAmlkGAEgASgMEh8KBXZhbHVlGAIgASgLMhAucm9zdGVyLklkZW50aXR5EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIihgEKGElkZW50aXR5UmVzdWJqZWN0UmVxdWVzdBIgCgNyZWYYASABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSMAoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIWCgdzdWJqZWN0GAkgASgJQgWqAQIIAiJrChVJZGVudGl0eUF0dGVzdFJlcXVlc3QSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIXCghwcm92aWRlchgIIAEoCUIFqgECCAISFgoHc3ViamVjdBgJIAEoCUIFqgECCAIy+AMKD0lkZW50aXR5U2VydmljZRIzCgNBZGQSGi5yb3N0ZXIuSWRlbnRpdHlBZGRSZXF1ZXN0GhAucm9zdGVyLklkZW50aXR5EjMKA0dldBIaLnJvc3Rlci5JZGVudGl0eUdldFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSNwoFUGF0Y2gSHC5yb3N0ZXIuSWRlbnRpdHlQYXRjaFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSOwoFRXJhc2USEy5yb3N0ZXIuSWRlbnRpdHlSZWYaHS5yb3N0ZXIuSWRlbnRpdHlFcmFzZVJlc3BvbnNlEkEKBExpc3QSGy5yb3N0ZXIuSWRlbnRpdHlMaXN0UmVxdWVzdBocLnJvc3Rlci5JZGVudGl0eUxpc3RSZXNwb25zZRJGCgVXYXRjaBIcLnJvc3Rlci5JZGVudGl0eVdhdGNoUmVxdWVzdBodLnJvc3Rlci5JZGVudGl0eVdhdGNoUmVzcG9uc2UwARI/CglSZXN1YmplY3QSIC5yb3N0ZXIuSWRlbnRpdHlSZXN1YmplY3RSZXF1ZXN0GhAucm9zdGVyLklkZW50aXR5EjkKBkF0dGVzdBIdLnJvc3Rlci5JZGVudGl0eUF0dGVzdFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHlCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_identity, file_google_protobuf_timestamp, file_orm, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.IdentityAddRequest
@@ -245,28 +243,6 @@ export const IdentityPatchRequestSchema: GenMessage<IdentityPatchRequest> = /*@_
   messageDesc(file_app_identity_svc_g, 5);
 
 /**
- * @generated from message roster.IdentityApplyRequest
- */
-export type IdentityApplyRequest = Message<"roster.IdentityApplyRequest"> & {
-  /**
-   * @generated from field: roster.IdentityRef ref = 1;
-   */
-  ref?: IdentityRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.IdentityApplyRequest.
- * Use `create(IdentityApplyRequestSchema)` to create a new message.
- */
-export const IdentityApplyRequestSchema: GenMessage<IdentityApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 6);
-
-/**
  * @generated from message roster.IdentityEraseResponse
  */
 export type IdentityEraseResponse = Message<"roster.IdentityEraseResponse"> & {
@@ -287,7 +263,7 @@ export type IdentityEraseResponse = Message<"roster.IdentityEraseResponse"> & {
  * Use `create(IdentityEraseResponseSchema)` to create a new message.
  */
 export const IdentityEraseResponseSchema: GenMessage<IdentityEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 7);
+  messageDesc(file_app_identity_svc_g, 6);
 
 /**
  * @generated from message roster.IdentityListRequest
@@ -350,7 +326,7 @@ export type IdentityListRequest = Message<"roster.IdentityListRequest"> & {
  * Use `create(IdentityListRequestSchema)` to create a new message.
  */
 export const IdentityListRequestSchema: GenMessage<IdentityListRequest> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 8);
+  messageDesc(file_app_identity_svc_g, 7);
 
 /**
  * @generated from message roster.IdentityListResponse
@@ -380,7 +356,7 @@ export type IdentityListResponse = Message<"roster.IdentityListResponse"> & {
  * Use `create(IdentityListResponseSchema)` to create a new message.
  */
 export const IdentityListResponseSchema: GenMessage<IdentityListResponse> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 9);
+  messageDesc(file_app_identity_svc_g, 8);
 
 /**
  * @generated from message roster.IdentityFilter
@@ -407,7 +383,7 @@ export type IdentityFilter = Message<"roster.IdentityFilter"> & {
  * Use `create(IdentityFilterSchema)` to create a new message.
  */
 export const IdentityFilterSchema: GenMessage<IdentityFilter> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 10);
+  messageDesc(file_app_identity_svc_g, 9);
 
 /**
  * @generated from message roster.IdentityWatchRequest
@@ -445,7 +421,7 @@ export type IdentityWatchRequest = Message<"roster.IdentityWatchRequest"> & {
  * Use `create(IdentityWatchRequestSchema)` to create a new message.
  */
 export const IdentityWatchRequestSchema: GenMessage<IdentityWatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 11);
+  messageDesc(file_app_identity_svc_g, 10);
 
 /**
  * @generated from message roster.IdentityWatchResponse
@@ -464,7 +440,7 @@ export type IdentityWatchResponse = Message<"roster.IdentityWatchResponse"> & {
  * Use `create(IdentityWatchResponseSchema)` to create a new message.
  */
 export const IdentityWatchResponseSchema: GenMessage<IdentityWatchResponse> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 12);
+  messageDesc(file_app_identity_svc_g, 11);
 
 /**
  * @generated from message roster.IdentityWatchItem
@@ -512,7 +488,7 @@ export type IdentityWatchItem = Message<"roster.IdentityWatchItem"> & {
  * Use `create(IdentityWatchItemSchema)` to create a new message.
  */
 export const IdentityWatchItemSchema: GenMessage<IdentityWatchItem> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 13);
+  messageDesc(file_app_identity_svc_g, 12);
 
 /**
  * @generated from message roster.IdentityResubjectRequest
@@ -547,7 +523,7 @@ export type IdentityResubjectRequest = Message<"roster.IdentityResubjectRequest"
  * Use `create(IdentityResubjectRequestSchema)` to create a new message.
  */
 export const IdentityResubjectRequestSchema: GenMessage<IdentityResubjectRequest> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 14);
+  messageDesc(file_app_identity_svc_g, 13);
 
 /**
  * @generated from message roster.IdentityAttestRequest
@@ -580,7 +556,7 @@ export type IdentityAttestRequest = Message<"roster.IdentityAttestRequest"> & {
  * Use `create(IdentityAttestRequestSchema)` to create a new message.
  */
 export const IdentityAttestRequestSchema: GenMessage<IdentityAttestRequest> = /*@__PURE__*/
-  messageDesc(file_app_identity_svc_g, 15);
+  messageDesc(file_app_identity_svc_g, 14);
 
 /**
  * @generated from service roster.IdentityService
@@ -614,16 +590,6 @@ export const IdentityService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof IdentityPatchRequestSchema;
-    output: typeof IdentitySchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Identity
-   *
-   * @generated from rpc roster.IdentityService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof IdentityApplyRequestSchema;
     output: typeof IdentitySchema;
   },
   /**

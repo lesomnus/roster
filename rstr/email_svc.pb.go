@@ -7,7 +7,6 @@
 package rstr
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1409,99 +1408,6 @@ func (b0 EmailPatchRequest_builder) Build() *EmailPatchRequest {
 	return m0
 }
 
-type EmailApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *EmailRef              `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *EmailApplyRequest) Reset() {
-	*x = EmailApplyRequest{}
-	mi := &file_app_email_svc_g_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *EmailApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*EmailApplyRequest) ProtoMessage() {}
-
-func (x *EmailApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_email_svc_g_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *EmailApplyRequest) GetRef() *EmailRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *EmailApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *EmailApplyRequest) SetRef(v *EmailRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *EmailApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *EmailApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *EmailApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *EmailApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *EmailApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type EmailApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *EmailRef
-	Patch *patchpb.Patch
-}
-
-func (b0 EmailApplyRequest_builder) Build() *EmailApplyRequest {
-	m0 := &EmailApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
 type EmailEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
@@ -1513,7 +1419,7 @@ type EmailEraseResponse struct {
 
 func (x *EmailEraseResponse) Reset() {
 	*x = EmailEraseResponse{}
-	mi := &file_app_email_svc_g_proto_msgTypes[8]
+	mi := &file_app_email_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1525,7 +1431,7 @@ func (x *EmailEraseResponse) String() string {
 func (*EmailEraseResponse) ProtoMessage() {}
 
 func (x *EmailEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_email_svc_g_proto_msgTypes[8]
+	mi := &file_app_email_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1595,7 +1501,7 @@ type EmailListRequest struct {
 
 func (x *EmailListRequest) Reset() {
 	*x = EmailListRequest{}
-	mi := &file_app_email_svc_g_proto_msgTypes[9]
+	mi := &file_app_email_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1607,7 +1513,7 @@ func (x *EmailListRequest) String() string {
 func (*EmailListRequest) ProtoMessage() {}
 
 func (x *EmailListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_email_svc_g_proto_msgTypes[9]
+	mi := &file_app_email_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1739,7 +1645,7 @@ type EmailListResponse struct {
 
 func (x *EmailListResponse) Reset() {
 	*x = EmailListResponse{}
-	mi := &file_app_email_svc_g_proto_msgTypes[10]
+	mi := &file_app_email_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1751,7 +1657,7 @@ func (x *EmailListResponse) String() string {
 func (*EmailListResponse) ProtoMessage() {}
 
 func (x *EmailListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_email_svc_g_proto_msgTypes[10]
+	mi := &file_app_email_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1819,7 +1725,7 @@ type EmailFilter struct {
 
 func (x *EmailFilter) Reset() {
 	*x = EmailFilter{}
-	mi := &file_app_email_svc_g_proto_msgTypes[11]
+	mi := &file_app_email_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1831,7 +1737,7 @@ func (x *EmailFilter) String() string {
 func (*EmailFilter) ProtoMessage() {}
 
 func (x *EmailFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_email_svc_g_proto_msgTypes[11]
+	mi := &file_app_email_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1912,7 +1818,7 @@ type EmailWatchRequest struct {
 
 func (x *EmailWatchRequest) Reset() {
 	*x = EmailWatchRequest{}
-	mi := &file_app_email_svc_g_proto_msgTypes[12]
+	mi := &file_app_email_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1924,7 +1830,7 @@ func (x *EmailWatchRequest) String() string {
 func (*EmailWatchRequest) ProtoMessage() {}
 
 func (x *EmailWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_email_svc_g_proto_msgTypes[12]
+	mi := &file_app_email_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1998,7 +1904,7 @@ type EmailWatchResponse struct {
 
 func (x *EmailWatchResponse) Reset() {
 	*x = EmailWatchResponse{}
-	mi := &file_app_email_svc_g_proto_msgTypes[13]
+	mi := &file_app_email_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2010,7 +1916,7 @@ func (x *EmailWatchResponse) String() string {
 func (*EmailWatchResponse) ProtoMessage() {}
 
 func (x *EmailWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_email_svc_g_proto_msgTypes[13]
+	mi := &file_app_email_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2062,7 +1968,7 @@ type EmailWatchItem struct {
 
 func (x *EmailWatchItem) Reset() {
 	*x = EmailWatchItem{}
-	mi := &file_app_email_svc_g_proto_msgTypes[14]
+	mi := &file_app_email_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2074,7 +1980,7 @@ func (x *EmailWatchItem) String() string {
 func (*EmailWatchItem) ProtoMessage() {}
 
 func (x *EmailWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_app_email_svc_g_proto_msgTypes[14]
+	mi := &file_app_email_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2195,7 +2101,7 @@ type EmailClaimRequest struct {
 
 func (x *EmailClaimRequest) Reset() {
 	*x = EmailClaimRequest{}
-	mi := &file_app_email_svc_g_proto_msgTypes[15]
+	mi := &file_app_email_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2207,7 +2113,7 @@ func (x *EmailClaimRequest) String() string {
 func (*EmailClaimRequest) ProtoMessage() {}
 
 func (x *EmailClaimRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_email_svc_g_proto_msgTypes[15]
+	mi := &file_app_email_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2333,7 +2239,7 @@ type EmailClaimResponse struct {
 
 func (x *EmailClaimResponse) Reset() {
 	*x = EmailClaimResponse{}
-	mi := &file_app_email_svc_g_proto_msgTypes[16]
+	mi := &file_app_email_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2345,7 +2251,7 @@ func (x *EmailClaimResponse) String() string {
 func (*EmailClaimResponse) ProtoMessage() {}
 
 func (x *EmailClaimResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_email_svc_g_proto_msgTypes[16]
+	mi := &file_app_email_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2415,7 +2321,7 @@ type EmailConfirmRequest struct {
 
 func (x *EmailConfirmRequest) Reset() {
 	*x = EmailConfirmRequest{}
-	mi := &file_app_email_svc_g_proto_msgTypes[17]
+	mi := &file_app_email_svc_g_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2427,7 +2333,7 @@ func (x *EmailConfirmRequest) String() string {
 func (*EmailConfirmRequest) ProtoMessage() {}
 
 func (x *EmailConfirmRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_email_svc_g_proto_msgTypes[17]
+	mi := &file_app_email_svc_g_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2472,7 +2378,7 @@ type EmailConfirmResponse struct {
 
 func (x *EmailConfirmResponse) Reset() {
 	*x = EmailConfirmResponse{}
-	mi := &file_app_email_svc_g_proto_msgTypes[18]
+	mi := &file_app_email_svc_g_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2484,7 +2390,7 @@ func (x *EmailConfirmResponse) String() string {
 func (*EmailConfirmResponse) ProtoMessage() {}
 
 func (x *EmailConfirmResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_email_svc_g_proto_msgTypes[18]
+	mi := &file_app_email_svc_g_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2544,7 +2450,7 @@ type EmailAttestRequest struct {
 
 func (x *EmailAttestRequest) Reset() {
 	*x = EmailAttestRequest{}
-	mi := &file_app_email_svc_g_proto_msgTypes[19]
+	mi := &file_app_email_svc_g_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2556,7 +2462,7 @@ func (x *EmailAttestRequest) String() string {
 func (*EmailAttestRequest) ProtoMessage() {}
 
 func (x *EmailAttestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_email_svc_g_proto_msgTypes[19]
+	mi := &file_app_email_svc_g_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2670,7 +2576,7 @@ var File_app_email_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_email_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x15app/email_svc.g.proto\x12\x06roster\x1a\x0fapp/email.proto\x1a\x18app/identity_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xf2\x02\n" +
+	"\x15app/email_svc.g.proto\x12\x06roster\x1a\x0fapp/email.proto\x1a\x18app/identity_svc.g.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a roster/payday/holder_svc.g.proto\"\xf2\x02\n" +
 	"\x0fEmailAddRequest\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1f\n" +
@@ -2721,10 +2627,7 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"vouched_by\x18\x14 \x01(\v2\x13.roster.IdentityRefR\tvouchedBy\x12&\n" +
 	"\x0fvouched_by_null\x18\x15 \x01(\bR\rvouchedByNull\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"[\n" +
-	"\x11EmailApplyRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.roster.EmailRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\",\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\",\n" +
 	"\x12EmailEraseResponse\x12\x16\n" +
 	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xc7\x01\n" +
 	"\x10EmailListRequest\x12-\n" +
@@ -2765,12 +2668,11 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\n" +
 	"vouched_by\x18\n" +
 	" \x01(\v2\x13.roster.IdentityRefR\tvouchedBy\x12!\n" +
-	"\bverified\x18\t \x01(\bB\x05\xaa\x01\x02\b\x02R\bverified2\xc3\x04\n" +
+	"\bverified\x18\t \x01(\bB\x05\xaa\x01\x02\b\x02R\bverified2\x90\x04\n" +
 	"\fEmailService\x12-\n" +
 	"\x03Add\x12\x17.roster.EmailAddRequest\x1a\r.roster.Email\x12-\n" +
 	"\x03Get\x12\x17.roster.EmailGetRequest\x1a\r.roster.Email\x121\n" +
-	"\x05Patch\x12\x19.roster.EmailPatchRequest\x1a\r.roster.Email\x121\n" +
-	"\x05Apply\x12\x19.roster.EmailApplyRequest\x1a\r.roster.Email\x125\n" +
+	"\x05Patch\x12\x19.roster.EmailPatchRequest\x1a\r.roster.Email\x125\n" +
 	"\x05Erase\x12\x10.roster.EmailRef\x1a\x1a.roster.EmailEraseResponse\x12;\n" +
 	"\x04List\x12\x18.roster.EmailListRequest\x1a\x19.roster.EmailListResponse\x12@\n" +
 	"\x05Watch\x12\x19.roster.EmailWatchRequest\x1a\x1a.roster.EmailWatchResponse0\x01\x12>\n" +
@@ -2778,7 +2680,7 @@ const file_app_email_svc_g_proto_rawDesc = "" +
 	"\aConfirm\x12\x1b.roster.EmailConfirmRequest\x1a\x1c.roster.EmailConfirmResponse\x123\n" +
 	"\x06Attest\x12\x1a.roster.EmailAttestRequest\x1a\r.roster.EmailB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_email_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_app_email_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 19)
 var file_app_email_svc_g_proto_goTypes = []any{
 	(*EmailAddRequest)(nil),       // 0: roster.EmailAddRequest
 	(*EmailGetRequest)(nil),       // 1: roster.EmailGetRequest
@@ -2787,85 +2689,79 @@ var file_app_email_svc_g_proto_goTypes = []any{
 	(*EmailRefByAt)(nil),          // 4: roster.EmailRefByAt
 	(*EmailSelect)(nil),           // 5: roster.EmailSelect
 	(*EmailPatchRequest)(nil),     // 6: roster.EmailPatchRequest
-	(*EmailApplyRequest)(nil),     // 7: roster.EmailApplyRequest
-	(*EmailEraseResponse)(nil),    // 8: roster.EmailEraseResponse
-	(*EmailListRequest)(nil),      // 9: roster.EmailListRequest
-	(*EmailListResponse)(nil),     // 10: roster.EmailListResponse
-	(*EmailFilter)(nil),           // 11: roster.EmailFilter
-	(*EmailWatchRequest)(nil),     // 12: roster.EmailWatchRequest
-	(*EmailWatchResponse)(nil),    // 13: roster.EmailWatchResponse
-	(*EmailWatchItem)(nil),        // 14: roster.EmailWatchItem
-	(*EmailClaimRequest)(nil),     // 15: roster.EmailClaimRequest
-	(*EmailClaimResponse)(nil),    // 16: roster.EmailClaimResponse
-	(*EmailConfirmRequest)(nil),   // 17: roster.EmailConfirmRequest
-	(*EmailConfirmResponse)(nil),  // 18: roster.EmailConfirmResponse
-	(*EmailAttestRequest)(nil),    // 19: roster.EmailAttestRequest
-	(*HolderRef)(nil),             // 20: roster.HolderRef
-	(*timestamppb.Timestamp)(nil), // 21: google.protobuf.Timestamp
-	(*IdentityRef)(nil),           // 22: roster.IdentityRef
-	(*HolderSelect)(nil),          // 23: roster.HolderSelect
-	(*IdentitySelect)(nil),        // 24: roster.IdentitySelect
-	(*patchpb.Patch)(nil),         // 25: patch.Patch
-	(*Email)(nil),                 // 26: roster.Email
+	(*EmailEraseResponse)(nil),    // 7: roster.EmailEraseResponse
+	(*EmailListRequest)(nil),      // 8: roster.EmailListRequest
+	(*EmailListResponse)(nil),     // 9: roster.EmailListResponse
+	(*EmailFilter)(nil),           // 10: roster.EmailFilter
+	(*EmailWatchRequest)(nil),     // 11: roster.EmailWatchRequest
+	(*EmailWatchResponse)(nil),    // 12: roster.EmailWatchResponse
+	(*EmailWatchItem)(nil),        // 13: roster.EmailWatchItem
+	(*EmailClaimRequest)(nil),     // 14: roster.EmailClaimRequest
+	(*EmailClaimResponse)(nil),    // 15: roster.EmailClaimResponse
+	(*EmailConfirmRequest)(nil),   // 16: roster.EmailConfirmRequest
+	(*EmailConfirmResponse)(nil),  // 17: roster.EmailConfirmResponse
+	(*EmailAttestRequest)(nil),    // 18: roster.EmailAttestRequest
+	(*HolderRef)(nil),             // 19: roster.HolderRef
+	(*timestamppb.Timestamp)(nil), // 20: google.protobuf.Timestamp
+	(*IdentityRef)(nil),           // 21: roster.IdentityRef
+	(*HolderSelect)(nil),          // 22: roster.HolderSelect
+	(*IdentitySelect)(nil),        // 23: roster.IdentitySelect
+	(*Email)(nil),                 // 24: roster.Email
 }
 var file_app_email_svc_g_proto_depIdxs = []int32{
-	20, // 0: roster.EmailAddRequest.holder:type_name -> roster.HolderRef
-	21, // 1: roster.EmailAddRequest.date_verified:type_name -> google.protobuf.Timestamp
-	22, // 2: roster.EmailAddRequest.vouched_by:type_name -> roster.IdentityRef
-	21, // 3: roster.EmailAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	19, // 0: roster.EmailAddRequest.holder:type_name -> roster.HolderRef
+	20, // 1: roster.EmailAddRequest.date_verified:type_name -> google.protobuf.Timestamp
+	21, // 2: roster.EmailAddRequest.vouched_by:type_name -> roster.IdentityRef
+	20, // 3: roster.EmailAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 4: roster.EmailGetRequest.ref:type_name -> roster.EmailRef
 	5,  // 5: roster.EmailGetRequest.select:type_name -> roster.EmailSelect
 	3,  // 6: roster.EmailRef.address:type_name -> roster.EmailRefByAddress
 	4,  // 7: roster.EmailRef.at:type_name -> roster.EmailRefByAt
-	20, // 8: roster.EmailRefByAddress.holder:type_name -> roster.HolderRef
-	23, // 9: roster.EmailSelect.holder:type_name -> roster.HolderSelect
-	24, // 10: roster.EmailSelect.vouched_by:type_name -> roster.IdentitySelect
+	19, // 8: roster.EmailRefByAddress.holder:type_name -> roster.HolderRef
+	22, // 9: roster.EmailSelect.holder:type_name -> roster.HolderSelect
+	23, // 10: roster.EmailSelect.vouched_by:type_name -> roster.IdentitySelect
 	2,  // 11: roster.EmailPatchRequest.ref:type_name -> roster.EmailRef
-	21, // 12: roster.EmailPatchRequest.date_verified:type_name -> google.protobuf.Timestamp
-	22, // 13: roster.EmailPatchRequest.vouched_by:type_name -> roster.IdentityRef
-	21, // 14: roster.EmailPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 15: roster.EmailApplyRequest.ref:type_name -> roster.EmailRef
-	25, // 16: roster.EmailApplyRequest.patch:type_name -> patch.Patch
-	11, // 17: roster.EmailListRequest.filters:type_name -> roster.EmailFilter
-	5,  // 18: roster.EmailListRequest.select:type_name -> roster.EmailSelect
-	26, // 19: roster.EmailListResponse.items:type_name -> roster.Email
-	2,  // 20: roster.EmailFilter.ref:type_name -> roster.EmailRef
-	20, // 21: roster.EmailFilter.holder:type_name -> roster.HolderRef
-	11, // 22: roster.EmailWatchRequest.filters:type_name -> roster.EmailFilter
-	14, // 23: roster.EmailWatchResponse.items:type_name -> roster.EmailWatchItem
-	26, // 24: roster.EmailWatchItem.value:type_name -> roster.Email
-	2,  // 25: roster.EmailClaimRequest.ref:type_name -> roster.EmailRef
-	20, // 26: roster.EmailClaimRequest.holder:type_name -> roster.HolderRef
-	21, // 27: roster.EmailClaimRequest.date_expired:type_name -> google.protobuf.Timestamp
-	21, // 28: roster.EmailClaimResponse.date_expired:type_name -> google.protobuf.Timestamp
-	26, // 29: roster.EmailConfirmResponse.email:type_name -> roster.Email
-	20, // 30: roster.EmailAttestRequest.holder:type_name -> roster.HolderRef
-	22, // 31: roster.EmailAttestRequest.vouched_by:type_name -> roster.IdentityRef
-	0,  // 32: roster.EmailService.Add:input_type -> roster.EmailAddRequest
-	1,  // 33: roster.EmailService.Get:input_type -> roster.EmailGetRequest
-	6,  // 34: roster.EmailService.Patch:input_type -> roster.EmailPatchRequest
-	7,  // 35: roster.EmailService.Apply:input_type -> roster.EmailApplyRequest
-	2,  // 36: roster.EmailService.Erase:input_type -> roster.EmailRef
-	9,  // 37: roster.EmailService.List:input_type -> roster.EmailListRequest
-	12, // 38: roster.EmailService.Watch:input_type -> roster.EmailWatchRequest
-	15, // 39: roster.EmailService.Claim:input_type -> roster.EmailClaimRequest
-	17, // 40: roster.EmailService.Confirm:input_type -> roster.EmailConfirmRequest
-	19, // 41: roster.EmailService.Attest:input_type -> roster.EmailAttestRequest
-	26, // 42: roster.EmailService.Add:output_type -> roster.Email
-	26, // 43: roster.EmailService.Get:output_type -> roster.Email
-	26, // 44: roster.EmailService.Patch:output_type -> roster.Email
-	26, // 45: roster.EmailService.Apply:output_type -> roster.Email
-	8,  // 46: roster.EmailService.Erase:output_type -> roster.EmailEraseResponse
-	10, // 47: roster.EmailService.List:output_type -> roster.EmailListResponse
-	13, // 48: roster.EmailService.Watch:output_type -> roster.EmailWatchResponse
-	16, // 49: roster.EmailService.Claim:output_type -> roster.EmailClaimResponse
-	18, // 50: roster.EmailService.Confirm:output_type -> roster.EmailConfirmResponse
-	26, // 51: roster.EmailService.Attest:output_type -> roster.Email
-	42, // [42:52] is the sub-list for method output_type
-	32, // [32:42] is the sub-list for method input_type
-	32, // [32:32] is the sub-list for extension type_name
-	32, // [32:32] is the sub-list for extension extendee
-	0,  // [0:32] is the sub-list for field type_name
+	20, // 12: roster.EmailPatchRequest.date_verified:type_name -> google.protobuf.Timestamp
+	21, // 13: roster.EmailPatchRequest.vouched_by:type_name -> roster.IdentityRef
+	20, // 14: roster.EmailPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	10, // 15: roster.EmailListRequest.filters:type_name -> roster.EmailFilter
+	5,  // 16: roster.EmailListRequest.select:type_name -> roster.EmailSelect
+	24, // 17: roster.EmailListResponse.items:type_name -> roster.Email
+	2,  // 18: roster.EmailFilter.ref:type_name -> roster.EmailRef
+	19, // 19: roster.EmailFilter.holder:type_name -> roster.HolderRef
+	10, // 20: roster.EmailWatchRequest.filters:type_name -> roster.EmailFilter
+	13, // 21: roster.EmailWatchResponse.items:type_name -> roster.EmailWatchItem
+	24, // 22: roster.EmailWatchItem.value:type_name -> roster.Email
+	2,  // 23: roster.EmailClaimRequest.ref:type_name -> roster.EmailRef
+	19, // 24: roster.EmailClaimRequest.holder:type_name -> roster.HolderRef
+	20, // 25: roster.EmailClaimRequest.date_expired:type_name -> google.protobuf.Timestamp
+	20, // 26: roster.EmailClaimResponse.date_expired:type_name -> google.protobuf.Timestamp
+	24, // 27: roster.EmailConfirmResponse.email:type_name -> roster.Email
+	19, // 28: roster.EmailAttestRequest.holder:type_name -> roster.HolderRef
+	21, // 29: roster.EmailAttestRequest.vouched_by:type_name -> roster.IdentityRef
+	0,  // 30: roster.EmailService.Add:input_type -> roster.EmailAddRequest
+	1,  // 31: roster.EmailService.Get:input_type -> roster.EmailGetRequest
+	6,  // 32: roster.EmailService.Patch:input_type -> roster.EmailPatchRequest
+	2,  // 33: roster.EmailService.Erase:input_type -> roster.EmailRef
+	8,  // 34: roster.EmailService.List:input_type -> roster.EmailListRequest
+	11, // 35: roster.EmailService.Watch:input_type -> roster.EmailWatchRequest
+	14, // 36: roster.EmailService.Claim:input_type -> roster.EmailClaimRequest
+	16, // 37: roster.EmailService.Confirm:input_type -> roster.EmailConfirmRequest
+	18, // 38: roster.EmailService.Attest:input_type -> roster.EmailAttestRequest
+	24, // 39: roster.EmailService.Add:output_type -> roster.Email
+	24, // 40: roster.EmailService.Get:output_type -> roster.Email
+	24, // 41: roster.EmailService.Patch:output_type -> roster.Email
+	7,  // 42: roster.EmailService.Erase:output_type -> roster.EmailEraseResponse
+	9,  // 43: roster.EmailService.List:output_type -> roster.EmailListResponse
+	12, // 44: roster.EmailService.Watch:output_type -> roster.EmailWatchResponse
+	15, // 45: roster.EmailService.Claim:output_type -> roster.EmailClaimResponse
+	17, // 46: roster.EmailService.Confirm:output_type -> roster.EmailConfirmResponse
+	24, // 47: roster.EmailService.Attest:output_type -> roster.Email
+	39, // [39:48] is the sub-list for method output_type
+	30, // [30:39] is the sub-list for method input_type
+	30, // [30:30] is the sub-list for extension type_name
+	30, // [30:30] is the sub-list for extension extendee
+	0,  // [0:30] is the sub-list for field type_name
 }
 
 func init() { file_app_email_svc_g_proto_init() }
@@ -2887,7 +2783,7 @@ func file_app_email_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_email_svc_g_proto_rawDesc), len(file_app_email_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   20,
+			NumMessages:   19,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

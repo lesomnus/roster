@@ -411,16 +411,6 @@ var delegationOrmEntity = ormpatch.MustEntityOf(rstr.File_app_delegation_proto, 
 var delegationPatchColumns = entpatch.Columns{
 	1: delegation.FieldId, 2: delegation.HolderColumn, 8: delegation.FieldMethods, 9: delegation.FieldSecret, 10: delegation.FieldIssuedTo, 11: delegation.FieldDateExpired, 12: delegation.FieldDateAuthenticated, 13: delegation.FieldDateUpdated, 14: delegation.FieldDateErased, 15: delegation.FieldDateCreated}
 
-func (s DelegationServiceServer) Apply(ctx context.Context, req *rstr.DelegationApplyRequest) (*rstr.Delegation, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.DelegationService_Apply_FullMethodName)
-}
-
 func (s DelegationServiceServer) apply(ctx context.Context, ref *rstr.DelegationRef, doc *patchpb.Patch, by string) (*rstr.Delegation, error) {
 	plan := &ormpatch.Plan{Entity: delegationOrmEntity}
 	if doc != nil {

@@ -9,8 +9,6 @@ import { file_app_consent } from "./consent_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
 import { file_roster_payday_holder_svc_g } from "../roster/payday/holder_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -19,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/consent_svc.g.proto.
  */
 export const file_app_consent_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChdhcHAvY29uc2VudF9zdmMuZy5wcm90bxIGcm9zdGVyIukCChFDb25zZW50QWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSGAoDYXBwGAggASgMQguqAQIIAuqCFgIQQBIUCgVzY29wZRgJIAEoCUIFqgECCAISFwoIZG9jdW1lbnQYCiABKAlCBaoBAggCEh4KCXRlbmFudF9pZBgLIAEoDEILqgECCALqghYCEEASFgoHdmVyc2lvbhgMIAEoCUIFqgECCAISJgoDYWN0GBAgASgOMhIucm9zdGVyLkNvbnNlbnRBY3RCBaoBAggCEhcKCG9wdGlvbmFsGBEgASgIQgWqAQIIAhIVCgZjbGllbnQYEiABKAlCBaoBAggCEhIKA3NlcRgTIAEoA0IFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJbChFDb25zZW50R2V0UmVxdWVzdBIfCgNyZWYYASABKAsyEi5yb3N0ZXIuQ29uc2VudFJlZhIlCgZzZWxlY3QYAiABKAsyFS5yb3N0ZXIuQ29uc2VudFNlbGVjdCJTCgpDb25zZW50UmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABIoCgRhY3RzGAIgASgLMhgucm9zdGVyLkNvbnNlbnRSZWZCeUFjdHNIAEIFCgNrZXkiiQEKEENvbnNlbnRSZWZCeUFjdHMSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhITCgNhcHAYCCABKAxCBuqCFgIQQBINCgVzY29wZRgJIAEoCRIQCghkb2N1bWVudBgKIAEoCRIPCgd2ZXJzaW9uGAwgASgJEgsKA3NlcRgTIAEoAyKRAgoNQ29uc2VudFNlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBILCgNhcHAYCCABKAgSDQoFc2NvcGUYCSABKAgSEAoIZG9jdW1lbnQYCiABKAgSEQoJdGVuYW50X2lkGAsgASgIEg8KB3ZlcnNpb24YDCABKAgSCwoDYWN0GBAgASgIEhAKCG9wdGlvbmFsGBEgASgIEg4KBmNsaWVudBgSIAEoCBILCgNzZXEYEyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKEAQoTQ29uc2VudFBhdGNoUmVxdWVzdBIfCgNyZWYYASABKAsyEi5yb3N0ZXIuQ29uc2VudFJlZhIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJTChNDb25zZW50QXBwbHlSZXF1ZXN0Eh8KA3JlZhgBIAEoCzISLnJvc3Rlci5Db25zZW50UmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giJgoUQ29uc2VudEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIqYBChJDb25zZW50TGlzdFJlcXVlc3QSJgoHZmlsdGVycxgBIAMoCzIVLnJvc3Rlci5Db25zZW50RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAhIlCgZzZWxlY3QYBiABKAsyFS5yb3N0ZXIuQ29uc2VudFNlbGVjdCJKChNDb25zZW50TGlzdFJlc3BvbnNlEh4KBWl0ZW1zGAEgAygLMg8ucm9zdGVyLkNvbnNlbnQSEwoEbmV4dBgCIAEoCUIFqgECCAIimgEKDUNvbnNlbnRGaWx0ZXISHwoDcmVmGAEgASgLMhIucm9zdGVyLkNvbnNlbnRSZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhITCgNhcHAYAyABKAxCBuqCFgIQQBINCgVzY29wZRgEIAEoCRIQCghkb2N1bWVudBgFIAEoCRIPCgd2ZXJzaW9uGAYgASgJIpEBChNDb25zZW50QWdyZWVSZXF1ZXN0EiEKBmhvbGRlchgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFAoFc2NvcGUYAiABKAlCBaoBAggCEioKCWRvY3VtZW50cxgDIAMoCzIXLnJvc3Rlci5Db25zZW50RG9jdW1lbnQSFQoGY2xpZW50GAQgASgJQgWqAQIIAiI1ChRDb25zZW50QWdyZWVSZXNwb25zZRIdCgRhY3RzGAEgAygLMg8ucm9zdGVyLkNvbnNlbnQiWwoPQ29uc2VudERvY3VtZW50EhcKCGRvY3VtZW50GAEgASgJQgWqAQIIAhIWCgd2ZXJzaW9uGAIgASgJQgWqAQIIAhIXCghvcHRpb25hbBgDIAEoCEIFqgECCAIimQEKFkNvbnNlbnRXaXRoZHJhd1JlcXVlc3QSIQoGaG9sZGVyGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIUCgVzY29wZRgCIAEoCUIFqgECCAISFwoIZG9jdW1lbnQYAyABKAlCBaoBAggCEhYKB3ZlcnNpb24YBCABKAlCBaoBAggCEhUKBmNsaWVudBgFIAEoCUIFqgECCAIifAoVQ29uc2VudFNldHRsZWRSZXF1ZXN0EiEKBmhvbGRlchgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFAoFc2NvcGUYAiABKAlCBaoBAggCEioKCWRvY3VtZW50cxgDIAMoCzIXLnJvc3Rlci5Db25zZW50RG9jdW1lbnQiVwoWQ29uc2VudFNldHRsZWRSZXNwb25zZRIWCgdzZXR0bGVkGAEgASgIQgWqAQIIAhIlCgRvd2VkGAIgAygLMhcucm9zdGVyLkNvbnNlbnREb2N1bWVudDKrBAoOQ29uc2VudFNlcnZpY2USMQoDQWRkEhkucm9zdGVyLkNvbnNlbnRBZGRSZXF1ZXN0Gg8ucm9zdGVyLkNvbnNlbnQSMQoDR2V0Ehkucm9zdGVyLkNvbnNlbnRHZXRSZXF1ZXN0Gg8ucm9zdGVyLkNvbnNlbnQSNQoFUGF0Y2gSGy5yb3N0ZXIuQ29uc2VudFBhdGNoUmVxdWVzdBoPLnJvc3Rlci5Db25zZW50EjUKBUFwcGx5Ehsucm9zdGVyLkNvbnNlbnRBcHBseVJlcXVlc3QaDy5yb3N0ZXIuQ29uc2VudBI5CgVFcmFzZRISLnJvc3Rlci5Db25zZW50UmVmGhwucm9zdGVyLkNvbnNlbnRFcmFzZVJlc3BvbnNlEj8KBExpc3QSGi5yb3N0ZXIuQ29uc2VudExpc3RSZXF1ZXN0Ghsucm9zdGVyLkNvbnNlbnRMaXN0UmVzcG9uc2USQgoFQWdyZWUSGy5yb3N0ZXIuQ29uc2VudEFncmVlUmVxdWVzdBocLnJvc3Rlci5Db25zZW50QWdyZWVSZXNwb25zZRI7CghXaXRoZHJhdxIeLnJvc3Rlci5Db25zZW50V2l0aGRyYXdSZXF1ZXN0Gg8ucm9zdGVyLkNvbnNlbnQSSAoHU2V0dGxlZBIdLnJvc3Rlci5Db25zZW50U2V0dGxlZFJlcXVlc3QaHi5yb3N0ZXIuQ29uc2VudFNldHRsZWRSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_consent, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChdhcHAvY29uc2VudF9zdmMuZy5wcm90bxIGcm9zdGVyIukCChFDb25zZW50QWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSGAoDYXBwGAggASgMQguqAQIIAuqCFgIQQBIUCgVzY29wZRgJIAEoCUIFqgECCAISFwoIZG9jdW1lbnQYCiABKAlCBaoBAggCEh4KCXRlbmFudF9pZBgLIAEoDEILqgECCALqghYCEEASFgoHdmVyc2lvbhgMIAEoCUIFqgECCAISJgoDYWN0GBAgASgOMhIucm9zdGVyLkNvbnNlbnRBY3RCBaoBAggCEhcKCG9wdGlvbmFsGBEgASgIQgWqAQIIAhIVCgZjbGllbnQYEiABKAlCBaoBAggCEhIKA3NlcRgTIAEoA0IFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJbChFDb25zZW50R2V0UmVxdWVzdBIfCgNyZWYYASABKAsyEi5yb3N0ZXIuQ29uc2VudFJlZhIlCgZzZWxlY3QYAiABKAsyFS5yb3N0ZXIuQ29uc2VudFNlbGVjdCJTCgpDb25zZW50UmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABIoCgRhY3RzGAIgASgLMhgucm9zdGVyLkNvbnNlbnRSZWZCeUFjdHNIAEIFCgNrZXkiiQEKEENvbnNlbnRSZWZCeUFjdHMSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhITCgNhcHAYCCABKAxCBuqCFgIQQBINCgVzY29wZRgJIAEoCRIQCghkb2N1bWVudBgKIAEoCRIPCgd2ZXJzaW9uGAwgASgJEgsKA3NlcRgTIAEoAyKRAgoNQ29uc2VudFNlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBILCgNhcHAYCCABKAgSDQoFc2NvcGUYCSABKAgSEAoIZG9jdW1lbnQYCiABKAgSEQoJdGVuYW50X2lkGAsgASgIEg8KB3ZlcnNpb24YDCABKAgSCwoDYWN0GBAgASgIEhAKCG9wdGlvbmFsGBEgASgIEg4KBmNsaWVudBgSIAEoCBILCgNzZXEYEyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKEAQoTQ29uc2VudFBhdGNoUmVxdWVzdBIfCgNyZWYYASABKAsyEi5yb3N0ZXIuQ29uc2VudFJlZhIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCImChRDb25zZW50RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgipgEKEkNvbnNlbnRMaXN0UmVxdWVzdBImCgdmaWx0ZXJzGAEgAygLMhUucm9zdGVyLkNvbnNlbnRGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEiUKBnNlbGVjdBgGIAEoCzIVLnJvc3Rlci5Db25zZW50U2VsZWN0IkoKE0NvbnNlbnRMaXN0UmVzcG9uc2USHgoFaXRlbXMYASADKAsyDy5yb3N0ZXIuQ29uc2VudBITCgRuZXh0GAIgASgJQgWqAQIIAiKaAQoNQ29uc2VudEZpbHRlchIfCgNyZWYYASABKAsyEi5yb3N0ZXIuQ29uc2VudFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKA2FwcBgDIAEoDEIG6oIWAhBAEg0KBXNjb3BlGAQgASgJEhAKCGRvY3VtZW50GAUgASgJEg8KB3ZlcnNpb24YBiABKAkikQEKE0NvbnNlbnRBZ3JlZVJlcXVlc3QSIQoGaG9sZGVyGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIUCgVzY29wZRgCIAEoCUIFqgECCAISKgoJZG9jdW1lbnRzGAMgAygLMhcucm9zdGVyLkNvbnNlbnREb2N1bWVudBIVCgZjbGllbnQYBCABKAlCBaoBAggCIjUKFENvbnNlbnRBZ3JlZVJlc3BvbnNlEh0KBGFjdHMYASADKAsyDy5yb3N0ZXIuQ29uc2VudCJbCg9Db25zZW50RG9jdW1lbnQSFwoIZG9jdW1lbnQYASABKAlCBaoBAggCEhYKB3ZlcnNpb24YAiABKAlCBaoBAggCEhcKCG9wdGlvbmFsGAMgASgIQgWqAQIIAiKZAQoWQ29uc2VudFdpdGhkcmF3UmVxdWVzdBIhCgZob2xkZXIYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhQKBXNjb3BlGAIgASgJQgWqAQIIAhIXCghkb2N1bWVudBgDIAEoCUIFqgECCAISFgoHdmVyc2lvbhgEIAEoCUIFqgECCAISFQoGY2xpZW50GAUgASgJQgWqAQIIAiJ8ChVDb25zZW50U2V0dGxlZFJlcXVlc3QSIQoGaG9sZGVyGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIUCgVzY29wZRgCIAEoCUIFqgECCAISKgoJZG9jdW1lbnRzGAMgAygLMhcucm9zdGVyLkNvbnNlbnREb2N1bWVudCJXChZDb25zZW50U2V0dGxlZFJlc3BvbnNlEhYKB3NldHRsZWQYASABKAhCBaoBAggCEiUKBG93ZWQYAiADKAsyFy5yb3N0ZXIuQ29uc2VudERvY3VtZW50MvQDCg5Db25zZW50U2VydmljZRIxCgNBZGQSGS5yb3N0ZXIuQ29uc2VudEFkZFJlcXVlc3QaDy5yb3N0ZXIuQ29uc2VudBIxCgNHZXQSGS5yb3N0ZXIuQ29uc2VudEdldFJlcXVlc3QaDy5yb3N0ZXIuQ29uc2VudBI1CgVQYXRjaBIbLnJvc3Rlci5Db25zZW50UGF0Y2hSZXF1ZXN0Gg8ucm9zdGVyLkNvbnNlbnQSOQoFRXJhc2USEi5yb3N0ZXIuQ29uc2VudFJlZhocLnJvc3Rlci5Db25zZW50RXJhc2VSZXNwb25zZRI/CgRMaXN0Ehoucm9zdGVyLkNvbnNlbnRMaXN0UmVxdWVzdBobLnJvc3Rlci5Db25zZW50TGlzdFJlc3BvbnNlEkIKBUFncmVlEhsucm9zdGVyLkNvbnNlbnRBZ3JlZVJlcXVlc3QaHC5yb3N0ZXIuQ29uc2VudEFncmVlUmVzcG9uc2USOwoIV2l0aGRyYXcSHi5yb3N0ZXIuQ29uc2VudFdpdGhkcmF3UmVxdWVzdBoPLnJvc3Rlci5Db25zZW50EkgKB1NldHRsZWQSHS5yb3N0ZXIuQ29uc2VudFNldHRsZWRSZXF1ZXN0Gh4ucm9zdGVyLkNvbnNlbnRTZXR0bGVkUmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_consent, file_google_protobuf_timestamp, file_orm, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.ConsentAddRequest
@@ -310,28 +308,6 @@ export const ConsentPatchRequestSchema: GenMessage<ConsentPatchRequest> = /*@__P
   messageDesc(file_app_consent_svc_g, 5);
 
 /**
- * @generated from message roster.ConsentApplyRequest
- */
-export type ConsentApplyRequest = Message<"roster.ConsentApplyRequest"> & {
-  /**
-   * @generated from field: roster.ConsentRef ref = 1;
-   */
-  ref?: ConsentRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.ConsentApplyRequest.
- * Use `create(ConsentApplyRequestSchema)` to create a new message.
- */
-export const ConsentApplyRequestSchema: GenMessage<ConsentApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_consent_svc_g, 6);
-
-/**
  * @generated from message roster.ConsentEraseResponse
  */
 export type ConsentEraseResponse = Message<"roster.ConsentEraseResponse"> & {
@@ -352,7 +328,7 @@ export type ConsentEraseResponse = Message<"roster.ConsentEraseResponse"> & {
  * Use `create(ConsentEraseResponseSchema)` to create a new message.
  */
 export const ConsentEraseResponseSchema: GenMessage<ConsentEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_consent_svc_g, 7);
+  messageDesc(file_app_consent_svc_g, 6);
 
 /**
  * @generated from message roster.ConsentListRequest
@@ -415,7 +391,7 @@ export type ConsentListRequest = Message<"roster.ConsentListRequest"> & {
  * Use `create(ConsentListRequestSchema)` to create a new message.
  */
 export const ConsentListRequestSchema: GenMessage<ConsentListRequest> = /*@__PURE__*/
-  messageDesc(file_app_consent_svc_g, 8);
+  messageDesc(file_app_consent_svc_g, 7);
 
 /**
  * @generated from message roster.ConsentListResponse
@@ -445,7 +421,7 @@ export type ConsentListResponse = Message<"roster.ConsentListResponse"> & {
  * Use `create(ConsentListResponseSchema)` to create a new message.
  */
 export const ConsentListResponseSchema: GenMessage<ConsentListResponse> = /*@__PURE__*/
-  messageDesc(file_app_consent_svc_g, 9);
+  messageDesc(file_app_consent_svc_g, 8);
 
 /**
  * @generated from message roster.ConsentFilter
@@ -487,7 +463,7 @@ export type ConsentFilter = Message<"roster.ConsentFilter"> & {
  * Use `create(ConsentFilterSchema)` to create a new message.
  */
 export const ConsentFilterSchema: GenMessage<ConsentFilter> = /*@__PURE__*/
-  messageDesc(file_app_consent_svc_g, 10);
+  messageDesc(file_app_consent_svc_g, 9);
 
 /**
  * @generated from message roster.ConsentAgreeRequest
@@ -528,7 +504,7 @@ export type ConsentAgreeRequest = Message<"roster.ConsentAgreeRequest"> & {
  * Use `create(ConsentAgreeRequestSchema)` to create a new message.
  */
 export const ConsentAgreeRequestSchema: GenMessage<ConsentAgreeRequest> = /*@__PURE__*/
-  messageDesc(file_app_consent_svc_g, 11);
+  messageDesc(file_app_consent_svc_g, 10);
 
 /**
  * @generated from message roster.ConsentAgreeResponse
@@ -548,7 +524,7 @@ export type ConsentAgreeResponse = Message<"roster.ConsentAgreeResponse"> & {
  * Use `create(ConsentAgreeResponseSchema)` to create a new message.
  */
 export const ConsentAgreeResponseSchema: GenMessage<ConsentAgreeResponse> = /*@__PURE__*/
-  messageDesc(file_app_consent_svc_g, 12);
+  messageDesc(file_app_consent_svc_g, 11);
 
 /**
  * ConsentDocument is one of an app's documents at a version, as the app has it
@@ -578,7 +554,7 @@ export type ConsentDocument = Message<"roster.ConsentDocument"> & {
  * Use `create(ConsentDocumentSchema)` to create a new message.
  */
 export const ConsentDocumentSchema: GenMessage<ConsentDocument> = /*@__PURE__*/
-  messageDesc(file_app_consent_svc_g, 13);
+  messageDesc(file_app_consent_svc_g, 12);
 
 /**
  * @generated from message roster.ConsentWithdrawRequest
@@ -619,7 +595,7 @@ export type ConsentWithdrawRequest = Message<"roster.ConsentWithdrawRequest"> & 
  * Use `create(ConsentWithdrawRequestSchema)` to create a new message.
  */
 export const ConsentWithdrawRequestSchema: GenMessage<ConsentWithdrawRequest> = /*@__PURE__*/
-  messageDesc(file_app_consent_svc_g, 14);
+  messageDesc(file_app_consent_svc_g, 13);
 
 /**
  * @generated from message roster.ConsentSettledRequest
@@ -649,7 +625,7 @@ export type ConsentSettledRequest = Message<"roster.ConsentSettledRequest"> & {
  * Use `create(ConsentSettledRequestSchema)` to create a new message.
  */
 export const ConsentSettledRequestSchema: GenMessage<ConsentSettledRequest> = /*@__PURE__*/
-  messageDesc(file_app_consent_svc_g, 15);
+  messageDesc(file_app_consent_svc_g, 14);
 
 /**
  * @generated from message roster.ConsentSettledResponse
@@ -675,7 +651,7 @@ export type ConsentSettledResponse = Message<"roster.ConsentSettledResponse"> & 
  * Use `create(ConsentSettledResponseSchema)` to create a new message.
  */
 export const ConsentSettledResponseSchema: GenMessage<ConsentSettledResponse> = /*@__PURE__*/
-  messageDesc(file_app_consent_svc_g, 16);
+  messageDesc(file_app_consent_svc_g, 15);
 
 /**
  * @generated from service roster.ConsentService
@@ -709,16 +685,6 @@ export const ConsentService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof ConsentPatchRequestSchema;
-    output: typeof ConsentSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Consent
-   *
-   * @generated from rpc roster.ConsentService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof ConsentApplyRequestSchema;
     output: typeof ConsentSchema;
   },
   /**

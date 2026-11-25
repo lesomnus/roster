@@ -7,7 +7,6 @@
 package rstr
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -989,99 +988,6 @@ func (b0 RelationPatchRequest_builder) Build() *RelationPatchRequest {
 	return m0
 }
 
-type RelationApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *RelationRef           `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *RelationApplyRequest) Reset() {
-	*x = RelationApplyRequest{}
-	mi := &file_app_relation_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *RelationApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*RelationApplyRequest) ProtoMessage() {}
-
-func (x *RelationApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_relation_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *RelationApplyRequest) GetRef() *RelationRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *RelationApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *RelationApplyRequest) SetRef(v *RelationRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *RelationApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *RelationApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *RelationApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *RelationApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *RelationApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type RelationApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *RelationRef
-	Patch *patchpb.Patch
-}
-
-func (b0 RelationApplyRequest_builder) Build() *RelationApplyRequest {
-	m0 := &RelationApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
 type RelationEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
@@ -1093,7 +999,7 @@ type RelationEraseResponse struct {
 
 func (x *RelationEraseResponse) Reset() {
 	*x = RelationEraseResponse{}
-	mi := &file_app_relation_svc_g_proto_msgTypes[7]
+	mi := &file_app_relation_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1105,7 +1011,7 @@ func (x *RelationEraseResponse) String() string {
 func (*RelationEraseResponse) ProtoMessage() {}
 
 func (x *RelationEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_relation_svc_g_proto_msgTypes[7]
+	mi := &file_app_relation_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1175,7 +1081,7 @@ type RelationListRequest struct {
 
 func (x *RelationListRequest) Reset() {
 	*x = RelationListRequest{}
-	mi := &file_app_relation_svc_g_proto_msgTypes[8]
+	mi := &file_app_relation_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1187,7 +1093,7 @@ func (x *RelationListRequest) String() string {
 func (*RelationListRequest) ProtoMessage() {}
 
 func (x *RelationListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_relation_svc_g_proto_msgTypes[8]
+	mi := &file_app_relation_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1319,7 +1225,7 @@ type RelationListResponse struct {
 
 func (x *RelationListResponse) Reset() {
 	*x = RelationListResponse{}
-	mi := &file_app_relation_svc_g_proto_msgTypes[9]
+	mi := &file_app_relation_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1331,7 +1237,7 @@ func (x *RelationListResponse) String() string {
 func (*RelationListResponse) ProtoMessage() {}
 
 func (x *RelationListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_relation_svc_g_proto_msgTypes[9]
+	mi := &file_app_relation_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1400,7 +1306,7 @@ type RelationFilter struct {
 
 func (x *RelationFilter) Reset() {
 	*x = RelationFilter{}
-	mi := &file_app_relation_svc_g_proto_msgTypes[10]
+	mi := &file_app_relation_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1412,7 +1318,7 @@ func (x *RelationFilter) String() string {
 func (*RelationFilter) ProtoMessage() {}
 
 func (x *RelationFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_relation_svc_g_proto_msgTypes[10]
+	mi := &file_app_relation_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1511,7 +1417,7 @@ var File_app_relation_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_relation_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18app/relation_svc.g.proto\x12\x06roster\x1a\x12app/relation.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xe4\x02\n" +
+	"\x18app/relation_svc.g.proto\x12\x06roster\x1a\x12app/relation.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a roster/payday/holder_svc.g.proto\"\xe4\x02\n" +
 	"\x12RelationAddRequest\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12>\n" +
@@ -1549,10 +1455,7 @@ const file_app_relation_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"a\n" +
-	"\x14RelationApplyRequest\x12%\n" +
-	"\x03ref\x18\x01 \x01(\v2\x13.roster.RelationRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"/\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"/\n" +
 	"\x15RelationEraseResponse\x12\x16\n" +
 	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xd0\x01\n" +
 	"\x13RelationListRequest\x120\n" +
@@ -1567,16 +1470,15 @@ const file_app_relation_svc_g_proto_rawDesc = "" +
 	"\x0eRelationFilter\x12%\n" +
 	"\x03ref\x18\x01 \x01(\v2\x13.roster.RelationRefR\x03ref\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12'\n" +
-	"\x05other\x18\x03 \x01(\v2\x11.roster.HolderRefR\x05other2\xed\x02\n" +
+	"\x05other\x18\x03 \x01(\v2\x11.roster.HolderRefR\x05other2\xb4\x02\n" +
 	"\x0fRelationService\x123\n" +
 	"\x03Add\x12\x1a.roster.RelationAddRequest\x1a\x10.roster.Relation\x123\n" +
 	"\x03Get\x12\x1a.roster.RelationGetRequest\x1a\x10.roster.Relation\x127\n" +
-	"\x05Patch\x12\x1c.roster.RelationPatchRequest\x1a\x10.roster.Relation\x127\n" +
-	"\x05Apply\x12\x1c.roster.RelationApplyRequest\x1a\x10.roster.Relation\x12;\n" +
+	"\x05Patch\x12\x1c.roster.RelationPatchRequest\x1a\x10.roster.Relation\x12;\n" +
 	"\x05Erase\x12\x13.roster.RelationRef\x1a\x1d.roster.RelationEraseResponse\x12A\n" +
 	"\x04List\x12\x1b.roster.RelationListRequest\x1a\x1c.roster.RelationListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_relation_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
+var file_app_relation_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
 var file_app_relation_svc_g_proto_goTypes = []any{
 	(*RelationAddRequest)(nil),    // 0: roster.RelationAddRequest
 	(*RelationGetRequest)(nil),    // 1: roster.RelationGetRequest
@@ -1584,59 +1486,53 @@ var file_app_relation_svc_g_proto_goTypes = []any{
 	(*RelationRefByPair)(nil),     // 3: roster.RelationRefByPair
 	(*RelationSelect)(nil),        // 4: roster.RelationSelect
 	(*RelationPatchRequest)(nil),  // 5: roster.RelationPatchRequest
-	(*RelationApplyRequest)(nil),  // 6: roster.RelationApplyRequest
-	(*RelationEraseResponse)(nil), // 7: roster.RelationEraseResponse
-	(*RelationListRequest)(nil),   // 8: roster.RelationListRequest
-	(*RelationListResponse)(nil),  // 9: roster.RelationListResponse
-	(*RelationFilter)(nil),        // 10: roster.RelationFilter
-	nil,                           // 11: roster.RelationAddRequest.LabelsEntry
-	nil,                           // 12: roster.RelationPatchRequest.LabelsEntry
-	(*HolderRef)(nil),             // 13: roster.HolderRef
-	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
-	(*HolderSelect)(nil),          // 15: roster.HolderSelect
-	(*patchpb.Patch)(nil),         // 16: patch.Patch
-	(*Relation)(nil),              // 17: roster.Relation
+	(*RelationEraseResponse)(nil), // 6: roster.RelationEraseResponse
+	(*RelationListRequest)(nil),   // 7: roster.RelationListRequest
+	(*RelationListResponse)(nil),  // 8: roster.RelationListResponse
+	(*RelationFilter)(nil),        // 9: roster.RelationFilter
+	nil,                           // 10: roster.RelationAddRequest.LabelsEntry
+	nil,                           // 11: roster.RelationPatchRequest.LabelsEntry
+	(*HolderRef)(nil),             // 12: roster.HolderRef
+	(*timestamppb.Timestamp)(nil), // 13: google.protobuf.Timestamp
+	(*HolderSelect)(nil),          // 14: roster.HolderSelect
+	(*Relation)(nil),              // 15: roster.Relation
 }
 var file_app_relation_svc_g_proto_depIdxs = []int32{
-	13, // 0: roster.RelationAddRequest.holder:type_name -> roster.HolderRef
-	11, // 1: roster.RelationAddRequest.labels:type_name -> roster.RelationAddRequest.LabelsEntry
-	13, // 2: roster.RelationAddRequest.other:type_name -> roster.HolderRef
-	14, // 3: roster.RelationAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	12, // 0: roster.RelationAddRequest.holder:type_name -> roster.HolderRef
+	10, // 1: roster.RelationAddRequest.labels:type_name -> roster.RelationAddRequest.LabelsEntry
+	12, // 2: roster.RelationAddRequest.other:type_name -> roster.HolderRef
+	13, // 3: roster.RelationAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 4: roster.RelationGetRequest.ref:type_name -> roster.RelationRef
 	4,  // 5: roster.RelationGetRequest.select:type_name -> roster.RelationSelect
 	3,  // 6: roster.RelationRef.pair:type_name -> roster.RelationRefByPair
-	13, // 7: roster.RelationRefByPair.holder:type_name -> roster.HolderRef
-	13, // 8: roster.RelationRefByPair.other:type_name -> roster.HolderRef
-	15, // 9: roster.RelationSelect.holder:type_name -> roster.HolderSelect
-	15, // 10: roster.RelationSelect.other:type_name -> roster.HolderSelect
+	12, // 7: roster.RelationRefByPair.holder:type_name -> roster.HolderRef
+	12, // 8: roster.RelationRefByPair.other:type_name -> roster.HolderRef
+	14, // 9: roster.RelationSelect.holder:type_name -> roster.HolderSelect
+	14, // 10: roster.RelationSelect.other:type_name -> roster.HolderSelect
 	2,  // 11: roster.RelationPatchRequest.ref:type_name -> roster.RelationRef
-	12, // 12: roster.RelationPatchRequest.labels:type_name -> roster.RelationPatchRequest.LabelsEntry
-	14, // 13: roster.RelationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 14: roster.RelationApplyRequest.ref:type_name -> roster.RelationRef
-	16, // 15: roster.RelationApplyRequest.patch:type_name -> patch.Patch
-	10, // 16: roster.RelationListRequest.filters:type_name -> roster.RelationFilter
-	4,  // 17: roster.RelationListRequest.select:type_name -> roster.RelationSelect
-	17, // 18: roster.RelationListResponse.items:type_name -> roster.Relation
-	2,  // 19: roster.RelationFilter.ref:type_name -> roster.RelationRef
-	13, // 20: roster.RelationFilter.holder:type_name -> roster.HolderRef
-	13, // 21: roster.RelationFilter.other:type_name -> roster.HolderRef
-	0,  // 22: roster.RelationService.Add:input_type -> roster.RelationAddRequest
-	1,  // 23: roster.RelationService.Get:input_type -> roster.RelationGetRequest
-	5,  // 24: roster.RelationService.Patch:input_type -> roster.RelationPatchRequest
-	6,  // 25: roster.RelationService.Apply:input_type -> roster.RelationApplyRequest
-	2,  // 26: roster.RelationService.Erase:input_type -> roster.RelationRef
-	8,  // 27: roster.RelationService.List:input_type -> roster.RelationListRequest
-	17, // 28: roster.RelationService.Add:output_type -> roster.Relation
-	17, // 29: roster.RelationService.Get:output_type -> roster.Relation
-	17, // 30: roster.RelationService.Patch:output_type -> roster.Relation
-	17, // 31: roster.RelationService.Apply:output_type -> roster.Relation
-	7,  // 32: roster.RelationService.Erase:output_type -> roster.RelationEraseResponse
-	9,  // 33: roster.RelationService.List:output_type -> roster.RelationListResponse
-	28, // [28:34] is the sub-list for method output_type
-	22, // [22:28] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	11, // 12: roster.RelationPatchRequest.labels:type_name -> roster.RelationPatchRequest.LabelsEntry
+	13, // 13: roster.RelationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	9,  // 14: roster.RelationListRequest.filters:type_name -> roster.RelationFilter
+	4,  // 15: roster.RelationListRequest.select:type_name -> roster.RelationSelect
+	15, // 16: roster.RelationListResponse.items:type_name -> roster.Relation
+	2,  // 17: roster.RelationFilter.ref:type_name -> roster.RelationRef
+	12, // 18: roster.RelationFilter.holder:type_name -> roster.HolderRef
+	12, // 19: roster.RelationFilter.other:type_name -> roster.HolderRef
+	0,  // 20: roster.RelationService.Add:input_type -> roster.RelationAddRequest
+	1,  // 21: roster.RelationService.Get:input_type -> roster.RelationGetRequest
+	5,  // 22: roster.RelationService.Patch:input_type -> roster.RelationPatchRequest
+	2,  // 23: roster.RelationService.Erase:input_type -> roster.RelationRef
+	7,  // 24: roster.RelationService.List:input_type -> roster.RelationListRequest
+	15, // 25: roster.RelationService.Add:output_type -> roster.Relation
+	15, // 26: roster.RelationService.Get:output_type -> roster.Relation
+	15, // 27: roster.RelationService.Patch:output_type -> roster.Relation
+	6,  // 28: roster.RelationService.Erase:output_type -> roster.RelationEraseResponse
+	8,  // 29: roster.RelationService.List:output_type -> roster.RelationListResponse
+	25, // [25:30] is the sub-list for method output_type
+	20, // [20:25] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_app_relation_svc_g_proto_init() }
@@ -1656,7 +1552,7 @@ func file_app_relation_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_relation_svc_g_proto_rawDesc), len(file_app_relation_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   13,
+			NumMessages:   12,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

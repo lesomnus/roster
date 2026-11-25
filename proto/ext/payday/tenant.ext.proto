@@ -89,10 +89,19 @@ message Tenant {
   // 2026-123*, and never somebody's name (#280).
   string hold = 12 [(payday.field) = {personal: false}];
 
-  // payday's Tenant declares no `Apply`; roster's contract had one, and keeps
-  // it until something says it is not called.
+  // An `Apply`, which payday's Tenant declares none of, because `Close` and
+  // `Restore` write through one (`server/core/close.go`): each a document that
+  // tests the version it read. No port serves it, as no port serves a `Patch`.
+  //
+  // And no `Erase`. No port served one, and none erases a tenant: every row
+  // of a tenant is keyed to it, so it is closed, and a closed one destroyed
+  // from a shell on the box (#279). `roster tenant erase` is a command of
+  // roster's that says so (`cli/entity.go`).
   option (orm.message) = {
-    rpc: {apply: {}}
+    rpc: {
+      apply: {}
+      erase: {disabled: true}
+    }
   };
 }
 

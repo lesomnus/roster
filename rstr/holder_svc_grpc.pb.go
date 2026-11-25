@@ -22,7 +22,6 @@ const (
 	HolderService_Add_FullMethodName        = "/roster.HolderService/Add"
 	HolderService_Get_FullMethodName        = "/roster.HolderService/Get"
 	HolderService_Patch_FullMethodName      = "/roster.HolderService/Patch"
-	HolderService_Apply_FullMethodName      = "/roster.HolderService/Apply"
 	HolderService_Erase_FullMethodName      = "/roster.HolderService/Erase"
 	HolderService_List_FullMethodName       = "/roster.HolderService/List"
 	HolderService_Watch_FullMethodName      = "/roster.HolderService/Watch"
@@ -52,8 +51,6 @@ type HolderServiceClient interface {
 	Get(ctx context.Context, in *HolderGetRequest, opts ...grpc.CallOption) (*Holder, error)
 	// Patch updates an existing Holder
 	Patch(ctx context.Context, in *HolderPatchRequest, opts ...grpc.CallOption) (*Holder, error)
-	// Apply applies a patch document to an existing Holder
-	Apply(ctx context.Context, in *HolderApplyRequest, opts ...grpc.CallOption) (*Holder, error)
 	// Erase deletes a Holder
 	Erase(ctx context.Context, in *HolderRef, opts ...grpc.CallOption) (*HolderEraseResponse, error)
 	// List reads Holders a page at a time.
@@ -402,16 +399,6 @@ func (c *holderServiceClient) Patch(ctx context.Context, in *HolderPatchRequest,
 	return out, nil
 }
 
-func (c *holderServiceClient) Apply(ctx context.Context, in *HolderApplyRequest, opts ...grpc.CallOption) (*Holder, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Holder)
-	err := c.cc.Invoke(ctx, HolderService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *holderServiceClient) Erase(ctx context.Context, in *HolderRef, opts ...grpc.CallOption) (*HolderEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HolderEraseResponse)
@@ -601,8 +588,6 @@ type HolderServiceServer interface {
 	Get(context.Context, *HolderGetRequest) (*Holder, error)
 	// Patch updates an existing Holder
 	Patch(context.Context, *HolderPatchRequest) (*Holder, error)
-	// Apply applies a patch document to an existing Holder
-	Apply(context.Context, *HolderApplyRequest) (*Holder, error)
 	// Erase deletes a Holder
 	Erase(context.Context, *HolderRef) (*HolderEraseResponse, error)
 	// List reads Holders a page at a time.
@@ -930,9 +915,6 @@ func (UnimplementedHolderServiceServer) Get(context.Context, *HolderGetRequest) 
 func (UnimplementedHolderServiceServer) Patch(context.Context, *HolderPatchRequest) (*Holder, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
 }
-func (UnimplementedHolderServiceServer) Apply(context.Context, *HolderApplyRequest) (*Holder, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
 func (UnimplementedHolderServiceServer) Erase(context.Context, *HolderRef) (*HolderEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
@@ -1055,24 +1037,6 @@ func _HolderService_Patch_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(HolderServiceServer).Patch(ctx, req.(*HolderPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _HolderService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HolderApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HolderServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HolderService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HolderServiceServer).Apply(ctx, req.(*HolderApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1394,10 +1358,6 @@ var HolderService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _HolderService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _HolderService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

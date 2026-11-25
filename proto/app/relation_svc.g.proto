@@ -4,7 +4,6 @@ package roster;
 import "app/relation.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
-import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -16,8 +15,6 @@ service RelationService {
   rpc Get(RelationGetRequest) returns (Relation);
   // Patch updates an existing Relation
   rpc Patch(RelationPatchRequest) returns (Relation);
-  // Apply applies a patch document to an existing Relation
-  rpc Apply(RelationApplyRequest) returns (Relation);
   // Erase deletes a Relation
   rpc Erase(RelationRef) returns (RelationEraseResponse);
   // List reads Relations a page at a time.
@@ -81,11 +78,6 @@ message RelationPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message RelationApplyRequest {
-  RelationRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message RelationEraseResponse {

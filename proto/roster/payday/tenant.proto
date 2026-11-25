@@ -73,7 +73,7 @@ message Tenant {
       add: {}
       get: {}
       patch: {}
-      erase: {}
+      erase: {disabled: true}
       apply: {}
     }
     indexes: [

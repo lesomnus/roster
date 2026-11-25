@@ -451,16 +451,6 @@ var nominationOrmEntity = ormpatch.MustEntityOf(rstr.File_app_nomination_proto, 
 var nominationPatchColumns = entpatch.Columns{
 	1: nomination.FieldId, 2: nomination.TenantColumn, 7: nomination.FieldLabels, 5: nomination.FieldName, 8: nomination.FieldBorrowerId, 9: nomination.ActsAsColumn, 13: nomination.FieldDateUpdated, 14: nomination.FieldDateErased, 15: nomination.FieldDateCreated}
 
-func (s NominationServiceServer) Apply(ctx context.Context, req *rstr.NominationApplyRequest) (*rstr.Nomination, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.NominationService_Apply_FullMethodName)
-}
-
 func (s NominationServiceServer) apply(ctx context.Context, ref *rstr.NominationRef, doc *patchpb.Patch, by string) (*rstr.Nomination, error) {
 	plan := &ormpatch.Plan{Entity: nominationOrmEntity}
 	if doc != nil {

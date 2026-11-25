@@ -455,16 +455,6 @@ var holderOrmEntity = ormpatch.MustEntityOf(rstr.File_roster_payday_holder_proto
 var holderPatchColumns = entpatch.Columns{
 	1: holder.FieldId, 2: holder.TenantColumn, 4: holder.FieldAlias, 5: holder.FieldName, 6: holder.FieldDesc, 7: holder.FieldLabels, 13: holder.FieldDateUpdated, 14: holder.FieldDateErased, 15: holder.FieldDateCreated, 9: holder.FieldProfile, 10: holder.FieldData, 11: holder.FieldDateInvalidated, 12: holder.FieldDateDisabled, 20: holder.FieldDirectoryStanding, 16: holder.FieldPortrait, 17: holder.FieldDirectorySubject, 18: holder.FieldDirectoryAddress, 19: holder.FieldDirectoryName}
 
-func (s HolderServiceServer) Apply(ctx context.Context, req *rstr.HolderApplyRequest) (*rstr.Holder, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.HolderService_Apply_FullMethodName)
-}
-
 func (s HolderServiceServer) apply(ctx context.Context, ref *rstr.HolderRef, doc *patchpb.Patch, by string) (*rstr.Holder, error) {
 	plan := &ormpatch.Plan{Entity: holderOrmEntity}
 	if doc != nil {

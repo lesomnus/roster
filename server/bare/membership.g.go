@@ -425,16 +425,6 @@ var siteMembershipOrmEntity = ormpatch.MustEntityOf(rstr.File_app_membership_pro
 var siteMembershipPatchColumns = entpatch.Columns{
 	1: sitemembership.FieldId, 2: sitemembership.HolderColumn, 3: sitemembership.SiteColumn, 13: sitemembership.FieldDateUpdated, 14: sitemembership.FieldDateErased, 15: sitemembership.FieldDateCreated}
 
-func (s SiteMembershipServiceServer) Apply(ctx context.Context, req *rstr.SiteMembershipApplyRequest) (*rstr.SiteMembership, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.SiteMembershipService_Apply_FullMethodName)
-}
-
 func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *rstr.SiteMembershipRef, doc *patchpb.Patch, by string) (*rstr.SiteMembership, error) {
 	plan := &ormpatch.Plan{Entity: siteMembershipOrmEntity}
 	if doc != nil {
@@ -1131,16 +1121,6 @@ var teamMembershipOrmEntity = ormpatch.MustEntityOf(rstr.File_app_membership_pro
 var teamMembershipPatchColumns = entpatch.Columns{
 	1: teammembership.FieldId, 2: teammembership.HolderColumn, 8: teammembership.TeamColumn, 9: teammembership.RoleColumn, 13: teammembership.FieldDateUpdated, 14: teammembership.FieldDateErased, 15: teammembership.FieldDateCreated}
 
-func (s TeamMembershipServiceServer) Apply(ctx context.Context, req *rstr.TeamMembershipApplyRequest) (*rstr.TeamMembership, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.TeamMembershipService_Apply_FullMethodName)
-}
-
 func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *rstr.TeamMembershipRef, doc *patchpb.Patch, by string) (*rstr.TeamMembership, error) {
 	plan := &ormpatch.Plan{Entity: teamMembershipOrmEntity}
 	if doc != nil {
@@ -1836,16 +1816,6 @@ var groupMembershipOrmEntity = ormpatch.MustEntityOf(rstr.File_app_membership_pr
 
 var groupMembershipPatchColumns = entpatch.Columns{
 	1: groupmembership.FieldId, 2: groupmembership.HolderColumn, 8: groupmembership.GroupColumn, 9: groupmembership.RoleColumn, 13: groupmembership.FieldDateUpdated, 14: groupmembership.FieldDateErased, 15: groupmembership.FieldDateCreated}
-
-func (s GroupMembershipServiceServer) Apply(ctx context.Context, req *rstr.GroupMembershipApplyRequest) (*rstr.GroupMembership, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.GroupMembershipService_Apply_FullMethodName)
-}
 
 func (s GroupMembershipServiceServer) apply(ctx context.Context, ref *rstr.GroupMembershipRef, doc *patchpb.Patch, by string) (*rstr.GroupMembership, error) {
 	plan := &ormpatch.Plan{Entity: groupMembershipOrmEntity}

@@ -7,7 +7,6 @@
 package rstr
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1101,99 +1100,6 @@ func (b0 NominationPatchRequest_builder) Build() *NominationPatchRequest {
 	return m0
 }
 
-type NominationApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *NominationRef         `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *NominationApplyRequest) Reset() {
-	*x = NominationApplyRequest{}
-	mi := &file_app_nomination_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *NominationApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*NominationApplyRequest) ProtoMessage() {}
-
-func (x *NominationApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_nomination_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *NominationApplyRequest) GetRef() *NominationRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *NominationApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *NominationApplyRequest) SetRef(v *NominationRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *NominationApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *NominationApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *NominationApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *NominationApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *NominationApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type NominationApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *NominationRef
-	Patch *patchpb.Patch
-}
-
-func (b0 NominationApplyRequest_builder) Build() *NominationApplyRequest {
-	m0 := &NominationApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
 type NominationEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
@@ -1205,7 +1111,7 @@ type NominationEraseResponse struct {
 
 func (x *NominationEraseResponse) Reset() {
 	*x = NominationEraseResponse{}
-	mi := &file_app_nomination_svc_g_proto_msgTypes[7]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1217,7 +1123,7 @@ func (x *NominationEraseResponse) String() string {
 func (*NominationEraseResponse) ProtoMessage() {}
 
 func (x *NominationEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_nomination_svc_g_proto_msgTypes[7]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1287,7 +1193,7 @@ type NominationListRequest struct {
 
 func (x *NominationListRequest) Reset() {
 	*x = NominationListRequest{}
-	mi := &file_app_nomination_svc_g_proto_msgTypes[8]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1299,7 +1205,7 @@ func (x *NominationListRequest) String() string {
 func (*NominationListRequest) ProtoMessage() {}
 
 func (x *NominationListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_nomination_svc_g_proto_msgTypes[8]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1431,7 +1337,7 @@ type NominationListResponse struct {
 
 func (x *NominationListResponse) Reset() {
 	*x = NominationListResponse{}
-	mi := &file_app_nomination_svc_g_proto_msgTypes[9]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1443,7 +1349,7 @@ func (x *NominationListResponse) String() string {
 func (*NominationListResponse) ProtoMessage() {}
 
 func (x *NominationListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_nomination_svc_g_proto_msgTypes[9]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1515,7 +1421,7 @@ type NominationFilter struct {
 
 func (x *NominationFilter) Reset() {
 	*x = NominationFilter{}
-	mi := &file_app_nomination_svc_g_proto_msgTypes[10]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1527,7 +1433,7 @@ func (x *NominationFilter) String() string {
 func (*NominationFilter) ProtoMessage() {}
 
 func (x *NominationFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_nomination_svc_g_proto_msgTypes[10]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1664,7 +1570,7 @@ type NominationWatchRequest struct {
 
 func (x *NominationWatchRequest) Reset() {
 	*x = NominationWatchRequest{}
-	mi := &file_app_nomination_svc_g_proto_msgTypes[11]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1676,7 +1582,7 @@ func (x *NominationWatchRequest) String() string {
 func (*NominationWatchRequest) ProtoMessage() {}
 
 func (x *NominationWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_nomination_svc_g_proto_msgTypes[11]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1750,7 +1656,7 @@ type NominationWatchResponse struct {
 
 func (x *NominationWatchResponse) Reset() {
 	*x = NominationWatchResponse{}
-	mi := &file_app_nomination_svc_g_proto_msgTypes[12]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1762,7 +1668,7 @@ func (x *NominationWatchResponse) String() string {
 func (*NominationWatchResponse) ProtoMessage() {}
 
 func (x *NominationWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_nomination_svc_g_proto_msgTypes[12]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1814,7 +1720,7 @@ type NominationWatchItem struct {
 
 func (x *NominationWatchItem) Reset() {
 	*x = NominationWatchItem{}
-	mi := &file_app_nomination_svc_g_proto_msgTypes[13]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1826,7 +1732,7 @@ func (x *NominationWatchItem) String() string {
 func (*NominationWatchItem) ProtoMessage() {}
 
 func (x *NominationWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_app_nomination_svc_g_proto_msgTypes[13]
+	mi := &file_app_nomination_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1940,7 +1846,7 @@ var File_app_nomination_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_nomination_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x1aapp/nomination_svc.g.proto\x12\x06roster\x1a\x14app/nomination.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\x8a\x03\n" +
+	"\x1aapp/nomination_svc.g.proto\x12\x06roster\x1a\x14app/nomination.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a roster/payday/holder_svc.g.proto\x1a roster/payday/tenant_svc.g.proto\"\x8a\x03\n" +
 	"\x14NominationAddRequest\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12@\n" +
@@ -1986,10 +1892,7 @@ const file_app_nomination_svc_g_proto_rawDesc = "" +
 	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"e\n" +
-	"\x16NominationApplyRequest\x12'\n" +
-	"\x03ref\x18\x01 \x01(\v2\x15.roster.NominationRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"1\n" +
 	"\x17NominationEraseResponse\x12\x16\n" +
 	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xd6\x01\n" +
 	"\x15NominationListRequest\x122\n" +
@@ -2015,17 +1918,16 @@ const file_app_nomination_svc_g_proto_rawDesc = "" +
 	"\x13NominationWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12(\n" +
 	"\x05value\x18\x02 \x01(\v2\x12.roster.NominationR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xd3\x03\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\x96\x03\n" +
 	"\x11NominationService\x127\n" +
 	"\x03Add\x12\x1c.roster.NominationAddRequest\x1a\x12.roster.Nomination\x127\n" +
 	"\x03Get\x12\x1c.roster.NominationGetRequest\x1a\x12.roster.Nomination\x12;\n" +
-	"\x05Patch\x12\x1e.roster.NominationPatchRequest\x1a\x12.roster.Nomination\x12;\n" +
-	"\x05Apply\x12\x1e.roster.NominationApplyRequest\x1a\x12.roster.Nomination\x12?\n" +
+	"\x05Patch\x12\x1e.roster.NominationPatchRequest\x1a\x12.roster.Nomination\x12?\n" +
 	"\x05Erase\x12\x15.roster.NominationRef\x1a\x1f.roster.NominationEraseResponse\x12E\n" +
 	"\x04List\x12\x1d.roster.NominationListRequest\x1a\x1e.roster.NominationListResponse\x12J\n" +
 	"\x05Watch\x12\x1e.roster.NominationWatchRequest\x1a\x1f.roster.NominationWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_nomination_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_app_nomination_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_app_nomination_svc_g_proto_goTypes = []any{
 	(*NominationAddRequest)(nil),    // 0: roster.NominationAddRequest
 	(*NominationGetRequest)(nil),    // 1: roster.NominationGetRequest
@@ -2033,69 +1935,63 @@ var file_app_nomination_svc_g_proto_goTypes = []any{
 	(*NominationRefByBorrower)(nil), // 3: roster.NominationRefByBorrower
 	(*NominationSelect)(nil),        // 4: roster.NominationSelect
 	(*NominationPatchRequest)(nil),  // 5: roster.NominationPatchRequest
-	(*NominationApplyRequest)(nil),  // 6: roster.NominationApplyRequest
-	(*NominationEraseResponse)(nil), // 7: roster.NominationEraseResponse
-	(*NominationListRequest)(nil),   // 8: roster.NominationListRequest
-	(*NominationListResponse)(nil),  // 9: roster.NominationListResponse
-	(*NominationFilter)(nil),        // 10: roster.NominationFilter
-	(*NominationWatchRequest)(nil),  // 11: roster.NominationWatchRequest
-	(*NominationWatchResponse)(nil), // 12: roster.NominationWatchResponse
-	(*NominationWatchItem)(nil),     // 13: roster.NominationWatchItem
-	nil,                             // 14: roster.NominationAddRequest.LabelsEntry
-	nil,                             // 15: roster.NominationPatchRequest.LabelsEntry
-	(*TenantRef)(nil),               // 16: roster.TenantRef
-	(*HolderRef)(nil),               // 17: roster.HolderRef
-	(*timestamppb.Timestamp)(nil),   // 18: google.protobuf.Timestamp
-	(*TenantSelect)(nil),            // 19: roster.TenantSelect
-	(*HolderSelect)(nil),            // 20: roster.HolderSelect
-	(*patchpb.Patch)(nil),           // 21: patch.Patch
-	(*Nomination)(nil),              // 22: roster.Nomination
+	(*NominationEraseResponse)(nil), // 6: roster.NominationEraseResponse
+	(*NominationListRequest)(nil),   // 7: roster.NominationListRequest
+	(*NominationListResponse)(nil),  // 8: roster.NominationListResponse
+	(*NominationFilter)(nil),        // 9: roster.NominationFilter
+	(*NominationWatchRequest)(nil),  // 10: roster.NominationWatchRequest
+	(*NominationWatchResponse)(nil), // 11: roster.NominationWatchResponse
+	(*NominationWatchItem)(nil),     // 12: roster.NominationWatchItem
+	nil,                             // 13: roster.NominationAddRequest.LabelsEntry
+	nil,                             // 14: roster.NominationPatchRequest.LabelsEntry
+	(*TenantRef)(nil),               // 15: roster.TenantRef
+	(*HolderRef)(nil),               // 16: roster.HolderRef
+	(*timestamppb.Timestamp)(nil),   // 17: google.protobuf.Timestamp
+	(*TenantSelect)(nil),            // 18: roster.TenantSelect
+	(*HolderSelect)(nil),            // 19: roster.HolderSelect
+	(*Nomination)(nil),              // 20: roster.Nomination
 }
 var file_app_nomination_svc_g_proto_depIdxs = []int32{
-	16, // 0: roster.NominationAddRequest.tenant:type_name -> roster.TenantRef
-	14, // 1: roster.NominationAddRequest.labels:type_name -> roster.NominationAddRequest.LabelsEntry
-	17, // 2: roster.NominationAddRequest.acts_as:type_name -> roster.HolderRef
-	18, // 3: roster.NominationAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	15, // 0: roster.NominationAddRequest.tenant:type_name -> roster.TenantRef
+	13, // 1: roster.NominationAddRequest.labels:type_name -> roster.NominationAddRequest.LabelsEntry
+	16, // 2: roster.NominationAddRequest.acts_as:type_name -> roster.HolderRef
+	17, // 3: roster.NominationAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 4: roster.NominationGetRequest.ref:type_name -> roster.NominationRef
 	4,  // 5: roster.NominationGetRequest.select:type_name -> roster.NominationSelect
 	3,  // 6: roster.NominationRef.borrower:type_name -> roster.NominationRefByBorrower
-	16, // 7: roster.NominationRefByBorrower.tenant:type_name -> roster.TenantRef
-	19, // 8: roster.NominationSelect.tenant:type_name -> roster.TenantSelect
-	20, // 9: roster.NominationSelect.acts_as:type_name -> roster.HolderSelect
+	15, // 7: roster.NominationRefByBorrower.tenant:type_name -> roster.TenantRef
+	18, // 8: roster.NominationSelect.tenant:type_name -> roster.TenantSelect
+	19, // 9: roster.NominationSelect.acts_as:type_name -> roster.HolderSelect
 	2,  // 10: roster.NominationPatchRequest.ref:type_name -> roster.NominationRef
-	15, // 11: roster.NominationPatchRequest.labels:type_name -> roster.NominationPatchRequest.LabelsEntry
-	17, // 12: roster.NominationPatchRequest.acts_as:type_name -> roster.HolderRef
-	18, // 13: roster.NominationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 14: roster.NominationApplyRequest.ref:type_name -> roster.NominationRef
-	21, // 15: roster.NominationApplyRequest.patch:type_name -> patch.Patch
-	10, // 16: roster.NominationListRequest.filters:type_name -> roster.NominationFilter
-	4,  // 17: roster.NominationListRequest.select:type_name -> roster.NominationSelect
-	22, // 18: roster.NominationListResponse.items:type_name -> roster.Nomination
-	2,  // 19: roster.NominationFilter.ref:type_name -> roster.NominationRef
-	16, // 20: roster.NominationFilter.tenant:type_name -> roster.TenantRef
-	17, // 21: roster.NominationFilter.acts_as:type_name -> roster.HolderRef
-	10, // 22: roster.NominationWatchRequest.filters:type_name -> roster.NominationFilter
-	13, // 23: roster.NominationWatchResponse.items:type_name -> roster.NominationWatchItem
-	22, // 24: roster.NominationWatchItem.value:type_name -> roster.Nomination
-	0,  // 25: roster.NominationService.Add:input_type -> roster.NominationAddRequest
-	1,  // 26: roster.NominationService.Get:input_type -> roster.NominationGetRequest
-	5,  // 27: roster.NominationService.Patch:input_type -> roster.NominationPatchRequest
-	6,  // 28: roster.NominationService.Apply:input_type -> roster.NominationApplyRequest
-	2,  // 29: roster.NominationService.Erase:input_type -> roster.NominationRef
-	8,  // 30: roster.NominationService.List:input_type -> roster.NominationListRequest
-	11, // 31: roster.NominationService.Watch:input_type -> roster.NominationWatchRequest
-	22, // 32: roster.NominationService.Add:output_type -> roster.Nomination
-	22, // 33: roster.NominationService.Get:output_type -> roster.Nomination
-	22, // 34: roster.NominationService.Patch:output_type -> roster.Nomination
-	22, // 35: roster.NominationService.Apply:output_type -> roster.Nomination
-	7,  // 36: roster.NominationService.Erase:output_type -> roster.NominationEraseResponse
-	9,  // 37: roster.NominationService.List:output_type -> roster.NominationListResponse
-	12, // 38: roster.NominationService.Watch:output_type -> roster.NominationWatchResponse
-	32, // [32:39] is the sub-list for method output_type
-	25, // [25:32] is the sub-list for method input_type
-	25, // [25:25] is the sub-list for extension type_name
-	25, // [25:25] is the sub-list for extension extendee
-	0,  // [0:25] is the sub-list for field type_name
+	14, // 11: roster.NominationPatchRequest.labels:type_name -> roster.NominationPatchRequest.LabelsEntry
+	16, // 12: roster.NominationPatchRequest.acts_as:type_name -> roster.HolderRef
+	17, // 13: roster.NominationPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	9,  // 14: roster.NominationListRequest.filters:type_name -> roster.NominationFilter
+	4,  // 15: roster.NominationListRequest.select:type_name -> roster.NominationSelect
+	20, // 16: roster.NominationListResponse.items:type_name -> roster.Nomination
+	2,  // 17: roster.NominationFilter.ref:type_name -> roster.NominationRef
+	15, // 18: roster.NominationFilter.tenant:type_name -> roster.TenantRef
+	16, // 19: roster.NominationFilter.acts_as:type_name -> roster.HolderRef
+	9,  // 20: roster.NominationWatchRequest.filters:type_name -> roster.NominationFilter
+	12, // 21: roster.NominationWatchResponse.items:type_name -> roster.NominationWatchItem
+	20, // 22: roster.NominationWatchItem.value:type_name -> roster.Nomination
+	0,  // 23: roster.NominationService.Add:input_type -> roster.NominationAddRequest
+	1,  // 24: roster.NominationService.Get:input_type -> roster.NominationGetRequest
+	5,  // 25: roster.NominationService.Patch:input_type -> roster.NominationPatchRequest
+	2,  // 26: roster.NominationService.Erase:input_type -> roster.NominationRef
+	7,  // 27: roster.NominationService.List:input_type -> roster.NominationListRequest
+	10, // 28: roster.NominationService.Watch:input_type -> roster.NominationWatchRequest
+	20, // 29: roster.NominationService.Add:output_type -> roster.Nomination
+	20, // 30: roster.NominationService.Get:output_type -> roster.Nomination
+	20, // 31: roster.NominationService.Patch:output_type -> roster.Nomination
+	6,  // 32: roster.NominationService.Erase:output_type -> roster.NominationEraseResponse
+	8,  // 33: roster.NominationService.List:output_type -> roster.NominationListResponse
+	11, // 34: roster.NominationService.Watch:output_type -> roster.NominationWatchResponse
+	29, // [29:35] is the sub-list for method output_type
+	23, // [23:29] is the sub-list for method input_type
+	23, // [23:23] is the sub-list for extension type_name
+	23, // [23:23] is the sub-list for extension extendee
+	0,  // [0:23] is the sub-list for field type_name
 }
 
 func init() { file_app_nomination_svc_g_proto_init() }
@@ -2116,7 +2012,7 @@ func file_app_nomination_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_nomination_svc_g_proto_rawDesc), len(file_app_nomination_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

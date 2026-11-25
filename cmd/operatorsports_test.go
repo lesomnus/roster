@@ -9,11 +9,11 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/lesomnus/payday/pdtest"
 
 	app "github.com/lesomnus/roster/rstr"
-	"github.com/lesomnus/roster/server/core"
 )
 
 // TestWhatTheOperatorsPortsAnswerIsSo: three refusals at the ports a
@@ -32,7 +32,8 @@ import (
 //   - `TenantService/Erase` was refused in two sentences that disagreed: the
 //     generated gate's, *taken down by whoever runs this deployment*, at
 //     `server.addr` and `control.addr`, and `server/core`'s, which says what
-//     does end a tenant, at `admin.addr`.
+//     does end a tenant, at `admin.addr`. No server has the method now, so
+//     every port answers it as a method nobody serves.
 func TestWhatTheOperatorsPortsAnswerIsSo(t *testing.T) {
 	b := keyedFor(t, nil, "/roster.*/*")
 	ctx := t.Context()
@@ -109,9 +110,10 @@ func TestWhatTheOperatorsPortsAnswerIsSo(t *testing.T) {
 			"admin.addr":   {admin, metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", k.Name+"="+k.Value))},
 		} {
 			t.Run(port, func(t *testing.T) {
-				_, err := app.NewTenantServiceClient(p.conn).Erase(p.as, ref)
+				// No server has the method now (#531): one answer, gRPC's own.
+				err := p.conn.Invoke(p.as, "/roster.TenantService/Erase", ref, &emptypb.Empty{})
 				require.Equal(t, codes.Unimplemented, status.Code(err), "%v", err)
-				require.Equal(t, core.NotErased, status.Convert(err).Message())
+				require.Contains(t, status.Convert(err).Message(), "unknown method Erase")
 			})
 		}
 	})

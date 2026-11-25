@@ -69,7 +69,6 @@ message Site {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [

@@ -7,7 +7,6 @@
 package rstr
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1125,99 +1124,6 @@ func (b0 TeamPatchRequest_builder) Build() *TeamPatchRequest {
 	return m0
 }
 
-type TeamApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *TeamRef               `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *TeamApplyRequest) Reset() {
-	*x = TeamApplyRequest{}
-	mi := &file_app_team_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *TeamApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*TeamApplyRequest) ProtoMessage() {}
-
-func (x *TeamApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_team_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *TeamApplyRequest) GetRef() *TeamRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *TeamApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *TeamApplyRequest) SetRef(v *TeamRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *TeamApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *TeamApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *TeamApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *TeamApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *TeamApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type TeamApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *TeamRef
-	Patch *patchpb.Patch
-}
-
-func (b0 TeamApplyRequest_builder) Build() *TeamApplyRequest {
-	m0 := &TeamApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
 type TeamEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
@@ -1229,7 +1135,7 @@ type TeamEraseResponse struct {
 
 func (x *TeamEraseResponse) Reset() {
 	*x = TeamEraseResponse{}
-	mi := &file_app_team_svc_g_proto_msgTypes[7]
+	mi := &file_app_team_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1241,7 +1147,7 @@ func (x *TeamEraseResponse) String() string {
 func (*TeamEraseResponse) ProtoMessage() {}
 
 func (x *TeamEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_team_svc_g_proto_msgTypes[7]
+	mi := &file_app_team_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1311,7 +1217,7 @@ type TeamListRequest struct {
 
 func (x *TeamListRequest) Reset() {
 	*x = TeamListRequest{}
-	mi := &file_app_team_svc_g_proto_msgTypes[8]
+	mi := &file_app_team_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1323,7 +1229,7 @@ func (x *TeamListRequest) String() string {
 func (*TeamListRequest) ProtoMessage() {}
 
 func (x *TeamListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_team_svc_g_proto_msgTypes[8]
+	mi := &file_app_team_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1455,7 +1361,7 @@ type TeamListResponse struct {
 
 func (x *TeamListResponse) Reset() {
 	*x = TeamListResponse{}
-	mi := &file_app_team_svc_g_proto_msgTypes[9]
+	mi := &file_app_team_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1467,7 +1373,7 @@ func (x *TeamListResponse) String() string {
 func (*TeamListResponse) ProtoMessage() {}
 
 func (x *TeamListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_team_svc_g_proto_msgTypes[9]
+	mi := &file_app_team_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1536,7 +1442,7 @@ type TeamFilter struct {
 
 func (x *TeamFilter) Reset() {
 	*x = TeamFilter{}
-	mi := &file_app_team_svc_g_proto_msgTypes[10]
+	mi := &file_app_team_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1548,7 +1454,7 @@ func (x *TeamFilter) String() string {
 func (*TeamFilter) ProtoMessage() {}
 
 func (x *TeamFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_team_svc_g_proto_msgTypes[10]
+	mi := &file_app_team_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1653,7 +1559,7 @@ type TeamWatchRequest struct {
 
 func (x *TeamWatchRequest) Reset() {
 	*x = TeamWatchRequest{}
-	mi := &file_app_team_svc_g_proto_msgTypes[11]
+	mi := &file_app_team_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1665,7 +1571,7 @@ func (x *TeamWatchRequest) String() string {
 func (*TeamWatchRequest) ProtoMessage() {}
 
 func (x *TeamWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_team_svc_g_proto_msgTypes[11]
+	mi := &file_app_team_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1739,7 +1645,7 @@ type TeamWatchResponse struct {
 
 func (x *TeamWatchResponse) Reset() {
 	*x = TeamWatchResponse{}
-	mi := &file_app_team_svc_g_proto_msgTypes[12]
+	mi := &file_app_team_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1751,7 +1657,7 @@ func (x *TeamWatchResponse) String() string {
 func (*TeamWatchResponse) ProtoMessage() {}
 
 func (x *TeamWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_team_svc_g_proto_msgTypes[12]
+	mi := &file_app_team_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1803,7 +1709,7 @@ type TeamWatchItem struct {
 
 func (x *TeamWatchItem) Reset() {
 	*x = TeamWatchItem{}
-	mi := &file_app_team_svc_g_proto_msgTypes[13]
+	mi := &file_app_team_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1815,7 +1721,7 @@ func (x *TeamWatchItem) String() string {
 func (*TeamWatchItem) ProtoMessage() {}
 
 func (x *TeamWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_app_team_svc_g_proto_msgTypes[13]
+	mi := &file_app_team_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1929,7 +1835,7 @@ var File_app_team_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_team_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x14app/team_svc.g.proto\x12\x06roster\x1a\x14app/site_svc.g.proto\x1a\x0eapp/team.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/tenant_svc.g.proto\"\x8a\x02\n" +
+	"\x14app/team_svc.g.proto\x12\x06roster\x1a\x14app/site_svc.g.proto\x1a\x0eapp/team.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a roster/payday/tenant_svc.g.proto\"\x8a\x02\n" +
 	"\x0eTeamAddRequest\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
@@ -1967,10 +1873,7 @@ const file_app_team_svc_g_proto_rawDesc = "" +
 	" \x01(\tR\x04name\x12\x12\n" +
 	"\x04desc\x18\f \x01(\tR\x04desc\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"Y\n" +
-	"\x10TeamApplyRequest\x12!\n" +
-	"\x03ref\x18\x01 \x01(\v2\x0f.roster.TeamRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"+\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"+\n" +
 	"\x11TeamEraseResponse\x12\x16\n" +
 	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xc4\x01\n" +
 	"\x0fTeamListRequest\x12,\n" +
@@ -1995,17 +1898,16 @@ const file_app_team_svc_g_proto_rawDesc = "" +
 	"\rTeamWatchItem\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\"\n" +
 	"\x05value\x18\x02 \x01(\v2\f.roster.TeamR\x05value\x12\x1d\n" +
-	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xf9\x02\n" +
+	"\x06action\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x06action2\xc8\x02\n" +
 	"\vTeamService\x12+\n" +
 	"\x03Add\x12\x16.roster.TeamAddRequest\x1a\f.roster.Team\x12+\n" +
 	"\x03Get\x12\x16.roster.TeamGetRequest\x1a\f.roster.Team\x12/\n" +
-	"\x05Patch\x12\x18.roster.TeamPatchRequest\x1a\f.roster.Team\x12/\n" +
-	"\x05Apply\x12\x18.roster.TeamApplyRequest\x1a\f.roster.Team\x123\n" +
+	"\x05Patch\x12\x18.roster.TeamPatchRequest\x1a\f.roster.Team\x123\n" +
 	"\x05Erase\x12\x0f.roster.TeamRef\x1a\x19.roster.TeamEraseResponse\x129\n" +
 	"\x04List\x12\x17.roster.TeamListRequest\x1a\x18.roster.TeamListResponse\x12>\n" +
 	"\x05Watch\x12\x18.roster.TeamWatchRequest\x1a\x19.roster.TeamWatchResponse0\x01B!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_team_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_app_team_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 13)
 var file_app_team_svc_g_proto_goTypes = []any{
 	(*TeamAddRequest)(nil),        // 0: roster.TeamAddRequest
 	(*TeamGetRequest)(nil),        // 1: roster.TeamGetRequest
@@ -2013,64 +1915,58 @@ var file_app_team_svc_g_proto_goTypes = []any{
 	(*TeamRefBySlug)(nil),         // 3: roster.TeamRefBySlug
 	(*TeamSelect)(nil),            // 4: roster.TeamSelect
 	(*TeamPatchRequest)(nil),      // 5: roster.TeamPatchRequest
-	(*TeamApplyRequest)(nil),      // 6: roster.TeamApplyRequest
-	(*TeamEraseResponse)(nil),     // 7: roster.TeamEraseResponse
-	(*TeamListRequest)(nil),       // 8: roster.TeamListRequest
-	(*TeamListResponse)(nil),      // 9: roster.TeamListResponse
-	(*TeamFilter)(nil),            // 10: roster.TeamFilter
-	(*TeamWatchRequest)(nil),      // 11: roster.TeamWatchRequest
-	(*TeamWatchResponse)(nil),     // 12: roster.TeamWatchResponse
-	(*TeamWatchItem)(nil),         // 13: roster.TeamWatchItem
-	(*TenantRef)(nil),             // 14: roster.TenantRef
-	(*SiteRef)(nil),               // 15: roster.SiteRef
-	(*timestamppb.Timestamp)(nil), // 16: google.protobuf.Timestamp
-	(*TenantSelect)(nil),          // 17: roster.TenantSelect
-	(*SiteSelect)(nil),            // 18: roster.SiteSelect
-	(*patchpb.Patch)(nil),         // 19: patch.Patch
-	(*Team)(nil),                  // 20: roster.Team
+	(*TeamEraseResponse)(nil),     // 6: roster.TeamEraseResponse
+	(*TeamListRequest)(nil),       // 7: roster.TeamListRequest
+	(*TeamListResponse)(nil),      // 8: roster.TeamListResponse
+	(*TeamFilter)(nil),            // 9: roster.TeamFilter
+	(*TeamWatchRequest)(nil),      // 10: roster.TeamWatchRequest
+	(*TeamWatchResponse)(nil),     // 11: roster.TeamWatchResponse
+	(*TeamWatchItem)(nil),         // 12: roster.TeamWatchItem
+	(*TenantRef)(nil),             // 13: roster.TenantRef
+	(*SiteRef)(nil),               // 14: roster.SiteRef
+	(*timestamppb.Timestamp)(nil), // 15: google.protobuf.Timestamp
+	(*TenantSelect)(nil),          // 16: roster.TenantSelect
+	(*SiteSelect)(nil),            // 17: roster.SiteSelect
+	(*Team)(nil),                  // 18: roster.Team
 }
 var file_app_team_svc_g_proto_depIdxs = []int32{
-	14, // 0: roster.TeamAddRequest.tenant:type_name -> roster.TenantRef
-	15, // 1: roster.TeamAddRequest.site:type_name -> roster.SiteRef
-	16, // 2: roster.TeamAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	13, // 0: roster.TeamAddRequest.tenant:type_name -> roster.TenantRef
+	14, // 1: roster.TeamAddRequest.site:type_name -> roster.SiteRef
+	15, // 2: roster.TeamAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.TeamGetRequest.ref:type_name -> roster.TeamRef
 	4,  // 4: roster.TeamGetRequest.select:type_name -> roster.TeamSelect
 	3,  // 5: roster.TeamRef.slug:type_name -> roster.TeamRefBySlug
-	15, // 6: roster.TeamRefBySlug.site:type_name -> roster.SiteRef
-	17, // 7: roster.TeamSelect.tenant:type_name -> roster.TenantSelect
-	18, // 8: roster.TeamSelect.site:type_name -> roster.SiteSelect
+	14, // 6: roster.TeamRefBySlug.site:type_name -> roster.SiteRef
+	16, // 7: roster.TeamSelect.tenant:type_name -> roster.TenantSelect
+	17, // 8: roster.TeamSelect.site:type_name -> roster.SiteSelect
 	2,  // 9: roster.TeamPatchRequest.ref:type_name -> roster.TeamRef
-	16, // 10: roster.TeamPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 11: roster.TeamApplyRequest.ref:type_name -> roster.TeamRef
-	19, // 12: roster.TeamApplyRequest.patch:type_name -> patch.Patch
-	10, // 13: roster.TeamListRequest.filters:type_name -> roster.TeamFilter
-	4,  // 14: roster.TeamListRequest.select:type_name -> roster.TeamSelect
-	20, // 15: roster.TeamListResponse.items:type_name -> roster.Team
-	2,  // 16: roster.TeamFilter.ref:type_name -> roster.TeamRef
-	14, // 17: roster.TeamFilter.tenant:type_name -> roster.TenantRef
-	15, // 18: roster.TeamFilter.site:type_name -> roster.SiteRef
-	10, // 19: roster.TeamWatchRequest.filters:type_name -> roster.TeamFilter
-	13, // 20: roster.TeamWatchResponse.items:type_name -> roster.TeamWatchItem
-	20, // 21: roster.TeamWatchItem.value:type_name -> roster.Team
-	0,  // 22: roster.TeamService.Add:input_type -> roster.TeamAddRequest
-	1,  // 23: roster.TeamService.Get:input_type -> roster.TeamGetRequest
-	5,  // 24: roster.TeamService.Patch:input_type -> roster.TeamPatchRequest
-	6,  // 25: roster.TeamService.Apply:input_type -> roster.TeamApplyRequest
-	2,  // 26: roster.TeamService.Erase:input_type -> roster.TeamRef
-	8,  // 27: roster.TeamService.List:input_type -> roster.TeamListRequest
-	11, // 28: roster.TeamService.Watch:input_type -> roster.TeamWatchRequest
-	20, // 29: roster.TeamService.Add:output_type -> roster.Team
-	20, // 30: roster.TeamService.Get:output_type -> roster.Team
-	20, // 31: roster.TeamService.Patch:output_type -> roster.Team
-	20, // 32: roster.TeamService.Apply:output_type -> roster.Team
-	7,  // 33: roster.TeamService.Erase:output_type -> roster.TeamEraseResponse
-	9,  // 34: roster.TeamService.List:output_type -> roster.TeamListResponse
-	12, // 35: roster.TeamService.Watch:output_type -> roster.TeamWatchResponse
-	29, // [29:36] is the sub-list for method output_type
-	22, // [22:29] is the sub-list for method input_type
-	22, // [22:22] is the sub-list for extension type_name
-	22, // [22:22] is the sub-list for extension extendee
-	0,  // [0:22] is the sub-list for field type_name
+	15, // 10: roster.TeamPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	9,  // 11: roster.TeamListRequest.filters:type_name -> roster.TeamFilter
+	4,  // 12: roster.TeamListRequest.select:type_name -> roster.TeamSelect
+	18, // 13: roster.TeamListResponse.items:type_name -> roster.Team
+	2,  // 14: roster.TeamFilter.ref:type_name -> roster.TeamRef
+	13, // 15: roster.TeamFilter.tenant:type_name -> roster.TenantRef
+	14, // 16: roster.TeamFilter.site:type_name -> roster.SiteRef
+	9,  // 17: roster.TeamWatchRequest.filters:type_name -> roster.TeamFilter
+	12, // 18: roster.TeamWatchResponse.items:type_name -> roster.TeamWatchItem
+	18, // 19: roster.TeamWatchItem.value:type_name -> roster.Team
+	0,  // 20: roster.TeamService.Add:input_type -> roster.TeamAddRequest
+	1,  // 21: roster.TeamService.Get:input_type -> roster.TeamGetRequest
+	5,  // 22: roster.TeamService.Patch:input_type -> roster.TeamPatchRequest
+	2,  // 23: roster.TeamService.Erase:input_type -> roster.TeamRef
+	7,  // 24: roster.TeamService.List:input_type -> roster.TeamListRequest
+	10, // 25: roster.TeamService.Watch:input_type -> roster.TeamWatchRequest
+	18, // 26: roster.TeamService.Add:output_type -> roster.Team
+	18, // 27: roster.TeamService.Get:output_type -> roster.Team
+	18, // 28: roster.TeamService.Patch:output_type -> roster.Team
+	6,  // 29: roster.TeamService.Erase:output_type -> roster.TeamEraseResponse
+	8,  // 30: roster.TeamService.List:output_type -> roster.TeamListResponse
+	11, // 31: roster.TeamService.Watch:output_type -> roster.TeamWatchResponse
+	26, // [26:32] is the sub-list for method output_type
+	20, // [20:26] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_app_team_svc_g_proto_init() }
@@ -2091,7 +1987,7 @@ func file_app_team_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_team_svc_g_proto_rawDesc), len(file_app_team_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   14,
+			NumMessages:   13,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

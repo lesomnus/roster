@@ -248,12 +248,12 @@ message Holder {
     }
   ];
 
-  // payday's Holder declares no `Apply`, and roster asks for it. The indexes
-  // are what make "the person their directory calls this" one read: unique
-  // within a tenant, as a `userName` is unique at a SCIM endpoint and a
-  // subject at a connection.
+  // An overlay may add an index, and switch a verb payday's own code does not
+  // call. These are what make "the person their directory calls this" one
+  // read: unique within a tenant, as a `userName` is unique at a SCIM endpoint
+  // and a subject at a connection. No `Apply`, which payday's Holder declares
+  // none of and nothing here calls.
   option (orm.message) = {
-    rpc: {apply: {}}
     indexes: [
       {
         name: "named"

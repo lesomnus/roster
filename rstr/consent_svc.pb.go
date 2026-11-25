@@ -7,7 +7,6 @@
 package rstr
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1375,99 +1374,6 @@ func (b0 ConsentPatchRequest_builder) Build() *ConsentPatchRequest {
 	return m0
 }
 
-type ConsentApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *ConsentRef            `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *ConsentApplyRequest) Reset() {
-	*x = ConsentApplyRequest{}
-	mi := &file_app_consent_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *ConsentApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*ConsentApplyRequest) ProtoMessage() {}
-
-func (x *ConsentApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_consent_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *ConsentApplyRequest) GetRef() *ConsentRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *ConsentApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *ConsentApplyRequest) SetRef(v *ConsentRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *ConsentApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *ConsentApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *ConsentApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *ConsentApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *ConsentApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type ConsentApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *ConsentRef
-	Patch *patchpb.Patch
-}
-
-func (b0 ConsentApplyRequest_builder) Build() *ConsentApplyRequest {
-	m0 := &ConsentApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
 type ConsentEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
@@ -1479,7 +1385,7 @@ type ConsentEraseResponse struct {
 
 func (x *ConsentEraseResponse) Reset() {
 	*x = ConsentEraseResponse{}
-	mi := &file_app_consent_svc_g_proto_msgTypes[7]
+	mi := &file_app_consent_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1491,7 +1397,7 @@ func (x *ConsentEraseResponse) String() string {
 func (*ConsentEraseResponse) ProtoMessage() {}
 
 func (x *ConsentEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_consent_svc_g_proto_msgTypes[7]
+	mi := &file_app_consent_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1561,7 +1467,7 @@ type ConsentListRequest struct {
 
 func (x *ConsentListRequest) Reset() {
 	*x = ConsentListRequest{}
-	mi := &file_app_consent_svc_g_proto_msgTypes[8]
+	mi := &file_app_consent_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1573,7 +1479,7 @@ func (x *ConsentListRequest) String() string {
 func (*ConsentListRequest) ProtoMessage() {}
 
 func (x *ConsentListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_consent_svc_g_proto_msgTypes[8]
+	mi := &file_app_consent_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1705,7 +1611,7 @@ type ConsentListResponse struct {
 
 func (x *ConsentListResponse) Reset() {
 	*x = ConsentListResponse{}
-	mi := &file_app_consent_svc_g_proto_msgTypes[9]
+	mi := &file_app_consent_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1717,7 +1623,7 @@ func (x *ConsentListResponse) String() string {
 func (*ConsentListResponse) ProtoMessage() {}
 
 func (x *ConsentListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_consent_svc_g_proto_msgTypes[9]
+	mi := &file_app_consent_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1791,7 +1697,7 @@ type ConsentFilter struct {
 
 func (x *ConsentFilter) Reset() {
 	*x = ConsentFilter{}
-	mi := &file_app_consent_svc_g_proto_msgTypes[10]
+	mi := &file_app_consent_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1803,7 +1709,7 @@ func (x *ConsentFilter) String() string {
 func (*ConsentFilter) ProtoMessage() {}
 
 func (x *ConsentFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_consent_svc_g_proto_msgTypes[10]
+	mi := &file_app_consent_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2014,7 +1920,7 @@ type ConsentAgreeRequest struct {
 
 func (x *ConsentAgreeRequest) Reset() {
 	*x = ConsentAgreeRequest{}
-	mi := &file_app_consent_svc_g_proto_msgTypes[11]
+	mi := &file_app_consent_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2026,7 +1932,7 @@ func (x *ConsentAgreeRequest) String() string {
 func (*ConsentAgreeRequest) ProtoMessage() {}
 
 func (x *ConsentAgreeRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_consent_svc_g_proto_msgTypes[11]
+	mi := &file_app_consent_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2128,7 +2034,7 @@ type ConsentAgreeResponse struct {
 
 func (x *ConsentAgreeResponse) Reset() {
 	*x = ConsentAgreeResponse{}
-	mi := &file_app_consent_svc_g_proto_msgTypes[12]
+	mi := &file_app_consent_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2140,7 +2046,7 @@ func (x *ConsentAgreeResponse) String() string {
 func (*ConsentAgreeResponse) ProtoMessage() {}
 
 func (x *ConsentAgreeResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_consent_svc_g_proto_msgTypes[12]
+	mi := &file_app_consent_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2193,7 +2099,7 @@ type ConsentDocument struct {
 
 func (x *ConsentDocument) Reset() {
 	*x = ConsentDocument{}
-	mi := &file_app_consent_svc_g_proto_msgTypes[13]
+	mi := &file_app_consent_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2205,7 +2111,7 @@ func (x *ConsentDocument) String() string {
 func (*ConsentDocument) ProtoMessage() {}
 
 func (x *ConsentDocument) ProtoReflect() protoreflect.Message {
-	mi := &file_app_consent_svc_g_proto_msgTypes[13]
+	mi := &file_app_consent_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2280,7 +2186,7 @@ type ConsentWithdrawRequest struct {
 
 func (x *ConsentWithdrawRequest) Reset() {
 	*x = ConsentWithdrawRequest{}
-	mi := &file_app_consent_svc_g_proto_msgTypes[14]
+	mi := &file_app_consent_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2292,7 +2198,7 @@ func (x *ConsentWithdrawRequest) String() string {
 func (*ConsentWithdrawRequest) ProtoMessage() {}
 
 func (x *ConsentWithdrawRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_consent_svc_g_proto_msgTypes[14]
+	mi := &file_app_consent_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2404,7 +2310,7 @@ type ConsentSettledRequest struct {
 
 func (x *ConsentSettledRequest) Reset() {
 	*x = ConsentSettledRequest{}
-	mi := &file_app_consent_svc_g_proto_msgTypes[15]
+	mi := &file_app_consent_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2416,7 +2322,7 @@ func (x *ConsentSettledRequest) String() string {
 func (*ConsentSettledRequest) ProtoMessage() {}
 
 func (x *ConsentSettledRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_consent_svc_g_proto_msgTypes[15]
+	mi := &file_app_consent_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2503,7 +2409,7 @@ type ConsentSettledResponse struct {
 
 func (x *ConsentSettledResponse) Reset() {
 	*x = ConsentSettledResponse{}
-	mi := &file_app_consent_svc_g_proto_msgTypes[16]
+	mi := &file_app_consent_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2515,7 +2421,7 @@ func (x *ConsentSettledResponse) String() string {
 func (*ConsentSettledResponse) ProtoMessage() {}
 
 func (x *ConsentSettledResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_consent_svc_g_proto_msgTypes[16]
+	mi := &file_app_consent_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2572,7 +2478,7 @@ var File_app_consent_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_consent_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x17app/consent_svc.g.proto\x12\x06roster\x1a\x11app/consent.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xc7\x03\n" +
+	"\x17app/consent_svc.g.proto\x12\x06roster\x1a\x11app/consent.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a roster/payday/holder_svc.g.proto\"\xc7\x03\n" +
 	"\x11ConsentAddRequest\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1d\n" +
@@ -2623,10 +2529,7 @@ const file_app_consent_svc_g_proto_rawDesc = "" +
 	"\x13ConsentPatchRequest\x12$\n" +
 	"\x03ref\x18\x01 \x01(\v2\x12.roster.ConsentRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"_\n" +
-	"\x13ConsentApplyRequest\x12$\n" +
-	"\x03ref\x18\x01 \x01(\v2\x12.roster.ConsentRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\".\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\".\n" +
 	"\x14ConsentEraseResponse\x12\x16\n" +
 	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xcd\x01\n" +
 	"\x12ConsentListRequest\x12/\n" +
@@ -2668,19 +2571,18 @@ const file_app_consent_svc_g_proto_rawDesc = "" +
 	"\tdocuments\x18\x03 \x03(\v2\x17.roster.ConsentDocumentR\tdocuments\"f\n" +
 	"\x16ConsentSettledResponse\x12\x1f\n" +
 	"\asettled\x18\x01 \x01(\bB\x05\xaa\x01\x02\b\x02R\asettled\x12+\n" +
-	"\x04owed\x18\x02 \x03(\v2\x17.roster.ConsentDocumentR\x04owed2\xab\x04\n" +
+	"\x04owed\x18\x02 \x03(\v2\x17.roster.ConsentDocumentR\x04owed2\xf4\x03\n" +
 	"\x0eConsentService\x121\n" +
 	"\x03Add\x12\x19.roster.ConsentAddRequest\x1a\x0f.roster.Consent\x121\n" +
 	"\x03Get\x12\x19.roster.ConsentGetRequest\x1a\x0f.roster.Consent\x125\n" +
-	"\x05Patch\x12\x1b.roster.ConsentPatchRequest\x1a\x0f.roster.Consent\x125\n" +
-	"\x05Apply\x12\x1b.roster.ConsentApplyRequest\x1a\x0f.roster.Consent\x129\n" +
+	"\x05Patch\x12\x1b.roster.ConsentPatchRequest\x1a\x0f.roster.Consent\x129\n" +
 	"\x05Erase\x12\x12.roster.ConsentRef\x1a\x1c.roster.ConsentEraseResponse\x12?\n" +
 	"\x04List\x12\x1a.roster.ConsentListRequest\x1a\x1b.roster.ConsentListResponse\x12B\n" +
 	"\x05Agree\x12\x1b.roster.ConsentAgreeRequest\x1a\x1c.roster.ConsentAgreeResponse\x12;\n" +
 	"\bWithdraw\x12\x1e.roster.ConsentWithdrawRequest\x1a\x0f.roster.Consent\x12H\n" +
 	"\aSettled\x12\x1d.roster.ConsentSettledRequest\x1a\x1e.roster.ConsentSettledResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_consent_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_app_consent_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_app_consent_svc_g_proto_goTypes = []any{
 	(*ConsentAddRequest)(nil),      // 0: roster.ConsentAddRequest
 	(*ConsentGetRequest)(nil),      // 1: roster.ConsentGetRequest
@@ -2688,72 +2590,66 @@ var file_app_consent_svc_g_proto_goTypes = []any{
 	(*ConsentRefByActs)(nil),       // 3: roster.ConsentRefByActs
 	(*ConsentSelect)(nil),          // 4: roster.ConsentSelect
 	(*ConsentPatchRequest)(nil),    // 5: roster.ConsentPatchRequest
-	(*ConsentApplyRequest)(nil),    // 6: roster.ConsentApplyRequest
-	(*ConsentEraseResponse)(nil),   // 7: roster.ConsentEraseResponse
-	(*ConsentListRequest)(nil),     // 8: roster.ConsentListRequest
-	(*ConsentListResponse)(nil),    // 9: roster.ConsentListResponse
-	(*ConsentFilter)(nil),          // 10: roster.ConsentFilter
-	(*ConsentAgreeRequest)(nil),    // 11: roster.ConsentAgreeRequest
-	(*ConsentAgreeResponse)(nil),   // 12: roster.ConsentAgreeResponse
-	(*ConsentDocument)(nil),        // 13: roster.ConsentDocument
-	(*ConsentWithdrawRequest)(nil), // 14: roster.ConsentWithdrawRequest
-	(*ConsentSettledRequest)(nil),  // 15: roster.ConsentSettledRequest
-	(*ConsentSettledResponse)(nil), // 16: roster.ConsentSettledResponse
-	(*HolderRef)(nil),              // 17: roster.HolderRef
-	(ConsentAct)(0),                // 18: roster.ConsentAct
-	(*timestamppb.Timestamp)(nil),  // 19: google.protobuf.Timestamp
-	(*HolderSelect)(nil),           // 20: roster.HolderSelect
-	(*patchpb.Patch)(nil),          // 21: patch.Patch
-	(*Consent)(nil),                // 22: roster.Consent
+	(*ConsentEraseResponse)(nil),   // 6: roster.ConsentEraseResponse
+	(*ConsentListRequest)(nil),     // 7: roster.ConsentListRequest
+	(*ConsentListResponse)(nil),    // 8: roster.ConsentListResponse
+	(*ConsentFilter)(nil),          // 9: roster.ConsentFilter
+	(*ConsentAgreeRequest)(nil),    // 10: roster.ConsentAgreeRequest
+	(*ConsentAgreeResponse)(nil),   // 11: roster.ConsentAgreeResponse
+	(*ConsentDocument)(nil),        // 12: roster.ConsentDocument
+	(*ConsentWithdrawRequest)(nil), // 13: roster.ConsentWithdrawRequest
+	(*ConsentSettledRequest)(nil),  // 14: roster.ConsentSettledRequest
+	(*ConsentSettledResponse)(nil), // 15: roster.ConsentSettledResponse
+	(*HolderRef)(nil),              // 16: roster.HolderRef
+	(ConsentAct)(0),                // 17: roster.ConsentAct
+	(*timestamppb.Timestamp)(nil),  // 18: google.protobuf.Timestamp
+	(*HolderSelect)(nil),           // 19: roster.HolderSelect
+	(*Consent)(nil),                // 20: roster.Consent
 }
 var file_app_consent_svc_g_proto_depIdxs = []int32{
-	17, // 0: roster.ConsentAddRequest.holder:type_name -> roster.HolderRef
-	18, // 1: roster.ConsentAddRequest.act:type_name -> roster.ConsentAct
-	19, // 2: roster.ConsentAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	16, // 0: roster.ConsentAddRequest.holder:type_name -> roster.HolderRef
+	17, // 1: roster.ConsentAddRequest.act:type_name -> roster.ConsentAct
+	18, // 2: roster.ConsentAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 3: roster.ConsentGetRequest.ref:type_name -> roster.ConsentRef
 	4,  // 4: roster.ConsentGetRequest.select:type_name -> roster.ConsentSelect
 	3,  // 5: roster.ConsentRef.acts:type_name -> roster.ConsentRefByActs
-	17, // 6: roster.ConsentRefByActs.holder:type_name -> roster.HolderRef
-	20, // 7: roster.ConsentSelect.holder:type_name -> roster.HolderSelect
+	16, // 6: roster.ConsentRefByActs.holder:type_name -> roster.HolderRef
+	19, // 7: roster.ConsentSelect.holder:type_name -> roster.HolderSelect
 	2,  // 8: roster.ConsentPatchRequest.ref:type_name -> roster.ConsentRef
-	19, // 9: roster.ConsentPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 10: roster.ConsentApplyRequest.ref:type_name -> roster.ConsentRef
-	21, // 11: roster.ConsentApplyRequest.patch:type_name -> patch.Patch
-	10, // 12: roster.ConsentListRequest.filters:type_name -> roster.ConsentFilter
-	4,  // 13: roster.ConsentListRequest.select:type_name -> roster.ConsentSelect
-	22, // 14: roster.ConsentListResponse.items:type_name -> roster.Consent
-	2,  // 15: roster.ConsentFilter.ref:type_name -> roster.ConsentRef
-	17, // 16: roster.ConsentFilter.holder:type_name -> roster.HolderRef
-	17, // 17: roster.ConsentAgreeRequest.holder:type_name -> roster.HolderRef
-	13, // 18: roster.ConsentAgreeRequest.documents:type_name -> roster.ConsentDocument
-	22, // 19: roster.ConsentAgreeResponse.acts:type_name -> roster.Consent
-	17, // 20: roster.ConsentWithdrawRequest.holder:type_name -> roster.HolderRef
-	17, // 21: roster.ConsentSettledRequest.holder:type_name -> roster.HolderRef
-	13, // 22: roster.ConsentSettledRequest.documents:type_name -> roster.ConsentDocument
-	13, // 23: roster.ConsentSettledResponse.owed:type_name -> roster.ConsentDocument
-	0,  // 24: roster.ConsentService.Add:input_type -> roster.ConsentAddRequest
-	1,  // 25: roster.ConsentService.Get:input_type -> roster.ConsentGetRequest
-	5,  // 26: roster.ConsentService.Patch:input_type -> roster.ConsentPatchRequest
-	6,  // 27: roster.ConsentService.Apply:input_type -> roster.ConsentApplyRequest
-	2,  // 28: roster.ConsentService.Erase:input_type -> roster.ConsentRef
-	8,  // 29: roster.ConsentService.List:input_type -> roster.ConsentListRequest
-	11, // 30: roster.ConsentService.Agree:input_type -> roster.ConsentAgreeRequest
-	14, // 31: roster.ConsentService.Withdraw:input_type -> roster.ConsentWithdrawRequest
-	15, // 32: roster.ConsentService.Settled:input_type -> roster.ConsentSettledRequest
-	22, // 33: roster.ConsentService.Add:output_type -> roster.Consent
-	22, // 34: roster.ConsentService.Get:output_type -> roster.Consent
-	22, // 35: roster.ConsentService.Patch:output_type -> roster.Consent
-	22, // 36: roster.ConsentService.Apply:output_type -> roster.Consent
-	7,  // 37: roster.ConsentService.Erase:output_type -> roster.ConsentEraseResponse
-	9,  // 38: roster.ConsentService.List:output_type -> roster.ConsentListResponse
-	12, // 39: roster.ConsentService.Agree:output_type -> roster.ConsentAgreeResponse
-	22, // 40: roster.ConsentService.Withdraw:output_type -> roster.Consent
-	16, // 41: roster.ConsentService.Settled:output_type -> roster.ConsentSettledResponse
-	33, // [33:42] is the sub-list for method output_type
-	24, // [24:33] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	18, // 9: roster.ConsentPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	9,  // 10: roster.ConsentListRequest.filters:type_name -> roster.ConsentFilter
+	4,  // 11: roster.ConsentListRequest.select:type_name -> roster.ConsentSelect
+	20, // 12: roster.ConsentListResponse.items:type_name -> roster.Consent
+	2,  // 13: roster.ConsentFilter.ref:type_name -> roster.ConsentRef
+	16, // 14: roster.ConsentFilter.holder:type_name -> roster.HolderRef
+	16, // 15: roster.ConsentAgreeRequest.holder:type_name -> roster.HolderRef
+	12, // 16: roster.ConsentAgreeRequest.documents:type_name -> roster.ConsentDocument
+	20, // 17: roster.ConsentAgreeResponse.acts:type_name -> roster.Consent
+	16, // 18: roster.ConsentWithdrawRequest.holder:type_name -> roster.HolderRef
+	16, // 19: roster.ConsentSettledRequest.holder:type_name -> roster.HolderRef
+	12, // 20: roster.ConsentSettledRequest.documents:type_name -> roster.ConsentDocument
+	12, // 21: roster.ConsentSettledResponse.owed:type_name -> roster.ConsentDocument
+	0,  // 22: roster.ConsentService.Add:input_type -> roster.ConsentAddRequest
+	1,  // 23: roster.ConsentService.Get:input_type -> roster.ConsentGetRequest
+	5,  // 24: roster.ConsentService.Patch:input_type -> roster.ConsentPatchRequest
+	2,  // 25: roster.ConsentService.Erase:input_type -> roster.ConsentRef
+	7,  // 26: roster.ConsentService.List:input_type -> roster.ConsentListRequest
+	10, // 27: roster.ConsentService.Agree:input_type -> roster.ConsentAgreeRequest
+	13, // 28: roster.ConsentService.Withdraw:input_type -> roster.ConsentWithdrawRequest
+	14, // 29: roster.ConsentService.Settled:input_type -> roster.ConsentSettledRequest
+	20, // 30: roster.ConsentService.Add:output_type -> roster.Consent
+	20, // 31: roster.ConsentService.Get:output_type -> roster.Consent
+	20, // 32: roster.ConsentService.Patch:output_type -> roster.Consent
+	6,  // 33: roster.ConsentService.Erase:output_type -> roster.ConsentEraseResponse
+	8,  // 34: roster.ConsentService.List:output_type -> roster.ConsentListResponse
+	11, // 35: roster.ConsentService.Agree:output_type -> roster.ConsentAgreeResponse
+	20, // 36: roster.ConsentService.Withdraw:output_type -> roster.Consent
+	15, // 37: roster.ConsentService.Settled:output_type -> roster.ConsentSettledResponse
+	30, // [30:38] is the sub-list for method output_type
+	22, // [22:30] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_app_consent_svc_g_proto_init() }
@@ -2773,7 +2669,7 @@ func file_app_consent_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_consent_svc_g_proto_rawDesc), len(file_app_consent_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

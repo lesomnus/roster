@@ -137,6 +137,9 @@ message Role {
   }];
 
   option (orm.message) = {
+    // `apply` because `Narrow` writes through it (`server/core/narrow.go`): it
+    // takes methods out of the list with a document that tests the list it
+    // read. No port serves it, as no port serves a `Patch`.
     rpc: {
       add: {}
       get: {}
@@ -281,7 +284,6 @@ message Binding {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [

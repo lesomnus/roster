@@ -22,7 +22,6 @@ const (
 	SiteService_Add_FullMethodName   = "/roster.SiteService/Add"
 	SiteService_Get_FullMethodName   = "/roster.SiteService/Get"
 	SiteService_Patch_FullMethodName = "/roster.SiteService/Patch"
-	SiteService_Apply_FullMethodName = "/roster.SiteService/Apply"
 	SiteService_Erase_FullMethodName = "/roster.SiteService/Erase"
 	SiteService_List_FullMethodName  = "/roster.SiteService/List"
 	SiteService_Watch_FullMethodName = "/roster.SiteService/Watch"
@@ -38,8 +37,6 @@ type SiteServiceClient interface {
 	Get(ctx context.Context, in *SiteGetRequest, opts ...grpc.CallOption) (*Site, error)
 	// Patch updates an existing Site
 	Patch(ctx context.Context, in *SitePatchRequest, opts ...grpc.CallOption) (*Site, error)
-	// Apply applies a patch document to an existing Site
-	Apply(ctx context.Context, in *SiteApplyRequest, opts ...grpc.CallOption) (*Site, error)
 	// Erase deletes a Site
 	Erase(ctx context.Context, in *SiteRef, opts ...grpc.CallOption) (*SiteEraseResponse, error)
 	// List reads Sites a page at a time.
@@ -104,16 +101,6 @@ func (c *siteServiceClient) Patch(ctx context.Context, in *SitePatchRequest, opt
 	return out, nil
 }
 
-func (c *siteServiceClient) Apply(ctx context.Context, in *SiteApplyRequest, opts ...grpc.CallOption) (*Site, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Site)
-	err := c.cc.Invoke(ctx, SiteService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *siteServiceClient) Erase(ctx context.Context, in *SiteRef, opts ...grpc.CallOption) (*SiteEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SiteEraseResponse)
@@ -163,8 +150,6 @@ type SiteServiceServer interface {
 	Get(context.Context, *SiteGetRequest) (*Site, error)
 	// Patch updates an existing Site
 	Patch(context.Context, *SitePatchRequest) (*Site, error)
-	// Apply applies a patch document to an existing Site
-	Apply(context.Context, *SiteApplyRequest) (*Site, error)
 	// Erase deletes a Site
 	Erase(context.Context, *SiteRef) (*SiteEraseResponse, error)
 	// List reads Sites a page at a time.
@@ -207,9 +192,6 @@ func (UnimplementedSiteServiceServer) Get(context.Context, *SiteGetRequest) (*Si
 }
 func (UnimplementedSiteServiceServer) Patch(context.Context, *SitePatchRequest) (*Site, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedSiteServiceServer) Apply(context.Context, *SiteApplyRequest) (*Site, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedSiteServiceServer) Erase(context.Context, *SiteRef) (*SiteEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -295,24 +277,6 @@ func _SiteService_Patch_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SiteService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SiteApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SiteServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SiteService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SiteServiceServer).Apply(ctx, req.(*SiteApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SiteService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SiteRef)
 	if err := dec(in); err != nil {
@@ -378,10 +342,6 @@ var SiteService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _SiteService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _SiteService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

@@ -61,9 +61,7 @@ func TestAGeneralWriteDoesNotOpenACredentialsRow(t *testing.T) {
 		x.Equal(codes.Unimplemented, status.Code(err), "Patch: %v", err)
 		x.ErrorContains(err, "is not served")
 
-		_, err = c.Apply(wire, app.CredentialApplyRequest_builder{Ref: theirs}.Build())
-		x.Equal(codes.Unimplemented, status.Code(err), "Apply: %v", err)
-		x.ErrorContains(err, "is not served")
+		// And a credential has no `Apply`, which nothing here calls (#531).
 	}
 
 	t.Run("on the data plane", func(t *testing.T) {

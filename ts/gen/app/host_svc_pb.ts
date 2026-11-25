@@ -9,8 +9,6 @@ import { file_app_host } from "./host_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { TenantRef, TenantSelect } from "../roster/payday/tenant_svc_pb.js";
 import { file_roster_payday_tenant_svc_g } from "../roster/payday/tenant_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -19,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/host_svc.g.proto.
  */
 export const file_app_host_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvaG9zdF9zdmMuZy5wcm90bxIGcm9zdGVyIrcCCg5Ib3N0QWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISMgoGbGFiZWxzGAcgAygLMiIucm9zdGVyLkhvc3RBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5Ei8KC2RhdGVfcHJvdmVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiUgoOSG9zdEdldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkhvc3RSZWYSIgoGc2VsZWN0GAIgASgLMhIucm9zdGVyLkhvc3RTZWxlY3QiNgoHSG9zdFJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASDgoEbmFtZRgFIAEoCUgAQgUKA2tleSLBAQoKSG9zdFNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhMKC2RhdGVfcHJvdmVkGAkgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiygIKEEhvc3RQYXRjaFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkhvc3RSZWYSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjQKBmxhYmVscxgOIAMoCzIkLnJvc3Rlci5Ib3N0UGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5Ei8KC2RhdGVfcHJvdmVkGBIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIYChBkYXRlX3Byb3ZlZF9udWxsGBMgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiTQoQSG9zdEFwcGx5UmVxdWVzdBIcCgNyZWYYASABKAsyDy5yb3N0ZXIuSG9zdFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiMKEUhvc3RFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKdAQoPSG9zdExpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5yb3N0ZXIuSG9zdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISIgoGc2VsZWN0GAYgASgLMhIucm9zdGVyLkhvc3RTZWxlY3QiRAoQSG9zdExpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLnJvc3Rlci5Ib3N0EhMKBG5leHQYAiABKAlCBaoBAggCIk0KCkhvc3RGaWx0ZXISHAoDcmVmGAEgASgLMg8ucm9zdGVyLkhvc3RSZWYSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZiJxChFIb3N0VXBkYXRlUmVxdWVzdBIcCgNyZWYYASABKAsyDy5yb3N0ZXIuSG9zdFJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEgwKBGRlc2MYBiABKAkiqwIKFE1haWxEb21haW5BZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhITCgRuYW1lGAUgASgJQgWqAQIIAhIXCghwcm92aWRlchgJIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISOAoGbGFiZWxzGAcgAygLMigucm9zdGVyLk1haWxEb21haW5BZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJkChRNYWlsRG9tYWluR2V0UmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuTWFpbERvbWFpblJlZhIoCgZzZWxlY3QYAiABKAsyGC5yb3N0ZXIuTWFpbERvbWFpblNlbGVjdCJVCg1NYWlsRG9tYWluUmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABInCgJhdBgCIAEoCzIZLnJvc3Rlci5NYWlsRG9tYWluUmVmQnlBdEgAQgUKA2tleSJEChFNYWlsRG9tYWluUmVmQnlBdBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEgwKBG5hbWUYBSABKAkixAEKEE1haWxEb21haW5TZWxlY3QSCwoDYWxsGAEgASgIEiQKBnRlbmFudBgCIAEoCzIULnJvc3Rlci5UZW5hbnRTZWxlY3QSDAoEbmFtZRgFIAEoCBIQCghwcm92aWRlchgJIAEoCBIMCgRkZXNjGAYgASgIEg4KBmxhYmVscxgHIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIqMCChZNYWlsRG9tYWluUGF0Y2hSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5NYWlsRG9tYWluUmVmEgwKBG5hbWUYCiABKAkSEAoIcHJvdmlkZXIYEiABKAkSDAoEZGVzYxgMIAEoCRI6CgZsYWJlbHMYDiADKAsyKi5yb3N0ZXIuTWFpbERvbWFpblBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlkKFk1haWxEb21haW5BcHBseVJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLk1haWxEb21haW5SZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIpChdNYWlsRG9tYWluRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgirwEKFU1haWxEb21haW5MaXN0UmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLk1haWxEb21haW5GaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEigKBnNlbGVjdBgGIAEoCzIYLnJvc3Rlci5NYWlsRG9tYWluU2VsZWN0IlAKFk1haWxEb21haW5MaXN0UmVzcG9uc2USIQoFaXRlbXMYASADKAsyEi5yb3N0ZXIuTWFpbERvbWFpbhITCgRuZXh0GAIgASgJQgWqAQIIAiJZChBNYWlsRG9tYWluRmlsdGVyEiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5NYWlsRG9tYWluUmVmEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYijwEKF01haWxEb21haW5VcGRhdGVSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5NYWlsRG9tYWluUmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEAoIcHJvdmlkZXIYCSABKAkSDAoEZGVzYxgGIAEoCSLwAQoTSG9zdFByb29mQWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSEwoEbmFtZRgFIAEoCUIFqgECCAISFAoFdG9rZW4YCSABKAlCBaoBAggCEjAKDGRhdGVfZXhwaXJlZBgKIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASEwoEZGVzYxgGIAEoCUIFqgECCAISMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJhChNIb3N0UHJvb2ZHZXRSZXF1ZXN0EiEKA3JlZhgBIAEoCzIULnJvc3Rlci5Ib3N0UHJvb2ZSZWYSJwoGc2VsZWN0GAIgASgLMhcucm9zdGVyLkhvc3RQcm9vZlNlbGVjdCJTCgxIb3N0UHJvb2ZSZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAEiYKAmF0GAIgASgLMhgucm9zdGVyLkhvc3RQcm9vZlJlZkJ5QXRIAEIFCgNrZXkiQwoQSG9zdFByb29mUmVmQnlBdBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEgwKBG5hbWUYBSABKAkixgEKD0hvc3RQcm9vZlNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBIMCgRuYW1lGAUgASgIEg0KBXRva2VuGAkgASgIEhQKDGRhdGVfZXhwaXJlZBgKIAEoCBIMCgRkZXNjGAYgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgi4wEKFUhvc3RQcm9vZlBhdGNoUmVxdWVzdBIhCgNyZWYYASABKAsyFC5yb3N0ZXIuSG9zdFByb29mUmVmEjAKDGRhdGVfZXhwaXJlZBgUIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGQoRZGF0ZV9leHBpcmVkX251bGwYFSABKAgSDAoEZGVzYxgMIAEoCRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJXChVIb3N0UHJvb2ZBcHBseVJlcXVlc3QSIQoDcmVmGAEgASgLMhQucm9zdGVyLkhvc3RQcm9vZlJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIigKFkhvc3RQcm9vZkVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIqwBChRIb3N0UHJvb2ZMaXN0UmVxdWVzdBIoCgdmaWx0ZXJzGAEgAygLMhcucm9zdGVyLkhvc3RQcm9vZkZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISJwoGc2VsZWN0GAYgASgLMhcucm9zdGVyLkhvc3RQcm9vZlNlbGVjdCJOChVIb3N0UHJvb2ZMaXN0UmVzcG9uc2USIAoFaXRlbXMYASADKAsyES5yb3N0ZXIuSG9zdFByb29mEhMKBG5leHQYAiABKAlCBaoBAggCIlcKD0hvc3RQcm9vZkZpbHRlchIhCgNyZWYYASABKAsyFC5yb3N0ZXIuSG9zdFByb29mUmVmEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYy7AIKC0hvc3RTZXJ2aWNlEisKA0FkZBIWLnJvc3Rlci5Ib3N0QWRkUmVxdWVzdBoMLnJvc3Rlci5Ib3N0EisKA0dldBIWLnJvc3Rlci5Ib3N0R2V0UmVxdWVzdBoMLnJvc3Rlci5Ib3N0Ei8KBVBhdGNoEhgucm9zdGVyLkhvc3RQYXRjaFJlcXVlc3QaDC5yb3N0ZXIuSG9zdBIvCgVBcHBseRIYLnJvc3Rlci5Ib3N0QXBwbHlSZXF1ZXN0Ggwucm9zdGVyLkhvc3QSMwoFRXJhc2USDy5yb3N0ZXIuSG9zdFJlZhoZLnJvc3Rlci5Ib3N0RXJhc2VSZXNwb25zZRI5CgRMaXN0Ehcucm9zdGVyLkhvc3RMaXN0UmVxdWVzdBoYLnJvc3Rlci5Ib3N0TGlzdFJlc3BvbnNlEjEKBlVwZGF0ZRIZLnJvc3Rlci5Ib3N0VXBkYXRlUmVxdWVzdBoMLnJvc3Rlci5Ib3N0MsYDChFNYWlsRG9tYWluU2VydmljZRI3CgNBZGQSHC5yb3N0ZXIuTWFpbERvbWFpbkFkZFJlcXVlc3QaEi5yb3N0ZXIuTWFpbERvbWFpbhI3CgNHZXQSHC5yb3N0ZXIuTWFpbERvbWFpbkdldFJlcXVlc3QaEi5yb3N0ZXIuTWFpbERvbWFpbhI7CgVQYXRjaBIeLnJvc3Rlci5NYWlsRG9tYWluUGF0Y2hSZXF1ZXN0GhIucm9zdGVyLk1haWxEb21haW4SOwoFQXBwbHkSHi5yb3N0ZXIuTWFpbERvbWFpbkFwcGx5UmVxdWVzdBoSLnJvc3Rlci5NYWlsRG9tYWluEj8KBUVyYXNlEhUucm9zdGVyLk1haWxEb21haW5SZWYaHy5yb3N0ZXIuTWFpbERvbWFpbkVyYXNlUmVzcG9uc2USRQoETGlzdBIdLnJvc3Rlci5NYWlsRG9tYWluTGlzdFJlcXVlc3QaHi5yb3N0ZXIuTWFpbERvbWFpbkxpc3RSZXNwb25zZRI9CgZVcGRhdGUSHy5yb3N0ZXIuTWFpbERvbWFpblVwZGF0ZVJlcXVlc3QaEi5yb3N0ZXIuTWFpbERvbWFpbjL6AgoQSG9zdFByb29mU2VydmljZRI1CgNBZGQSGy5yb3N0ZXIuSG9zdFByb29mQWRkUmVxdWVzdBoRLnJvc3Rlci5Ib3N0UHJvb2YSNQoDR2V0Ehsucm9zdGVyLkhvc3RQcm9vZkdldFJlcXVlc3QaES5yb3N0ZXIuSG9zdFByb29mEjkKBVBhdGNoEh0ucm9zdGVyLkhvc3RQcm9vZlBhdGNoUmVxdWVzdBoRLnJvc3Rlci5Ib3N0UHJvb2YSOQoFQXBwbHkSHS5yb3N0ZXIuSG9zdFByb29mQXBwbHlSZXF1ZXN0GhEucm9zdGVyLkhvc3RQcm9vZhI9CgVFcmFzZRIULnJvc3Rlci5Ib3N0UHJvb2ZSZWYaHi5yb3N0ZXIuSG9zdFByb29mRXJhc2VSZXNwb25zZRJDCgRMaXN0Ehwucm9zdGVyLkhvc3RQcm9vZkxpc3RSZXF1ZXN0Gh0ucm9zdGVyLkhvc3RQcm9vZkxpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_host, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_tenant_svc_g]);
+  fileDesc("ChRhcHAvaG9zdF9zdmMuZy5wcm90bxIGcm9zdGVyIrcCCg5Ib3N0QWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSEwoEbmFtZRgFIAEoCUIFqgECCAISEwoEZGVzYxgGIAEoCUIFqgECCAISMgoGbGFiZWxzGAcgAygLMiIucm9zdGVyLkhvc3RBZGRSZXF1ZXN0LkxhYmVsc0VudHJ5Ei8KC2RhdGVfcHJvdmVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiUgoOSG9zdEdldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkhvc3RSZWYSIgoGc2VsZWN0GAIgASgLMhIucm9zdGVyLkhvc3RTZWxlY3QiNgoHSG9zdFJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASDgoEbmFtZRgFIAEoCUgAQgUKA2tleSLBAQoKSG9zdFNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhMKC2RhdGVfcHJvdmVkGAkgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiygIKEEhvc3RQYXRjaFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLkhvc3RSZWYSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjQKBmxhYmVscxgOIAMoCzIkLnJvc3Rlci5Ib3N0UGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5Ei8KC2RhdGVfcHJvdmVkGBIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIYChBkYXRlX3Byb3ZlZF9udWxsGBMgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiIwoRSG9zdEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIp0BCg9Ib3N0TGlzdFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLnJvc3Rlci5Ib3N0RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAhIiCgZzZWxlY3QYBiABKAsyEi5yb3N0ZXIuSG9zdFNlbGVjdCJEChBIb3N0TGlzdFJlc3BvbnNlEhsKBWl0ZW1zGAEgAygLMgwucm9zdGVyLkhvc3QSEwoEbmV4dBgCIAEoCUIFqgECCAIiTQoKSG9zdEZpbHRlchIcCgNyZWYYASABKAsyDy5yb3N0ZXIuSG9zdFJlZhIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmInEKEUhvc3RVcGRhdGVSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5Ib3N0UmVmEjAKDGRhdGVfdXBkYXRlZBgNIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASDAoEZGVzYxgGIAEoCSKrAgoUTWFpbERvbWFpbkFkZFJlcXVlc3QSEgoCaWQYASABKAxCBuqCFgIQQBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhcKCHByb3ZpZGVyGAkgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhI4CgZsYWJlbHMYByADKAsyKC5yb3N0ZXIuTWFpbERvbWFpbkFkZFJlcXVlc3QuTGFiZWxzRW50cnkSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBImQKFE1haWxEb21haW5HZXRSZXF1ZXN0EiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5NYWlsRG9tYWluUmVmEigKBnNlbGVjdBgCIAEoCzIYLnJvc3Rlci5NYWlsRG9tYWluU2VsZWN0IlUKDU1haWxEb21haW5SZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAEicKAmF0GAIgASgLMhkucm9zdGVyLk1haWxEb21haW5SZWZCeUF0SABCBQoDa2V5IkQKEU1haWxEb21haW5SZWZCeUF0EiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSDAoEbmFtZRgFIAEoCSLEAQoQTWFpbERvbWFpblNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBIMCgRuYW1lGAUgASgIEhAKCHByb3ZpZGVyGAkgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiowIKFk1haWxEb21haW5QYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLk1haWxEb21haW5SZWYSDAoEbmFtZRgKIAEoCRIQCghwcm92aWRlchgSIAEoCRIMCgRkZXNjGAwgASgJEjoKBmxhYmVscxgOIAMoCzIqLnJvc3Rlci5NYWlsRG9tYWluUGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiKQoXTWFpbERvbWFpbkVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIq8BChVNYWlsRG9tYWluTGlzdFJlcXVlc3QSKQoHZmlsdGVycxgBIAMoCzIYLnJvc3Rlci5NYWlsRG9tYWluRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAhIoCgZzZWxlY3QYBiABKAsyGC5yb3N0ZXIuTWFpbERvbWFpblNlbGVjdCJQChZNYWlsRG9tYWluTGlzdFJlc3BvbnNlEiEKBWl0ZW1zGAEgAygLMhIucm9zdGVyLk1haWxEb21haW4SEwoEbmV4dBgCIAEoCUIFqgECCAIiWQoQTWFpbERvbWFpbkZpbHRlchIiCgNyZWYYASABKAsyFS5yb3N0ZXIuTWFpbERvbWFpblJlZhIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmIo8BChdNYWlsRG9tYWluVXBkYXRlUmVxdWVzdBIiCgNyZWYYASABKAsyFS5yb3N0ZXIuTWFpbERvbWFpblJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhAKCHByb3ZpZGVyGAkgASgJEgwKBGRlc2MYBiABKAki8AEKE0hvc3RQcm9vZkFkZFJlcXVlc3QSEgoCaWQYASABKAxCBuqCFgIQQBIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhMKBG5hbWUYBSABKAlCBaoBAggCEhQKBXRva2VuGAkgASgJQgWqAQIIAhIwCgxkYXRlX2V4cGlyZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhMKBGRlc2MYBiABKAlCBaoBAggCEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiYQoTSG9zdFByb29mR2V0UmVxdWVzdBIhCgNyZWYYASABKAsyFC5yb3N0ZXIuSG9zdFByb29mUmVmEicKBnNlbGVjdBgCIAEoCzIXLnJvc3Rlci5Ib3N0UHJvb2ZTZWxlY3QiUwoMSG9zdFByb29mUmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABImCgJhdBgCIAEoCzIYLnJvc3Rlci5Ib3N0UHJvb2ZSZWZCeUF0SABCBQoDa2V5IkMKEEhvc3RQcm9vZlJlZkJ5QXQSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIMCgRuYW1lGAUgASgJIsYBCg9Ib3N0UHJvb2ZTZWxlY3QSCwoDYWxsGAEgASgIEiQKBnRlbmFudBgCIAEoCzIULnJvc3Rlci5UZW5hbnRTZWxlY3QSDAoEbmFtZRgFIAEoCBINCgV0b2tlbhgJIAEoCBIUCgxkYXRlX2V4cGlyZWQYCiABKAgSDAoEZGVzYxgGIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIuMBChVIb3N0UHJvb2ZQYXRjaFJlcXVlc3QSIQoDcmVmGAEgASgLMhQucm9zdGVyLkhvc3RQcm9vZlJlZhIwCgxkYXRlX2V4cGlyZWQYFCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhkKEWRhdGVfZXhwaXJlZF9udWxsGBUgASgIEgwKBGRlc2MYDCABKAkSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiKAoWSG9zdFByb29mRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgirAEKFEhvc3RQcm9vZkxpc3RSZXF1ZXN0EigKB2ZpbHRlcnMYASADKAsyFy5yb3N0ZXIuSG9zdFByb29mRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAhInCgZzZWxlY3QYBiABKAsyFy5yb3N0ZXIuSG9zdFByb29mU2VsZWN0Ik4KFUhvc3RQcm9vZkxpc3RSZXNwb25zZRIgCgVpdGVtcxgBIAMoCzIRLnJvc3Rlci5Ib3N0UHJvb2YSEwoEbmV4dBgCIAEoCUIFqgECCAIiVwoPSG9zdFByb29mRmlsdGVyEiEKA3JlZhgBIAEoCzIULnJvc3Rlci5Ib3N0UHJvb2ZSZWYSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZjK7AgoLSG9zdFNlcnZpY2USKwoDQWRkEhYucm9zdGVyLkhvc3RBZGRSZXF1ZXN0Ggwucm9zdGVyLkhvc3QSKwoDR2V0EhYucm9zdGVyLkhvc3RHZXRSZXF1ZXN0Ggwucm9zdGVyLkhvc3QSLwoFUGF0Y2gSGC5yb3N0ZXIuSG9zdFBhdGNoUmVxdWVzdBoMLnJvc3Rlci5Ib3N0EjMKBUVyYXNlEg8ucm9zdGVyLkhvc3RSZWYaGS5yb3N0ZXIuSG9zdEVyYXNlUmVzcG9uc2USOQoETGlzdBIXLnJvc3Rlci5Ib3N0TGlzdFJlcXVlc3QaGC5yb3N0ZXIuSG9zdExpc3RSZXNwb25zZRIxCgZVcGRhdGUSGS5yb3N0ZXIuSG9zdFVwZGF0ZVJlcXVlc3QaDC5yb3N0ZXIuSG9zdDKJAwoRTWFpbERvbWFpblNlcnZpY2USNwoDQWRkEhwucm9zdGVyLk1haWxEb21haW5BZGRSZXF1ZXN0GhIucm9zdGVyLk1haWxEb21haW4SNwoDR2V0Ehwucm9zdGVyLk1haWxEb21haW5HZXRSZXF1ZXN0GhIucm9zdGVyLk1haWxEb21haW4SOwoFUGF0Y2gSHi5yb3N0ZXIuTWFpbERvbWFpblBhdGNoUmVxdWVzdBoSLnJvc3Rlci5NYWlsRG9tYWluEj8KBUVyYXNlEhUucm9zdGVyLk1haWxEb21haW5SZWYaHy5yb3N0ZXIuTWFpbERvbWFpbkVyYXNlUmVzcG9uc2USRQoETGlzdBIdLnJvc3Rlci5NYWlsRG9tYWluTGlzdFJlcXVlc3QaHi5yb3N0ZXIuTWFpbERvbWFpbkxpc3RSZXNwb25zZRI9CgZVcGRhdGUSHy5yb3N0ZXIuTWFpbERvbWFpblVwZGF0ZVJlcXVlc3QaEi5yb3N0ZXIuTWFpbERvbWFpbjK/AgoQSG9zdFByb29mU2VydmljZRI1CgNBZGQSGy5yb3N0ZXIuSG9zdFByb29mQWRkUmVxdWVzdBoRLnJvc3Rlci5Ib3N0UHJvb2YSNQoDR2V0Ehsucm9zdGVyLkhvc3RQcm9vZkdldFJlcXVlc3QaES5yb3N0ZXIuSG9zdFByb29mEjkKBVBhdGNoEh0ucm9zdGVyLkhvc3RQcm9vZlBhdGNoUmVxdWVzdBoRLnJvc3Rlci5Ib3N0UHJvb2YSPQoFRXJhc2USFC5yb3N0ZXIuSG9zdFByb29mUmVmGh4ucm9zdGVyLkhvc3RQcm9vZkVyYXNlUmVzcG9uc2USQwoETGlzdBIcLnJvc3Rlci5Ib3N0UHJvb2ZMaXN0UmVxdWVzdBodLnJvc3Rlci5Ib3N0UHJvb2ZMaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_host, file_google_protobuf_timestamp, file_orm, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.HostAddRequest
@@ -248,28 +246,6 @@ export const HostPatchRequestSchema: GenMessage<HostPatchRequest> = /*@__PURE__*
   messageDesc(file_app_host_svc_g, 4);
 
 /**
- * @generated from message roster.HostApplyRequest
- */
-export type HostApplyRequest = Message<"roster.HostApplyRequest"> & {
-  /**
-   * @generated from field: roster.HostRef ref = 1;
-   */
-  ref?: HostRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.HostApplyRequest.
- * Use `create(HostApplyRequestSchema)` to create a new message.
- */
-export const HostApplyRequestSchema: GenMessage<HostApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 5);
-
-/**
  * @generated from message roster.HostEraseResponse
  */
 export type HostEraseResponse = Message<"roster.HostEraseResponse"> & {
@@ -290,7 +266,7 @@ export type HostEraseResponse = Message<"roster.HostEraseResponse"> & {
  * Use `create(HostEraseResponseSchema)` to create a new message.
  */
 export const HostEraseResponseSchema: GenMessage<HostEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 6);
+  messageDesc(file_app_host_svc_g, 5);
 
 /**
  * @generated from message roster.HostListRequest
@@ -353,7 +329,7 @@ export type HostListRequest = Message<"roster.HostListRequest"> & {
  * Use `create(HostListRequestSchema)` to create a new message.
  */
 export const HostListRequestSchema: GenMessage<HostListRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 7);
+  messageDesc(file_app_host_svc_g, 6);
 
 /**
  * @generated from message roster.HostListResponse
@@ -383,7 +359,7 @@ export type HostListResponse = Message<"roster.HostListResponse"> & {
  * Use `create(HostListResponseSchema)` to create a new message.
  */
 export const HostListResponseSchema: GenMessage<HostListResponse> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 8);
+  messageDesc(file_app_host_svc_g, 7);
 
 /**
  * @generated from message roster.HostFilter
@@ -405,7 +381,7 @@ export type HostFilter = Message<"roster.HostFilter"> & {
  * Use `create(HostFilterSchema)` to create a new message.
  */
 export const HostFilterSchema: GenMessage<HostFilter> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 9);
+  messageDesc(file_app_host_svc_g, 8);
 
 /**
  * @generated from message roster.HostUpdateRequest
@@ -438,7 +414,7 @@ export type HostUpdateRequest = Message<"roster.HostUpdateRequest"> & {
  * Use `create(HostUpdateRequestSchema)` to create a new message.
  */
 export const HostUpdateRequestSchema: GenMessage<HostUpdateRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 10);
+  messageDesc(file_app_host_svc_g, 9);
 
 /**
  * @generated from message roster.MailDomainAddRequest
@@ -485,7 +461,7 @@ export type MailDomainAddRequest = Message<"roster.MailDomainAddRequest"> & {
  * Use `create(MailDomainAddRequestSchema)` to create a new message.
  */
 export const MailDomainAddRequestSchema: GenMessage<MailDomainAddRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 11);
+  messageDesc(file_app_host_svc_g, 10);
 
 /**
  * @generated from message roster.MailDomainGetRequest
@@ -507,7 +483,7 @@ export type MailDomainGetRequest = Message<"roster.MailDomainGetRequest"> & {
  * Use `create(MailDomainGetRequestSchema)` to create a new message.
  */
 export const MailDomainGetRequestSchema: GenMessage<MailDomainGetRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 12);
+  messageDesc(file_app_host_svc_g, 11);
 
 /**
  * @generated from message roster.MailDomainRef
@@ -536,7 +512,7 @@ export type MailDomainRef = Message<"roster.MailDomainRef"> & {
  * Use `create(MailDomainRefSchema)` to create a new message.
  */
 export const MailDomainRefSchema: GenMessage<MailDomainRef> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 13);
+  messageDesc(file_app_host_svc_g, 12);
 
 /**
  * @generated from message roster.MailDomainRefByAt
@@ -558,7 +534,7 @@ export type MailDomainRefByAt = Message<"roster.MailDomainRefByAt"> & {
  * Use `create(MailDomainRefByAtSchema)` to create a new message.
  */
 export const MailDomainRefByAtSchema: GenMessage<MailDomainRefByAt> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 14);
+  messageDesc(file_app_host_svc_g, 13);
 
 /**
  * @generated from message roster.MailDomainSelect
@@ -615,7 +591,7 @@ export type MailDomainSelect = Message<"roster.MailDomainSelect"> & {
  * Use `create(MailDomainSelectSchema)` to create a new message.
  */
 export const MailDomainSelectSchema: GenMessage<MailDomainSelect> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 15);
+  messageDesc(file_app_host_svc_g, 14);
 
 /**
  * @generated from message roster.MailDomainPatchRequest
@@ -676,29 +652,7 @@ export type MailDomainPatchRequest = Message<"roster.MailDomainPatchRequest"> & 
  * Use `create(MailDomainPatchRequestSchema)` to create a new message.
  */
 export const MailDomainPatchRequestSchema: GenMessage<MailDomainPatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 16);
-
-/**
- * @generated from message roster.MailDomainApplyRequest
- */
-export type MailDomainApplyRequest = Message<"roster.MailDomainApplyRequest"> & {
-  /**
-   * @generated from field: roster.MailDomainRef ref = 1;
-   */
-  ref?: MailDomainRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.MailDomainApplyRequest.
- * Use `create(MailDomainApplyRequestSchema)` to create a new message.
- */
-export const MailDomainApplyRequestSchema: GenMessage<MailDomainApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 17);
+  messageDesc(file_app_host_svc_g, 15);
 
 /**
  * @generated from message roster.MailDomainEraseResponse
@@ -721,7 +675,7 @@ export type MailDomainEraseResponse = Message<"roster.MailDomainEraseResponse"> 
  * Use `create(MailDomainEraseResponseSchema)` to create a new message.
  */
 export const MailDomainEraseResponseSchema: GenMessage<MailDomainEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 18);
+  messageDesc(file_app_host_svc_g, 16);
 
 /**
  * @generated from message roster.MailDomainListRequest
@@ -784,7 +738,7 @@ export type MailDomainListRequest = Message<"roster.MailDomainListRequest"> & {
  * Use `create(MailDomainListRequestSchema)` to create a new message.
  */
 export const MailDomainListRequestSchema: GenMessage<MailDomainListRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 19);
+  messageDesc(file_app_host_svc_g, 17);
 
 /**
  * @generated from message roster.MailDomainListResponse
@@ -814,7 +768,7 @@ export type MailDomainListResponse = Message<"roster.MailDomainListResponse"> & 
  * Use `create(MailDomainListResponseSchema)` to create a new message.
  */
 export const MailDomainListResponseSchema: GenMessage<MailDomainListResponse> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 20);
+  messageDesc(file_app_host_svc_g, 18);
 
 /**
  * @generated from message roster.MailDomainFilter
@@ -836,7 +790,7 @@ export type MailDomainFilter = Message<"roster.MailDomainFilter"> & {
  * Use `create(MailDomainFilterSchema)` to create a new message.
  */
 export const MailDomainFilterSchema: GenMessage<MailDomainFilter> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 21);
+  messageDesc(file_app_host_svc_g, 19);
 
 /**
  * @generated from message roster.MailDomainUpdateRequest
@@ -876,7 +830,7 @@ export type MailDomainUpdateRequest = Message<"roster.MailDomainUpdateRequest"> 
  * Use `create(MailDomainUpdateRequestSchema)` to create a new message.
  */
 export const MailDomainUpdateRequestSchema: GenMessage<MailDomainUpdateRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 22);
+  messageDesc(file_app_host_svc_g, 20);
 
 /**
  * @generated from message roster.HostProofAddRequest
@@ -923,7 +877,7 @@ export type HostProofAddRequest = Message<"roster.HostProofAddRequest"> & {
  * Use `create(HostProofAddRequestSchema)` to create a new message.
  */
 export const HostProofAddRequestSchema: GenMessage<HostProofAddRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 23);
+  messageDesc(file_app_host_svc_g, 21);
 
 /**
  * @generated from message roster.HostProofGetRequest
@@ -945,7 +899,7 @@ export type HostProofGetRequest = Message<"roster.HostProofGetRequest"> & {
  * Use `create(HostProofGetRequestSchema)` to create a new message.
  */
 export const HostProofGetRequestSchema: GenMessage<HostProofGetRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 24);
+  messageDesc(file_app_host_svc_g, 22);
 
 /**
  * @generated from message roster.HostProofRef
@@ -974,7 +928,7 @@ export type HostProofRef = Message<"roster.HostProofRef"> & {
  * Use `create(HostProofRefSchema)` to create a new message.
  */
 export const HostProofRefSchema: GenMessage<HostProofRef> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 25);
+  messageDesc(file_app_host_svc_g, 23);
 
 /**
  * @generated from message roster.HostProofRefByAt
@@ -996,7 +950,7 @@ export type HostProofRefByAt = Message<"roster.HostProofRefByAt"> & {
  * Use `create(HostProofRefByAtSchema)` to create a new message.
  */
 export const HostProofRefByAtSchema: GenMessage<HostProofRefByAt> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 26);
+  messageDesc(file_app_host_svc_g, 24);
 
 /**
  * @generated from message roster.HostProofSelect
@@ -1053,7 +1007,7 @@ export type HostProofSelect = Message<"roster.HostProofSelect"> & {
  * Use `create(HostProofSelectSchema)` to create a new message.
  */
 export const HostProofSelectSchema: GenMessage<HostProofSelect> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 27);
+  messageDesc(file_app_host_svc_g, 25);
 
 /**
  * @generated from message roster.HostProofPatchRequest
@@ -1114,29 +1068,7 @@ export type HostProofPatchRequest = Message<"roster.HostProofPatchRequest"> & {
  * Use `create(HostProofPatchRequestSchema)` to create a new message.
  */
 export const HostProofPatchRequestSchema: GenMessage<HostProofPatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 28);
-
-/**
- * @generated from message roster.HostProofApplyRequest
- */
-export type HostProofApplyRequest = Message<"roster.HostProofApplyRequest"> & {
-  /**
-   * @generated from field: roster.HostProofRef ref = 1;
-   */
-  ref?: HostProofRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.HostProofApplyRequest.
- * Use `create(HostProofApplyRequestSchema)` to create a new message.
- */
-export const HostProofApplyRequestSchema: GenMessage<HostProofApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 29);
+  messageDesc(file_app_host_svc_g, 26);
 
 /**
  * @generated from message roster.HostProofEraseResponse
@@ -1159,7 +1091,7 @@ export type HostProofEraseResponse = Message<"roster.HostProofEraseResponse"> & 
  * Use `create(HostProofEraseResponseSchema)` to create a new message.
  */
 export const HostProofEraseResponseSchema: GenMessage<HostProofEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 30);
+  messageDesc(file_app_host_svc_g, 27);
 
 /**
  * @generated from message roster.HostProofListRequest
@@ -1222,7 +1154,7 @@ export type HostProofListRequest = Message<"roster.HostProofListRequest"> & {
  * Use `create(HostProofListRequestSchema)` to create a new message.
  */
 export const HostProofListRequestSchema: GenMessage<HostProofListRequest> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 31);
+  messageDesc(file_app_host_svc_g, 28);
 
 /**
  * @generated from message roster.HostProofListResponse
@@ -1252,7 +1184,7 @@ export type HostProofListResponse = Message<"roster.HostProofListResponse"> & {
  * Use `create(HostProofListResponseSchema)` to create a new message.
  */
 export const HostProofListResponseSchema: GenMessage<HostProofListResponse> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 32);
+  messageDesc(file_app_host_svc_g, 29);
 
 /**
  * @generated from message roster.HostProofFilter
@@ -1274,7 +1206,7 @@ export type HostProofFilter = Message<"roster.HostProofFilter"> & {
  * Use `create(HostProofFilterSchema)` to create a new message.
  */
 export const HostProofFilterSchema: GenMessage<HostProofFilter> = /*@__PURE__*/
-  messageDesc(file_app_host_svc_g, 33);
+  messageDesc(file_app_host_svc_g, 30);
 
 /**
  * @generated from service roster.HostService
@@ -1308,16 +1240,6 @@ export const HostService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof HostPatchRequestSchema;
-    output: typeof HostSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Host
-   *
-   * @generated from rpc roster.HostService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof HostApplyRequestSchema;
     output: typeof HostSchema;
   },
   /**
@@ -1388,16 +1310,6 @@ export const MailDomainService: GenService<{
     output: typeof MailDomainSchema;
   },
   /**
-   * Apply applies a patch document to an existing MailDomain
-   *
-   * @generated from rpc roster.MailDomainService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof MailDomainApplyRequestSchema;
-    output: typeof MailDomainSchema;
-  },
-  /**
    * Erase deletes a MailDomain
    *
    * @generated from rpc roster.MailDomainService.Erase
@@ -1463,16 +1375,6 @@ export const HostProofService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof HostProofPatchRequestSchema;
-    output: typeof HostProofSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing HostProof
-   *
-   * @generated from rpc roster.HostProofService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof HostProofApplyRequestSchema;
     output: typeof HostProofSchema;
   },
   /**

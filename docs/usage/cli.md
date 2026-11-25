@@ -352,7 +352,7 @@ decision rather than a gap:
 
 | | |
 | --- | --- |
-| `Apply` | one of payday's two general writes. No port serves either and no setting opens one (`cmd/serve.go`); `patch`, the other, is a command because the box reaches it |
+| `Apply` | one of payday's two general writes, which three entities have because roster's own verbs write through it (`role`, `tenant`, `connection`). No port serves either and no setting opens one (`cmd/serve.go`); `patch`, the other, is a command because the box reaches it |
 | `AuthService` | it mints the admin console's session, and a session cookie is a browser's credential where a terminal's is a key |
 | a *service's* key over the wire | minting is granting, the grant rule reads bindings, and a key holds none. The mints for a service are `roster control key add` and a console |
 

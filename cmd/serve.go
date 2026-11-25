@@ -694,7 +694,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// handed: a name taken is on the trail of whoever held it.
 	rules.Releasing = Releasing(client, content)
 
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithBadge(badge), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin), core.WithDelegationLife(c.Delegation.Life)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild(), core.NotErasedBuild())
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithBadge(badge), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin), core.WithDelegationLife(c.Delegation.Life)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild())
 	if err != nil {
 		db.Close()
 		return nil, err

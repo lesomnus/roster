@@ -436,16 +436,6 @@ var teamOrmEntity = ormpatch.MustEntityOf(rstr.File_app_team_proto, "Team")
 var teamPatchColumns = entpatch.Columns{
 	1: team.FieldId, 2: team.TenantColumn, 3: team.SiteColumn, 4: team.FieldAlias, 5: team.FieldName, 6: team.FieldDesc, 13: team.FieldDateUpdated, 14: team.FieldDateErased, 15: team.FieldDateCreated}
 
-func (s TeamServiceServer) Apply(ctx context.Context, req *rstr.TeamApplyRequest) (*rstr.Team, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.TeamService_Apply_FullMethodName)
-}
-
 func (s TeamServiceServer) apply(ctx context.Context, ref *rstr.TeamRef, doc *patchpb.Patch, by string) (*rstr.Team, error) {
 	plan := &ormpatch.Plan{Entity: teamOrmEntity}
 	if doc != nil {

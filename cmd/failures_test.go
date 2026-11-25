@@ -377,7 +377,7 @@ func TestTheManualsTableOfFailuresIsWhatIsAnswered(t *testing.T) {
 		failureCall{"a version that moved", 0, admin, "/roster.HolderService/Disable", `{"ref":` + failureRef(seoul.holder) + `,` + stale + `}`},
 
 		failureCall{"a general write", 0, admin, "/roster.HolderService/Patch", `{"ref":` + failureRef(seoul.holder) + `}`},
-		failureCall{"a general write", 0, admin, "/roster.GroupService/Apply", `{}`},
+		failureCall{"a general write", 0, admin, "/roster.RoleService/Apply", `{}`},
 		failureCall{"a general write", 1, norole, "/roster.HolderService/Patch", `{"ref":` + failureRef(seoul.holder) + `}`},
 
 		failureCall{"a method nobody serves", 0, admin, "/roster.HolderService/Nope", `{}`},

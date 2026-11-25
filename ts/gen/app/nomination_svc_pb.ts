@@ -9,8 +9,6 @@ import { file_app_nomination } from "./nomination_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
 import { file_roster_payday_holder_svc_g } from "../roster/payday/holder_svc_pb.js";
 import type { TenantRef, TenantSelect } from "../roster/payday/tenant_svc_pb.js";
@@ -21,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/nomination_svc.g.proto.
  */
 export const file_app_nomination_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChphcHAvbm9taW5hdGlvbl9zdmMuZy5wcm90bxIGcm9zdGVyIsMCChROb21pbmF0aW9uQWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSOAoGbGFiZWxzGAcgAygLMigucm9zdGVyLk5vbWluYXRpb25BZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EhMKBG5hbWUYBSABKAlCBaoBAggCEiAKC2JvcnJvd2VyX2lkGAggASgMQguqAQIIAuqCFgIQQBIiCgdhY3RzX2FzGAkgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiZAoUTm9taW5hdGlvbkdldFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLk5vbWluYXRpb25SZWYSKAoGc2VsZWN0GAIgASgLMhgucm9zdGVyLk5vbWluYXRpb25TZWxlY3QiYQoNTm9taW5hdGlvblJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASMwoIYm9ycm93ZXIYAiABKAsyHy5yb3N0ZXIuTm9taW5hdGlvblJlZkJ5Qm9ycm93ZXJIAEIFCgNrZXkiWQoXTm9taW5hdGlvblJlZkJ5Qm9ycm93ZXISIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIbCgtib3Jyb3dlcl9pZBgIIAEoDEIG6oIWAhBAIuABChBOb21pbmF0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0Eg4KBmxhYmVscxgHIAEoCBIMCgRuYW1lGAUgASgIEhMKC2JvcnJvd2VyX2lkGAggASgIEiUKB2FjdHNfYXMYCSABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgipwIKFk5vbWluYXRpb25QYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLk5vbWluYXRpb25SZWYSOgoGbGFiZWxzGA4gAygLMioucm9zdGVyLk5vbWluYXRpb25QYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSDAoEbmFtZRgKIAEoCRIiCgdhY3RzX2FzGBIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlkKFk5vbWluYXRpb25BcHBseVJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLk5vbWluYXRpb25SZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIpChdOb21pbmF0aW9uRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgirwEKFU5vbWluYXRpb25MaXN0UmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLk5vbWluYXRpb25GaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEigKBnNlbGVjdBgGIAEoCzIYLnJvc3Rlci5Ob21pbmF0aW9uU2VsZWN0IlAKFk5vbWluYXRpb25MaXN0UmVzcG9uc2USIQoFaXRlbXMYASADKAsyEi5yb3N0ZXIuTm9taW5hdGlvbhITCgRuZXh0GAIgASgJQgWqAQIIAiKaAQoQTm9taW5hdGlvbkZpbHRlchIiCgNyZWYYASABKAsyFS5yb3N0ZXIuTm9taW5hdGlvblJlZhIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmEhsKC2JvcnJvd2VyX2lkGAMgASgMQgbqghYCEEASIgoHYWN0c19hcxgEIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiYQoWTm9taW5hdGlvbldhdGNoUmVxdWVzdBIpCgdmaWx0ZXJzGAEgAygLMhgucm9zdGVyLk5vbWluYXRpb25GaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiRQoXTm9taW5hdGlvbldhdGNoUmVzcG9uc2USKgoFaXRlbXMYASADKAsyGy5yb3N0ZXIuTm9taW5hdGlvbldhdGNoSXRlbSJbChNOb21pbmF0aW9uV2F0Y2hJdGVtEgoKAmlkGAEgASgMEiEKBXZhbHVlGAIgASgLMhIucm9zdGVyLk5vbWluYXRpb24SFQoGYWN0aW9uGAMgASgJQgWqAQIIAjLTAwoRTm9taW5hdGlvblNlcnZpY2USNwoDQWRkEhwucm9zdGVyLk5vbWluYXRpb25BZGRSZXF1ZXN0GhIucm9zdGVyLk5vbWluYXRpb24SNwoDR2V0Ehwucm9zdGVyLk5vbWluYXRpb25HZXRSZXF1ZXN0GhIucm9zdGVyLk5vbWluYXRpb24SOwoFUGF0Y2gSHi5yb3N0ZXIuTm9taW5hdGlvblBhdGNoUmVxdWVzdBoSLnJvc3Rlci5Ob21pbmF0aW9uEjsKBUFwcGx5Eh4ucm9zdGVyLk5vbWluYXRpb25BcHBseVJlcXVlc3QaEi5yb3N0ZXIuTm9taW5hdGlvbhI/CgVFcmFzZRIVLnJvc3Rlci5Ob21pbmF0aW9uUmVmGh8ucm9zdGVyLk5vbWluYXRpb25FcmFzZVJlc3BvbnNlEkUKBExpc3QSHS5yb3N0ZXIuTm9taW5hdGlvbkxpc3RSZXF1ZXN0Gh4ucm9zdGVyLk5vbWluYXRpb25MaXN0UmVzcG9uc2USSgoFV2F0Y2gSHi5yb3N0ZXIuTm9taW5hdGlvbldhdGNoUmVxdWVzdBofLnJvc3Rlci5Ob21pbmF0aW9uV2F0Y2hSZXNwb25zZTABQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_nomination, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g, file_roster_payday_tenant_svc_g]);
+  fileDesc("ChphcHAvbm9taW5hdGlvbl9zdmMuZy5wcm90bxIGcm9zdGVyIsMCChROb21pbmF0aW9uQWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSOAoGbGFiZWxzGAcgAygLMigucm9zdGVyLk5vbWluYXRpb25BZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EhMKBG5hbWUYBSABKAlCBaoBAggCEiAKC2JvcnJvd2VyX2lkGAggASgMQguqAQIIAuqCFgIQQBIiCgdhY3RzX2FzGAkgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiZAoUTm9taW5hdGlvbkdldFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLk5vbWluYXRpb25SZWYSKAoGc2VsZWN0GAIgASgLMhgucm9zdGVyLk5vbWluYXRpb25TZWxlY3QiYQoNTm9taW5hdGlvblJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASMwoIYm9ycm93ZXIYAiABKAsyHy5yb3N0ZXIuTm9taW5hdGlvblJlZkJ5Qm9ycm93ZXJIAEIFCgNrZXkiWQoXTm9taW5hdGlvblJlZkJ5Qm9ycm93ZXISIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIbCgtib3Jyb3dlcl9pZBgIIAEoDEIG6oIWAhBAIuABChBOb21pbmF0aW9uU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZ0ZW5hbnQYAiABKAsyFC5yb3N0ZXIuVGVuYW50U2VsZWN0Eg4KBmxhYmVscxgHIAEoCBIMCgRuYW1lGAUgASgIEhMKC2JvcnJvd2VyX2lkGAggASgIEiUKB2FjdHNfYXMYCSABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgipwIKFk5vbWluYXRpb25QYXRjaFJlcXVlc3QSIgoDcmVmGAEgASgLMhUucm9zdGVyLk5vbWluYXRpb25SZWYSOgoGbGFiZWxzGA4gAygLMioucm9zdGVyLk5vbWluYXRpb25QYXRjaFJlcXVlc3QuTGFiZWxzRW50cnkSDAoEbmFtZRgKIAEoCRIiCgdhY3RzX2FzGBIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIikKF05vbWluYXRpb25FcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKvAQoVTm9taW5hdGlvbkxpc3RSZXF1ZXN0EikKB2ZpbHRlcnMYASADKAsyGC5yb3N0ZXIuTm9taW5hdGlvbkZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISKAoGc2VsZWN0GAYgASgLMhgucm9zdGVyLk5vbWluYXRpb25TZWxlY3QiUAoWTm9taW5hdGlvbkxpc3RSZXNwb25zZRIhCgVpdGVtcxgBIAMoCzISLnJvc3Rlci5Ob21pbmF0aW9uEhMKBG5leHQYAiABKAlCBaoBAggCIpoBChBOb21pbmF0aW9uRmlsdGVyEiIKA3JlZhgBIAEoCzIVLnJvc3Rlci5Ob21pbmF0aW9uUmVmEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSGwoLYm9ycm93ZXJfaWQYAyABKAxCBuqCFgIQQBIiCgdhY3RzX2FzGAQgASgLMhEucm9zdGVyLkhvbGRlclJlZiJhChZOb21pbmF0aW9uV2F0Y2hSZXF1ZXN0EikKB2ZpbHRlcnMYASADKAsyGC5yb3N0ZXIuTm9taW5hdGlvbkZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiJFChdOb21pbmF0aW9uV2F0Y2hSZXNwb25zZRIqCgVpdGVtcxgBIAMoCzIbLnJvc3Rlci5Ob21pbmF0aW9uV2F0Y2hJdGVtIlsKE05vbWluYXRpb25XYXRjaEl0ZW0SCgoCaWQYASABKAwSIQoFdmFsdWUYAiABKAsyEi5yb3N0ZXIuTm9taW5hdGlvbhIVCgZhY3Rpb24YAyABKAlCBaoBAggCMpYDChFOb21pbmF0aW9uU2VydmljZRI3CgNBZGQSHC5yb3N0ZXIuTm9taW5hdGlvbkFkZFJlcXVlc3QaEi5yb3N0ZXIuTm9taW5hdGlvbhI3CgNHZXQSHC5yb3N0ZXIuTm9taW5hdGlvbkdldFJlcXVlc3QaEi5yb3N0ZXIuTm9taW5hdGlvbhI7CgVQYXRjaBIeLnJvc3Rlci5Ob21pbmF0aW9uUGF0Y2hSZXF1ZXN0GhIucm9zdGVyLk5vbWluYXRpb24SPwoFRXJhc2USFS5yb3N0ZXIuTm9taW5hdGlvblJlZhofLnJvc3Rlci5Ob21pbmF0aW9uRXJhc2VSZXNwb25zZRJFCgRMaXN0Eh0ucm9zdGVyLk5vbWluYXRpb25MaXN0UmVxdWVzdBoeLnJvc3Rlci5Ob21pbmF0aW9uTGlzdFJlc3BvbnNlEkoKBVdhdGNoEh4ucm9zdGVyLk5vbWluYXRpb25XYXRjaFJlcXVlc3QaHy5yb3N0ZXIuTm9taW5hdGlvbldhdGNoUmVzcG9uc2UwAUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_nomination, file_google_protobuf_timestamp, file_orm, file_roster_payday_holder_svc_g, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.NominationAddRequest
@@ -257,28 +255,6 @@ export const NominationPatchRequestSchema: GenMessage<NominationPatchRequest> = 
   messageDesc(file_app_nomination_svc_g, 5);
 
 /**
- * @generated from message roster.NominationApplyRequest
- */
-export type NominationApplyRequest = Message<"roster.NominationApplyRequest"> & {
-  /**
-   * @generated from field: roster.NominationRef ref = 1;
-   */
-  ref?: NominationRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.NominationApplyRequest.
- * Use `create(NominationApplyRequestSchema)` to create a new message.
- */
-export const NominationApplyRequestSchema: GenMessage<NominationApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_nomination_svc_g, 6);
-
-/**
  * @generated from message roster.NominationEraseResponse
  */
 export type NominationEraseResponse = Message<"roster.NominationEraseResponse"> & {
@@ -299,7 +275,7 @@ export type NominationEraseResponse = Message<"roster.NominationEraseResponse"> 
  * Use `create(NominationEraseResponseSchema)` to create a new message.
  */
 export const NominationEraseResponseSchema: GenMessage<NominationEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_nomination_svc_g, 7);
+  messageDesc(file_app_nomination_svc_g, 6);
 
 /**
  * @generated from message roster.NominationListRequest
@@ -362,7 +338,7 @@ export type NominationListRequest = Message<"roster.NominationListRequest"> & {
  * Use `create(NominationListRequestSchema)` to create a new message.
  */
 export const NominationListRequestSchema: GenMessage<NominationListRequest> = /*@__PURE__*/
-  messageDesc(file_app_nomination_svc_g, 8);
+  messageDesc(file_app_nomination_svc_g, 7);
 
 /**
  * @generated from message roster.NominationListResponse
@@ -392,7 +368,7 @@ export type NominationListResponse = Message<"roster.NominationListResponse"> & 
  * Use `create(NominationListResponseSchema)` to create a new message.
  */
 export const NominationListResponseSchema: GenMessage<NominationListResponse> = /*@__PURE__*/
-  messageDesc(file_app_nomination_svc_g, 9);
+  messageDesc(file_app_nomination_svc_g, 8);
 
 /**
  * @generated from message roster.NominationFilter
@@ -424,7 +400,7 @@ export type NominationFilter = Message<"roster.NominationFilter"> & {
  * Use `create(NominationFilterSchema)` to create a new message.
  */
 export const NominationFilterSchema: GenMessage<NominationFilter> = /*@__PURE__*/
-  messageDesc(file_app_nomination_svc_g, 10);
+  messageDesc(file_app_nomination_svc_g, 9);
 
 /**
  * @generated from message roster.NominationWatchRequest
@@ -462,7 +438,7 @@ export type NominationWatchRequest = Message<"roster.NominationWatchRequest"> & 
  * Use `create(NominationWatchRequestSchema)` to create a new message.
  */
 export const NominationWatchRequestSchema: GenMessage<NominationWatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_nomination_svc_g, 11);
+  messageDesc(file_app_nomination_svc_g, 10);
 
 /**
  * @generated from message roster.NominationWatchResponse
@@ -481,7 +457,7 @@ export type NominationWatchResponse = Message<"roster.NominationWatchResponse"> 
  * Use `create(NominationWatchResponseSchema)` to create a new message.
  */
 export const NominationWatchResponseSchema: GenMessage<NominationWatchResponse> = /*@__PURE__*/
-  messageDesc(file_app_nomination_svc_g, 12);
+  messageDesc(file_app_nomination_svc_g, 11);
 
 /**
  * @generated from message roster.NominationWatchItem
@@ -529,7 +505,7 @@ export type NominationWatchItem = Message<"roster.NominationWatchItem"> & {
  * Use `create(NominationWatchItemSchema)` to create a new message.
  */
 export const NominationWatchItemSchema: GenMessage<NominationWatchItem> = /*@__PURE__*/
-  messageDesc(file_app_nomination_svc_g, 13);
+  messageDesc(file_app_nomination_svc_g, 12);
 
 /**
  * @generated from service roster.NominationService
@@ -563,16 +539,6 @@ export const NominationService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof NominationPatchRequestSchema;
-    output: typeof NominationSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Nomination
-   *
-   * @generated from rpc roster.NominationService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof NominationApplyRequestSchema;
     output: typeof NominationSchema;
   },
   /**

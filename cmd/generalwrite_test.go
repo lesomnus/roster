@@ -77,8 +77,10 @@ func TestNoGeneralWriteIsServed(t *testing.T) {
 		asked := generalWrites(t, g, pdtest.Serve(t, g), func() context.Context { return asOverTheWire(ctx, b.ContosoUser) })
 
 		// Not a number to keep exact: enough that a walk which found nothing,
-		// or found one service, is not a pass.
-		x.Greater(asked, 40, "the walk asked too few methods to mean anything")
+		// or found one service, is not a pass. A `Patch` of each entity that
+		// has one and three `Apply`s, since an `Apply` is declared only where
+		// roster's own verbs write through it (#531).
+		x.Greater(asked, 25, "the walk asked too few methods to mean anything")
 	})
 
 	t.Run("on the port the deployment's own rows are managed at", func(t *testing.T) {
@@ -94,7 +96,7 @@ func TestNoGeneralWriteIsServed(t *testing.T) {
 		x.NoError(err)
 
 		asked := generalWrites(t, g, pdtest.Serve(t, g), func() context.Context { return bearing(ctx, b.Token) })
-		x.Greater(asked, 40, "the walk asked too few methods to mean anything")
+		x.Greater(asked, 25, "the walk asked too few methods to mean anything")
 	})
 }
 

@@ -22,7 +22,6 @@ const (
 	IdentityService_Add_FullMethodName       = "/roster.IdentityService/Add"
 	IdentityService_Get_FullMethodName       = "/roster.IdentityService/Get"
 	IdentityService_Patch_FullMethodName     = "/roster.IdentityService/Patch"
-	IdentityService_Apply_FullMethodName     = "/roster.IdentityService/Apply"
 	IdentityService_Erase_FullMethodName     = "/roster.IdentityService/Erase"
 	IdentityService_List_FullMethodName      = "/roster.IdentityService/List"
 	IdentityService_Watch_FullMethodName     = "/roster.IdentityService/Watch"
@@ -40,8 +39,6 @@ type IdentityServiceClient interface {
 	Get(ctx context.Context, in *IdentityGetRequest, opts ...grpc.CallOption) (*Identity, error)
 	// Patch updates an existing Identity
 	Patch(ctx context.Context, in *IdentityPatchRequest, opts ...grpc.CallOption) (*Identity, error)
-	// Apply applies a patch document to an existing Identity
-	Apply(ctx context.Context, in *IdentityApplyRequest, opts ...grpc.CallOption) (*Identity, error)
 	// Erase deletes a Identity
 	Erase(ctx context.Context, in *IdentityRef, opts ...grpc.CallOption) (*IdentityEraseResponse, error)
 	// List reads Identitys a page at a time.
@@ -143,16 +140,6 @@ func (c *identityServiceClient) Patch(ctx context.Context, in *IdentityPatchRequ
 	return out, nil
 }
 
-func (c *identityServiceClient) Apply(ctx context.Context, in *IdentityApplyRequest, opts ...grpc.CallOption) (*Identity, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Identity)
-	err := c.cc.Invoke(ctx, IdentityService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *identityServiceClient) Erase(ctx context.Context, in *IdentityRef, opts ...grpc.CallOption) (*IdentityEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(IdentityEraseResponse)
@@ -222,8 +209,6 @@ type IdentityServiceServer interface {
 	Get(context.Context, *IdentityGetRequest) (*Identity, error)
 	// Patch updates an existing Identity
 	Patch(context.Context, *IdentityPatchRequest) (*Identity, error)
-	// Apply applies a patch document to an existing Identity
-	Apply(context.Context, *IdentityApplyRequest) (*Identity, error)
 	// Erase deletes a Identity
 	Erase(context.Context, *IdentityRef) (*IdentityEraseResponse, error)
 	// List reads Identitys a page at a time.
@@ -303,9 +288,6 @@ func (UnimplementedIdentityServiceServer) Get(context.Context, *IdentityGetReque
 }
 func (UnimplementedIdentityServiceServer) Patch(context.Context, *IdentityPatchRequest) (*Identity, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedIdentityServiceServer) Apply(context.Context, *IdentityApplyRequest) (*Identity, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedIdentityServiceServer) Erase(context.Context, *IdentityRef) (*IdentityEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -393,24 +375,6 @@ func _IdentityService_Patch_Handler(srv interface{}, ctx context.Context, dec fu
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(IdentityServiceServer).Patch(ctx, req.(*IdentityPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _IdentityService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(IdentityApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(IdentityServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: IdentityService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(IdentityServiceServer).Apply(ctx, req.(*IdentityApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -516,10 +480,6 @@ var IdentityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _IdentityService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _IdentityService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

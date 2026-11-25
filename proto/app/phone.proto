@@ -98,7 +98,6 @@ message Phone {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [

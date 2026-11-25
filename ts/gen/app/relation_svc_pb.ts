@@ -9,8 +9,6 @@ import { file_app_relation } from "./relation_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
 import { file_roster_payday_holder_svc_g } from "../roster/payday/holder_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -19,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/relation_svc.g.proto.
  */
 export const file_app_relation_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChhhcHAvcmVsYXRpb25fc3ZjLmcucHJvdG8SBnJvc3RlciKmAgoSUmVsYXRpb25BZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhI2CgZsYWJlbHMYByADKAsyJi5yb3N0ZXIuUmVsYXRpb25BZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EiAKBW90aGVyGAggASgLMhEucm9zdGVyLkhvbGRlclJlZhIeCgl0ZW5hbnRfaWQYCyABKAxCC6oBAggC6oIWAhBAEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJeChJSZWxhdGlvbkdldFJlcXVlc3QSIAoDcmVmGAEgASgLMhMucm9zdGVyLlJlbGF0aW9uUmVmEiYKBnNlbGVjdBgCIAEoCzIWLnJvc3Rlci5SZWxhdGlvblNlbGVjdCJVCgtSZWxhdGlvblJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASKQoEcGFpchgCIAEoCzIZLnJvc3Rlci5SZWxhdGlvblJlZkJ5UGFpckgAQgUKA2tleSJYChFSZWxhdGlvblJlZkJ5UGFpchIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEiAKBW90aGVyGAggASgLMhEucm9zdGVyLkhvbGRlclJlZiLMAQoOUmVsYXRpb25TZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDgoGbGFiZWxzGAcgASgIEiMKBW90aGVyGAggASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBIRCgl0ZW5hbnRfaWQYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCLvAQoUUmVsYXRpb25QYXRjaFJlcXVlc3QSIAoDcmVmGAEgASgLMhMucm9zdGVyLlJlbGF0aW9uUmVmEjgKBmxhYmVscxgOIAMoCzIoLnJvc3Rlci5SZWxhdGlvblBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIlUKFFJlbGF0aW9uQXBwbHlSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5SZWxhdGlvblJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIicKFVJlbGF0aW9uRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiqQEKE1JlbGF0aW9uTGlzdFJlcXVlc3QSJwoHZmlsdGVycxgBIAMoCzIWLnJvc3Rlci5SZWxhdGlvbkZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISJgoGc2VsZWN0GAYgASgLMhYucm9zdGVyLlJlbGF0aW9uU2VsZWN0IkwKFFJlbGF0aW9uTGlzdFJlc3BvbnNlEh8KBWl0ZW1zGAEgAygLMhAucm9zdGVyLlJlbGF0aW9uEhMKBG5leHQYAiABKAlCBaoBAggCIncKDlJlbGF0aW9uRmlsdGVyEiAKA3JlZhgBIAEoCzITLnJvc3Rlci5SZWxhdGlvblJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEiAKBW90aGVyGAMgASgLMhEucm9zdGVyLkhvbGRlclJlZjLtAgoPUmVsYXRpb25TZXJ2aWNlEjMKA0FkZBIaLnJvc3Rlci5SZWxhdGlvbkFkZFJlcXVlc3QaEC5yb3N0ZXIuUmVsYXRpb24SMwoDR2V0Ehoucm9zdGVyLlJlbGF0aW9uR2V0UmVxdWVzdBoQLnJvc3Rlci5SZWxhdGlvbhI3CgVQYXRjaBIcLnJvc3Rlci5SZWxhdGlvblBhdGNoUmVxdWVzdBoQLnJvc3Rlci5SZWxhdGlvbhI3CgVBcHBseRIcLnJvc3Rlci5SZWxhdGlvbkFwcGx5UmVxdWVzdBoQLnJvc3Rlci5SZWxhdGlvbhI7CgVFcmFzZRITLnJvc3Rlci5SZWxhdGlvblJlZhodLnJvc3Rlci5SZWxhdGlvbkVyYXNlUmVzcG9uc2USQQoETGlzdBIbLnJvc3Rlci5SZWxhdGlvbkxpc3RSZXF1ZXN0Ghwucm9zdGVyLlJlbGF0aW9uTGlzdFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_relation, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChhhcHAvcmVsYXRpb25fc3ZjLmcucHJvdG8SBnJvc3RlciKmAgoSUmVsYXRpb25BZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhI2CgZsYWJlbHMYByADKAsyJi5yb3N0ZXIuUmVsYXRpb25BZGRSZXF1ZXN0LkxhYmVsc0VudHJ5EiAKBW90aGVyGAggASgLMhEucm9zdGVyLkhvbGRlclJlZhIeCgl0ZW5hbnRfaWQYCyABKAxCC6oBAggC6oIWAhBAEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAaLQoLTGFiZWxzRW50cnkSCwoDa2V5GAEgASgJEg0KBXZhbHVlGAIgASgJOgI4ASJeChJSZWxhdGlvbkdldFJlcXVlc3QSIAoDcmVmGAEgASgLMhMucm9zdGVyLlJlbGF0aW9uUmVmEiYKBnNlbGVjdBgCIAEoCzIWLnJvc3Rlci5SZWxhdGlvblNlbGVjdCJVCgtSZWxhdGlvblJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASKQoEcGFpchgCIAEoCzIZLnJvc3Rlci5SZWxhdGlvblJlZkJ5UGFpckgAQgUKA2tleSJYChFSZWxhdGlvblJlZkJ5UGFpchIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEiAKBW90aGVyGAggASgLMhEucm9zdGVyLkhvbGRlclJlZiLMAQoOUmVsYXRpb25TZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDgoGbGFiZWxzGAcgASgIEiMKBW90aGVyGAggASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBIRCgl0ZW5hbnRfaWQYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCLvAQoUUmVsYXRpb25QYXRjaFJlcXVlc3QSIAoDcmVmGAEgASgLMhMucm9zdGVyLlJlbGF0aW9uUmVmEjgKBmxhYmVscxgOIAMoCzIoLnJvc3Rlci5SZWxhdGlvblBhdGNoUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCBotCgtMYWJlbHNFbnRyeRILCgNrZXkYASABKAkSDQoFdmFsdWUYAiABKAk6AjgBIicKFVJlbGF0aW9uRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiqQEKE1JlbGF0aW9uTGlzdFJlcXVlc3QSJwoHZmlsdGVycxgBIAMoCzIWLnJvc3Rlci5SZWxhdGlvbkZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISJgoGc2VsZWN0GAYgASgLMhYucm9zdGVyLlJlbGF0aW9uU2VsZWN0IkwKFFJlbGF0aW9uTGlzdFJlc3BvbnNlEh8KBWl0ZW1zGAEgAygLMhAucm9zdGVyLlJlbGF0aW9uEhMKBG5leHQYAiABKAlCBaoBAggCIncKDlJlbGF0aW9uRmlsdGVyEiAKA3JlZhgBIAEoCzITLnJvc3Rlci5SZWxhdGlvblJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEiAKBW90aGVyGAMgASgLMhEucm9zdGVyLkhvbGRlclJlZjK0AgoPUmVsYXRpb25TZXJ2aWNlEjMKA0FkZBIaLnJvc3Rlci5SZWxhdGlvbkFkZFJlcXVlc3QaEC5yb3N0ZXIuUmVsYXRpb24SMwoDR2V0Ehoucm9zdGVyLlJlbGF0aW9uR2V0UmVxdWVzdBoQLnJvc3Rlci5SZWxhdGlvbhI3CgVQYXRjaBIcLnJvc3Rlci5SZWxhdGlvblBhdGNoUmVxdWVzdBoQLnJvc3Rlci5SZWxhdGlvbhI7CgVFcmFzZRITLnJvc3Rlci5SZWxhdGlvblJlZhodLnJvc3Rlci5SZWxhdGlvbkVyYXNlUmVzcG9uc2USQQoETGlzdBIbLnJvc3Rlci5SZWxhdGlvbkxpc3RSZXF1ZXN0Ghwucm9zdGVyLlJlbGF0aW9uTGlzdFJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_relation, file_google_protobuf_timestamp, file_orm, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.RelationAddRequest
@@ -235,28 +233,6 @@ export const RelationPatchRequestSchema: GenMessage<RelationPatchRequest> = /*@_
   messageDesc(file_app_relation_svc_g, 5);
 
 /**
- * @generated from message roster.RelationApplyRequest
- */
-export type RelationApplyRequest = Message<"roster.RelationApplyRequest"> & {
-  /**
-   * @generated from field: roster.RelationRef ref = 1;
-   */
-  ref?: RelationRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.RelationApplyRequest.
- * Use `create(RelationApplyRequestSchema)` to create a new message.
- */
-export const RelationApplyRequestSchema: GenMessage<RelationApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_relation_svc_g, 6);
-
-/**
  * @generated from message roster.RelationEraseResponse
  */
 export type RelationEraseResponse = Message<"roster.RelationEraseResponse"> & {
@@ -277,7 +253,7 @@ export type RelationEraseResponse = Message<"roster.RelationEraseResponse"> & {
  * Use `create(RelationEraseResponseSchema)` to create a new message.
  */
 export const RelationEraseResponseSchema: GenMessage<RelationEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_relation_svc_g, 7);
+  messageDesc(file_app_relation_svc_g, 6);
 
 /**
  * @generated from message roster.RelationListRequest
@@ -340,7 +316,7 @@ export type RelationListRequest = Message<"roster.RelationListRequest"> & {
  * Use `create(RelationListRequestSchema)` to create a new message.
  */
 export const RelationListRequestSchema: GenMessage<RelationListRequest> = /*@__PURE__*/
-  messageDesc(file_app_relation_svc_g, 8);
+  messageDesc(file_app_relation_svc_g, 7);
 
 /**
  * @generated from message roster.RelationListResponse
@@ -370,7 +346,7 @@ export type RelationListResponse = Message<"roster.RelationListResponse"> & {
  * Use `create(RelationListResponseSchema)` to create a new message.
  */
 export const RelationListResponseSchema: GenMessage<RelationListResponse> = /*@__PURE__*/
-  messageDesc(file_app_relation_svc_g, 9);
+  messageDesc(file_app_relation_svc_g, 8);
 
 /**
  * @generated from message roster.RelationFilter
@@ -397,7 +373,7 @@ export type RelationFilter = Message<"roster.RelationFilter"> & {
  * Use `create(RelationFilterSchema)` to create a new message.
  */
 export const RelationFilterSchema: GenMessage<RelationFilter> = /*@__PURE__*/
-  messageDesc(file_app_relation_svc_g, 10);
+  messageDesc(file_app_relation_svc_g, 9);
 
 /**
  * @generated from service roster.RelationService
@@ -431,16 +407,6 @@ export const RelationService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof RelationPatchRequestSchema;
-    output: typeof RelationSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Relation
-   *
-   * @generated from rpc roster.RelationService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof RelationApplyRequestSchema;
     output: typeof RelationSchema;
   },
   /**

@@ -7,7 +7,6 @@
 package rstr
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1078,99 +1077,6 @@ func (b0 PhonePatchRequest_builder) Build() *PhonePatchRequest {
 	return m0
 }
 
-type PhoneApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *PhoneRef              `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *PhoneApplyRequest) Reset() {
-	*x = PhoneApplyRequest{}
-	mi := &file_app_phone_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *PhoneApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*PhoneApplyRequest) ProtoMessage() {}
-
-func (x *PhoneApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_phone_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *PhoneApplyRequest) GetRef() *PhoneRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *PhoneApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *PhoneApplyRequest) SetRef(v *PhoneRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *PhoneApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *PhoneApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *PhoneApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *PhoneApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *PhoneApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type PhoneApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *PhoneRef
-	Patch *patchpb.Patch
-}
-
-func (b0 PhoneApplyRequest_builder) Build() *PhoneApplyRequest {
-	m0 := &PhoneApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
 type PhoneEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
@@ -1182,7 +1088,7 @@ type PhoneEraseResponse struct {
 
 func (x *PhoneEraseResponse) Reset() {
 	*x = PhoneEraseResponse{}
-	mi := &file_app_phone_svc_g_proto_msgTypes[7]
+	mi := &file_app_phone_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1194,7 +1100,7 @@ func (x *PhoneEraseResponse) String() string {
 func (*PhoneEraseResponse) ProtoMessage() {}
 
 func (x *PhoneEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_phone_svc_g_proto_msgTypes[7]
+	mi := &file_app_phone_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1264,7 +1170,7 @@ type PhoneListRequest struct {
 
 func (x *PhoneListRequest) Reset() {
 	*x = PhoneListRequest{}
-	mi := &file_app_phone_svc_g_proto_msgTypes[8]
+	mi := &file_app_phone_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1276,7 +1182,7 @@ func (x *PhoneListRequest) String() string {
 func (*PhoneListRequest) ProtoMessage() {}
 
 func (x *PhoneListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_phone_svc_g_proto_msgTypes[8]
+	mi := &file_app_phone_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1408,7 +1314,7 @@ type PhoneListResponse struct {
 
 func (x *PhoneListResponse) Reset() {
 	*x = PhoneListResponse{}
-	mi := &file_app_phone_svc_g_proto_msgTypes[9]
+	mi := &file_app_phone_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1420,7 +1326,7 @@ func (x *PhoneListResponse) String() string {
 func (*PhoneListResponse) ProtoMessage() {}
 
 func (x *PhoneListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_phone_svc_g_proto_msgTypes[9]
+	mi := &file_app_phone_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1488,7 +1394,7 @@ type PhoneFilter struct {
 
 func (x *PhoneFilter) Reset() {
 	*x = PhoneFilter{}
-	mi := &file_app_phone_svc_g_proto_msgTypes[10]
+	mi := &file_app_phone_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1500,7 +1406,7 @@ func (x *PhoneFilter) String() string {
 func (*PhoneFilter) ProtoMessage() {}
 
 func (x *PhoneFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_phone_svc_g_proto_msgTypes[10]
+	mi := &file_app_phone_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1575,7 +1481,7 @@ var File_app_phone_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_phone_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x15app/phone_svc.g.proto\x12\x06roster\x1a\x0fapp/phone.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\xf7\x01\n" +
+	"\x15app/phone_svc.g.proto\x12\x06roster\x1a\x0fapp/phone.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a roster/payday/holder_svc.g.proto\"\xf7\x01\n" +
 	"\x0fPhoneAddRequest\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x1d\n" +
@@ -1609,10 +1515,7 @@ const file_app_phone_svc_g_proto_rawDesc = "" +
 	"\x06number\x18\x10 \x01(\tR\x06number\x12\x12\n" +
 	"\x04kind\x18\x12 \x01(\tR\x04kind\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"[\n" +
-	"\x11PhoneApplyRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.roster.PhoneRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\",\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\",\n" +
 	"\x12PhoneEraseResponse\x12\x16\n" +
 	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xc7\x01\n" +
 	"\x10PhoneListRequest\x12-\n" +
@@ -1626,16 +1529,15 @@ const file_app_phone_svc_g_proto_rawDesc = "" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\\\n" +
 	"\vPhoneFilter\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.PhoneRefR\x03ref\x12)\n" +
-	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder2\xc6\x02\n" +
+	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder2\x93\x02\n" +
 	"\fPhoneService\x12-\n" +
 	"\x03Add\x12\x17.roster.PhoneAddRequest\x1a\r.roster.Phone\x12-\n" +
 	"\x03Get\x12\x17.roster.PhoneGetRequest\x1a\r.roster.Phone\x121\n" +
-	"\x05Patch\x12\x19.roster.PhonePatchRequest\x1a\r.roster.Phone\x121\n" +
-	"\x05Apply\x12\x19.roster.PhoneApplyRequest\x1a\r.roster.Phone\x125\n" +
+	"\x05Patch\x12\x19.roster.PhonePatchRequest\x1a\r.roster.Phone\x125\n" +
 	"\x05Erase\x12\x10.roster.PhoneRef\x1a\x1a.roster.PhoneEraseResponse\x12;\n" +
 	"\x04List\x12\x18.roster.PhoneListRequest\x1a\x19.roster.PhoneListResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_phone_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_app_phone_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_app_phone_svc_g_proto_goTypes = []any{
 	(*PhoneAddRequest)(nil),       // 0: roster.PhoneAddRequest
 	(*PhoneGetRequest)(nil),       // 1: roster.PhoneGetRequest
@@ -1643,51 +1545,45 @@ var file_app_phone_svc_g_proto_goTypes = []any{
 	(*PhoneRefByNumber)(nil),      // 3: roster.PhoneRefByNumber
 	(*PhoneSelect)(nil),           // 4: roster.PhoneSelect
 	(*PhonePatchRequest)(nil),     // 5: roster.PhonePatchRequest
-	(*PhoneApplyRequest)(nil),     // 6: roster.PhoneApplyRequest
-	(*PhoneEraseResponse)(nil),    // 7: roster.PhoneEraseResponse
-	(*PhoneListRequest)(nil),      // 8: roster.PhoneListRequest
-	(*PhoneListResponse)(nil),     // 9: roster.PhoneListResponse
-	(*PhoneFilter)(nil),           // 10: roster.PhoneFilter
-	(*HolderRef)(nil),             // 11: roster.HolderRef
-	(*timestamppb.Timestamp)(nil), // 12: google.protobuf.Timestamp
-	(*HolderSelect)(nil),          // 13: roster.HolderSelect
-	(*patchpb.Patch)(nil),         // 14: patch.Patch
-	(*Phone)(nil),                 // 15: roster.Phone
+	(*PhoneEraseResponse)(nil),    // 6: roster.PhoneEraseResponse
+	(*PhoneListRequest)(nil),      // 7: roster.PhoneListRequest
+	(*PhoneListResponse)(nil),     // 8: roster.PhoneListResponse
+	(*PhoneFilter)(nil),           // 9: roster.PhoneFilter
+	(*HolderRef)(nil),             // 10: roster.HolderRef
+	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
+	(*HolderSelect)(nil),          // 12: roster.HolderSelect
+	(*Phone)(nil),                 // 13: roster.Phone
 }
 var file_app_phone_svc_g_proto_depIdxs = []int32{
-	11, // 0: roster.PhoneAddRequest.holder:type_name -> roster.HolderRef
-	12, // 1: roster.PhoneAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	10, // 0: roster.PhoneAddRequest.holder:type_name -> roster.HolderRef
+	11, // 1: roster.PhoneAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 2: roster.PhoneGetRequest.ref:type_name -> roster.PhoneRef
 	4,  // 3: roster.PhoneGetRequest.select:type_name -> roster.PhoneSelect
 	3,  // 4: roster.PhoneRef.number:type_name -> roster.PhoneRefByNumber
-	11, // 5: roster.PhoneRefByNumber.holder:type_name -> roster.HolderRef
-	13, // 6: roster.PhoneSelect.holder:type_name -> roster.HolderSelect
+	10, // 5: roster.PhoneRefByNumber.holder:type_name -> roster.HolderRef
+	12, // 6: roster.PhoneSelect.holder:type_name -> roster.HolderSelect
 	2,  // 7: roster.PhonePatchRequest.ref:type_name -> roster.PhoneRef
-	12, // 8: roster.PhonePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 9: roster.PhoneApplyRequest.ref:type_name -> roster.PhoneRef
-	14, // 10: roster.PhoneApplyRequest.patch:type_name -> patch.Patch
-	10, // 11: roster.PhoneListRequest.filters:type_name -> roster.PhoneFilter
-	4,  // 12: roster.PhoneListRequest.select:type_name -> roster.PhoneSelect
-	15, // 13: roster.PhoneListResponse.items:type_name -> roster.Phone
-	2,  // 14: roster.PhoneFilter.ref:type_name -> roster.PhoneRef
-	11, // 15: roster.PhoneFilter.holder:type_name -> roster.HolderRef
-	0,  // 16: roster.PhoneService.Add:input_type -> roster.PhoneAddRequest
-	1,  // 17: roster.PhoneService.Get:input_type -> roster.PhoneGetRequest
-	5,  // 18: roster.PhoneService.Patch:input_type -> roster.PhonePatchRequest
-	6,  // 19: roster.PhoneService.Apply:input_type -> roster.PhoneApplyRequest
-	2,  // 20: roster.PhoneService.Erase:input_type -> roster.PhoneRef
-	8,  // 21: roster.PhoneService.List:input_type -> roster.PhoneListRequest
-	15, // 22: roster.PhoneService.Add:output_type -> roster.Phone
-	15, // 23: roster.PhoneService.Get:output_type -> roster.Phone
-	15, // 24: roster.PhoneService.Patch:output_type -> roster.Phone
-	15, // 25: roster.PhoneService.Apply:output_type -> roster.Phone
-	7,  // 26: roster.PhoneService.Erase:output_type -> roster.PhoneEraseResponse
-	9,  // 27: roster.PhoneService.List:output_type -> roster.PhoneListResponse
-	22, // [22:28] is the sub-list for method output_type
-	16, // [16:22] is the sub-list for method input_type
-	16, // [16:16] is the sub-list for extension type_name
-	16, // [16:16] is the sub-list for extension extendee
-	0,  // [0:16] is the sub-list for field type_name
+	11, // 8: roster.PhonePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	9,  // 9: roster.PhoneListRequest.filters:type_name -> roster.PhoneFilter
+	4,  // 10: roster.PhoneListRequest.select:type_name -> roster.PhoneSelect
+	13, // 11: roster.PhoneListResponse.items:type_name -> roster.Phone
+	2,  // 12: roster.PhoneFilter.ref:type_name -> roster.PhoneRef
+	10, // 13: roster.PhoneFilter.holder:type_name -> roster.HolderRef
+	0,  // 14: roster.PhoneService.Add:input_type -> roster.PhoneAddRequest
+	1,  // 15: roster.PhoneService.Get:input_type -> roster.PhoneGetRequest
+	5,  // 16: roster.PhoneService.Patch:input_type -> roster.PhonePatchRequest
+	2,  // 17: roster.PhoneService.Erase:input_type -> roster.PhoneRef
+	7,  // 18: roster.PhoneService.List:input_type -> roster.PhoneListRequest
+	13, // 19: roster.PhoneService.Add:output_type -> roster.Phone
+	13, // 20: roster.PhoneService.Get:output_type -> roster.Phone
+	13, // 21: roster.PhoneService.Patch:output_type -> roster.Phone
+	6,  // 22: roster.PhoneService.Erase:output_type -> roster.PhoneEraseResponse
+	8,  // 23: roster.PhoneService.List:output_type -> roster.PhoneListResponse
+	19, // [19:24] is the sub-list for method output_type
+	14, // [14:19] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_app_phone_svc_g_proto_init() }
@@ -1707,7 +1603,7 @@ func file_app_phone_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_phone_svc_g_proto_rawDesc), len(file_app_phone_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   11,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -34,11 +34,11 @@ import (
 //
 //	Tenant      closing it, restoring it, how everybody in it signs in   Close, Restore, Update
 //	Connection  the directories its people arrive through                Add, Update, Erase, Patch, Apply
-//	Host        the names it answers at                                  Add, Update, Erase, Patch, Apply
-//	HostProof   a claim to one of those names                            Add, Erase, Patch, Apply
-//	MailDomain  where an address at its domains is sent to sign in       Add, Update, Erase, Patch, Apply
-//	Nomination  who an app's key is answered as here                     Add, Erase, Patch, Apply
-//	Site        the parts it is divided into                             Add, Erase, Patch, Apply
+//	Host        the names it answers at                                  Add, Update, Erase, Patch
+//	HostProof   a claim to one of those names                            Add, Erase, Patch
+//	MailDomain  where an address at its domains is sent to sign in       Add, Update, Erase, Patch
+//	Nomination  who an app's key is answered as here                     Add, Erase, Patch
+//	Site        the parts it is divided into                             Add, Erase, Patch
 //	Holder      a person made, and one erased who is not the caller      Add, Erase
 //	SiteMembership  who is of which site, and so in whose reach          Add, Erase
 //	Team, Group one of no site, made                                     Add
@@ -92,44 +92,12 @@ func (s coreConnection) Apply(ctx context.Context, req *app.ConnectionApplyReque
 	return s.ConnectionServiceServer.Apply(ctx, req)
 }
 
-func (s coreHost) Apply(ctx context.Context, req *app.HostApplyRequest) (*app.Host, error) {
-	if err := s.acrossTheTenant(ctx, app.HostService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.HostServiceServer.Apply(ctx, req)
-}
-
-func (s coreMailDomain) Apply(ctx context.Context, req *app.MailDomainApplyRequest) (*app.MailDomain, error) {
-	if err := s.acrossTheTenant(ctx, app.MailDomainService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.MailDomainServiceServer.Apply(ctx, req)
-}
-
 func (s coreHostProof) Erase(ctx context.Context, req *app.HostProofRef) (*app.HostProofEraseResponse, error) {
 	if err := s.acrossTheTenant(ctx, app.HostProofService_Erase_FullMethodName); err != nil {
 		return nil, err
 	}
 
 	return s.HostProofServiceServer.Erase(ctx, req)
-}
-
-func (s coreHostProof) Apply(ctx context.Context, req *app.HostProofApplyRequest) (*app.HostProof, error) {
-	if err := s.acrossTheTenant(ctx, app.HostProofService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.HostProofServiceServer.Apply(ctx, req)
-}
-
-func (s coreNomination) Apply(ctx context.Context, req *app.NominationApplyRequest) (*app.Nomination, error) {
-	if err := s.acrossTheTenant(ctx, app.NominationService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.NominationServiceServer.Apply(ctx, req)
 }
 
 // coreSite is the layer over the generated `SiteService`, for this rule alone:
@@ -297,12 +265,4 @@ func (s coreSite) Patch(ctx context.Context, req *app.SitePatchRequest) (*app.Si
 	}
 
 	return s.SiteServiceServer.Patch(ctx, req)
-}
-
-func (s coreSite) Apply(ctx context.Context, req *app.SiteApplyRequest) (*app.Site, error) {
-	if err := s.acrossTheTenant(ctx, app.SiteService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.SiteServiceServer.Apply(ctx, req)
 }

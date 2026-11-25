@@ -5,7 +5,6 @@ import "app/site_svc.g.proto";
 import "app/team.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
-import "patch/patch.proto";
 import "roster/payday/tenant_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -17,8 +16,6 @@ service TeamService {
   rpc Get(TeamGetRequest) returns (Team);
   // Patch updates an existing Team
   rpc Patch(TeamPatchRequest) returns (Team);
-  // Apply applies a patch document to an existing Team
-  rpc Apply(TeamApplyRequest) returns (Team);
   // Erase deletes a Team
   rpc Erase(TeamRef) returns (TeamEraseResponse);
   // List reads Teams a page at a time.
@@ -103,11 +100,6 @@ message TeamPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message TeamApplyRequest {
-  TeamRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message TeamEraseResponse {

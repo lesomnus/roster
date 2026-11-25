@@ -7,7 +7,6 @@
 package rstr
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1470,99 +1469,6 @@ func (b0 BadgePatchRequest_builder) Build() *BadgePatchRequest {
 	return m0
 }
 
-type BadgeApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *BadgeRef              `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *BadgeApplyRequest) Reset() {
-	*x = BadgeApplyRequest{}
-	mi := &file_app_badge_svc_g_proto_msgTypes[7]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *BadgeApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*BadgeApplyRequest) ProtoMessage() {}
-
-func (x *BadgeApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_badge_svc_g_proto_msgTypes[7]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *BadgeApplyRequest) GetRef() *BadgeRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *BadgeApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *BadgeApplyRequest) SetRef(v *BadgeRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *BadgeApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *BadgeApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *BadgeApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *BadgeApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *BadgeApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type BadgeApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *BadgeRef
-	Patch *patchpb.Patch
-}
-
-func (b0 BadgeApplyRequest_builder) Build() *BadgeApplyRequest {
-	m0 := &BadgeApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
 type BadgeEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
@@ -1574,7 +1480,7 @@ type BadgeEraseResponse struct {
 
 func (x *BadgeEraseResponse) Reset() {
 	*x = BadgeEraseResponse{}
-	mi := &file_app_badge_svc_g_proto_msgTypes[8]
+	mi := &file_app_badge_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1586,7 +1492,7 @@ func (x *BadgeEraseResponse) String() string {
 func (*BadgeEraseResponse) ProtoMessage() {}
 
 func (x *BadgeEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_badge_svc_g_proto_msgTypes[8]
+	mi := &file_app_badge_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1656,7 +1562,7 @@ type BadgeListRequest struct {
 
 func (x *BadgeListRequest) Reset() {
 	*x = BadgeListRequest{}
-	mi := &file_app_badge_svc_g_proto_msgTypes[9]
+	mi := &file_app_badge_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1668,7 +1574,7 @@ func (x *BadgeListRequest) String() string {
 func (*BadgeListRequest) ProtoMessage() {}
 
 func (x *BadgeListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_badge_svc_g_proto_msgTypes[9]
+	mi := &file_app_badge_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1800,7 +1706,7 @@ type BadgeListResponse struct {
 
 func (x *BadgeListResponse) Reset() {
 	*x = BadgeListResponse{}
-	mi := &file_app_badge_svc_g_proto_msgTypes[10]
+	mi := &file_app_badge_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1812,7 +1718,7 @@ func (x *BadgeListResponse) String() string {
 func (*BadgeListResponse) ProtoMessage() {}
 
 func (x *BadgeListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_badge_svc_g_proto_msgTypes[10]
+	mi := &file_app_badge_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1883,7 +1789,7 @@ type BadgeFilter struct {
 
 func (x *BadgeFilter) Reset() {
 	*x = BadgeFilter{}
-	mi := &file_app_badge_svc_g_proto_msgTypes[11]
+	mi := &file_app_badge_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1895,7 +1801,7 @@ func (x *BadgeFilter) String() string {
 func (*BadgeFilter) ProtoMessage() {}
 
 func (x *BadgeFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_badge_svc_g_proto_msgTypes[11]
+	mi := &file_app_badge_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2009,7 +1915,7 @@ type BadgeEnrolRequest struct {
 
 func (x *BadgeEnrolRequest) Reset() {
 	*x = BadgeEnrolRequest{}
-	mi := &file_app_badge_svc_g_proto_msgTypes[12]
+	mi := &file_app_badge_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2021,7 +1927,7 @@ func (x *BadgeEnrolRequest) String() string {
 func (*BadgeEnrolRequest) ProtoMessage() {}
 
 func (x *BadgeEnrolRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_badge_svc_g_proto_msgTypes[12]
+	mi := &file_app_badge_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2108,7 +2014,7 @@ type BadgeUnlockRequest struct {
 
 func (x *BadgeUnlockRequest) Reset() {
 	*x = BadgeUnlockRequest{}
-	mi := &file_app_badge_svc_g_proto_msgTypes[13]
+	mi := &file_app_badge_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2120,7 +2026,7 @@ func (x *BadgeUnlockRequest) String() string {
 func (*BadgeUnlockRequest) ProtoMessage() {}
 
 func (x *BadgeUnlockRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_badge_svc_g_proto_msgTypes[13]
+	mi := &file_app_badge_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2177,7 +2083,7 @@ type BadgeUnlockResponse struct {
 
 func (x *BadgeUnlockResponse) Reset() {
 	*x = BadgeUnlockResponse{}
-	mi := &file_app_badge_svc_g_proto_msgTypes[14]
+	mi := &file_app_badge_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2189,7 +2095,7 @@ func (x *BadgeUnlockResponse) String() string {
 func (*BadgeUnlockResponse) ProtoMessage() {}
 
 func (x *BadgeUnlockResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_badge_svc_g_proto_msgTypes[14]
+	mi := &file_app_badge_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2248,7 +2154,7 @@ type BadgeVerifyRequest struct {
 
 func (x *BadgeVerifyRequest) Reset() {
 	*x = BadgeVerifyRequest{}
-	mi := &file_app_badge_svc_g_proto_msgTypes[15]
+	mi := &file_app_badge_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2260,7 +2166,7 @@ func (x *BadgeVerifyRequest) String() string {
 func (*BadgeVerifyRequest) ProtoMessage() {}
 
 func (x *BadgeVerifyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_badge_svc_g_proto_msgTypes[15]
+	mi := &file_app_badge_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2323,7 +2229,7 @@ type BadgeVerifyResponse struct {
 
 func (x *BadgeVerifyResponse) Reset() {
 	*x = BadgeVerifyResponse{}
-	mi := &file_app_badge_svc_g_proto_msgTypes[16]
+	mi := &file_app_badge_svc_g_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2335,7 +2241,7 @@ func (x *BadgeVerifyResponse) String() string {
 func (*BadgeVerifyResponse) ProtoMessage() {}
 
 func (x *BadgeVerifyResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_badge_svc_g_proto_msgTypes[16]
+	mi := &file_app_badge_svc_g_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2426,7 +2332,7 @@ var File_app_badge_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_badge_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x15app/badge_svc.g.proto\x12\x06roster\x1a\x0fapp/badge.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\x96\x03\n" +
+	"\x15app/badge_svc.g.proto\x12\x06roster\x1a\x0fapp/badge.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a roster/payday/holder_svc.g.proto\"\x96\x03\n" +
 	"\x0fBadgeAddRequest\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12\x19\n" +
@@ -2478,10 +2384,7 @@ const file_app_badge_svc_g_proto_rawDesc = "" +
 	"\fdate_rotated\x18\x18 \x01(\v2\x1a.google.protobuf.TimestampR\vdateRotated\x12*\n" +
 	"\x11date_rotated_null\x18\x19 \x01(\bR\x0fdateRotatedNull\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"[\n" +
-	"\x11BadgeApplyRequest\x12\"\n" +
-	"\x03ref\x18\x01 \x01(\v2\x10.roster.BadgeRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\",\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\",\n" +
 	"\x12BadgeEraseResponse\x12\x16\n" +
 	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xc7\x01\n" +
 	"\x10BadgeListRequest\x12-\n" +
@@ -2513,19 +2416,18 @@ const file_app_badge_svc_g_proto_rawDesc = "" +
 	"\x02ok\x18\x01 \x01(\bB\x05\xaa\x01\x02\b\x02R\x02ok\x12\x1d\n" +
 	"\x06holder\x18\x02 \x01(\fB\x05\xaa\x01\x02\b\x02R\x06holder\x12\x1d\n" +
 	"\x06tenant\x18\x03 \x01(\fB\x05\xaa\x01\x02\b\x02R\x06tenant\x12\x1d\n" +
-	"\x06locked\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\x06locked2\xff\x03\n" +
+	"\x06locked\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\x06locked2\xcc\x03\n" +
 	"\fBadgeService\x12-\n" +
 	"\x03Add\x12\x17.roster.BadgeAddRequest\x1a\r.roster.Badge\x12-\n" +
 	"\x03Get\x12\x17.roster.BadgeGetRequest\x1a\r.roster.Badge\x121\n" +
-	"\x05Patch\x12\x19.roster.BadgePatchRequest\x1a\r.roster.Badge\x121\n" +
-	"\x05Apply\x12\x19.roster.BadgeApplyRequest\x1a\r.roster.Badge\x125\n" +
+	"\x05Patch\x12\x19.roster.BadgePatchRequest\x1a\r.roster.Badge\x125\n" +
 	"\x05Erase\x12\x10.roster.BadgeRef\x1a\x1a.roster.BadgeEraseResponse\x12;\n" +
 	"\x04List\x12\x18.roster.BadgeListRequest\x1a\x19.roster.BadgeListResponse\x121\n" +
 	"\x05Enrol\x12\x19.roster.BadgeEnrolRequest\x1a\r.roster.Badge\x12A\n" +
 	"\x06Unlock\x12\x1a.roster.BadgeUnlockRequest\x1a\x1b.roster.BadgeUnlockResponse\x12A\n" +
 	"\x06Verify\x12\x1a.roster.BadgeVerifyRequest\x1a\x1b.roster.BadgeVerifyResponseB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_badge_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 17)
+var file_app_badge_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_app_badge_svc_g_proto_goTypes = []any{
 	(*BadgeAddRequest)(nil),       // 0: roster.BadgeAddRequest
 	(*BadgeGetRequest)(nil),       // 1: roster.BadgeGetRequest
@@ -2534,70 +2436,64 @@ var file_app_badge_svc_g_proto_goTypes = []any{
 	(*BadgeRefByCode)(nil),        // 4: roster.BadgeRefByCode
 	(*BadgeSelect)(nil),           // 5: roster.BadgeSelect
 	(*BadgePatchRequest)(nil),     // 6: roster.BadgePatchRequest
-	(*BadgeApplyRequest)(nil),     // 7: roster.BadgeApplyRequest
-	(*BadgeEraseResponse)(nil),    // 8: roster.BadgeEraseResponse
-	(*BadgeListRequest)(nil),      // 9: roster.BadgeListRequest
-	(*BadgeListResponse)(nil),     // 10: roster.BadgeListResponse
-	(*BadgeFilter)(nil),           // 11: roster.BadgeFilter
-	(*BadgeEnrolRequest)(nil),     // 12: roster.BadgeEnrolRequest
-	(*BadgeUnlockRequest)(nil),    // 13: roster.BadgeUnlockRequest
-	(*BadgeUnlockResponse)(nil),   // 14: roster.BadgeUnlockResponse
-	(*BadgeVerifyRequest)(nil),    // 15: roster.BadgeVerifyRequest
-	(*BadgeVerifyResponse)(nil),   // 16: roster.BadgeVerifyResponse
-	(*HolderRef)(nil),             // 17: roster.HolderRef
-	(*timestamppb.Timestamp)(nil), // 18: google.protobuf.Timestamp
-	(*HolderSelect)(nil),          // 19: roster.HolderSelect
-	(*patchpb.Patch)(nil),         // 20: patch.Patch
-	(*Badge)(nil),                 // 21: roster.Badge
+	(*BadgeEraseResponse)(nil),    // 7: roster.BadgeEraseResponse
+	(*BadgeListRequest)(nil),      // 8: roster.BadgeListRequest
+	(*BadgeListResponse)(nil),     // 9: roster.BadgeListResponse
+	(*BadgeFilter)(nil),           // 10: roster.BadgeFilter
+	(*BadgeEnrolRequest)(nil),     // 11: roster.BadgeEnrolRequest
+	(*BadgeUnlockRequest)(nil),    // 12: roster.BadgeUnlockRequest
+	(*BadgeUnlockResponse)(nil),   // 13: roster.BadgeUnlockResponse
+	(*BadgeVerifyRequest)(nil),    // 14: roster.BadgeVerifyRequest
+	(*BadgeVerifyResponse)(nil),   // 15: roster.BadgeVerifyResponse
+	(*HolderRef)(nil),             // 16: roster.HolderRef
+	(*timestamppb.Timestamp)(nil), // 17: google.protobuf.Timestamp
+	(*HolderSelect)(nil),          // 18: roster.HolderSelect
+	(*Badge)(nil),                 // 19: roster.Badge
 }
 var file_app_badge_svc_g_proto_depIdxs = []int32{
-	17, // 0: roster.BadgeAddRequest.holder:type_name -> roster.HolderRef
-	18, // 1: roster.BadgeAddRequest.date_locked:type_name -> google.protobuf.Timestamp
-	18, // 2: roster.BadgeAddRequest.date_rotated:type_name -> google.protobuf.Timestamp
-	18, // 3: roster.BadgeAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	16, // 0: roster.BadgeAddRequest.holder:type_name -> roster.HolderRef
+	17, // 1: roster.BadgeAddRequest.date_locked:type_name -> google.protobuf.Timestamp
+	17, // 2: roster.BadgeAddRequest.date_rotated:type_name -> google.protobuf.Timestamp
+	17, // 3: roster.BadgeAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 4: roster.BadgeGetRequest.ref:type_name -> roster.BadgeRef
 	5,  // 5: roster.BadgeGetRequest.select:type_name -> roster.BadgeSelect
 	3,  // 6: roster.BadgeRef.holder:type_name -> roster.BadgeRefByHolder
 	4,  // 7: roster.BadgeRef.code:type_name -> roster.BadgeRefByCode
-	17, // 8: roster.BadgeRefByHolder.holder:type_name -> roster.HolderRef
-	19, // 9: roster.BadgeSelect.holder:type_name -> roster.HolderSelect
+	16, // 8: roster.BadgeRefByHolder.holder:type_name -> roster.HolderRef
+	18, // 9: roster.BadgeSelect.holder:type_name -> roster.HolderSelect
 	2,  // 10: roster.BadgePatchRequest.ref:type_name -> roster.BadgeRef
-	18, // 11: roster.BadgePatchRequest.date_locked:type_name -> google.protobuf.Timestamp
-	18, // 12: roster.BadgePatchRequest.date_rotated:type_name -> google.protobuf.Timestamp
-	18, // 13: roster.BadgePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 14: roster.BadgeApplyRequest.ref:type_name -> roster.BadgeRef
-	20, // 15: roster.BadgeApplyRequest.patch:type_name -> patch.Patch
-	11, // 16: roster.BadgeListRequest.filters:type_name -> roster.BadgeFilter
-	5,  // 17: roster.BadgeListRequest.select:type_name -> roster.BadgeSelect
-	21, // 18: roster.BadgeListResponse.items:type_name -> roster.Badge
-	2,  // 19: roster.BadgeFilter.ref:type_name -> roster.BadgeRef
-	17, // 20: roster.BadgeFilter.holder:type_name -> roster.HolderRef
-	17, // 21: roster.BadgeEnrolRequest.holder:type_name -> roster.HolderRef
-	17, // 22: roster.BadgeUnlockRequest.holder:type_name -> roster.HolderRef
-	18, // 23: roster.BadgeUnlockResponse.date_locked:type_name -> google.protobuf.Timestamp
-	0,  // 24: roster.BadgeService.Add:input_type -> roster.BadgeAddRequest
-	1,  // 25: roster.BadgeService.Get:input_type -> roster.BadgeGetRequest
-	6,  // 26: roster.BadgeService.Patch:input_type -> roster.BadgePatchRequest
-	7,  // 27: roster.BadgeService.Apply:input_type -> roster.BadgeApplyRequest
-	2,  // 28: roster.BadgeService.Erase:input_type -> roster.BadgeRef
-	9,  // 29: roster.BadgeService.List:input_type -> roster.BadgeListRequest
-	12, // 30: roster.BadgeService.Enrol:input_type -> roster.BadgeEnrolRequest
-	13, // 31: roster.BadgeService.Unlock:input_type -> roster.BadgeUnlockRequest
-	15, // 32: roster.BadgeService.Verify:input_type -> roster.BadgeVerifyRequest
-	21, // 33: roster.BadgeService.Add:output_type -> roster.Badge
-	21, // 34: roster.BadgeService.Get:output_type -> roster.Badge
-	21, // 35: roster.BadgeService.Patch:output_type -> roster.Badge
-	21, // 36: roster.BadgeService.Apply:output_type -> roster.Badge
-	8,  // 37: roster.BadgeService.Erase:output_type -> roster.BadgeEraseResponse
-	10, // 38: roster.BadgeService.List:output_type -> roster.BadgeListResponse
-	21, // 39: roster.BadgeService.Enrol:output_type -> roster.Badge
-	14, // 40: roster.BadgeService.Unlock:output_type -> roster.BadgeUnlockResponse
-	16, // 41: roster.BadgeService.Verify:output_type -> roster.BadgeVerifyResponse
-	33, // [33:42] is the sub-list for method output_type
-	24, // [24:33] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	17, // 11: roster.BadgePatchRequest.date_locked:type_name -> google.protobuf.Timestamp
+	17, // 12: roster.BadgePatchRequest.date_rotated:type_name -> google.protobuf.Timestamp
+	17, // 13: roster.BadgePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	10, // 14: roster.BadgeListRequest.filters:type_name -> roster.BadgeFilter
+	5,  // 15: roster.BadgeListRequest.select:type_name -> roster.BadgeSelect
+	19, // 16: roster.BadgeListResponse.items:type_name -> roster.Badge
+	2,  // 17: roster.BadgeFilter.ref:type_name -> roster.BadgeRef
+	16, // 18: roster.BadgeFilter.holder:type_name -> roster.HolderRef
+	16, // 19: roster.BadgeEnrolRequest.holder:type_name -> roster.HolderRef
+	16, // 20: roster.BadgeUnlockRequest.holder:type_name -> roster.HolderRef
+	17, // 21: roster.BadgeUnlockResponse.date_locked:type_name -> google.protobuf.Timestamp
+	0,  // 22: roster.BadgeService.Add:input_type -> roster.BadgeAddRequest
+	1,  // 23: roster.BadgeService.Get:input_type -> roster.BadgeGetRequest
+	6,  // 24: roster.BadgeService.Patch:input_type -> roster.BadgePatchRequest
+	2,  // 25: roster.BadgeService.Erase:input_type -> roster.BadgeRef
+	8,  // 26: roster.BadgeService.List:input_type -> roster.BadgeListRequest
+	11, // 27: roster.BadgeService.Enrol:input_type -> roster.BadgeEnrolRequest
+	12, // 28: roster.BadgeService.Unlock:input_type -> roster.BadgeUnlockRequest
+	14, // 29: roster.BadgeService.Verify:input_type -> roster.BadgeVerifyRequest
+	19, // 30: roster.BadgeService.Add:output_type -> roster.Badge
+	19, // 31: roster.BadgeService.Get:output_type -> roster.Badge
+	19, // 32: roster.BadgeService.Patch:output_type -> roster.Badge
+	7,  // 33: roster.BadgeService.Erase:output_type -> roster.BadgeEraseResponse
+	9,  // 34: roster.BadgeService.List:output_type -> roster.BadgeListResponse
+	19, // 35: roster.BadgeService.Enrol:output_type -> roster.Badge
+	13, // 36: roster.BadgeService.Unlock:output_type -> roster.BadgeUnlockResponse
+	15, // 37: roster.BadgeService.Verify:output_type -> roster.BadgeVerifyResponse
+	30, // [30:38] is the sub-list for method output_type
+	22, // [22:30] is the sub-list for method input_type
+	22, // [22:22] is the sub-list for extension type_name
+	22, // [22:22] is the sub-list for extension extendee
+	0,  // [0:22] is the sub-list for field type_name
 }
 
 func init() { file_app_badge_svc_g_proto_init() }
@@ -2618,7 +2514,7 @@ func file_app_badge_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_badge_svc_g_proto_rawDesc), len(file_app_badge_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   17,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

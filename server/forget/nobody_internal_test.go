@@ -103,8 +103,11 @@ func TestEveryRowThatNamesAPersonIsAskedAboutThem(t *testing.T) {
 				want[service+"Add"] = columns
 			}
 			if moves {
-				want[service+"Patch"] = columns
-				want[service+"Apply"] = columns
+				for _, verb := range []string{"Patch", "Apply"} {
+					if declared(verb) {
+						want[service+verb] = columns
+					}
+				}
 			}
 		}
 
@@ -123,8 +126,8 @@ func TestEveryRowThatNamesAPersonIsAskedAboutThem(t *testing.T) {
 		x.Contains(want, by, "%s is asked about and writes no row that names a person", by)
 	}
 
-	// And a nomination is the one kind whose edge moves, which is why two of
-	// its writes besides `Add` are here. If that stops being so, or another
+	// And a nomination is the one kind whose edge moves, which is why its
+	// `Patch` is here besides its `Add`. If that stops being so, or another
 	// kind's edge is freed, the comment on [naming] is what to read again.
 	moved := []string{}
 	for by := range want {
@@ -133,5 +136,5 @@ func TestEveryRowThatNamesAPersonIsAskedAboutThem(t *testing.T) {
 		}
 	}
 	slices.Sort(moved)
-	x.Equal([]string{app.NominationService_Apply_FullMethodName, app.NominationService_Patch_FullMethodName}, moved)
+	x.Equal([]string{app.NominationService_Patch_FullMethodName}, moved)
 }

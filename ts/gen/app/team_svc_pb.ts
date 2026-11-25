@@ -11,8 +11,6 @@ import { file_app_team } from "./team_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { TenantRef, TenantSelect } from "../roster/payday/tenant_svc_pb.js";
 import { file_roster_payday_tenant_svc_g } from "../roster/payday/tenant_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -21,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/team_svc.g.proto.
  */
 export const file_app_team_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvdGVhbV9zdmMuZy5wcm90bxIGcm9zdGVyItgBCg5UZWFtQWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSHQoEc2l0ZRgDIAEoCzIPLnJvc3Rlci5TaXRlUmVmEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlIKDlRlYW1HZXRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5UZWFtUmVmEiIKBnNlbGVjdBgCIAEoCzISLnJvc3Rlci5UZWFtU2VsZWN0Ik0KB1RlYW1SZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAEiUKBHNsdWcYBCABKAsyFS5yb3N0ZXIuVGVhbVJlZkJ5U2x1Z0gAQgUKA2tleSI9Cg1UZWFtUmVmQnlTbHVnEg0KBWFsaWFzGAQgASgJEh0KBHNpdGUYAyABKAsyDy5yb3N0ZXIuU2l0ZVJlZiLNAQoKVGVhbVNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBIgCgRzaXRlGAMgASgLMhIucm9zdGVyLlNpdGVTZWxlY3QSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiqQEKEFRlYW1QYXRjaFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLlRlYW1SZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIk0KEFRlYW1BcHBseVJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLlRlYW1SZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIjChFUZWFtRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAginQEKD1RlYW1MaXN0UmVxdWVzdBIjCgdmaWx0ZXJzGAEgAygLMhIucm9zdGVyLlRlYW1GaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEiIKBnNlbGVjdBgGIAEoCzISLnJvc3Rlci5UZWFtU2VsZWN0IkQKEFRlYW1MaXN0UmVzcG9uc2USGwoFaXRlbXMYASADKAsyDC5yb3N0ZXIuVGVhbRITCgRuZXh0GAIgASgJQgWqAQIIAiJsCgpUZWFtRmlsdGVyEhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5UZWFtUmVmEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSHQoEc2l0ZRgDIAEoCzIPLnJvc3Rlci5TaXRlUmVmIlUKEFRlYW1XYXRjaFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLnJvc3Rlci5UZWFtRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjkKEVRlYW1XYXRjaFJlc3BvbnNlEiQKBWl0ZW1zGAEgAygLMhUucm9zdGVyLlRlYW1XYXRjaEl0ZW0iTwoNVGVhbVdhdGNoSXRlbRIKCgJpZBgBIAEoDBIbCgV2YWx1ZRgCIAEoCzIMLnJvc3Rlci5UZWFtEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIy+QIKC1RlYW1TZXJ2aWNlEisKA0FkZBIWLnJvc3Rlci5UZWFtQWRkUmVxdWVzdBoMLnJvc3Rlci5UZWFtEisKA0dldBIWLnJvc3Rlci5UZWFtR2V0UmVxdWVzdBoMLnJvc3Rlci5UZWFtEi8KBVBhdGNoEhgucm9zdGVyLlRlYW1QYXRjaFJlcXVlc3QaDC5yb3N0ZXIuVGVhbRIvCgVBcHBseRIYLnJvc3Rlci5UZWFtQXBwbHlSZXF1ZXN0Ggwucm9zdGVyLlRlYW0SMwoFRXJhc2USDy5yb3N0ZXIuVGVhbVJlZhoZLnJvc3Rlci5UZWFtRXJhc2VSZXNwb25zZRI5CgRMaXN0Ehcucm9zdGVyLlRlYW1MaXN0UmVxdWVzdBoYLnJvc3Rlci5UZWFtTGlzdFJlc3BvbnNlEj4KBVdhdGNoEhgucm9zdGVyLlRlYW1XYXRjaFJlcXVlc3QaGS5yb3N0ZXIuVGVhbVdhdGNoUmVzcG9uc2UwAUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_site_svc_g, file_app_team, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_tenant_svc_g]);
+  fileDesc("ChRhcHAvdGVhbV9zdmMuZy5wcm90bxIGcm9zdGVyItgBCg5UZWFtQWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSHQoEc2l0ZRgDIAEoCzIPLnJvc3Rlci5TaXRlUmVmEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRuYW1lGAUgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlIKDlRlYW1HZXRSZXF1ZXN0EhwKA3JlZhgBIAEoCzIPLnJvc3Rlci5UZWFtUmVmEiIKBnNlbGVjdBgCIAEoCzISLnJvc3Rlci5UZWFtU2VsZWN0Ik0KB1RlYW1SZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAEiUKBHNsdWcYBCABKAsyFS5yb3N0ZXIuVGVhbVJlZkJ5U2x1Z0gAQgUKA2tleSI9Cg1UZWFtUmVmQnlTbHVnEg0KBWFsaWFzGAQgASgJEh0KBHNpdGUYAyABKAsyDy5yb3N0ZXIuU2l0ZVJlZiLNAQoKVGVhbVNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBIgCgRzaXRlGAMgASgLMhIucm9zdGVyLlNpdGVTZWxlY3QSDQoFYWxpYXMYBCABKAgSDAoEbmFtZRgFIAEoCBIMCgRkZXNjGAYgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiqQEKEFRlYW1QYXRjaFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLlRlYW1SZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIiMKEVRlYW1FcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKdAQoPVGVhbUxpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5yb3N0ZXIuVGVhbUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISIgoGc2VsZWN0GAYgASgLMhIucm9zdGVyLlRlYW1TZWxlY3QiRAoQVGVhbUxpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLnJvc3Rlci5UZWFtEhMKBG5leHQYAiABKAlCBaoBAggCImwKClRlYW1GaWx0ZXISHAoDcmVmGAEgASgLMg8ucm9zdGVyLlRlYW1SZWYSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZhIdCgRzaXRlGAMgASgLMg8ucm9zdGVyLlNpdGVSZWYiVQoQVGVhbVdhdGNoUmVxdWVzdBIjCgdmaWx0ZXJzGAEgAygLMhIucm9zdGVyLlRlYW1GaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiOQoRVGVhbVdhdGNoUmVzcG9uc2USJAoFaXRlbXMYASADKAsyFS5yb3N0ZXIuVGVhbVdhdGNoSXRlbSJPCg1UZWFtV2F0Y2hJdGVtEgoKAmlkGAEgASgMEhsKBXZhbHVlGAIgASgLMgwucm9zdGVyLlRlYW0SFQoGYWN0aW9uGAMgASgJQgWqAQIIAjLIAgoLVGVhbVNlcnZpY2USKwoDQWRkEhYucm9zdGVyLlRlYW1BZGRSZXF1ZXN0Ggwucm9zdGVyLlRlYW0SKwoDR2V0EhYucm9zdGVyLlRlYW1HZXRSZXF1ZXN0Ggwucm9zdGVyLlRlYW0SLwoFUGF0Y2gSGC5yb3N0ZXIuVGVhbVBhdGNoUmVxdWVzdBoMLnJvc3Rlci5UZWFtEjMKBUVyYXNlEg8ucm9zdGVyLlRlYW1SZWYaGS5yb3N0ZXIuVGVhbUVyYXNlUmVzcG9uc2USOQoETGlzdBIXLnJvc3Rlci5UZWFtTGlzdFJlcXVlc3QaGC5yb3N0ZXIuVGVhbUxpc3RSZXNwb25zZRI+CgVXYXRjaBIYLnJvc3Rlci5UZWFtV2F0Y2hSZXF1ZXN0Ghkucm9zdGVyLlRlYW1XYXRjaFJlc3BvbnNlMAFCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_site_svc_g, file_app_team, file_google_protobuf_timestamp, file_orm, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.TeamAddRequest
@@ -257,28 +255,6 @@ export const TeamPatchRequestSchema: GenMessage<TeamPatchRequest> = /*@__PURE__*
   messageDesc(file_app_team_svc_g, 5);
 
 /**
- * @generated from message roster.TeamApplyRequest
- */
-export type TeamApplyRequest = Message<"roster.TeamApplyRequest"> & {
-  /**
-   * @generated from field: roster.TeamRef ref = 1;
-   */
-  ref?: TeamRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.TeamApplyRequest.
- * Use `create(TeamApplyRequestSchema)` to create a new message.
- */
-export const TeamApplyRequestSchema: GenMessage<TeamApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_team_svc_g, 6);
-
-/**
  * @generated from message roster.TeamEraseResponse
  */
 export type TeamEraseResponse = Message<"roster.TeamEraseResponse"> & {
@@ -299,7 +275,7 @@ export type TeamEraseResponse = Message<"roster.TeamEraseResponse"> & {
  * Use `create(TeamEraseResponseSchema)` to create a new message.
  */
 export const TeamEraseResponseSchema: GenMessage<TeamEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_team_svc_g, 7);
+  messageDesc(file_app_team_svc_g, 6);
 
 /**
  * @generated from message roster.TeamListRequest
@@ -362,7 +338,7 @@ export type TeamListRequest = Message<"roster.TeamListRequest"> & {
  * Use `create(TeamListRequestSchema)` to create a new message.
  */
 export const TeamListRequestSchema: GenMessage<TeamListRequest> = /*@__PURE__*/
-  messageDesc(file_app_team_svc_g, 8);
+  messageDesc(file_app_team_svc_g, 7);
 
 /**
  * @generated from message roster.TeamListResponse
@@ -392,7 +368,7 @@ export type TeamListResponse = Message<"roster.TeamListResponse"> & {
  * Use `create(TeamListResponseSchema)` to create a new message.
  */
 export const TeamListResponseSchema: GenMessage<TeamListResponse> = /*@__PURE__*/
-  messageDesc(file_app_team_svc_g, 9);
+  messageDesc(file_app_team_svc_g, 8);
 
 /**
  * @generated from message roster.TeamFilter
@@ -419,7 +395,7 @@ export type TeamFilter = Message<"roster.TeamFilter"> & {
  * Use `create(TeamFilterSchema)` to create a new message.
  */
 export const TeamFilterSchema: GenMessage<TeamFilter> = /*@__PURE__*/
-  messageDesc(file_app_team_svc_g, 10);
+  messageDesc(file_app_team_svc_g, 9);
 
 /**
  * @generated from message roster.TeamWatchRequest
@@ -457,7 +433,7 @@ export type TeamWatchRequest = Message<"roster.TeamWatchRequest"> & {
  * Use `create(TeamWatchRequestSchema)` to create a new message.
  */
 export const TeamWatchRequestSchema: GenMessage<TeamWatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_team_svc_g, 11);
+  messageDesc(file_app_team_svc_g, 10);
 
 /**
  * @generated from message roster.TeamWatchResponse
@@ -476,7 +452,7 @@ export type TeamWatchResponse = Message<"roster.TeamWatchResponse"> & {
  * Use `create(TeamWatchResponseSchema)` to create a new message.
  */
 export const TeamWatchResponseSchema: GenMessage<TeamWatchResponse> = /*@__PURE__*/
-  messageDesc(file_app_team_svc_g, 12);
+  messageDesc(file_app_team_svc_g, 11);
 
 /**
  * @generated from message roster.TeamWatchItem
@@ -524,7 +500,7 @@ export type TeamWatchItem = Message<"roster.TeamWatchItem"> & {
  * Use `create(TeamWatchItemSchema)` to create a new message.
  */
 export const TeamWatchItemSchema: GenMessage<TeamWatchItem> = /*@__PURE__*/
-  messageDesc(file_app_team_svc_g, 13);
+  messageDesc(file_app_team_svc_g, 12);
 
 /**
  * @generated from service roster.TeamService
@@ -558,16 +534,6 @@ export const TeamService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof TeamPatchRequestSchema;
-    output: typeof TeamSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Team
-   *
-   * @generated from rpc roster.TeamService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof TeamApplyRequestSchema;
     output: typeof TeamSchema;
   },
   /**

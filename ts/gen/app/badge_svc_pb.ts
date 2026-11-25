@@ -9,8 +9,6 @@ import { file_app_badge } from "./badge_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
 import { file_roster_payday_holder_svc_g } from "../roster/payday/holder_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -19,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/badge_svc.g.proto.
  */
 export const file_app_badge_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChVhcHAvYmFkZ2Vfc3ZjLmcucHJvdG8SBnJvc3RlciLCAgoPQmFkZ2VBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhITCgRjb2RlGAggASgJQgWqAQIIAhIVCgZzZWNyZXQYCSABKAxCBaoBAggCEhcKCGZhaWx1cmVzGAogASgFQgWqAQIIAhIvCgtkYXRlX2xvY2tlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9yb3RhdGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIeCgl0ZW5hbnRfaWQYECABKAxCC6oBAggC6oIWAhBAEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiVQoPQmFkZ2VHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5CYWRnZVJlZhIjCgZzZWxlY3QYAiABKAsyEy5yb3N0ZXIuQmFkZ2VTZWxlY3QiewoIQmFkZ2VSZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAEioKBmhvbGRlchgCIAEoCzIYLnJvc3Rlci5CYWRnZVJlZkJ5SG9sZGVySAASJgoEY29kZRgQIAEoCzIWLnJvc3Rlci5CYWRnZVJlZkJ5Q29kZUgAQgUKA2tleSI1ChBCYWRnZVJlZkJ5SG9sZGVyEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiOQoOQmFkZ2VSZWZCeUNvZGUSGQoJdGVuYW50X2lkGBAgASgMQgbqghYCEEASDAoEY29kZRgIIAEoCSLvAQoLQmFkZ2VTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDAoEY29kZRgIIAEoCBIOCgZzZWNyZXQYCSABKAgSEAoIZmFpbHVyZXMYCiABKAgSEwoLZGF0ZV9sb2NrZWQYCyABKAgSFAoMZGF0ZV9yb3RhdGVkGAwgASgIEhEKCXRlbmFudF9pZBgQIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIsgCChFCYWRnZVBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuQmFkZ2VSZWYSDAoEY29kZRgQIAEoCRIOCgZzZWNyZXQYEiABKAwSEAoIZmFpbHVyZXMYFCABKAUSLwoLZGF0ZV9sb2NrZWQYFiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKEGRhdGVfbG9ja2VkX251bGwYFyABKAgSMAoMZGF0ZV9yb3RhdGVkGBggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIZChFkYXRlX3JvdGF0ZWRfbnVsbBgZIAEoCBIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCJPChFCYWRnZUFwcGx5UmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuQmFkZ2VSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIkChJCYWRnZUVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIqABChBCYWRnZUxpc3RSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuQmFkZ2VGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEiMKBnNlbGVjdBgGIAEoCzITLnJvc3Rlci5CYWRnZVNlbGVjdCJGChFCYWRnZUxpc3RSZXNwb25zZRIcCgVpdGVtcxgBIAMoCzINLnJvc3Rlci5CYWRnZRITCgRuZXh0GAIgASgJQgWqAQIIAiJqCgtCYWRnZUZpbHRlchIdCgNyZWYYASABKAsyEC5yb3N0ZXIuQmFkZ2VSZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIZCgl0ZW5hbnRfaWQYAyABKAxCBuqCFgIQQCJfChFCYWRnZUVucm9sUmVxdWVzdBIhCgZob2xkZXIYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGNvZGUYAiABKAlCBaoBAggCEhIKA3BpbhgDIAEoCUIFqgECCAIiNwoSQmFkZ2VVbmxvY2tSZXF1ZXN0EiEKBmhvbGRlchgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiRgoTQmFkZ2VVbmxvY2tSZXNwb25zZRIvCgtkYXRlX2xvY2tlZBgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiPQoSQmFkZ2VWZXJpZnlSZXF1ZXN0EhMKBGNvZGUYASABKAlCBaoBAggCEhIKA3BpbhgCIAEoCUIFqgECCAIibQoTQmFkZ2VWZXJpZnlSZXNwb25zZRIRCgJvaxgBIAEoCEIFqgECCAISFQoGaG9sZGVyGAIgASgMQgWqAQIIAhIVCgZ0ZW5hbnQYAyABKAxCBaoBAggCEhUKBmxvY2tlZBgEIAEoCEIFqgECCAIy/wMKDEJhZGdlU2VydmljZRItCgNBZGQSFy5yb3N0ZXIuQmFkZ2VBZGRSZXF1ZXN0Gg0ucm9zdGVyLkJhZGdlEi0KA0dldBIXLnJvc3Rlci5CYWRnZUdldFJlcXVlc3QaDS5yb3N0ZXIuQmFkZ2USMQoFUGF0Y2gSGS5yb3N0ZXIuQmFkZ2VQYXRjaFJlcXVlc3QaDS5yb3N0ZXIuQmFkZ2USMQoFQXBwbHkSGS5yb3N0ZXIuQmFkZ2VBcHBseVJlcXVlc3QaDS5yb3N0ZXIuQmFkZ2USNQoFRXJhc2USEC5yb3N0ZXIuQmFkZ2VSZWYaGi5yb3N0ZXIuQmFkZ2VFcmFzZVJlc3BvbnNlEjsKBExpc3QSGC5yb3N0ZXIuQmFkZ2VMaXN0UmVxdWVzdBoZLnJvc3Rlci5CYWRnZUxpc3RSZXNwb25zZRIxCgVFbnJvbBIZLnJvc3Rlci5CYWRnZUVucm9sUmVxdWVzdBoNLnJvc3Rlci5CYWRnZRJBCgZVbmxvY2sSGi5yb3N0ZXIuQmFkZ2VVbmxvY2tSZXF1ZXN0Ghsucm9zdGVyLkJhZGdlVW5sb2NrUmVzcG9uc2USQQoGVmVyaWZ5Ehoucm9zdGVyLkJhZGdlVmVyaWZ5UmVxdWVzdBobLnJvc3Rlci5CYWRnZVZlcmlmeVJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_badge, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChVhcHAvYmFkZ2Vfc3ZjLmcucHJvdG8SBnJvc3RlciLCAgoPQmFkZ2VBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhITCgRjb2RlGAggASgJQgWqAQIIAhIVCgZzZWNyZXQYCSABKAxCBaoBAggCEhcKCGZhaWx1cmVzGAogASgFQgWqAQIIAhIvCgtkYXRlX2xvY2tlZBgLIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASMAoMZGF0ZV9yb3RhdGVkGAwgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIeCgl0ZW5hbnRfaWQYECABKAxCC6oBAggC6oIWAhBAEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiVQoPQmFkZ2VHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5CYWRnZVJlZhIjCgZzZWxlY3QYAiABKAsyEy5yb3N0ZXIuQmFkZ2VTZWxlY3QiewoIQmFkZ2VSZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAEioKBmhvbGRlchgCIAEoCzIYLnJvc3Rlci5CYWRnZVJlZkJ5SG9sZGVySAASJgoEY29kZRgQIAEoCzIWLnJvc3Rlci5CYWRnZVJlZkJ5Q29kZUgAQgUKA2tleSI1ChBCYWRnZVJlZkJ5SG9sZGVyEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiOQoOQmFkZ2VSZWZCeUNvZGUSGQoJdGVuYW50X2lkGBAgASgMQgbqghYCEEASDAoEY29kZRgIIAEoCSLvAQoLQmFkZ2VTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDAoEY29kZRgIIAEoCBIOCgZzZWNyZXQYCSABKAgSEAoIZmFpbHVyZXMYCiABKAgSEwoLZGF0ZV9sb2NrZWQYCyABKAgSFAoMZGF0ZV9yb3RhdGVkGAwgASgIEhEKCXRlbmFudF9pZBgQIAEoCBIUCgxkYXRlX3VwZGF0ZWQYDSABKAgSEwoLZGF0ZV9lcmFzZWQYDiABKAgSFAoMZGF0ZV9jcmVhdGVkGA8gASgIIsgCChFCYWRnZVBhdGNoUmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuQmFkZ2VSZWYSDAoEY29kZRgQIAEoCRIOCgZzZWNyZXQYEiABKAwSEAoIZmFpbHVyZXMYFCABKAUSLwoLZGF0ZV9sb2NrZWQYFiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhgKEGRhdGVfbG9ja2VkX251bGwYFyABKAgSMAoMZGF0ZV9yb3RhdGVkGBggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIZChFkYXRlX3JvdGF0ZWRfbnVsbBgZIAEoCBIwCgxkYXRlX3VwZGF0ZWQYGiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhoKEmRhdGVfdXBkYXRlZF9mb3JjZRgbIAEoCCIkChJCYWRnZUVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIqABChBCYWRnZUxpc3RSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuQmFkZ2VGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEiMKBnNlbGVjdBgGIAEoCzITLnJvc3Rlci5CYWRnZVNlbGVjdCJGChFCYWRnZUxpc3RSZXNwb25zZRIcCgVpdGVtcxgBIAMoCzINLnJvc3Rlci5CYWRnZRITCgRuZXh0GAIgASgJQgWqAQIIAiJqCgtCYWRnZUZpbHRlchIdCgNyZWYYASABKAsyEC5yb3N0ZXIuQmFkZ2VSZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIZCgl0ZW5hbnRfaWQYAyABKAxCBuqCFgIQQCJfChFCYWRnZUVucm9sUmVxdWVzdBIhCgZob2xkZXIYASABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhMKBGNvZGUYAiABKAlCBaoBAggCEhIKA3BpbhgDIAEoCUIFqgECCAIiNwoSQmFkZ2VVbmxvY2tSZXF1ZXN0EiEKBmhvbGRlchgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiRgoTQmFkZ2VVbmxvY2tSZXNwb25zZRIvCgtkYXRlX2xvY2tlZBgBIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiPQoSQmFkZ2VWZXJpZnlSZXF1ZXN0EhMKBGNvZGUYASABKAlCBaoBAggCEhIKA3BpbhgCIAEoCUIFqgECCAIibQoTQmFkZ2VWZXJpZnlSZXNwb25zZRIRCgJvaxgBIAEoCEIFqgECCAISFQoGaG9sZGVyGAIgASgMQgWqAQIIAhIVCgZ0ZW5hbnQYAyABKAxCBaoBAggCEhUKBmxvY2tlZBgEIAEoCEIFqgECCAIyzAMKDEJhZGdlU2VydmljZRItCgNBZGQSFy5yb3N0ZXIuQmFkZ2VBZGRSZXF1ZXN0Gg0ucm9zdGVyLkJhZGdlEi0KA0dldBIXLnJvc3Rlci5CYWRnZUdldFJlcXVlc3QaDS5yb3N0ZXIuQmFkZ2USMQoFUGF0Y2gSGS5yb3N0ZXIuQmFkZ2VQYXRjaFJlcXVlc3QaDS5yb3N0ZXIuQmFkZ2USNQoFRXJhc2USEC5yb3N0ZXIuQmFkZ2VSZWYaGi5yb3N0ZXIuQmFkZ2VFcmFzZVJlc3BvbnNlEjsKBExpc3QSGC5yb3N0ZXIuQmFkZ2VMaXN0UmVxdWVzdBoZLnJvc3Rlci5CYWRnZUxpc3RSZXNwb25zZRIxCgVFbnJvbBIZLnJvc3Rlci5CYWRnZUVucm9sUmVxdWVzdBoNLnJvc3Rlci5CYWRnZRJBCgZVbmxvY2sSGi5yb3N0ZXIuQmFkZ2VVbmxvY2tSZXF1ZXN0Ghsucm9zdGVyLkJhZGdlVW5sb2NrUmVzcG9uc2USQQoGVmVyaWZ5Ehoucm9zdGVyLkJhZGdlVmVyaWZ5UmVxdWVzdBobLnJvc3Rlci5CYWRnZVZlcmlmeVJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_badge, file_google_protobuf_timestamp, file_orm, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.BadgeAddRequest
@@ -328,28 +326,6 @@ export const BadgePatchRequestSchema: GenMessage<BadgePatchRequest> = /*@__PURE_
   messageDesc(file_app_badge_svc_g, 6);
 
 /**
- * @generated from message roster.BadgeApplyRequest
- */
-export type BadgeApplyRequest = Message<"roster.BadgeApplyRequest"> & {
-  /**
-   * @generated from field: roster.BadgeRef ref = 1;
-   */
-  ref?: BadgeRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.BadgeApplyRequest.
- * Use `create(BadgeApplyRequestSchema)` to create a new message.
- */
-export const BadgeApplyRequestSchema: GenMessage<BadgeApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_badge_svc_g, 7);
-
-/**
  * @generated from message roster.BadgeEraseResponse
  */
 export type BadgeEraseResponse = Message<"roster.BadgeEraseResponse"> & {
@@ -370,7 +346,7 @@ export type BadgeEraseResponse = Message<"roster.BadgeEraseResponse"> & {
  * Use `create(BadgeEraseResponseSchema)` to create a new message.
  */
 export const BadgeEraseResponseSchema: GenMessage<BadgeEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_badge_svc_g, 8);
+  messageDesc(file_app_badge_svc_g, 7);
 
 /**
  * @generated from message roster.BadgeListRequest
@@ -433,7 +409,7 @@ export type BadgeListRequest = Message<"roster.BadgeListRequest"> & {
  * Use `create(BadgeListRequestSchema)` to create a new message.
  */
 export const BadgeListRequestSchema: GenMessage<BadgeListRequest> = /*@__PURE__*/
-  messageDesc(file_app_badge_svc_g, 9);
+  messageDesc(file_app_badge_svc_g, 8);
 
 /**
  * @generated from message roster.BadgeListResponse
@@ -463,7 +439,7 @@ export type BadgeListResponse = Message<"roster.BadgeListResponse"> & {
  * Use `create(BadgeListResponseSchema)` to create a new message.
  */
 export const BadgeListResponseSchema: GenMessage<BadgeListResponse> = /*@__PURE__*/
-  messageDesc(file_app_badge_svc_g, 10);
+  messageDesc(file_app_badge_svc_g, 9);
 
 /**
  * @generated from message roster.BadgeFilter
@@ -490,7 +466,7 @@ export type BadgeFilter = Message<"roster.BadgeFilter"> & {
  * Use `create(BadgeFilterSchema)` to create a new message.
  */
 export const BadgeFilterSchema: GenMessage<BadgeFilter> = /*@__PURE__*/
-  messageDesc(file_app_badge_svc_g, 11);
+  messageDesc(file_app_badge_svc_g, 10);
 
 /**
  * @generated from message roster.BadgeEnrolRequest
@@ -525,7 +501,7 @@ export type BadgeEnrolRequest = Message<"roster.BadgeEnrolRequest"> & {
  * Use `create(BadgeEnrolRequestSchema)` to create a new message.
  */
 export const BadgeEnrolRequestSchema: GenMessage<BadgeEnrolRequest> = /*@__PURE__*/
-  messageDesc(file_app_badge_svc_g, 12);
+  messageDesc(file_app_badge_svc_g, 11);
 
 /**
  * @generated from message roster.BadgeUnlockRequest
@@ -544,7 +520,7 @@ export type BadgeUnlockRequest = Message<"roster.BadgeUnlockRequest"> & {
  * Use `create(BadgeUnlockRequestSchema)` to create a new message.
  */
 export const BadgeUnlockRequestSchema: GenMessage<BadgeUnlockRequest> = /*@__PURE__*/
-  messageDesc(file_app_badge_svc_g, 13);
+  messageDesc(file_app_badge_svc_g, 12);
 
 /**
  * @generated from message roster.BadgeUnlockResponse
@@ -564,7 +540,7 @@ export type BadgeUnlockResponse = Message<"roster.BadgeUnlockResponse"> & {
  * Use `create(BadgeUnlockResponseSchema)` to create a new message.
  */
 export const BadgeUnlockResponseSchema: GenMessage<BadgeUnlockResponse> = /*@__PURE__*/
-  messageDesc(file_app_badge_svc_g, 14);
+  messageDesc(file_app_badge_svc_g, 13);
 
 /**
  * @generated from message roster.BadgeVerifyRequest
@@ -590,7 +566,7 @@ export type BadgeVerifyRequest = Message<"roster.BadgeVerifyRequest"> & {
  * Use `create(BadgeVerifyRequestSchema)` to create a new message.
  */
 export const BadgeVerifyRequestSchema: GenMessage<BadgeVerifyRequest> = /*@__PURE__*/
-  messageDesc(file_app_badge_svc_g, 15);
+  messageDesc(file_app_badge_svc_g, 14);
 
 /**
  * @generated from message roster.BadgeVerifyResponse
@@ -631,7 +607,7 @@ export type BadgeVerifyResponse = Message<"roster.BadgeVerifyResponse"> & {
  * Use `create(BadgeVerifyResponseSchema)` to create a new message.
  */
 export const BadgeVerifyResponseSchema: GenMessage<BadgeVerifyResponse> = /*@__PURE__*/
-  messageDesc(file_app_badge_svc_g, 16);
+  messageDesc(file_app_badge_svc_g, 15);
 
 /**
  * @generated from service roster.BadgeService
@@ -665,16 +641,6 @@ export const BadgeService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof BadgePatchRequestSchema;
-    output: typeof BadgeSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Badge
-   *
-   * @generated from rpc roster.BadgeService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof BadgeApplyRequestSchema;
     output: typeof BadgeSchema;
   },
   /**

@@ -417,16 +417,6 @@ var badgeOrmEntity = ormpatch.MustEntityOf(rstr.File_app_badge_proto, "Badge")
 var badgePatchColumns = entpatch.Columns{
 	1: badge.FieldId, 2: badge.HolderColumn, 8: badge.FieldCode, 9: badge.FieldSecret, 10: badge.FieldFailures, 11: badge.FieldDateLocked, 12: badge.FieldDateRotated, 16: badge.FieldTenantId, 13: badge.FieldDateUpdated, 14: badge.FieldDateErased, 15: badge.FieldDateCreated}
 
-func (s BadgeServiceServer) Apply(ctx context.Context, req *rstr.BadgeApplyRequest) (*rstr.Badge, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.BadgeService_Apply_FullMethodName)
-}
-
 func (s BadgeServiceServer) apply(ctx context.Context, ref *rstr.BadgeRef, doc *patchpb.Patch, by string) (*rstr.Badge, error) {
 	plan := &ormpatch.Plan{Entity: badgeOrmEntity}
 	if doc != nil {

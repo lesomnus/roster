@@ -113,7 +113,6 @@ message Badge {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [

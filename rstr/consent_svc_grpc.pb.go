@@ -22,7 +22,6 @@ const (
 	ConsentService_Add_FullMethodName      = "/roster.ConsentService/Add"
 	ConsentService_Get_FullMethodName      = "/roster.ConsentService/Get"
 	ConsentService_Patch_FullMethodName    = "/roster.ConsentService/Patch"
-	ConsentService_Apply_FullMethodName    = "/roster.ConsentService/Apply"
 	ConsentService_Erase_FullMethodName    = "/roster.ConsentService/Erase"
 	ConsentService_List_FullMethodName     = "/roster.ConsentService/List"
 	ConsentService_Agree_FullMethodName    = "/roster.ConsentService/Agree"
@@ -40,8 +39,6 @@ type ConsentServiceClient interface {
 	Get(ctx context.Context, in *ConsentGetRequest, opts ...grpc.CallOption) (*Consent, error)
 	// Patch updates an existing Consent
 	Patch(ctx context.Context, in *ConsentPatchRequest, opts ...grpc.CallOption) (*Consent, error)
-	// Apply applies a patch document to an existing Consent
-	Apply(ctx context.Context, in *ConsentApplyRequest, opts ...grpc.CallOption) (*Consent, error)
 	// Erase deletes a Consent
 	Erase(ctx context.Context, in *ConsentRef, opts ...grpc.CallOption) (*ConsentEraseResponse, error)
 	// List reads Consents a page at a time.
@@ -100,16 +97,6 @@ func (c *consentServiceClient) Patch(ctx context.Context, in *ConsentPatchReques
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(Consent)
 	err := c.cc.Invoke(ctx, ConsentService_Patch_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *consentServiceClient) Apply(ctx context.Context, in *ConsentApplyRequest, opts ...grpc.CallOption) (*Consent, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Consent)
-	err := c.cc.Invoke(ctx, ConsentService_Apply_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -176,8 +163,6 @@ type ConsentServiceServer interface {
 	Get(context.Context, *ConsentGetRequest) (*Consent, error)
 	// Patch updates an existing Consent
 	Patch(context.Context, *ConsentPatchRequest) (*Consent, error)
-	// Apply applies a patch document to an existing Consent
-	Apply(context.Context, *ConsentApplyRequest) (*Consent, error)
 	// Erase deletes a Consent
 	Erase(context.Context, *ConsentRef) (*ConsentEraseResponse, error)
 	// List reads Consents a page at a time.
@@ -220,9 +205,6 @@ func (UnimplementedConsentServiceServer) Get(context.Context, *ConsentGetRequest
 }
 func (UnimplementedConsentServiceServer) Patch(context.Context, *ConsentPatchRequest) (*Consent, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedConsentServiceServer) Apply(context.Context, *ConsentApplyRequest) (*Consent, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedConsentServiceServer) Erase(context.Context, *ConsentRef) (*ConsentEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -310,24 +292,6 @@ func _ConsentService_Patch_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(ConsentServiceServer).Patch(ctx, req.(*ConsentPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _ConsentService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ConsentApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ConsentServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ConsentService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ConsentServiceServer).Apply(ctx, req.(*ConsentApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -440,10 +404,6 @@ var ConsentService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _ConsentService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _ConsentService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

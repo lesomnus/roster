@@ -5,7 +5,6 @@ import "app/me.proto";
 import "google/protobuf/any.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
-import "patch/patch.proto";
 import "roster/payday/holder.proto";
 import "roster/payday/tenant_svc.g.proto";
 
@@ -18,8 +17,6 @@ service HolderService {
   rpc Get(HolderGetRequest) returns (Holder);
   // Patch updates an existing Holder
   rpc Patch(HolderPatchRequest) returns (Holder);
-  // Apply applies a patch document to an existing Holder
-  rpc Apply(HolderApplyRequest) returns (Holder);
   // Erase deletes a Holder
   rpc Erase(HolderRef) returns (HolderEraseResponse);
   // List reads Holders a page at a time.
@@ -474,11 +471,6 @@ message HolderPatchRequest {
   // "leave it alone", so no value could have meant NULL. It wins
   // outright: setting both this and directory_name clears.
   bool directory_name_null = 39;
-}
-
-message HolderApplyRequest {
-  HolderRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message HolderEraseResponse {

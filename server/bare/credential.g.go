@@ -423,16 +423,6 @@ var credentialOrmEntity = ormpatch.MustEntityOf(rstr.File_app_credential_proto, 
 var credentialPatchColumns = entpatch.Columns{
 	1: credential.FieldId, 2: credential.HolderColumn, 5: credential.FieldName, 8: credential.FieldKind, 9: credential.FieldSecret, 10: credential.FieldFailures, 11: credential.FieldDateUnlocked, 12: credential.FieldDateRotated, 16: credential.FieldLastStep, 17: credential.FieldPrevious, 13: credential.FieldDateUpdated, 14: credential.FieldDateErased, 15: credential.FieldDateCreated}
 
-func (s CredentialServiceServer) Apply(ctx context.Context, req *rstr.CredentialApplyRequest) (*rstr.Credential, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.CredentialService_Apply_FullMethodName)
-}
-
 func (s CredentialServiceServer) apply(ctx context.Context, ref *rstr.CredentialRef, doc *patchpb.Patch, by string) (*rstr.Credential, error) {
 	plan := &ormpatch.Plan{Entity: credentialOrmEntity}
 	if doc != nil {

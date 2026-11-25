@@ -200,7 +200,6 @@ message Delegation {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [

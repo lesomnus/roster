@@ -9,8 +9,6 @@ import { file_app_apikey } from "./apikey_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
 import { file_roster_payday_holder_svc_g } from "../roster/payday/holder_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -19,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/apikey_svc.g.proto.
  */
 export const file_app_apikey_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChZhcHAvYXBpa2V5X3N2Yy5nLnByb3RvEgZyb3N0ZXIihwMKEEFwaUtleUFkZFJlcXVlc3QSEgoCaWQYASABKAxCBuqCFgIQQBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhIPCgdtZXRob2RzGAggAygJEhUKBnNlY3JldBgJIAEoDEIFqgECCAISLQoJZGF0ZV91c2VkGAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2V4cGlyZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjYKEmRhdGVfYXV0aGVudGljYXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHgoDYXBwGBAgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlgKEEFwaUtleUdldFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkFwaUtleVJlZhIkCgZzZWxlY3QYAiABKAsyFC5yb3N0ZXIuQXBpS2V5U2VsZWN0ImMKCUFwaUtleVJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASJwoEc2x1ZxgEIAEoCzIXLnJvc3Rlci5BcGlLZXlSZWZCeVNsdWdIABIQCgZzZWNyZXQYCSABKAxIAEIFCgNrZXkiQwoPQXBpS2V5UmVmQnlTbHVnEg0KBWFsaWFzGAQgASgJEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiqAIKDEFwaUtleVNlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRkZXNjGAYgASgIEg8KB21ldGhvZHMYCCABKAgSDgoGc2VjcmV0GAkgASgIEhEKCWRhdGVfdXNlZBgKIAEoCBIUCgxkYXRlX2V4cGlyZWQYCyABKAgSGgoSZGF0ZV9hdXRoZW50aWNhdGVkGAwgASgIEiEKA2FwcBgQIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCLUAgoSQXBpS2V5UGF0Y2hSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5BcGlLZXlSZWYSDQoFYWxpYXMYCCABKAkSDAoEZGVzYxgMIAEoCRIPCgdtZXRob2RzGBAgAygJEg4KBnNlY3JldBgSIAEoDBItCglkYXRlX3VzZWQYFCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmRhdGVfdXNlZF9udWxsGBUgASgIEjAKDGRhdGVfZXhwaXJlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGQoRZGF0ZV9leHBpcmVkX251bGwYFyABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiUQoSQXBpS2V5QXBwbHlSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5BcGlLZXlSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIlChNBcGlLZXlFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKjAQoRQXBpS2V5TGlzdFJlcXVlc3QSJQoHZmlsdGVycxgBIAMoCzIULnJvc3Rlci5BcGlLZXlGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEiQKBnNlbGVjdBgGIAEoCzIULnJvc3Rlci5BcGlLZXlTZWxlY3QiSAoSQXBpS2V5TGlzdFJlc3BvbnNlEh0KBWl0ZW1zGAEgAygLMg4ucm9zdGVyLkFwaUtleRITCgRuZXh0GAIgASgJQgWqAQIIAiJRCgxBcGlLZXlGaWx0ZXISHgoDcmVmGAEgASgLMhEucm9zdGVyLkFwaUtleVJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmItMBChJBcGlLZXlJc3N1ZVJlcXVlc3QSFgoMaG9sZGVyX2FsaWFzGAEgASgJSAASIwoGaG9sZGVyGAUgASgLMhEucm9zdGVyLkhvbGRlclJlZkgAEhQKBWFsaWFzGAIgASgJQgWqAQIIAhIPCgdtZXRob2RzGAMgAygJEjAKDGRhdGVfZXhwaXJlZBgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHgoDYXBwGAYgASgLMhEucm9zdGVyLkhvbGRlclJlZkIHCgV3aG9zZSJIChNBcGlLZXlJc3N1ZVJlc3BvbnNlEhQKBXRva2VuGAEgASgJQgWqAQIIAhIbCgNrZXkYAiABKAsyDi5yb3N0ZXIuQXBpS2V5MpUDCg1BcGlLZXlTZXJ2aWNlEi8KA0FkZBIYLnJvc3Rlci5BcGlLZXlBZGRSZXF1ZXN0Gg4ucm9zdGVyLkFwaUtleRIvCgNHZXQSGC5yb3N0ZXIuQXBpS2V5R2V0UmVxdWVzdBoOLnJvc3Rlci5BcGlLZXkSMwoFUGF0Y2gSGi5yb3N0ZXIuQXBpS2V5UGF0Y2hSZXF1ZXN0Gg4ucm9zdGVyLkFwaUtleRIzCgVBcHBseRIaLnJvc3Rlci5BcGlLZXlBcHBseVJlcXVlc3QaDi5yb3N0ZXIuQXBpS2V5EjcKBUVyYXNlEhEucm9zdGVyLkFwaUtleVJlZhobLnJvc3Rlci5BcGlLZXlFcmFzZVJlc3BvbnNlEj0KBExpc3QSGS5yb3N0ZXIuQXBpS2V5TGlzdFJlcXVlc3QaGi5yb3N0ZXIuQXBpS2V5TGlzdFJlc3BvbnNlEkAKBUlzc3VlEhoucm9zdGVyLkFwaUtleUlzc3VlUmVxdWVzdBobLnJvc3Rlci5BcGlLZXlJc3N1ZVJlc3BvbnNlQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_apikey, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChZhcHAvYXBpa2V5X3N2Yy5nLnByb3RvEgZyb3N0ZXIihwMKEEFwaUtleUFkZFJlcXVlc3QSEgoCaWQYASABKAxCBuqCFgIQQBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhQKBWFsaWFzGAQgASgJQgWqAQIIAhITCgRkZXNjGAYgASgJQgWqAQIIAhIPCgdtZXRob2RzGAggAygJEhUKBnNlY3JldBgJIAEoDEIFqgECCAISLQoJZGF0ZV91c2VkGAogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIwCgxkYXRlX2V4cGlyZWQYCyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEjYKEmRhdGVfYXV0aGVudGljYXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHgoDYXBwGBAgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlgKEEFwaUtleUdldFJlcXVlc3QSHgoDcmVmGAEgASgLMhEucm9zdGVyLkFwaUtleVJlZhIkCgZzZWxlY3QYAiABKAsyFC5yb3N0ZXIuQXBpS2V5U2VsZWN0ImMKCUFwaUtleVJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASJwoEc2x1ZxgEIAEoCzIXLnJvc3Rlci5BcGlLZXlSZWZCeVNsdWdIABIQCgZzZWNyZXQYCSABKAxIAEIFCgNrZXkiQwoPQXBpS2V5UmVmQnlTbHVnEg0KBWFsaWFzGAQgASgJEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYiqAIKDEFwaUtleVNlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRkZXNjGAYgASgIEg8KB21ldGhvZHMYCCABKAgSDgoGc2VjcmV0GAkgASgIEhEKCWRhdGVfdXNlZBgKIAEoCBIUCgxkYXRlX2V4cGlyZWQYCyABKAgSGgoSZGF0ZV9hdXRoZW50aWNhdGVkGAwgASgIEiEKA2FwcBgQIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCLUAgoSQXBpS2V5UGF0Y2hSZXF1ZXN0Eh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5BcGlLZXlSZWYSDQoFYWxpYXMYCCABKAkSDAoEZGVzYxgMIAEoCRIPCgdtZXRob2RzGBAgAygJEg4KBnNlY3JldBgSIAEoDBItCglkYXRlX3VzZWQYFCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKDmRhdGVfdXNlZF9udWxsGBUgASgIEjAKDGRhdGVfZXhwaXJlZBgWIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGQoRZGF0ZV9leHBpcmVkX251bGwYFyABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiJQoTQXBpS2V5RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiowEKEUFwaUtleUxpc3RSZXF1ZXN0EiUKB2ZpbHRlcnMYASADKAsyFC5yb3N0ZXIuQXBpS2V5RmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAhIkCgZzZWxlY3QYBiABKAsyFC5yb3N0ZXIuQXBpS2V5U2VsZWN0IkgKEkFwaUtleUxpc3RSZXNwb25zZRIdCgVpdGVtcxgBIAMoCzIOLnJvc3Rlci5BcGlLZXkSEwoEbmV4dBgCIAEoCUIFqgECCAIiUQoMQXBpS2V5RmlsdGVyEh4KA3JlZhgBIAEoCzIRLnJvc3Rlci5BcGlLZXlSZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZiLTAQoSQXBpS2V5SXNzdWVSZXF1ZXN0EhYKDGhvbGRlcl9hbGlhcxgBIAEoCUgAEiMKBmhvbGRlchgFIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWZIABIUCgVhbGlhcxgCIAEoCUIFqgECCAISDwoHbWV0aG9kcxgDIAMoCRIwCgxkYXRlX2V4cGlyZWQYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEh4KA2FwcBgGIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWZCBwoFd2hvc2UiSAoTQXBpS2V5SXNzdWVSZXNwb25zZRIUCgV0b2tlbhgBIAEoCUIFqgECCAISGwoDa2V5GAIgASgLMg4ucm9zdGVyLkFwaUtleTLgAgoNQXBpS2V5U2VydmljZRIvCgNBZGQSGC5yb3N0ZXIuQXBpS2V5QWRkUmVxdWVzdBoOLnJvc3Rlci5BcGlLZXkSLwoDR2V0Ehgucm9zdGVyLkFwaUtleUdldFJlcXVlc3QaDi5yb3N0ZXIuQXBpS2V5EjMKBVBhdGNoEhoucm9zdGVyLkFwaUtleVBhdGNoUmVxdWVzdBoOLnJvc3Rlci5BcGlLZXkSNwoFRXJhc2USES5yb3N0ZXIuQXBpS2V5UmVmGhsucm9zdGVyLkFwaUtleUVyYXNlUmVzcG9uc2USPQoETGlzdBIZLnJvc3Rlci5BcGlLZXlMaXN0UmVxdWVzdBoaLnJvc3Rlci5BcGlLZXlMaXN0UmVzcG9uc2USQAoFSXNzdWUSGi5yb3N0ZXIuQXBpS2V5SXNzdWVSZXF1ZXN0Ghsucm9zdGVyLkFwaUtleUlzc3VlUmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_apikey, file_google_protobuf_timestamp, file_orm, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.ApiKeyAddRequest
@@ -336,28 +334,6 @@ export const ApiKeyPatchRequestSchema: GenMessage<ApiKeyPatchRequest> = /*@__PUR
   messageDesc(file_app_apikey_svc_g, 5);
 
 /**
- * @generated from message roster.ApiKeyApplyRequest
- */
-export type ApiKeyApplyRequest = Message<"roster.ApiKeyApplyRequest"> & {
-  /**
-   * @generated from field: roster.ApiKeyRef ref = 1;
-   */
-  ref?: ApiKeyRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.ApiKeyApplyRequest.
- * Use `create(ApiKeyApplyRequestSchema)` to create a new message.
- */
-export const ApiKeyApplyRequestSchema: GenMessage<ApiKeyApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_apikey_svc_g, 6);
-
-/**
  * @generated from message roster.ApiKeyEraseResponse
  */
 export type ApiKeyEraseResponse = Message<"roster.ApiKeyEraseResponse"> & {
@@ -378,7 +354,7 @@ export type ApiKeyEraseResponse = Message<"roster.ApiKeyEraseResponse"> & {
  * Use `create(ApiKeyEraseResponseSchema)` to create a new message.
  */
 export const ApiKeyEraseResponseSchema: GenMessage<ApiKeyEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_apikey_svc_g, 7);
+  messageDesc(file_app_apikey_svc_g, 6);
 
 /**
  * @generated from message roster.ApiKeyListRequest
@@ -441,7 +417,7 @@ export type ApiKeyListRequest = Message<"roster.ApiKeyListRequest"> & {
  * Use `create(ApiKeyListRequestSchema)` to create a new message.
  */
 export const ApiKeyListRequestSchema: GenMessage<ApiKeyListRequest> = /*@__PURE__*/
-  messageDesc(file_app_apikey_svc_g, 8);
+  messageDesc(file_app_apikey_svc_g, 7);
 
 /**
  * @generated from message roster.ApiKeyListResponse
@@ -471,7 +447,7 @@ export type ApiKeyListResponse = Message<"roster.ApiKeyListResponse"> & {
  * Use `create(ApiKeyListResponseSchema)` to create a new message.
  */
 export const ApiKeyListResponseSchema: GenMessage<ApiKeyListResponse> = /*@__PURE__*/
-  messageDesc(file_app_apikey_svc_g, 9);
+  messageDesc(file_app_apikey_svc_g, 8);
 
 /**
  * @generated from message roster.ApiKeyFilter
@@ -493,7 +469,7 @@ export type ApiKeyFilter = Message<"roster.ApiKeyFilter"> & {
  * Use `create(ApiKeyFilterSchema)` to create a new message.
  */
 export const ApiKeyFilterSchema: GenMessage<ApiKeyFilter> = /*@__PURE__*/
-  messageDesc(file_app_apikey_svc_g, 10);
+  messageDesc(file_app_apikey_svc_g, 9);
 
 /**
  * @generated from message roster.ApiKeyIssueRequest
@@ -568,7 +544,7 @@ export type ApiKeyIssueRequest = Message<"roster.ApiKeyIssueRequest"> & {
  * Use `create(ApiKeyIssueRequestSchema)` to create a new message.
  */
 export const ApiKeyIssueRequestSchema: GenMessage<ApiKeyIssueRequest> = /*@__PURE__*/
-  messageDesc(file_app_apikey_svc_g, 11);
+  messageDesc(file_app_apikey_svc_g, 10);
 
 /**
  * @generated from message roster.ApiKeyIssueResponse
@@ -595,7 +571,7 @@ export type ApiKeyIssueResponse = Message<"roster.ApiKeyIssueResponse"> & {
  * Use `create(ApiKeyIssueResponseSchema)` to create a new message.
  */
 export const ApiKeyIssueResponseSchema: GenMessage<ApiKeyIssueResponse> = /*@__PURE__*/
-  messageDesc(file_app_apikey_svc_g, 12);
+  messageDesc(file_app_apikey_svc_g, 11);
 
 /**
  * @generated from service roster.ApiKeyService
@@ -629,16 +605,6 @@ export const ApiKeyService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof ApiKeyPatchRequestSchema;
-    output: typeof ApiKeySchema;
-  },
-  /**
-   * Apply applies a patch document to an existing ApiKey
-   *
-   * @generated from rpc roster.ApiKeyService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof ApiKeyApplyRequestSchema;
     output: typeof ApiKeySchema;
   },
   /**

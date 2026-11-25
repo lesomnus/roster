@@ -22,7 +22,6 @@ const (
 	BadgeService_Add_FullMethodName    = "/roster.BadgeService/Add"
 	BadgeService_Get_FullMethodName    = "/roster.BadgeService/Get"
 	BadgeService_Patch_FullMethodName  = "/roster.BadgeService/Patch"
-	BadgeService_Apply_FullMethodName  = "/roster.BadgeService/Apply"
 	BadgeService_Erase_FullMethodName  = "/roster.BadgeService/Erase"
 	BadgeService_List_FullMethodName   = "/roster.BadgeService/List"
 	BadgeService_Enrol_FullMethodName  = "/roster.BadgeService/Enrol"
@@ -40,8 +39,6 @@ type BadgeServiceClient interface {
 	Get(ctx context.Context, in *BadgeGetRequest, opts ...grpc.CallOption) (*Badge, error)
 	// Patch updates an existing Badge
 	Patch(ctx context.Context, in *BadgePatchRequest, opts ...grpc.CallOption) (*Badge, error)
-	// Apply applies a patch document to an existing Badge
-	Apply(ctx context.Context, in *BadgeApplyRequest, opts ...grpc.CallOption) (*Badge, error)
 	// Erase deletes a Badge
 	Erase(ctx context.Context, in *BadgeRef, opts ...grpc.CallOption) (*BadgeEraseResponse, error)
 	// List reads Badges a page at a time.
@@ -120,16 +117,6 @@ func (c *badgeServiceClient) Patch(ctx context.Context, in *BadgePatchRequest, o
 	return out, nil
 }
 
-func (c *badgeServiceClient) Apply(ctx context.Context, in *BadgeApplyRequest, opts ...grpc.CallOption) (*Badge, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Badge)
-	err := c.cc.Invoke(ctx, BadgeService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *badgeServiceClient) Erase(ctx context.Context, in *BadgeRef, opts ...grpc.CallOption) (*BadgeEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BadgeEraseResponse)
@@ -190,8 +177,6 @@ type BadgeServiceServer interface {
 	Get(context.Context, *BadgeGetRequest) (*Badge, error)
 	// Patch updates an existing Badge
 	Patch(context.Context, *BadgePatchRequest) (*Badge, error)
-	// Apply applies a patch document to an existing Badge
-	Apply(context.Context, *BadgeApplyRequest) (*Badge, error)
 	// Erase deletes a Badge
 	Erase(context.Context, *BadgeRef) (*BadgeEraseResponse, error)
 	// List reads Badges a page at a time.
@@ -248,9 +233,6 @@ func (UnimplementedBadgeServiceServer) Get(context.Context, *BadgeGetRequest) (*
 }
 func (UnimplementedBadgeServiceServer) Patch(context.Context, *BadgePatchRequest) (*Badge, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedBadgeServiceServer) Apply(context.Context, *BadgeApplyRequest) (*Badge, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedBadgeServiceServer) Erase(context.Context, *BadgeRef) (*BadgeEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -338,24 +320,6 @@ func _BadgeService_Patch_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(BadgeServiceServer).Patch(ctx, req.(*BadgePatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _BadgeService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BadgeApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BadgeServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: BadgeService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BadgeServiceServer).Apply(ctx, req.(*BadgeApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -468,10 +432,6 @@ var BadgeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _BadgeService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _BadgeService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

@@ -125,7 +125,6 @@ message Nomination {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [
