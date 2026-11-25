@@ -278,6 +278,56 @@ func TestAMachineIsNotAPersonInTheDirectory(t *testing.T) {
 	})
 }
 
+// TestAnAppsHolderIsNotAPersonInTheDirectory: the holder `roster app install`
+// makes for an app in a tenant carries `roster.app`, and the directory leaves
+// it out by the test that leaves out a front door's: no entry by listing or by
+// name, no `member` of a group it was put in, and nobody's `manager`.
+//
+// It carried nothing, and was an `inetOrgPerson` with a `uid` like anybody:
+// a client that imports users imported it, and an app reading roster as its
+// directory could leave out only itself, by name (#451). A person beside it is
+// listed as before.
+func TestAnAppsHolderIsNotAPersonInTheDirectory(t *testing.T) {
+	x := require.New(t)
+	d := stand(t)
+	ctx := t.Context()
+	at := rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build()
+
+	// An app's holder, as `roster app install` writes it (`cli/app.go`),
+	// which somebody then put in a group and said lee reports to.
+	loft, err := d.s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: at, Alias: "loft", Labels: map[string]string{"roster.app": "loft"},
+	}.Build())
+	x.NoError(err)
+	apps := d.group(t, d.contoso, "apps", "Everything that signs in")
+	d.inGroup(t, loft.GetId(), apps)
+	d.inGroup(t, d.kim, apps)
+	_, err = d.s.Ungated.Relation().Add(ctx, rstr.RelationAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: d.lee}.Build(), Other: rstr.HolderRef_builder{Id: loft.GetId()}.Build(),
+		Labels: map[string]string{"manager": ""},
+	}.Build())
+	x.NoError(err)
+
+	c := d.serve(t, ldap.BindKey, nil)
+	x.NoError(c.Bind(kimDN, d.kimKey))
+
+	const (
+		loftDN = "uid=loft,ou=people,o=contoso"
+		appsDN = "cn=apps,ou=groups,o=contoso"
+	)
+
+	for _, filter := range []string{"(objectClass=inetOrgPerson)", "(uid=*)", "(|(uid=loft)(uid=kim))", "(uid=loft)"} {
+		got := dns(search(t, c, peopleDN, goldap.ScopeSingleLevel, filter, "uid"))
+		x.NotContains(got, loftDN, "%s answered an app's holder", filter)
+	}
+	x.ElementsMatch([]string{kimDN, leeDN, adminDN}, dns(search(t, c, contosoDN, goldap.ScopeWholeSubtree, "(objectClass=inetOrgPerson)", "uid")),
+		"the people beside it are listed as before")
+	_, err = c.Search(goldap.NewSearchRequest(loftDN, goldap.ScopeBaseObject, goldap.NeverDerefAliases, 0, 0, false, "(objectClass=*)", nil, nil))
+	x.True(goldap.IsErrorWithCode(err, goldap.LDAPResultNoSuchObject), "answered an entry for an app's holder; right is no such object: %v", err)
+	x.Equal([]string{kimDN}, one(t, c, appsDN, "member").GetAttributeValues("member"), "a group named an app's holder among its members")
+	x.Empty(one(t, c, leeDN, "manager").GetAttributeValues("manager"), "somebody was said to report to an app")
+}
+
 // TestAnEmployeeNumberMindsCase is `employeeNumber`, the one attribute here
 // whose value is compared exactly.
 //

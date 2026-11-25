@@ -98,8 +98,9 @@ func (s *Server) listUsers(ctx context.Context, w http.ResponseWriter, r *http.R
 	}
 	items := []any{}
 	for i := start - 1; i < len(ids) && len(items) < count; i++ {
-		// Somebody counted and not answered -- erased since, or a row a file
-		// declares -- is skipped, where the whole list was `404`.
+		// Somebody counted and not answered -- erased since, or a front
+		// door's row or an app's -- is skipped, where the whole list was
+		// `404`.
 		p, err := s.read(ctx, t, ids[i])
 		if err != nil {
 			var nf *problem
@@ -324,8 +325,8 @@ func asProblem(err error, p **problem) bool {
 //
 // Each is asked [Server.present], one call that reads nothing personal. It
 // read each person whole, three calls and three rows of the access record, on
-// every page. So the count may hold somebody no page shows: a holder a file
-// declares who has an account at the connection, which nothing makes unless
+// every page. So the count may hold somebody no page shows: a front door's
+// holder or an app's with an account at the connection, which nothing makes unless
 // an operator writes one, or somebody erased between the count and the page,
 // which skips whom [Server.read] does not answer. It is not made exact by
 // reading `labels`, which are personal, for everybody.

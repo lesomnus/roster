@@ -1707,7 +1707,9 @@ write carries no label and is an operator's like any row: the control plane's
 `provisioner` and its binding to `everything`, which applying a file makes; each
 front door's holder on the control plane and the key minted on it, which a
 restart replaces; and every row `roster scim provision` and `roster app install`
-write, which are a command's, run once, and not a file's. A provisioner that labels what it makes takes, of a
+write, which are a command's, run once, and not a file's. The holder `roster app
+install` makes carries `roster.app` instead, which says it is an app's to a
+directory and makes nothing read-only ([apps.md](apps.md)). A provisioner that labels what it makes takes, of a
 holder or a role of its name, only one carrying its label, and says a tenant it
 skips; `scim provision`, which labels nothing, refuses a holder that holds
 something or a role bound to others, and takes one that does not.

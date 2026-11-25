@@ -8,6 +8,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
+
+	app "github.com/lesomnus/roster/rstr"
 )
 
 // Undeclared refuses a request that carries [Declared]: the label that says a
@@ -42,43 +44,64 @@ import (
 // not an operator's session. Somebody at the admin console who wants a row a
 // file owns writes the file.
 //
+// # And an app's holder, the same way
+//
+// [app.LabelApp] is the label `roster app install` writes on the holder it
+// makes for an app in a tenant, and a directory built on roster leaves such a
+// holder out of its people (`app.Holder.NoPerson`). Anybody's to write, a
+// person could leave the directory by saying they were an app, and an app's
+// holder would be told from them by nothing. So it is refused here as
+// [Declared] is, and written by that command at the box (#451). Taking it
+// off is no more a caller's: no verb served at a port writes a holder's
+// labels but `Add`, which makes a row, and `Patch` is served nowhere
+// ([Server.closed]).
+//
 // # What it reads
 //
 // Any `labels` there is in the request, at any depth, so that a request which
 // carries a row inside it is read like one that is the row.
 func Undeclared() grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, next grpc.UnaryHandler) (any, error) {
-		if m, ok := req.(proto.Message); ok && declares(m.ProtoReflect()) {
+		m, ok := req.(proto.Message)
+		if !ok {
+			return next(ctx, req)
+		}
+		if carries(m.ProtoReflect(), Declared) {
 			return nil, status.Errorf(codes.InvalidArgument,
 				"labels: %q says a file declares the row, and is written by what applies that file -- "+
 					"`resources:`, or a front door's own configuration -- and not by a caller", Declared)
+		}
+		if carries(m.ProtoReflect(), app.LabelApp) {
+			return nil, status.Errorf(codes.InvalidArgument,
+				"labels: %q says a holder is an app's, and is written by `roster app install` at the box "+
+					"and not by a caller", app.LabelApp)
 		}
 
 		return next(ctx, req)
 	}
 }
 
-// declares is whether a message, or one it carries, has [Declared] among its
+// carries is whether a message, or one it carries, has `key` among its
 // labels.
-func declares(m protoreflect.Message) bool {
+func carries(m protoreflect.Message, key string) bool {
 	found := false
 	m.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
 		switch {
 		case fd.IsMap():
 			if fd.Name() == "labels" && fd.MapKey().Kind() == protoreflect.StringKind {
-				found = v.Map().Has(protoreflect.ValueOfString(Declared).MapKey())
+				found = v.Map().Has(protoreflect.ValueOfString(key).MapKey())
 			}
 		case fd.Message() == nil:
 		case fd.IsList():
 			for i := range v.List().Len() {
-				if declares(v.List().Get(i).Message()) {
+				if carries(v.List().Get(i).Message(), key) {
 					found = true
 
 					break
 				}
 			}
 		default:
-			found = declares(v.Message())
+			found = carries(v.Message(), key)
 		}
 
 		return !found

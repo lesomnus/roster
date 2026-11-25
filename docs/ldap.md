@@ -388,23 +388,26 @@ other kind: an address is published once somebody proved it, and not before.
 and `entryUUID` by nobody.
 
 **A machine is not a person here.** A tenant's holders are not all people: each
-front door is answered as one, and so is this directory. Two kinds are left
-out, by the same test the SCIM endpoint asks ([scim.md](scim.md)): a
-holder a file or a provisioner declared -- the label `roster.declared`, which
-`roster login provision` and `roster account provision` write on theirs and a
-`resources:` file on what it declares -- and the holder this directory's key is
-answered as in the tenant, which `roster app install … directory` nominated.
-Neither has an entry, by listing or by name; neither is a `member` of a group
-it was put in, and neither is anybody's `manager`. A tenant's first
-administrator carries no such label and is a person.
+front door is answered as one, so is every app `roster app install` put into
+the tenant, and so is this directory. They are left out by the same test the
+SCIM endpoint asks ([scim.md](scim.md)), a holder whose row says it is no
+person: one a file or a provisioner declared -- the label `roster.declared`,
+which `roster login provision` and `roster account provision` write on theirs
+and a `resources:` file on what it declares -- and one `roster app install`
+made or took for an app -- the label `roster.app`, the app's name, which it
+writes on the holder whether or not the app is still installed. And the holder
+this directory's key is answered as in the tenant, which `roster app install
+… directory` nominated, by being its own. None has an entry, by listing or by
+name; none is a `member` of a group it was put in, and none is anybody's
+`manager`. A tenant's first administrator carries no such label and is a
+person.
 
-What that test cannot see stays in `ou=people`. An app installed by hand
-(`roster app install`, for a Jenkins, say) is a holder like any other, and so
-is the one `roster scim provision` makes for a tenant's directory. And a
+What that test cannot see stays in `ou=people`: the holder `roster scim
+provision` makes for a tenant's directory is a holder like any other. And a
 tenant's own copy (`--tenant-key`) does not know which holder its key hangs off -- the
 key names no read that says -- so that holder is listed too. A client that
 imports users filters them out by what the tenant knows of them: a group, or
-`(!(uid=jenkins))`.
+`(!(uid=scim))`.
 
 ### A group, a team, a site
 
@@ -704,7 +707,7 @@ The promises, in `baseline.md`'s shape, each with its test:
 | a filter on `memberOf`, `member` or `manager` compares a name as a name, however it is spaced or capitalised, and so does its `!`; a value that is not a name matches nobody, and neither does its `!` | `TestANameIsComparedAsAName` |
 | `cn` is what somebody is called now -- the display name, else the name they were added with, else the alias -- one value and never missing; `sn` is the same string; `displayName` is a token's `name` exactly, absent where a token says none; somebody renamed is found by the new name and not the old; no `givenName` | `TestSomebodyIsCalledWhatATokenCallsThem` |
 | `mail`'s values are in the order they were proved, the first being the address a token's `email` says; an address nobody proved is not published and not found | `TestTheFirstMailIsTheAddressATokenSays` |
-| a holder a file or a provisioner declared, and the directory's own, are no entry by listing or by name, no `member` and nobody's `manager`; a tenant's first administrator is a person | `TestAMachineIsNotAPersonInTheDirectory` |
+| a holder a file or a provisioner declared, an app's holder `roster app install` labelled, and the directory's own, are no entry by listing or by name, no `member` and nobody's `manager`; a tenant's first administrator is a person | `TestAMachineIsNotAPersonInTheDirectory` · `TestAnAppsHolderIsNotAPersonInTheDirectory` |
 | `employeeNumber` minds case, alone and inside an `or`, in an equality and in a substring | `TestAnEmployeeNumberMindsCase` |
 | an equality or a substring with nothing in it answers nobody, with success | `TestAFilterThatAsksForNothingAnswersNobody` |
 | a lookup costs what it reads, whatever the tenant's size: the sign-in filter `(&(objectClass=inetOrgPerson)(\|(uid=…)(mail=…)))` is a `Holder.Get` and an `Email.Get`; a name nobody has is one read; `(entryUUID=…)` is one read by identifier; a filter that keeps nobody reads no list; a page of a hundred people is four calls of each list it needs; a group's members are read thirty-two a call and not asked again which groups they are in | `TestALookupCostsWhatItReads` |

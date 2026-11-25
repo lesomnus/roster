@@ -338,8 +338,8 @@ func (s *Server) readGroup(ctx context.Context, id []byte) (*rstr.Group, error) 
 // roster -- an erase and a delete leave it -- and is not named: a directory
 // that follows a member to `GET /Users/{id}` would find nobody there. Asked by
 // [Server.present], which reads nothing personal, so that a read of a group
-// leaves no row of the access record for each member; and so a row a file
-// declares, put in the group by somebody else, would be named.
+// leaves no row of the access record for each member; and so a front door's
+// row or an app's, put in the group by somebody else, would be named.
 func (s *Server) membersOf(ctx context.Context, t *tenancy, group []byte) ([][]byte, error) {
 	ps, err := s.places(ctx, group)
 	if err != nil {

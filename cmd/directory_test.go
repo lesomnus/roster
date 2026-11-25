@@ -560,6 +560,28 @@ func TestWhatADirectorySaysIsKeptAndBelievedByNothing(t *testing.T) {
 		err = tell(app.HolderRef_builder{Id: h.GetId()}.Build(), z.Ptr(erinOid), nil)
 		x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)
 	})
+
+	// Nor about the holder `roster app install` made, which says it is an
+	// app's (`roster.app`): it was answered OK, and `adopt` then had an id
+	// for a holder nobody signs in as (#451). Refused as a declared row is,
+	// by the test the directory and the SCIM endpoint ask.
+	t.Run("nor about a row an app acts as", func(t *testing.T) {
+		x := require.New(t)
+		h, err := b.Ungated.Holder().Add(ctx, app.HolderAddRequest_builder{
+			Tenant: at, Alias: "loft", Labels: map[string]string{app.LabelApp: "loft"},
+		}.Build())
+		x.NoError(err)
+		ref := app.HolderRef_builder{Id: h.GetId()}.Build()
+		err = tell(ref, z.Ptr(ginaOid), nil)
+		x.Equal(codes.FailedPrecondition, status.Code(err), "%v", err)
+		x.Equal("ref: this row is what the app loft acts as, and a directory says nothing of it", status.Convert(err).Message())
+
+		got, err := b.Ungated.Holder().Get(ctx, app.HolderGetRequest_builder{
+			Ref: ref, Select: app.HolderSelect_builder{DirectorySubject: z.Ptr(true)}.Build(),
+		}.Build())
+		x.NoError(err)
+		x.Empty(got.GetDirectorySubject(), "what a directory said of an app's holder was kept")
+	})
 }
 
 // TestATenantWithNoDirectoryIsToldNothing: what `Tell` keeps is a directory's

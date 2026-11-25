@@ -218,10 +218,6 @@ func (d *Directory) byAlias(ctx context.Context, t *tenant, r *reads, alias stri
 	return v, nil
 }
 
-// declared is the label a row a file or a provisioner declared carries
-// (`cmd.Declared`), named here because a consumer does not import `cmd`.
-const declared = "roster.declared"
-
 // listed is whether a holder is one of the tenant's people, as this tree
 // shows them. Not somebody disabled or erased, which a directory says by
 // absence rather than by a flag; and not a machine.
@@ -232,18 +228,22 @@ const declared = "roster.declared"
 // each front door is, whatever else a file declared -- each an
 // `inetOrgPerson` with a `uid`, imported by a client that imports users and
 // named by a group among its members (#281). The SCIM endpoint is asked the
-// same question, who a tenant's people are, and leaves out a row that is
-// declared and its own (`scim/user.go`). This is that test, and it is asked
+// same question, who a tenant's people are, and leaves out the same rows and
+// its own (`scim/user.go`). This is that test, and it is asked
 // wherever a person is named: as an entry, as a `member`, as a `manager`.
 //
-// What it does not know is a machine nothing declared: an app installed by
-// hand is a holder like any other, and so is the holder of a tenant's own key
-// for this directory ([tenant.self]). `docs/ldap.md` § A person says so.
+// A machine is what its row says is one ([rstr.Holder.NoPerson]): a front
+// door's holder, which carries `roster.declared`, and an app's, which `roster
+// app install` labels `roster.app` -- an app installed by hand was listed as
+// somebody until it said so (#451). What it does not know is a machine nothing
+// labelled: the holder `roster scim provision` makes, and the holder of a
+// tenant's own key for this directory ([tenant.self]). `docs/ldap.md` § A
+// person says so.
 func (d *Directory) listed(t *tenant, v *rstr.Holder) bool {
 	switch {
 	case v == nil, v.GetDateDisabled() != nil, v.GetDateErased() != nil:
 		return false
-	case v.GetLabels()[declared] != "":
+	case v.NoPerson():
 		return false
 	case len(t.self) > 0 && bytes.Equal(v.GetId(), t.self):
 		return false

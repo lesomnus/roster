@@ -562,6 +562,49 @@ func TestTheEndpointSpeaksOnlyOfPeople(t *testing.T) {
 	x.EqualValues(1, got["totalResults"], "%v", got)
 }
 
+// TestTheEndpointSpeaksOfNoAppsHolder: the holder `roster app install` makes
+// for an app in a tenant carries `roster.app`, and the endpoint speaks of it
+// as it speaks of a front door's: `GET /Users/{id}` of it is `404`, and no
+// list answers it, though it has an account at the connection.
+//
+// It carried nothing, and was answered as a user like anybody (#451). A
+// person beside it is answered as before.
+func TestTheEndpointSpeaksOfNoAppsHolder(t *testing.T) {
+	d := stand(t)
+	x := require.New(t)
+	ctx := t.Context()
+	at := rstr.TenantRef_builder{Id: d.contoso.Bytes()}.Build()
+
+	// An app's holder, as `roster app install` writes it (`cli/app.go`), with
+	// an account at the connection the directory provisions through.
+	loft, err := d.s.Ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: at, Alias: "loft", Labels: map[string]string{"roster.app": "loft"},
+	}.Build())
+	x.NoError(err)
+	_, err = d.s.Ungated.Identity().Add(ctx, rstr.IdentityAddRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: loft.GetId()}.Build(), Provider: "entra", Subject: "7a6b5c4d-3e2f-1a0b-9c8d-7e6f5a4b3c2d",
+	}.Build())
+	x.NoError(err)
+
+	k, err := pdid.From(loft.GetId())
+	x.NoError(err)
+	code, got, _ := d.call(t, d.key, http.MethodGet, scim.Base+"/Users/"+k.String(), nil)
+	x.Equal(http.StatusNotFound, code, "an app's holder was answered as a user: %v", got)
+	code, got, _ = d.call(t, d.key, http.MethodGet, filter("externalId", "7a6b5c4d-3e2f-1a0b-9c8d-7e6f5a4b3c2d"), nil)
+	x.Equal(http.StatusOK, code)
+	x.EqualValues(0, got["totalResults"], "a filter found an app's holder: %v", got)
+
+	code, got, _ = d.call(t, d.key, http.MethodPost, scim.Base+"/Users", erin())
+	x.Equal(http.StatusCreated, code, "%v", got)
+	code, got, _ = d.call(t, d.key, http.MethodGet, scim.Base+"/Users", nil)
+	x.Equal(http.StatusOK, code)
+	names := []any{}
+	for _, v := range got["Resources"].([]any) {
+		names = append(names, v.(map[string]any)["userName"])
+	}
+	x.Equal([]any{"erin@contoso.example"}, names, "the list answered an app's holder, or not the person beside it")
+}
+
 // TestSomebodyMatchedIsNotSuspendedByTheirDirectoryUntilTheyAreLinked:
 // somebody a tenant had before its directory provisioned anybody is found by
 // their address, and the `externalId` the directory then writes onto them is

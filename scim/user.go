@@ -19,11 +19,6 @@ import (
 	"github.com/lesomnus/roster/server/front"
 )
 
-// declared is the label a row a file declared carries (`cmd.Declared`), named
-// here because a consumer does not import `cmd`. Those rows are a front
-// door's, never a person a directory provisioned.
-const declared = "roster.declared"
-
 // directoryDeleted is `Holder.directory_standing` for somebody the directory
 // deleted: gone, as far as it is concerned, and so as far as this endpoint
 // answers.
@@ -533,16 +528,19 @@ func (p *person) externalId() string {
 }
 
 // speaksOf is whether this endpoint speaks of somebody, by their row: never a
-// row a file declared, never the directory's own holder, never somebody it
-// deleted. Somebody erased has no row to ask, and is not spoken of either.
+// row that says it is a machine -- a front door's, which a file or its
+// configuration declared, or an app's, which `roster app install` labelled
+// ([rstr.Holder.NoPerson]) -- never the directory's own holder, never somebody
+// it deleted. Somebody erased has no row to ask, and is not spoken of either.
 // [Server.read] asks it, and so does [Server.answers] of somebody a write
 // names as a member.
 func speaksOf(t *tenancy, h *rstr.Holder) bool {
-	return h.GetLabels()[declared] == "" && standing(t, h)
+	return !h.NoPerson() && standing(t, h)
 }
 
-// standing is [speaksOf] without the question of who declared them, which is
-// all a count, or a list of who is in a group, asks ([Server.present]).
+// standing is [speaksOf] without the question of what their row says they
+// are, which is all a count, or a list of who is in a group, asks
+// ([Server.present]).
 func standing(t *tenancy, h *rstr.Holder) bool {
 	return !bytes.Equal(h.GetId(), t.self) && h.GetDirectoryStanding() != directoryDeleted
 }
@@ -563,10 +561,11 @@ func (s *Server) answers(ctx context.Context, t *tenancy, id []byte) (bool, erro
 //
 // # What it does not ask
 //
-// Whether a file declared them, which only `labels` says. A row a file
-// declares has an account at the connection, or a place in a group, only where
-// an operator wrote one, which nothing the endpoint does makes; so it is
-// counted, or named among `members`, while `GET /Users/{id}` of it is `404`.
+// Whether their row says they are a machine, which only `labels` says. A
+// front door's row, or an app's, has an account at the connection, or a place
+// in a group, only where an operator wrote one, which nothing the endpoint does
+// makes; so it is counted, or named among `members`, while `GET /Users/{id}`
+// of it is `404`.
 // That is said here and not mended by reading `labels` for everybody.
 func (s *Server) present(ctx context.Context, t *tenancy, id []byte) (bool, error) {
 	return s.ask(ctx, t, id, rstr.HolderSelect_builder{DirectoryStanding: proto.Bool(true)}.Build(), standing)

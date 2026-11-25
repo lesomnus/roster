@@ -272,6 +272,15 @@ func installApp(ctx context.Context, s *cmd.Server, name, tenant string, methods
 		}
 	}
 
+	// The holder says it is an app's, now that it is: written once it is
+	// decided rather than by [holderNamed], so that a holder a refused run
+	// found is not marked (#276's lesson), and on one that lacks it, as any
+	// row that is gone is put back. A directory built on roster leaves such a
+	// holder out of its people (`rstr.Holder.NoPerson`, #451).
+	if _, err := labelled(ctx, s, rstr.HolderRef_builder{Id: who}.Build(), map[string]string{rstr.LabelApp: name}); err != nil {
+		return nil, err
+	}
+
 	borrower, err := cmd.HolderNamed(ctx, s.Control, name)
 	if err != nil {
 		return nil, err
@@ -563,7 +572,8 @@ func nominationOf(ctx context.Context, s *cmd.Server, at *rstr.TenantRef, borrow
 // The holder, its roles and their bindings stay -- the role of roster's, the
 // app's own and whoever it was bound to, and roster's verbs for the app. The trail names the holder, so it
 // stays as every holder does, and a role the tenant may have shaped is theirs to
-// erase. A tenant administrator ends the same nomination themselves with
+// erase. The holder keeps `roster.app`: it is still an app's, and no person a
+// directory should list. A tenant administrator ends the same nomination themselves with
 // `Nomination.Erase`, and needs nothing from a roster operator to do it.
 func newCmdAppUninstall(c *cmd.Config) *xli.Command {
 	return &xli.Command{

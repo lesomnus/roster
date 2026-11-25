@@ -292,6 +292,7 @@ func TestEveryReadOfSomebodyAtTheBoxIsRecordedOrSaysWhy(t *testing.T) {
 		"tenantOrHolder": "tells a tenant's alias from a person's, to an identifier; prints nothing of the row",
 		"whom":           "resolves the REF a vouch command names, and the operator's alias to hand to Credential.Issue; prints nothing of the row",
 		"holderNamed":    "the holder a front door is answered as, made or found by the alias the command chose; prints nothing of the row",
+		"labelled":       "reads a holder's labels to add the ones a provisioner or an install writes, for holderNamed and installApp; prints nothing of the row",
 		"holderFound":    "whether a tenant has a holder of the alias a provisioner chose, before it decides whose they are; reads an id and prints nothing of the row",
 		"holdingOf":      "counts what an app's holder already holds, for a refusal; prints counts and role names",
 		"somebodys":      "reads the labels of a holder of the alias a provisioner chose, to tell its own from the tenant's; prints the alias and the provisioner's own label",

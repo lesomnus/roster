@@ -144,6 +144,17 @@ from the box ([operating.md](operating.md), *Declared rows*). An app installed
 with `app install` is not declared: it is the operator's act, and the tenant's
 from then on.
 
+**An installed app's holder says it is an app's.** `install` labels the holder
+it makes, or takes with `--adopt`, `roster.app`, the name the app was installed
+under, and a second run puts it back where it is gone; `uninstall` leaves it,
+since the holder is still an app's. A tenant's holders are not all people, and
+**a directory built on roster skips a holder that carries either label,
+`roster.declared` or `roster.app`**, as roster's own do -- the LDAP directory,
+the SCIM endpoint and `roster scim adopt` ask that one test
+(`rstr.Holder.NoPerson`) -- rather than leaving out itself by name. Both are
+roster's to write, and a request at a port that carries either is refused.
+Nothing reads `roster.app` to decide what anybody may do.
+
 **A holder of the app's name that is already there is not taken silently.** It
 is somebody's -- a person, an earlier app holder with a key and a role -- and
 the app's key would be answered with everything it holds, while whoever signs

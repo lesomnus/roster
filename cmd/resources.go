@@ -94,7 +94,7 @@ import (
 // and adding a column to four of them for it would be four migrations for one
 // fact. The cost is `Holder.Profile`'s -- labels are where an app puts what the
 // schema does not name, and this spends one of those names.
-const Declared = "roster.declared"
+const Declared = app.LabelDeclared
 
 // Provisioner is the control-plane holder every write below is framed as.
 const Provisioner = "provisioner"
