@@ -1209,6 +1209,7 @@ that cannot be stood up twice the same way.
 resources:
   - kind: Tenant
     alias: contoso
+    id: 0199e000-0000-8000-8001-000000000001   # where it must be the tenant it was; see below
     name: Contoso
     config:                              # how the tenant signs in; see below
       password: false                    # everybody arrives through a directory
@@ -1343,6 +1344,18 @@ nothing more, from a file exactly as from a form. `config.leave` is whether the
 tenant's people may delete their own account (`MeService.Leave`), off unless a
 file or the admin console says so, and like the others a file that does not mention it
 leaves it as it is.
+
+**A tenant may say its identifier**, `id`, as roster prints one: it is for a
+deployment made again -- a new instance, or after the compatibility epoch moved
+-- whose tenant must be the tenant it was to whatever keeps it by its
+identifier, an app that anchors its rows on it or a [policy file](usage/file-policy.md).
+Where nobody of the alias is there, the tenant is made under it; where it is
+there under it, the row is applied as any other; left out, roster makes one. A
+tenant's identifier is not changed, so a file that says another than the one
+the tenant of the alias has, or one another tenant has, is refused at that row,
+naming the alias and both identifiers, and nothing of the row is written; so
+is one that is not a tenant's identifier, where the file is read, and two
+entries that say one. A dry run says each of these as the run would.
 
 What is **not** declarable is `Holder`, `Credential`, `Identity` and `Email`:
 people and the ways into their accounts. A file that made those is a file that
