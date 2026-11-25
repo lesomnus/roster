@@ -12,7 +12,10 @@ not say. Each example is something a served deployment did, or what a test
 named beside it holds.
 
 Read it before binding a role to somebody, before minting a key, and before
-writing a role whose methods end in `*`.
+writing a role whose methods end in `*`. A terminal says these when a role is
+written or bound: `roster role add`, `role widen` and `binding add` print each
+one the grant they made hands over, with its heading here
+([below](#what-says-so-when-one-is-granted)).
 
 | | reads as | is |
 | --- | --- | --- |
@@ -491,7 +494,31 @@ add` print a note when a key's methods reach the trail, `VouchService/Accept`
 or `VouchService/Link`, and the note is the one for that kind of key -- a
 tenant's, or every tenant's.
 
-**Nothing refuses.** A page that asks may still not say, and `roster role add`
-and `roster binding add` print nothing of their own. Whether a write should
-wait until it is said to be meant is
-[#310](https://github.com/lesomnus/roster/issues/310).
+**A role is told at the terminal, where it is written or bound.** After
+`roster role add`, `role widen` and `binding add` have made their write and
+printed the row, each asks `RoleService/HandsOver` on the same connection, as
+the same caller, and prints on standard error what it answered, a grant to a
+line with its heading here:
+
+```
+NOTE: `/roster.ApiKeyService/Issue` reads as "may manage somebody's keys, password or addresses", and is a way into the account of anybody of the tenant who holds no more than whoever is given it -- which, given to two people, is each other.
+  docs/usage/wide-grants.md#a-persons-verb-across-the-tenant
+```
+
+`role add` asks of the methods the role names, and `role widen` of the ones it
+added, where the role can be held widest: across the tenant, in its site where
+it is a site's, nowhere where it is the tenant's `self-service` role. `binding
+add` asks of the methods of the role it bound, where the binding was made:
+across the tenant, or in its site. A role that names an app (`Role.app`) names
+that app's methods, which are not on this page, and it and its bindings print
+nothing; a role of roster's bound for an app is roster's and is asked about as
+any. On `roster control`'s tree the answer is a deployment's.
+
+What the answer is, stdout is: `-o json` and a pipe read the row alone. A
+caller who may not call `RoleService/HandsOver` is told, in one line with the
+code, that what the write hands over could not be asked. Either way the exit
+status is the write's.
+
+**Nothing refuses.** A page that asks may still not say, and a write does not
+wait until it is said to be meant: the owner's decision of 2026-11-15
+([#310](https://github.com/lesomnus/roster/issues/310)).

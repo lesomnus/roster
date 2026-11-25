@@ -223,6 +223,7 @@ func newCmdControlVouch(c *cmd.Config) *xli.Command {
 func newCmdControlEntities(c *cmd.Config) xli.Commands {
 	t := pdcmd.NewIn(controlConnector{c}, "roster")
 	overlays(t)
+	handsOverSaid(t)
 	nowhere(t)
 
 	// `tenant close` and `tenant restore` too, which the overlays mount on
