@@ -80,6 +80,47 @@ func TestACustomerMintsTheirOwnKeyOverTheWire(t *testing.T) {
 	// a fact about this service.
 }
 
+// TestATenantsAdministratorMintsAKeyForSomebodyOverTheWire is the first of
+// the doors an `rt_` has: `ApiKeyService/Issue` at `server.addr`, by somebody
+// for somebody else of their tenant. The second is the same verb with their
+// own reference, [TestACustomerMintsTheirOwnKeyOverTheWire], and the third the
+// same verb at `admin.addr`, by an operator
+// (`TestAnOperatorStandsUpACustomerThatCanBeUsed`).
+//
+// The baseline said an `rt_` is minted through three doors and named tests of
+// one: each mints for the minter themselves or is refused. The key is the
+// person it is written on, and is no wider than the one who minted it, which
+// the two tests after this hold at this door.
+func TestATenantsAdministratorMintsAKeyForSomebodyOverTheWire(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+
+	// An administrator who may mint keys, list people and erase them, which
+	// is more than alice holds, so alice's account is no wider than theirs.
+	boss := b.holder(t, ctx, b.Contoso, "boss")
+	b.binds(t, boss, b.role(t, ctx, "admin", issueKey, listHolder, eraseHolder), nil)
+	b.binds(t, b.ContosoUser, b.role(t, ctx, "staff", listHolder), nil)
+
+	conn := served(t, b.Server)
+	res, err := app.NewApiKeyServiceClient(conn).Issue(asOverTheWire(ctx, boss), app.ApiKeyIssueRequest_builder{
+		Holder:  app.HolderRef_builder{Id: b.ContosoUser.Bytes()}.Build(),
+		Alias:   "ci",
+		Methods: []string{listHolder},
+	}.Build())
+	x.NoError(err)
+	x.True(strings.HasPrefix(res.GetToken(), keys.PrefixTenant), "%.3q", res.GetToken())
+
+	// And it is hers: the row the token finds is written on the person it
+	// was minted for, which is who a key is answered as, and not on whoever
+	// minted it.
+	k, err := b.Ungated.ApiKey().Get(ctx, app.ApiKeyGetRequest_builder{
+		Ref:    app.ApiKeyRef_builder{Secret: keys.Sum(res.GetToken())}.Build(),
+		Select: app.ApiKeySelect_builder{Holder: app.HolderSelect_builder{}.Build()}.Build(),
+	}.Build())
+	x.NoError(err)
+	x.Equal(b.ContosoUser.Bytes(), k.GetHolder().GetId())
+}
+
 // TestNobodyMintsAKeyWiderThanThemselves.
 //
 // The first of the two rules a key is held to, and it is not written in the

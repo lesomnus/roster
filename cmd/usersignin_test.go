@@ -121,6 +121,29 @@ func TestARosterUserSignsInOnTheirOwnTenantsName(t *testing.T) {
 	})
 }
 
+// TestAnOperatorsCookieNamesNobodyWhereARosterUserSignsIn: with
+// `sign_in.enabled` on, `server.addr` reads a cookie, and the one an operator
+// signed in with names nobody there.
+//
+// The baseline said so of `server.addr` and named two tests that run with the
+// setting off, where the port reads no cookie at all. On, the data plane
+// answers a session of its own rows, and an operator's is a session of the
+// control plane's: two databases with no query between them, so it is
+// `Unauthenticated` there and not somebody.
+func TestAnOperatorsCookieNamesNobodyWhereARosterUserSignsIn(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	s, out := initedWith(t, func(c *cmd.Config) { c.SignIn.Enabled = true })
+	c := signIn(t, s, "admin", passwordFrom(t, out))
+	x.NotNil(c, "the operator could not sign in")
+
+	as := metadata.NewOutgoingContext(ctx, metadata.Pairs("cookie", c.Name+"="+c.Value))
+	_, err := app.NewMeServiceClient(served(t, s)).Get(as, app.MeGetRequest_builder{}.Build())
+	x.Error(err, "an operator's cookie named somebody at the data plane")
+	x.Equal(codes.Unauthenticated, status.Code(err))
+}
+
 // TestTheDataPlaneServesNoSignInUnlessItSaysSo is the default, and it is off.
 //
 // Not *served and refusing*: a method that answers no is a method somebody can
