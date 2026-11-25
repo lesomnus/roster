@@ -358,7 +358,9 @@ further by the key's own `methods`. No `roster-at`: there is nothing to narrow,
 and a request carrying one with an `rt_` is refused.
 
 The tenant sees the holder in their own directory and can revoke the key, which
-is the property C is chosen for.
+is the property C is chosen for. Loft runs in this shape, and
+[loft.md](loft.md) is what it asks of roster, step by step, and what each step
+is on roster today.
 
 **C, held several times.** Somebody who is not a roster operator -- a third party
 integrating with several of your customers -- cannot hold an `rk_`: the control
