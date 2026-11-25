@@ -109,8 +109,6 @@ service BindingService {
   rpc Get(BindingGetRequest) returns (Binding);
   // Patch updates an existing Binding
   rpc Patch(BindingPatchRequest) returns (Binding);
-  // Apply applies a patch document to an existing Binding
-  rpc Apply(BindingApplyRequest) returns (Binding);
   // Erase deletes a Binding
   rpc Erase(BindingRef) returns (BindingEraseResponse);
   // List reads Bindings a page at a time.
@@ -371,11 +369,6 @@ message BindingPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message BindingApplyRequest {
-  BindingRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message BindingEraseResponse {

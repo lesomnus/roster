@@ -1266,16 +1266,6 @@ var bindingOrmEntity = ormpatch.MustEntityOf(rstr.File_app_role_proto, "Binding"
 var bindingPatchColumns = entpatch.Columns{
 	1: binding.FieldId, 2: binding.RoleColumn, 3: binding.SiteColumn, 8: binding.HolderColumn, 9: binding.GroupColumn, 10: binding.AppColumn, 7: binding.FieldLabels, 13: binding.FieldDateUpdated, 14: binding.FieldDateErased, 15: binding.FieldDateCreated}
 
-func (s BindingServiceServer) Apply(ctx context.Context, req *rstr.BindingApplyRequest) (*rstr.Binding, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.BindingService_Apply_FullMethodName)
-}
-
 func (s BindingServiceServer) apply(ctx context.Context, ref *rstr.BindingRef, doc *patchpb.Patch, by string) (*rstr.Binding, error) {
 	plan := &ormpatch.Plan{Entity: bindingOrmEntity}
 	if doc != nil {

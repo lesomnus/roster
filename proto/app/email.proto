@@ -193,7 +193,6 @@ message Email {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [

@@ -22,7 +22,6 @@ const (
 	DelegationService_Add_FullMethodName      = "/roster.DelegationService/Add"
 	DelegationService_Get_FullMethodName      = "/roster.DelegationService/Get"
 	DelegationService_Patch_FullMethodName    = "/roster.DelegationService/Patch"
-	DelegationService_Apply_FullMethodName    = "/roster.DelegationService/Apply"
 	DelegationService_Erase_FullMethodName    = "/roster.DelegationService/Erase"
 	DelegationService_List_FullMethodName     = "/roster.DelegationService/List"
 	DelegationService_Revoke_FullMethodName   = "/roster.DelegationService/Revoke"
@@ -40,8 +39,6 @@ type DelegationServiceClient interface {
 	Get(ctx context.Context, in *DelegationGetRequest, opts ...grpc.CallOption) (*Delegation, error)
 	// Patch updates an existing Delegation
 	Patch(ctx context.Context, in *DelegationPatchRequest, opts ...grpc.CallOption) (*Delegation, error)
-	// Apply applies a patch document to an existing Delegation
-	Apply(ctx context.Context, in *DelegationApplyRequest, opts ...grpc.CallOption) (*Delegation, error)
 	// Erase deletes a Delegation
 	Erase(ctx context.Context, in *DelegationRef, opts ...grpc.CallOption) (*DelegationEraseResponse, error)
 	// List reads Delegations a page at a time.
@@ -165,16 +162,6 @@ func (c *delegationServiceClient) Patch(ctx context.Context, in *DelegationPatch
 	return out, nil
 }
 
-func (c *delegationServiceClient) Apply(ctx context.Context, in *DelegationApplyRequest, opts ...grpc.CallOption) (*Delegation, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Delegation)
-	err := c.cc.Invoke(ctx, DelegationService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *delegationServiceClient) Erase(ctx context.Context, in *DelegationRef, opts ...grpc.CallOption) (*DelegationEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DelegationEraseResponse)
@@ -235,8 +222,6 @@ type DelegationServiceServer interface {
 	Get(context.Context, *DelegationGetRequest) (*Delegation, error)
 	// Patch updates an existing Delegation
 	Patch(context.Context, *DelegationPatchRequest) (*Delegation, error)
-	// Apply applies a patch document to an existing Delegation
-	Apply(context.Context, *DelegationApplyRequest) (*Delegation, error)
 	// Erase deletes a Delegation
 	Erase(context.Context, *DelegationRef) (*DelegationEraseResponse, error)
 	// List reads Delegations a page at a time.
@@ -339,9 +324,6 @@ func (UnimplementedDelegationServiceServer) Get(context.Context, *DelegationGetR
 func (UnimplementedDelegationServiceServer) Patch(context.Context, *DelegationPatchRequest) (*Delegation, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
 }
-func (UnimplementedDelegationServiceServer) Apply(context.Context, *DelegationApplyRequest) (*Delegation, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
 func (UnimplementedDelegationServiceServer) Erase(context.Context, *DelegationRef) (*DelegationEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
@@ -428,24 +410,6 @@ func _DelegationService_Patch_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(DelegationServiceServer).Patch(ctx, req.(*DelegationPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DelegationService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DelegationApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DelegationServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DelegationService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DelegationServiceServer).Apply(ctx, req.(*DelegationApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -558,10 +522,6 @@ var DelegationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _DelegationService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _DelegationService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

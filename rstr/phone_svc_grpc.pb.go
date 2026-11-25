@@ -22,7 +22,6 @@ const (
 	PhoneService_Add_FullMethodName   = "/roster.PhoneService/Add"
 	PhoneService_Get_FullMethodName   = "/roster.PhoneService/Get"
 	PhoneService_Patch_FullMethodName = "/roster.PhoneService/Patch"
-	PhoneService_Apply_FullMethodName = "/roster.PhoneService/Apply"
 	PhoneService_Erase_FullMethodName = "/roster.PhoneService/Erase"
 	PhoneService_List_FullMethodName  = "/roster.PhoneService/List"
 )
@@ -37,8 +36,6 @@ type PhoneServiceClient interface {
 	Get(ctx context.Context, in *PhoneGetRequest, opts ...grpc.CallOption) (*Phone, error)
 	// Patch updates an existing Phone
 	Patch(ctx context.Context, in *PhonePatchRequest, opts ...grpc.CallOption) (*Phone, error)
-	// Apply applies a patch document to an existing Phone
-	Apply(ctx context.Context, in *PhoneApplyRequest, opts ...grpc.CallOption) (*Phone, error)
 	// Erase deletes a Phone
 	Erase(ctx context.Context, in *PhoneRef, opts ...grpc.CallOption) (*PhoneEraseResponse, error)
 	// List reads Phones a page at a time.
@@ -83,16 +80,6 @@ func (c *phoneServiceClient) Patch(ctx context.Context, in *PhonePatchRequest, o
 	return out, nil
 }
 
-func (c *phoneServiceClient) Apply(ctx context.Context, in *PhoneApplyRequest, opts ...grpc.CallOption) (*Phone, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Phone)
-	err := c.cc.Invoke(ctx, PhoneService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *phoneServiceClient) Erase(ctx context.Context, in *PhoneRef, opts ...grpc.CallOption) (*PhoneEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PhoneEraseResponse)
@@ -123,8 +110,6 @@ type PhoneServiceServer interface {
 	Get(context.Context, *PhoneGetRequest) (*Phone, error)
 	// Patch updates an existing Phone
 	Patch(context.Context, *PhonePatchRequest) (*Phone, error)
-	// Apply applies a patch document to an existing Phone
-	Apply(context.Context, *PhoneApplyRequest) (*Phone, error)
 	// Erase deletes a Phone
 	Erase(context.Context, *PhoneRef) (*PhoneEraseResponse, error)
 	// List reads Phones a page at a time.
@@ -147,9 +132,6 @@ func (UnimplementedPhoneServiceServer) Get(context.Context, *PhoneGetRequest) (*
 }
 func (UnimplementedPhoneServiceServer) Patch(context.Context, *PhonePatchRequest) (*Phone, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedPhoneServiceServer) Apply(context.Context, *PhoneApplyRequest) (*Phone, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedPhoneServiceServer) Erase(context.Context, *PhoneRef) (*PhoneEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -232,24 +214,6 @@ func _PhoneService_Patch_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
-func _PhoneService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(PhoneApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(PhoneServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: PhoneService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(PhoneServiceServer).Apply(ctx, req.(*PhoneApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _PhoneService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PhoneRef)
 	if err := dec(in); err != nil {
@@ -304,10 +268,6 @@ var PhoneService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _PhoneService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _PhoneService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

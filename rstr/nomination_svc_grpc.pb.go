@@ -22,7 +22,6 @@ const (
 	NominationService_Add_FullMethodName   = "/roster.NominationService/Add"
 	NominationService_Get_FullMethodName   = "/roster.NominationService/Get"
 	NominationService_Patch_FullMethodName = "/roster.NominationService/Patch"
-	NominationService_Apply_FullMethodName = "/roster.NominationService/Apply"
 	NominationService_Erase_FullMethodName = "/roster.NominationService/Erase"
 	NominationService_List_FullMethodName  = "/roster.NominationService/List"
 	NominationService_Watch_FullMethodName = "/roster.NominationService/Watch"
@@ -38,8 +37,6 @@ type NominationServiceClient interface {
 	Get(ctx context.Context, in *NominationGetRequest, opts ...grpc.CallOption) (*Nomination, error)
 	// Patch updates an existing Nomination
 	Patch(ctx context.Context, in *NominationPatchRequest, opts ...grpc.CallOption) (*Nomination, error)
-	// Apply applies a patch document to an existing Nomination
-	Apply(ctx context.Context, in *NominationApplyRequest, opts ...grpc.CallOption) (*Nomination, error)
 	// Erase deletes a Nomination
 	Erase(ctx context.Context, in *NominationRef, opts ...grpc.CallOption) (*NominationEraseResponse, error)
 	// List reads Nominations a page at a time.
@@ -104,16 +101,6 @@ func (c *nominationServiceClient) Patch(ctx context.Context, in *NominationPatch
 	return out, nil
 }
 
-func (c *nominationServiceClient) Apply(ctx context.Context, in *NominationApplyRequest, opts ...grpc.CallOption) (*Nomination, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Nomination)
-	err := c.cc.Invoke(ctx, NominationService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *nominationServiceClient) Erase(ctx context.Context, in *NominationRef, opts ...grpc.CallOption) (*NominationEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(NominationEraseResponse)
@@ -163,8 +150,6 @@ type NominationServiceServer interface {
 	Get(context.Context, *NominationGetRequest) (*Nomination, error)
 	// Patch updates an existing Nomination
 	Patch(context.Context, *NominationPatchRequest) (*Nomination, error)
-	// Apply applies a patch document to an existing Nomination
-	Apply(context.Context, *NominationApplyRequest) (*Nomination, error)
 	// Erase deletes a Nomination
 	Erase(context.Context, *NominationRef) (*NominationEraseResponse, error)
 	// List reads Nominations a page at a time.
@@ -207,9 +192,6 @@ func (UnimplementedNominationServiceServer) Get(context.Context, *NominationGetR
 }
 func (UnimplementedNominationServiceServer) Patch(context.Context, *NominationPatchRequest) (*Nomination, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedNominationServiceServer) Apply(context.Context, *NominationApplyRequest) (*Nomination, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedNominationServiceServer) Erase(context.Context, *NominationRef) (*NominationEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -295,24 +277,6 @@ func _NominationService_Patch_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _NominationService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(NominationApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(NominationServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: NominationService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(NominationServiceServer).Apply(ctx, req.(*NominationApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _NominationService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(NominationRef)
 	if err := dec(in); err != nil {
@@ -378,10 +342,6 @@ var NominationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _NominationService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _NominationService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

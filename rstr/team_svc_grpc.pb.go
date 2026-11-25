@@ -22,7 +22,6 @@ const (
 	TeamService_Add_FullMethodName   = "/roster.TeamService/Add"
 	TeamService_Get_FullMethodName   = "/roster.TeamService/Get"
 	TeamService_Patch_FullMethodName = "/roster.TeamService/Patch"
-	TeamService_Apply_FullMethodName = "/roster.TeamService/Apply"
 	TeamService_Erase_FullMethodName = "/roster.TeamService/Erase"
 	TeamService_List_FullMethodName  = "/roster.TeamService/List"
 	TeamService_Watch_FullMethodName = "/roster.TeamService/Watch"
@@ -38,8 +37,6 @@ type TeamServiceClient interface {
 	Get(ctx context.Context, in *TeamGetRequest, opts ...grpc.CallOption) (*Team, error)
 	// Patch updates an existing Team
 	Patch(ctx context.Context, in *TeamPatchRequest, opts ...grpc.CallOption) (*Team, error)
-	// Apply applies a patch document to an existing Team
-	Apply(ctx context.Context, in *TeamApplyRequest, opts ...grpc.CallOption) (*Team, error)
 	// Erase deletes a Team
 	Erase(ctx context.Context, in *TeamRef, opts ...grpc.CallOption) (*TeamEraseResponse, error)
 	// List reads Teams a page at a time.
@@ -104,16 +101,6 @@ func (c *teamServiceClient) Patch(ctx context.Context, in *TeamPatchRequest, opt
 	return out, nil
 }
 
-func (c *teamServiceClient) Apply(ctx context.Context, in *TeamApplyRequest, opts ...grpc.CallOption) (*Team, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Team)
-	err := c.cc.Invoke(ctx, TeamService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *teamServiceClient) Erase(ctx context.Context, in *TeamRef, opts ...grpc.CallOption) (*TeamEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TeamEraseResponse)
@@ -163,8 +150,6 @@ type TeamServiceServer interface {
 	Get(context.Context, *TeamGetRequest) (*Team, error)
 	// Patch updates an existing Team
 	Patch(context.Context, *TeamPatchRequest) (*Team, error)
-	// Apply applies a patch document to an existing Team
-	Apply(context.Context, *TeamApplyRequest) (*Team, error)
 	// Erase deletes a Team
 	Erase(context.Context, *TeamRef) (*TeamEraseResponse, error)
 	// List reads Teams a page at a time.
@@ -207,9 +192,6 @@ func (UnimplementedTeamServiceServer) Get(context.Context, *TeamGetRequest) (*Te
 }
 func (UnimplementedTeamServiceServer) Patch(context.Context, *TeamPatchRequest) (*Team, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedTeamServiceServer) Apply(context.Context, *TeamApplyRequest) (*Team, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedTeamServiceServer) Erase(context.Context, *TeamRef) (*TeamEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -295,24 +277,6 @@ func _TeamService_Patch_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TeamService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TeamApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TeamServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: TeamService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TeamServiceServer).Apply(ctx, req.(*TeamApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _TeamService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TeamRef)
 	if err := dec(in); err != nil {
@@ -378,10 +342,6 @@ var TeamService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _TeamService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _TeamService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

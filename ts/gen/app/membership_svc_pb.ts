@@ -17,8 +17,6 @@ import { file_app_team_svc_g } from "./team_svc_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
 import { file_roster_payday_holder_svc_g } from "../roster/payday/holder_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -27,7 +25,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/membership_svc.g.proto.
  */
 export const file_app_membership_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChphcHAvbWVtYmVyc2hpcF9zdmMuZy5wcm90bxIGcm9zdGVyIqIBChhTaXRlTWVtYmVyc2hpcEFkZFJlcXVlc3QSEgoCaWQYASABKAxCBuqCFgIQQBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh0KBHNpdGUYAyABKAsyDy5yb3N0ZXIuU2l0ZVJlZhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInAKGFNpdGVNZW1iZXJzaGlwR2V0UmVxdWVzdBImCgNyZWYYASABKAsyGS5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBSZWYSLAoGc2VsZWN0GAIgASgLMhwucm9zdGVyLlNpdGVNZW1iZXJzaGlwU2VsZWN0ImUKEVNpdGVNZW1iZXJzaGlwUmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABIzCgZtZW1iZXIYAiABKAsyIS5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBSZWZCeU1lbWJlckgAQgUKA2tleSJdChlTaXRlTWVtYmVyc2hpcFJlZkJ5TWVtYmVyEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSHQoEc2l0ZRgDIAEoCzIPLnJvc3Rlci5TaXRlUmVmIqwBChRTaXRlTWVtYmVyc2hpcFNlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBIgCgRzaXRlGAMgASgLMhIucm9zdGVyLlNpdGVTZWxlY3QSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKSAQoaU2l0ZU1lbWJlcnNoaXBQYXRjaFJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlNpdGVNZW1iZXJzaGlwUmVmEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIImEKGlNpdGVNZW1iZXJzaGlwQXBwbHlSZXF1ZXN0EiYKA3JlZhgBIAEoCzIZLnJvc3Rlci5TaXRlTWVtYmVyc2hpcFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIi0KG1NpdGVNZW1iZXJzaGlwRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiuwEKGVNpdGVNZW1iZXJzaGlwTGlzdFJlcXVlc3QSLQoHZmlsdGVycxgBIAMoCzIcLnJvc3Rlci5TaXRlTWVtYmVyc2hpcEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISLAoGc2VsZWN0GAYgASgLMhwucm9zdGVyLlNpdGVNZW1iZXJzaGlwU2VsZWN0IlgKGlNpdGVNZW1iZXJzaGlwTGlzdFJlc3BvbnNlEiUKBWl0ZW1zGAEgAygLMhYucm9zdGVyLlNpdGVNZW1iZXJzaGlwEhMKBG5leHQYAiABKAlCBaoBAggCIoABChRTaXRlTWVtYmVyc2hpcEZpbHRlchImCgNyZWYYASABKAsyGS5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBSZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIdCgRzaXRlGAMgASgLMg8ucm9zdGVyLlNpdGVSZWYiaQoaU2l0ZU1lbWJlcnNoaXBXYXRjaFJlcXVlc3QSLQoHZmlsdGVycxgBIAMoCzIcLnJvc3Rlci5TaXRlTWVtYmVyc2hpcEZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiJNChtTaXRlTWVtYmVyc2hpcFdhdGNoUmVzcG9uc2USLgoFaXRlbXMYASADKAsyHy5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBXYXRjaEl0ZW0iYwoXU2l0ZU1lbWJlcnNoaXBXYXRjaEl0ZW0SCgoCaWQYASABKAwSJQoFdmFsdWUYAiABKAsyFi5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXASFQoGYWN0aW9uGAMgASgJQgWqAQIIAiLBAQoYVGVhbU1lbWJlcnNoaXBBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIdCgR0ZWFtGAggASgLMg8ucm9zdGVyLlRlYW1SZWYSHQoEcm9sZRgJIAEoCzIPLnJvc3Rlci5Sb2xlUmVmEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAicAoYVGVhbU1lbWJlcnNoaXBHZXRSZXF1ZXN0EiYKA3JlZhgBIAEoCzIZLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFJlZhIsCgZzZWxlY3QYAiABKAsyHC5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBTZWxlY3QiZQoRVGVhbU1lbWJlcnNoaXBSZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAEjMKBm1lbWJlchgCIAEoCzIhLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFJlZkJ5TWVtYmVySABCBQoDa2V5Il0KGVRlYW1NZW1iZXJzaGlwUmVmQnlNZW1iZXISIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIdCgR0ZWFtGAggASgLMg8ucm9zdGVyLlRlYW1SZWYizgEKFFRlYW1NZW1iZXJzaGlwU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EiAKBHRlYW0YCCABKAsyEi5yb3N0ZXIuVGVhbVNlbGVjdBIgCgRyb2xlGAkgASgLMhIucm9zdGVyLlJvbGVTZWxlY3QSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCLEAQoaVGVhbU1lbWJlcnNoaXBQYXRjaFJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlRlYW1NZW1iZXJzaGlwUmVmEh0KBHJvbGUYEiABKAsyDy5yb3N0ZXIuUm9sZVJlZhIRCglyb2xlX251bGwYEyABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiYQoaVGVhbU1lbWJlcnNoaXBBcHBseVJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlRlYW1NZW1iZXJzaGlwUmVmEhsKBXBhdGNoGAIgASgLMgwucGF0Y2guUGF0Y2giLQobVGVhbU1lbWJlcnNoaXBFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCK7AQoZVGVhbU1lbWJlcnNoaXBMaXN0UmVxdWVzdBItCgdmaWx0ZXJzGAEgAygLMhwucm9zdGVyLlRlYW1NZW1iZXJzaGlwRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAhIsCgZzZWxlY3QYBiABKAsyHC5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBTZWxlY3QiWAoaVGVhbU1lbWJlcnNoaXBMaXN0UmVzcG9uc2USJQoFaXRlbXMYASADKAsyFi5yb3N0ZXIuVGVhbU1lbWJlcnNoaXASEwoEbmV4dBgCIAEoCUIFqgECCAIigAEKFFRlYW1NZW1iZXJzaGlwRmlsdGVyEiYKA3JlZhgBIAEoCzIZLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh0KBHRlYW0YAyABKAsyDy5yb3N0ZXIuVGVhbVJlZiJpChpUZWFtTWVtYmVyc2hpcFdhdGNoUmVxdWVzdBItCgdmaWx0ZXJzGAEgAygLMhwucm9zdGVyLlRlYW1NZW1iZXJzaGlwRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIk0KG1RlYW1NZW1iZXJzaGlwV2F0Y2hSZXNwb25zZRIuCgVpdGVtcxgBIAMoCzIfLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFdhdGNoSXRlbSJjChdUZWFtTWVtYmVyc2hpcFdhdGNoSXRlbRIKCgJpZBgBIAEoDBIlCgV2YWx1ZRgCIAEoCzIWLnJvc3Rlci5UZWFtTWVtYmVyc2hpcBIVCgZhY3Rpb24YAyABKAlCBaoBAggCIsQBChlHcm91cE1lbWJlcnNoaXBBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIfCgVncm91cBgIIAEoCzIQLnJvc3Rlci5Hcm91cFJlZhIdCgRyb2xlGAkgASgLMg8ucm9zdGVyLlJvbGVSZWYSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJzChlHcm91cE1lbWJlcnNoaXBHZXRSZXF1ZXN0EicKA3JlZhgBIAEoCzIaLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBSZWYSLQoGc2VsZWN0GAIgASgLMh0ucm9zdGVyLkdyb3VwTWVtYmVyc2hpcFNlbGVjdCJnChJHcm91cE1lbWJlcnNoaXBSZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAEjQKBm1lbWJlchgCIAEoCzIiLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBSZWZCeU1lbWJlckgAQgUKA2tleSJgChpHcm91cE1lbWJlcnNoaXBSZWZCeU1lbWJlchIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh8KBWdyb3VwGAggASgLMhAucm9zdGVyLkdyb3VwUmVmItEBChVHcm91cE1lbWJlcnNoaXBTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSIgoFZ3JvdXAYCCABKAsyEy5yb3N0ZXIuR3JvdXBTZWxlY3QSIAoEcm9sZRgJIAEoCzISLnJvc3Rlci5Sb2xlU2VsZWN0EhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgixgEKG0dyb3VwTWVtYmVyc2hpcFBhdGNoUmVxdWVzdBInCgNyZWYYASABKAsyGi5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwUmVmEh0KBHJvbGUYEiABKAsyDy5yb3N0ZXIuUm9sZVJlZhIRCglyb2xlX251bGwYEyABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiYwobR3JvdXBNZW1iZXJzaGlwQXBwbHlSZXF1ZXN0EicKA3JlZhgBIAEoCzIaLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIuChxHcm91cE1lbWJlcnNoaXBFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCK+AQoaR3JvdXBNZW1iZXJzaGlwTGlzdFJlcXVlc3QSLgoHZmlsdGVycxgBIAMoCzIdLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBGaWx0ZXISEwoEc2l6ZRgCIAEoBUIFqgECCAISFAoFYWZ0ZXIYAyABKAlCBaoBAggCEhYKB3JldmVyc2UYBCABKAhCBaoBAggCEi0KBnNlbGVjdBgGIAEoCzIdLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBTZWxlY3QiWgobR3JvdXBNZW1iZXJzaGlwTGlzdFJlc3BvbnNlEiYKBWl0ZW1zGAEgAygLMhcucm9zdGVyLkdyb3VwTWVtYmVyc2hpcBITCgRuZXh0GAIgASgJQgWqAQIIAiKEAQoVR3JvdXBNZW1iZXJzaGlwRmlsdGVyEicKA3JlZhgBIAEoCzIaLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBSZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIfCgVncm91cBgDIAEoCzIQLnJvc3Rlci5Hcm91cFJlZjKPBAoVU2l0ZU1lbWJlcnNoaXBTZXJ2aWNlEj8KA0FkZBIgLnJvc3Rlci5TaXRlTWVtYmVyc2hpcEFkZFJlcXVlc3QaFi5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXASPwoDR2V0EiAucm9zdGVyLlNpdGVNZW1iZXJzaGlwR2V0UmVxdWVzdBoWLnJvc3Rlci5TaXRlTWVtYmVyc2hpcBJDCgVQYXRjaBIiLnJvc3Rlci5TaXRlTWVtYmVyc2hpcFBhdGNoUmVxdWVzdBoWLnJvc3Rlci5TaXRlTWVtYmVyc2hpcBJDCgVBcHBseRIiLnJvc3Rlci5TaXRlTWVtYmVyc2hpcEFwcGx5UmVxdWVzdBoWLnJvc3Rlci5TaXRlTWVtYmVyc2hpcBJHCgVFcmFzZRIZLnJvc3Rlci5TaXRlTWVtYmVyc2hpcFJlZhojLnJvc3Rlci5TaXRlTWVtYmVyc2hpcEVyYXNlUmVzcG9uc2USTQoETGlzdBIhLnJvc3Rlci5TaXRlTWVtYmVyc2hpcExpc3RSZXF1ZXN0GiIucm9zdGVyLlNpdGVNZW1iZXJzaGlwTGlzdFJlc3BvbnNlElIKBVdhdGNoEiIucm9zdGVyLlNpdGVNZW1iZXJzaGlwV2F0Y2hSZXF1ZXN0GiMucm9zdGVyLlNpdGVNZW1iZXJzaGlwV2F0Y2hSZXNwb25zZTABMo8EChVUZWFtTWVtYmVyc2hpcFNlcnZpY2USPwoDQWRkEiAucm9zdGVyLlRlYW1NZW1iZXJzaGlwQWRkUmVxdWVzdBoWLnJvc3Rlci5UZWFtTWVtYmVyc2hpcBI/CgNHZXQSIC5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBHZXRSZXF1ZXN0GhYucm9zdGVyLlRlYW1NZW1iZXJzaGlwEkMKBVBhdGNoEiIucm9zdGVyLlRlYW1NZW1iZXJzaGlwUGF0Y2hSZXF1ZXN0GhYucm9zdGVyLlRlYW1NZW1iZXJzaGlwEkMKBUFwcGx5EiIucm9zdGVyLlRlYW1NZW1iZXJzaGlwQXBwbHlSZXF1ZXN0GhYucm9zdGVyLlRlYW1NZW1iZXJzaGlwEkcKBUVyYXNlEhkucm9zdGVyLlRlYW1NZW1iZXJzaGlwUmVmGiMucm9zdGVyLlRlYW1NZW1iZXJzaGlwRXJhc2VSZXNwb25zZRJNCgRMaXN0EiEucm9zdGVyLlRlYW1NZW1iZXJzaGlwTGlzdFJlcXVlc3QaIi5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBMaXN0UmVzcG9uc2USUgoFV2F0Y2gSIi5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBXYXRjaFJlcXVlc3QaIy5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBXYXRjaFJlc3BvbnNlMAEyyAMKFkdyb3VwTWVtYmVyc2hpcFNlcnZpY2USQQoDQWRkEiEucm9zdGVyLkdyb3VwTWVtYmVyc2hpcEFkZFJlcXVlc3QaFy5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwEkEKA0dldBIhLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBHZXRSZXF1ZXN0Ghcucm9zdGVyLkdyb3VwTWVtYmVyc2hpcBJFCgVQYXRjaBIjLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBQYXRjaFJlcXVlc3QaFy5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwEkUKBUFwcGx5EiMucm9zdGVyLkdyb3VwTWVtYmVyc2hpcEFwcGx5UmVxdWVzdBoXLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXASSQoFRXJhc2USGi5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwUmVmGiQucm9zdGVyLkdyb3VwTWVtYmVyc2hpcEVyYXNlUmVzcG9uc2USTwoETGlzdBIiLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBMaXN0UmVxdWVzdBojLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBMaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_group_svc_g, file_app_membership, file_app_role_svc_g, file_app_site_svc_g, file_app_team_svc_g, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChphcHAvbWVtYmVyc2hpcF9zdmMuZy5wcm90bxIGcm9zdGVyIqIBChhTaXRlTWVtYmVyc2hpcEFkZFJlcXVlc3QSEgoCaWQYASABKAxCBuqCFgIQQBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh0KBHNpdGUYAyABKAsyDy5yb3N0ZXIuU2l0ZVJlZhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wInAKGFNpdGVNZW1iZXJzaGlwR2V0UmVxdWVzdBImCgNyZWYYASABKAsyGS5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBSZWYSLAoGc2VsZWN0GAIgASgLMhwucm9zdGVyLlNpdGVNZW1iZXJzaGlwU2VsZWN0ImUKEVNpdGVNZW1iZXJzaGlwUmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABIzCgZtZW1iZXIYAiABKAsyIS5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBSZWZCeU1lbWJlckgAQgUKA2tleSJdChlTaXRlTWVtYmVyc2hpcFJlZkJ5TWVtYmVyEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSHQoEc2l0ZRgDIAEoCzIPLnJvc3Rlci5TaXRlUmVmIqwBChRTaXRlTWVtYmVyc2hpcFNlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBIgCgRzaXRlGAMgASgLMhIucm9zdGVyLlNpdGVTZWxlY3QSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKSAQoaU2l0ZU1lbWJlcnNoaXBQYXRjaFJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlNpdGVNZW1iZXJzaGlwUmVmEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIi0KG1NpdGVNZW1iZXJzaGlwRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiuwEKGVNpdGVNZW1iZXJzaGlwTGlzdFJlcXVlc3QSLQoHZmlsdGVycxgBIAMoCzIcLnJvc3Rlci5TaXRlTWVtYmVyc2hpcEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISLAoGc2VsZWN0GAYgASgLMhwucm9zdGVyLlNpdGVNZW1iZXJzaGlwU2VsZWN0IlgKGlNpdGVNZW1iZXJzaGlwTGlzdFJlc3BvbnNlEiUKBWl0ZW1zGAEgAygLMhYucm9zdGVyLlNpdGVNZW1iZXJzaGlwEhMKBG5leHQYAiABKAlCBaoBAggCIoABChRTaXRlTWVtYmVyc2hpcEZpbHRlchImCgNyZWYYASABKAsyGS5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBSZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIdCgRzaXRlGAMgASgLMg8ucm9zdGVyLlNpdGVSZWYiaQoaU2l0ZU1lbWJlcnNoaXBXYXRjaFJlcXVlc3QSLQoHZmlsdGVycxgBIAMoCzIcLnJvc3Rlci5TaXRlTWVtYmVyc2hpcEZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiJNChtTaXRlTWVtYmVyc2hpcFdhdGNoUmVzcG9uc2USLgoFaXRlbXMYASADKAsyHy5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBXYXRjaEl0ZW0iYwoXU2l0ZU1lbWJlcnNoaXBXYXRjaEl0ZW0SCgoCaWQYASABKAwSJQoFdmFsdWUYAiABKAsyFi5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXASFQoGYWN0aW9uGAMgASgJQgWqAQIIAiLBAQoYVGVhbU1lbWJlcnNoaXBBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIdCgR0ZWFtGAggASgLMg8ucm9zdGVyLlRlYW1SZWYSHQoEcm9sZRgJIAEoCzIPLnJvc3Rlci5Sb2xlUmVmEjAKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAicAoYVGVhbU1lbWJlcnNoaXBHZXRSZXF1ZXN0EiYKA3JlZhgBIAEoCzIZLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFJlZhIsCgZzZWxlY3QYAiABKAsyHC5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBTZWxlY3QiZQoRVGVhbU1lbWJlcnNoaXBSZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAEjMKBm1lbWJlchgCIAEoCzIhLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFJlZkJ5TWVtYmVySABCBQoDa2V5Il0KGVRlYW1NZW1iZXJzaGlwUmVmQnlNZW1iZXISIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIdCgR0ZWFtGAggASgLMg8ucm9zdGVyLlRlYW1SZWYizgEKFFRlYW1NZW1iZXJzaGlwU2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EiAKBHRlYW0YCCABKAsyEi5yb3N0ZXIuVGVhbVNlbGVjdBIgCgRyb2xlGAkgASgLMhIucm9zdGVyLlJvbGVTZWxlY3QSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCLEAQoaVGVhbU1lbWJlcnNoaXBQYXRjaFJlcXVlc3QSJgoDcmVmGAEgASgLMhkucm9zdGVyLlRlYW1NZW1iZXJzaGlwUmVmEh0KBHJvbGUYEiABKAsyDy5yb3N0ZXIuUm9sZVJlZhIRCglyb2xlX251bGwYEyABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiLQobVGVhbU1lbWJlcnNoaXBFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCK7AQoZVGVhbU1lbWJlcnNoaXBMaXN0UmVxdWVzdBItCgdmaWx0ZXJzGAEgAygLMhwucm9zdGVyLlRlYW1NZW1iZXJzaGlwRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAhIsCgZzZWxlY3QYBiABKAsyHC5yb3N0ZXIuVGVhbU1lbWJlcnNoaXBTZWxlY3QiWAoaVGVhbU1lbWJlcnNoaXBMaXN0UmVzcG9uc2USJQoFaXRlbXMYASADKAsyFi5yb3N0ZXIuVGVhbU1lbWJlcnNoaXASEwoEbmV4dBgCIAEoCUIFqgECCAIigAEKFFRlYW1NZW1iZXJzaGlwRmlsdGVyEiYKA3JlZhgBIAEoCzIZLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh0KBHRlYW0YAyABKAsyDy5yb3N0ZXIuVGVhbVJlZiJpChpUZWFtTWVtYmVyc2hpcFdhdGNoUmVxdWVzdBItCgdmaWx0ZXJzGAEgAygLMhwucm9zdGVyLlRlYW1NZW1iZXJzaGlwRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIk0KG1RlYW1NZW1iZXJzaGlwV2F0Y2hSZXNwb25zZRIuCgVpdGVtcxgBIAMoCzIfLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFdhdGNoSXRlbSJjChdUZWFtTWVtYmVyc2hpcFdhdGNoSXRlbRIKCgJpZBgBIAEoDBIlCgV2YWx1ZRgCIAEoCzIWLnJvc3Rlci5UZWFtTWVtYmVyc2hpcBIVCgZhY3Rpb24YAyABKAlCBaoBAggCIsQBChlHcm91cE1lbWJlcnNoaXBBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIfCgVncm91cBgIIAEoCzIQLnJvc3Rlci5Hcm91cFJlZhIdCgRyb2xlGAkgASgLMg8ucm9zdGVyLlJvbGVSZWYSMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJzChlHcm91cE1lbWJlcnNoaXBHZXRSZXF1ZXN0EicKA3JlZhgBIAEoCzIaLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBSZWYSLQoGc2VsZWN0GAIgASgLMh0ucm9zdGVyLkdyb3VwTWVtYmVyc2hpcFNlbGVjdCJnChJHcm91cE1lbWJlcnNoaXBSZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAEjQKBm1lbWJlchgCIAEoCzIiLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBSZWZCeU1lbWJlckgAQgUKA2tleSJgChpHcm91cE1lbWJlcnNoaXBSZWZCeU1lbWJlchIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEh8KBWdyb3VwGAggASgLMhAucm9zdGVyLkdyb3VwUmVmItEBChVHcm91cE1lbWJlcnNoaXBTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSIgoFZ3JvdXAYCCABKAsyEy5yb3N0ZXIuR3JvdXBTZWxlY3QSIAoEcm9sZRgJIAEoCzISLnJvc3Rlci5Sb2xlU2VsZWN0EhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgixgEKG0dyb3VwTWVtYmVyc2hpcFBhdGNoUmVxdWVzdBInCgNyZWYYASABKAsyGi5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwUmVmEh0KBHJvbGUYEiABKAsyDy5yb3N0ZXIuUm9sZVJlZhIRCglyb2xlX251bGwYEyABKAgSMAoMZGF0ZV91cGRhdGVkGBogASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIaChJkYXRlX3VwZGF0ZWRfZm9yY2UYGyABKAgiLgocR3JvdXBNZW1iZXJzaGlwRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgivgEKGkdyb3VwTWVtYmVyc2hpcExpc3RSZXF1ZXN0Ei4KB2ZpbHRlcnMYASADKAsyHS5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAhItCgZzZWxlY3QYBiABKAsyHS5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwU2VsZWN0IloKG0dyb3VwTWVtYmVyc2hpcExpc3RSZXNwb25zZRImCgVpdGVtcxgBIAMoCzIXLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXASEwoEbmV4dBgCIAEoCUIFqgECCAIihAEKFUdyb3VwTWVtYmVyc2hpcEZpbHRlchInCgNyZWYYASABKAsyGi5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwUmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSHwoFZ3JvdXAYAyABKAsyEC5yb3N0ZXIuR3JvdXBSZWYyygMKFVNpdGVNZW1iZXJzaGlwU2VydmljZRI/CgNBZGQSIC5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBBZGRSZXF1ZXN0GhYucm9zdGVyLlNpdGVNZW1iZXJzaGlwEj8KA0dldBIgLnJvc3Rlci5TaXRlTWVtYmVyc2hpcEdldFJlcXVlc3QaFi5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXASQwoFUGF0Y2gSIi5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBQYXRjaFJlcXVlc3QaFi5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXASRwoFRXJhc2USGS5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBSZWYaIy5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBFcmFzZVJlc3BvbnNlEk0KBExpc3QSIS5yb3N0ZXIuU2l0ZU1lbWJlcnNoaXBMaXN0UmVxdWVzdBoiLnJvc3Rlci5TaXRlTWVtYmVyc2hpcExpc3RSZXNwb25zZRJSCgVXYXRjaBIiLnJvc3Rlci5TaXRlTWVtYmVyc2hpcFdhdGNoUmVxdWVzdBojLnJvc3Rlci5TaXRlTWVtYmVyc2hpcFdhdGNoUmVzcG9uc2UwATLKAwoVVGVhbU1lbWJlcnNoaXBTZXJ2aWNlEj8KA0FkZBIgLnJvc3Rlci5UZWFtTWVtYmVyc2hpcEFkZFJlcXVlc3QaFi5yb3N0ZXIuVGVhbU1lbWJlcnNoaXASPwoDR2V0EiAucm9zdGVyLlRlYW1NZW1iZXJzaGlwR2V0UmVxdWVzdBoWLnJvc3Rlci5UZWFtTWVtYmVyc2hpcBJDCgVQYXRjaBIiLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFBhdGNoUmVxdWVzdBoWLnJvc3Rlci5UZWFtTWVtYmVyc2hpcBJHCgVFcmFzZRIZLnJvc3Rlci5UZWFtTWVtYmVyc2hpcFJlZhojLnJvc3Rlci5UZWFtTWVtYmVyc2hpcEVyYXNlUmVzcG9uc2USTQoETGlzdBIhLnJvc3Rlci5UZWFtTWVtYmVyc2hpcExpc3RSZXF1ZXN0GiIucm9zdGVyLlRlYW1NZW1iZXJzaGlwTGlzdFJlc3BvbnNlElIKBVdhdGNoEiIucm9zdGVyLlRlYW1NZW1iZXJzaGlwV2F0Y2hSZXF1ZXN0GiMucm9zdGVyLlRlYW1NZW1iZXJzaGlwV2F0Y2hSZXNwb25zZTABMoEDChZHcm91cE1lbWJlcnNoaXBTZXJ2aWNlEkEKA0FkZBIhLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBBZGRSZXF1ZXN0Ghcucm9zdGVyLkdyb3VwTWVtYmVyc2hpcBJBCgNHZXQSIS5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwR2V0UmVxdWVzdBoXLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXASRQoFUGF0Y2gSIy5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwUGF0Y2hSZXF1ZXN0Ghcucm9zdGVyLkdyb3VwTWVtYmVyc2hpcBJJCgVFcmFzZRIaLnJvc3Rlci5Hcm91cE1lbWJlcnNoaXBSZWYaJC5yb3N0ZXIuR3JvdXBNZW1iZXJzaGlwRXJhc2VSZXNwb25zZRJPCgRMaXN0EiIucm9zdGVyLkdyb3VwTWVtYmVyc2hpcExpc3RSZXF1ZXN0GiMucm9zdGVyLkdyb3VwTWVtYmVyc2hpcExpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_group_svc_g, file_app_membership, file_app_role_svc_g, file_app_site_svc_g, file_app_team_svc_g, file_google_protobuf_timestamp, file_orm, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.SiteMembershipAddRequest
@@ -218,28 +216,6 @@ export const SiteMembershipPatchRequestSchema: GenMessage<SiteMembershipPatchReq
   messageDesc(file_app_membership_svc_g, 5);
 
 /**
- * @generated from message roster.SiteMembershipApplyRequest
- */
-export type SiteMembershipApplyRequest = Message<"roster.SiteMembershipApplyRequest"> & {
-  /**
-   * @generated from field: roster.SiteMembershipRef ref = 1;
-   */
-  ref?: SiteMembershipRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.SiteMembershipApplyRequest.
- * Use `create(SiteMembershipApplyRequestSchema)` to create a new message.
- */
-export const SiteMembershipApplyRequestSchema: GenMessage<SiteMembershipApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 6);
-
-/**
  * @generated from message roster.SiteMembershipEraseResponse
  */
 export type SiteMembershipEraseResponse = Message<"roster.SiteMembershipEraseResponse"> & {
@@ -260,7 +236,7 @@ export type SiteMembershipEraseResponse = Message<"roster.SiteMembershipEraseRes
  * Use `create(SiteMembershipEraseResponseSchema)` to create a new message.
  */
 export const SiteMembershipEraseResponseSchema: GenMessage<SiteMembershipEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 7);
+  messageDesc(file_app_membership_svc_g, 6);
 
 /**
  * @generated from message roster.SiteMembershipListRequest
@@ -323,7 +299,7 @@ export type SiteMembershipListRequest = Message<"roster.SiteMembershipListReques
  * Use `create(SiteMembershipListRequestSchema)` to create a new message.
  */
 export const SiteMembershipListRequestSchema: GenMessage<SiteMembershipListRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 8);
+  messageDesc(file_app_membership_svc_g, 7);
 
 /**
  * @generated from message roster.SiteMembershipListResponse
@@ -353,7 +329,7 @@ export type SiteMembershipListResponse = Message<"roster.SiteMembershipListRespo
  * Use `create(SiteMembershipListResponseSchema)` to create a new message.
  */
 export const SiteMembershipListResponseSchema: GenMessage<SiteMembershipListResponse> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 9);
+  messageDesc(file_app_membership_svc_g, 8);
 
 /**
  * @generated from message roster.SiteMembershipFilter
@@ -380,7 +356,7 @@ export type SiteMembershipFilter = Message<"roster.SiteMembershipFilter"> & {
  * Use `create(SiteMembershipFilterSchema)` to create a new message.
  */
 export const SiteMembershipFilterSchema: GenMessage<SiteMembershipFilter> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 10);
+  messageDesc(file_app_membership_svc_g, 9);
 
 /**
  * @generated from message roster.SiteMembershipWatchRequest
@@ -418,7 +394,7 @@ export type SiteMembershipWatchRequest = Message<"roster.SiteMembershipWatchRequ
  * Use `create(SiteMembershipWatchRequestSchema)` to create a new message.
  */
 export const SiteMembershipWatchRequestSchema: GenMessage<SiteMembershipWatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 11);
+  messageDesc(file_app_membership_svc_g, 10);
 
 /**
  * @generated from message roster.SiteMembershipWatchResponse
@@ -437,7 +413,7 @@ export type SiteMembershipWatchResponse = Message<"roster.SiteMembershipWatchRes
  * Use `create(SiteMembershipWatchResponseSchema)` to create a new message.
  */
 export const SiteMembershipWatchResponseSchema: GenMessage<SiteMembershipWatchResponse> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 12);
+  messageDesc(file_app_membership_svc_g, 11);
 
 /**
  * @generated from message roster.SiteMembershipWatchItem
@@ -485,7 +461,7 @@ export type SiteMembershipWatchItem = Message<"roster.SiteMembershipWatchItem"> 
  * Use `create(SiteMembershipWatchItemSchema)` to create a new message.
  */
 export const SiteMembershipWatchItemSchema: GenMessage<SiteMembershipWatchItem> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 13);
+  messageDesc(file_app_membership_svc_g, 12);
 
 /**
  * @generated from message roster.TeamMembershipAddRequest
@@ -522,7 +498,7 @@ export type TeamMembershipAddRequest = Message<"roster.TeamMembershipAddRequest"
  * Use `create(TeamMembershipAddRequestSchema)` to create a new message.
  */
 export const TeamMembershipAddRequestSchema: GenMessage<TeamMembershipAddRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 14);
+  messageDesc(file_app_membership_svc_g, 13);
 
 /**
  * @generated from message roster.TeamMembershipGetRequest
@@ -544,7 +520,7 @@ export type TeamMembershipGetRequest = Message<"roster.TeamMembershipGetRequest"
  * Use `create(TeamMembershipGetRequestSchema)` to create a new message.
  */
 export const TeamMembershipGetRequestSchema: GenMessage<TeamMembershipGetRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 15);
+  messageDesc(file_app_membership_svc_g, 14);
 
 /**
  * @generated from message roster.TeamMembershipRef
@@ -573,7 +549,7 @@ export type TeamMembershipRef = Message<"roster.TeamMembershipRef"> & {
  * Use `create(TeamMembershipRefSchema)` to create a new message.
  */
 export const TeamMembershipRefSchema: GenMessage<TeamMembershipRef> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 16);
+  messageDesc(file_app_membership_svc_g, 15);
 
 /**
  * @generated from message roster.TeamMembershipRefByMember
@@ -595,7 +571,7 @@ export type TeamMembershipRefByMember = Message<"roster.TeamMembershipRefByMembe
  * Use `create(TeamMembershipRefByMemberSchema)` to create a new message.
  */
 export const TeamMembershipRefByMemberSchema: GenMessage<TeamMembershipRefByMember> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 17);
+  messageDesc(file_app_membership_svc_g, 16);
 
 /**
  * @generated from message roster.TeamMembershipSelect
@@ -642,7 +618,7 @@ export type TeamMembershipSelect = Message<"roster.TeamMembershipSelect"> & {
  * Use `create(TeamMembershipSelectSchema)` to create a new message.
  */
 export const TeamMembershipSelectSchema: GenMessage<TeamMembershipSelect> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 18);
+  messageDesc(file_app_membership_svc_g, 17);
 
 /**
  * @generated from message roster.TeamMembershipPatchRequest
@@ -698,29 +674,7 @@ export type TeamMembershipPatchRequest = Message<"roster.TeamMembershipPatchRequ
  * Use `create(TeamMembershipPatchRequestSchema)` to create a new message.
  */
 export const TeamMembershipPatchRequestSchema: GenMessage<TeamMembershipPatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 19);
-
-/**
- * @generated from message roster.TeamMembershipApplyRequest
- */
-export type TeamMembershipApplyRequest = Message<"roster.TeamMembershipApplyRequest"> & {
-  /**
-   * @generated from field: roster.TeamMembershipRef ref = 1;
-   */
-  ref?: TeamMembershipRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.TeamMembershipApplyRequest.
- * Use `create(TeamMembershipApplyRequestSchema)` to create a new message.
- */
-export const TeamMembershipApplyRequestSchema: GenMessage<TeamMembershipApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 20);
+  messageDesc(file_app_membership_svc_g, 18);
 
 /**
  * @generated from message roster.TeamMembershipEraseResponse
@@ -743,7 +697,7 @@ export type TeamMembershipEraseResponse = Message<"roster.TeamMembershipEraseRes
  * Use `create(TeamMembershipEraseResponseSchema)` to create a new message.
  */
 export const TeamMembershipEraseResponseSchema: GenMessage<TeamMembershipEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 21);
+  messageDesc(file_app_membership_svc_g, 19);
 
 /**
  * @generated from message roster.TeamMembershipListRequest
@@ -806,7 +760,7 @@ export type TeamMembershipListRequest = Message<"roster.TeamMembershipListReques
  * Use `create(TeamMembershipListRequestSchema)` to create a new message.
  */
 export const TeamMembershipListRequestSchema: GenMessage<TeamMembershipListRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 22);
+  messageDesc(file_app_membership_svc_g, 20);
 
 /**
  * @generated from message roster.TeamMembershipListResponse
@@ -836,7 +790,7 @@ export type TeamMembershipListResponse = Message<"roster.TeamMembershipListRespo
  * Use `create(TeamMembershipListResponseSchema)` to create a new message.
  */
 export const TeamMembershipListResponseSchema: GenMessage<TeamMembershipListResponse> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 23);
+  messageDesc(file_app_membership_svc_g, 21);
 
 /**
  * @generated from message roster.TeamMembershipFilter
@@ -863,7 +817,7 @@ export type TeamMembershipFilter = Message<"roster.TeamMembershipFilter"> & {
  * Use `create(TeamMembershipFilterSchema)` to create a new message.
  */
 export const TeamMembershipFilterSchema: GenMessage<TeamMembershipFilter> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 24);
+  messageDesc(file_app_membership_svc_g, 22);
 
 /**
  * @generated from message roster.TeamMembershipWatchRequest
@@ -901,7 +855,7 @@ export type TeamMembershipWatchRequest = Message<"roster.TeamMembershipWatchRequ
  * Use `create(TeamMembershipWatchRequestSchema)` to create a new message.
  */
 export const TeamMembershipWatchRequestSchema: GenMessage<TeamMembershipWatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 25);
+  messageDesc(file_app_membership_svc_g, 23);
 
 /**
  * @generated from message roster.TeamMembershipWatchResponse
@@ -920,7 +874,7 @@ export type TeamMembershipWatchResponse = Message<"roster.TeamMembershipWatchRes
  * Use `create(TeamMembershipWatchResponseSchema)` to create a new message.
  */
 export const TeamMembershipWatchResponseSchema: GenMessage<TeamMembershipWatchResponse> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 26);
+  messageDesc(file_app_membership_svc_g, 24);
 
 /**
  * @generated from message roster.TeamMembershipWatchItem
@@ -968,7 +922,7 @@ export type TeamMembershipWatchItem = Message<"roster.TeamMembershipWatchItem"> 
  * Use `create(TeamMembershipWatchItemSchema)` to create a new message.
  */
 export const TeamMembershipWatchItemSchema: GenMessage<TeamMembershipWatchItem> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 27);
+  messageDesc(file_app_membership_svc_g, 25);
 
 /**
  * @generated from message roster.GroupMembershipAddRequest
@@ -1005,7 +959,7 @@ export type GroupMembershipAddRequest = Message<"roster.GroupMembershipAddReques
  * Use `create(GroupMembershipAddRequestSchema)` to create a new message.
  */
 export const GroupMembershipAddRequestSchema: GenMessage<GroupMembershipAddRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 28);
+  messageDesc(file_app_membership_svc_g, 26);
 
 /**
  * @generated from message roster.GroupMembershipGetRequest
@@ -1027,7 +981,7 @@ export type GroupMembershipGetRequest = Message<"roster.GroupMembershipGetReques
  * Use `create(GroupMembershipGetRequestSchema)` to create a new message.
  */
 export const GroupMembershipGetRequestSchema: GenMessage<GroupMembershipGetRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 29);
+  messageDesc(file_app_membership_svc_g, 27);
 
 /**
  * @generated from message roster.GroupMembershipRef
@@ -1056,7 +1010,7 @@ export type GroupMembershipRef = Message<"roster.GroupMembershipRef"> & {
  * Use `create(GroupMembershipRefSchema)` to create a new message.
  */
 export const GroupMembershipRefSchema: GenMessage<GroupMembershipRef> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 30);
+  messageDesc(file_app_membership_svc_g, 28);
 
 /**
  * @generated from message roster.GroupMembershipRefByMember
@@ -1078,7 +1032,7 @@ export type GroupMembershipRefByMember = Message<"roster.GroupMembershipRefByMem
  * Use `create(GroupMembershipRefByMemberSchema)` to create a new message.
  */
 export const GroupMembershipRefByMemberSchema: GenMessage<GroupMembershipRefByMember> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 31);
+  messageDesc(file_app_membership_svc_g, 29);
 
 /**
  * @generated from message roster.GroupMembershipSelect
@@ -1125,7 +1079,7 @@ export type GroupMembershipSelect = Message<"roster.GroupMembershipSelect"> & {
  * Use `create(GroupMembershipSelectSchema)` to create a new message.
  */
 export const GroupMembershipSelectSchema: GenMessage<GroupMembershipSelect> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 32);
+  messageDesc(file_app_membership_svc_g, 30);
 
 /**
  * @generated from message roster.GroupMembershipPatchRequest
@@ -1181,29 +1135,7 @@ export type GroupMembershipPatchRequest = Message<"roster.GroupMembershipPatchRe
  * Use `create(GroupMembershipPatchRequestSchema)` to create a new message.
  */
 export const GroupMembershipPatchRequestSchema: GenMessage<GroupMembershipPatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 33);
-
-/**
- * @generated from message roster.GroupMembershipApplyRequest
- */
-export type GroupMembershipApplyRequest = Message<"roster.GroupMembershipApplyRequest"> & {
-  /**
-   * @generated from field: roster.GroupMembershipRef ref = 1;
-   */
-  ref?: GroupMembershipRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.GroupMembershipApplyRequest.
- * Use `create(GroupMembershipApplyRequestSchema)` to create a new message.
- */
-export const GroupMembershipApplyRequestSchema: GenMessage<GroupMembershipApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 34);
+  messageDesc(file_app_membership_svc_g, 31);
 
 /**
  * @generated from message roster.GroupMembershipEraseResponse
@@ -1226,7 +1158,7 @@ export type GroupMembershipEraseResponse = Message<"roster.GroupMembershipEraseR
  * Use `create(GroupMembershipEraseResponseSchema)` to create a new message.
  */
 export const GroupMembershipEraseResponseSchema: GenMessage<GroupMembershipEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 35);
+  messageDesc(file_app_membership_svc_g, 32);
 
 /**
  * @generated from message roster.GroupMembershipListRequest
@@ -1289,7 +1221,7 @@ export type GroupMembershipListRequest = Message<"roster.GroupMembershipListRequ
  * Use `create(GroupMembershipListRequestSchema)` to create a new message.
  */
 export const GroupMembershipListRequestSchema: GenMessage<GroupMembershipListRequest> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 36);
+  messageDesc(file_app_membership_svc_g, 33);
 
 /**
  * @generated from message roster.GroupMembershipListResponse
@@ -1319,7 +1251,7 @@ export type GroupMembershipListResponse = Message<"roster.GroupMembershipListRes
  * Use `create(GroupMembershipListResponseSchema)` to create a new message.
  */
 export const GroupMembershipListResponseSchema: GenMessage<GroupMembershipListResponse> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 37);
+  messageDesc(file_app_membership_svc_g, 34);
 
 /**
  * @generated from message roster.GroupMembershipFilter
@@ -1346,7 +1278,7 @@ export type GroupMembershipFilter = Message<"roster.GroupMembershipFilter"> & {
  * Use `create(GroupMembershipFilterSchema)` to create a new message.
  */
 export const GroupMembershipFilterSchema: GenMessage<GroupMembershipFilter> = /*@__PURE__*/
-  messageDesc(file_app_membership_svc_g, 38);
+  messageDesc(file_app_membership_svc_g, 35);
 
 /**
  * @generated from service roster.SiteMembershipService
@@ -1380,16 +1312,6 @@ export const SiteMembershipService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof SiteMembershipPatchRequestSchema;
-    output: typeof SiteMembershipSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing SiteMembership
-   *
-   * @generated from rpc roster.SiteMembershipService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof SiteMembershipApplyRequestSchema;
     output: typeof SiteMembershipSchema;
   },
   /**
@@ -1478,16 +1400,6 @@ export const TeamMembershipService: GenService<{
     output: typeof TeamMembershipSchema;
   },
   /**
-   * Apply applies a patch document to an existing TeamMembership
-   *
-   * @generated from rpc roster.TeamMembershipService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof TeamMembershipApplyRequestSchema;
-    output: typeof TeamMembershipSchema;
-  },
-  /**
    * Erase deletes a TeamMembership
    *
    * @generated from rpc roster.TeamMembershipService.Erase
@@ -1570,16 +1482,6 @@ export const GroupMembershipService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof GroupMembershipPatchRequestSchema;
-    output: typeof GroupMembershipSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing GroupMembership
-   *
-   * @generated from rpc roster.GroupMembershipService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof GroupMembershipApplyRequestSchema;
     output: typeof GroupMembershipSchema;
   },
   /**

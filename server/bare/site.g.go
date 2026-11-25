@@ -403,16 +403,6 @@ var siteOrmEntity = ormpatch.MustEntityOf(rstr.File_app_site_proto, "Site")
 var sitePatchColumns = entpatch.Columns{
 	1: site.FieldId, 2: site.TenantColumn, 4: site.FieldAlias, 5: site.FieldName, 6: site.FieldDesc, 7: site.FieldLabels, 13: site.FieldDateUpdated, 14: site.FieldDateErased, 15: site.FieldDateCreated}
 
-func (s SiteServiceServer) Apply(ctx context.Context, req *rstr.SiteApplyRequest) (*rstr.Site, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.SiteService_Apply_FullMethodName)
-}
-
 func (s SiteServiceServer) apply(ctx context.Context, ref *rstr.SiteRef, doc *patchpb.Patch, by string) (*rstr.Site, error) {
 	plan := &ormpatch.Plan{Entity: siteOrmEntity}
 	if doc != nil {

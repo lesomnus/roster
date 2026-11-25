@@ -91,7 +91,6 @@ message Relation {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [

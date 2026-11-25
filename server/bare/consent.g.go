@@ -429,16 +429,6 @@ var consentOrmEntity = ormpatch.MustEntityOf(rstr.File_app_consent_proto, "Conse
 var consentPatchColumns = entpatch.Columns{
 	1: consent.FieldId, 2: consent.HolderColumn, 8: consent.FieldApp, 9: consent.FieldScope, 10: consent.FieldDocument, 11: consent.FieldTenantId, 12: consent.FieldVersion, 16: consent.FieldAct, 17: consent.FieldOptional, 18: consent.FieldClient, 19: consent.FieldSeq, 13: consent.FieldDateUpdated, 14: consent.FieldDateErased, 15: consent.FieldDateCreated}
 
-func (s ConsentServiceServer) Apply(ctx context.Context, req *rstr.ConsentApplyRequest) (*rstr.Consent, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.ConsentService_Apply_FullMethodName)
-}
-
 func (s ConsentServiceServer) apply(ctx context.Context, ref *rstr.ConsentRef, doc *patchpb.Patch, by string) (*rstr.Consent, error) {
 	plan := &ormpatch.Plan{Entity: consentOrmEntity}
 	if doc != nil {

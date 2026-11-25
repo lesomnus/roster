@@ -206,6 +206,9 @@ message Connection {
   }];
 
   option (orm.message) = {
+    // `apply` because a connection a file declares is written through it
+    // (`cmd/resources.go`): a `Patch` cannot empty a list, and the scopes a
+    // file leaves out are none. No port serves it, as no port serves a `Patch`.
     rpc: {
       add: {}
       get: {}

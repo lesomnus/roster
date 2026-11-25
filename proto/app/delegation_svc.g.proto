@@ -4,7 +4,6 @@ package roster;
 import "app/delegation.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
-import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -16,8 +15,6 @@ service DelegationService {
   rpc Get(DelegationGetRequest) returns (Delegation);
   // Patch updates an existing Delegation
   rpc Patch(DelegationPatchRequest) returns (Delegation);
-  // Apply applies a patch document to an existing Delegation
-  rpc Apply(DelegationApplyRequest) returns (Delegation);
   // Erase deletes a Delegation
   rpc Erase(DelegationRef) returns (DelegationEraseResponse);
   // List reads Delegations a page at a time.
@@ -155,11 +152,6 @@ message DelegationPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message DelegationApplyRequest {
-  DelegationRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message DelegationEraseResponse {

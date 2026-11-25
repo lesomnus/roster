@@ -459,16 +459,6 @@ var emailOrmEntity = ormpatch.MustEntityOf(rstr.File_app_email_proto, "Email")
 var emailPatchColumns = entpatch.Columns{
 	1: email.FieldId, 2: email.HolderColumn, 8: email.FieldAddress, 9: email.FieldDateVerified, 10: email.VouchedByColumn, 12: email.FieldEnteredBy, 11: email.FieldTenantId, 13: email.FieldDateUpdated, 14: email.FieldDateErased, 15: email.FieldDateCreated}
 
-func (s EmailServiceServer) Apply(ctx context.Context, req *rstr.EmailApplyRequest) (*rstr.Email, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.EmailService_Apply_FullMethodName)
-}
-
 func (s EmailServiceServer) apply(ctx context.Context, ref *rstr.EmailRef, doc *patchpb.Patch, by string) (*rstr.Email, error) {
 	plan := &ormpatch.Plan{Entity: emailOrmEntity}
 	if doc != nil {

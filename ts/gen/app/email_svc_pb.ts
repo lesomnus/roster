@@ -11,8 +11,6 @@ import { file_app_identity_svc_g } from "./identity_svc_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
 import { file_roster_payday_holder_svc_g } from "../roster/payday/holder_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -21,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/email_svc.g.proto.
  */
 export const file_app_email_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChVhcHAvZW1haWxfc3ZjLmcucHJvdG8SBnJvc3RlciKiAgoPRW1haWxBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIWCgdhZGRyZXNzGAggASgJQgWqAQIIAhIxCg1kYXRlX3ZlcmlmaWVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBInCgp2b3VjaGVkX2J5GAogASgLMhMucm9zdGVyLklkZW50aXR5UmVmEhIKCmVudGVyZWRfYnkYDCABKAwSHgoJdGVuYW50X2lkGAsgASgMQguqAQIIAuqCFgIQQBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlUKD0VtYWlsR2V0UmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSIwoGc2VsZWN0GAIgASgLMhMucm9zdGVyLkVtYWlsU2VsZWN0InkKCEVtYWlsUmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABIsCgdhZGRyZXNzGAIgASgLMhkucm9zdGVyLkVtYWlsUmVmQnlBZGRyZXNzSAASIgoCYXQYCyABKAsyFC5yb3N0ZXIuRW1haWxSZWZCeUF0SABCBQoDa2V5IkcKEUVtYWlsUmVmQnlBZGRyZXNzEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHYWRkcmVzcxgIIAEoCSI6CgxFbWFpbFJlZkJ5QXQSGQoJdGVuYW50X2lkGAsgASgMQgbqghYCEEASDwoHYWRkcmVzcxgIIAEoCSL8AQoLRW1haWxTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDwoHYWRkcmVzcxgIIAEoCBIVCg1kYXRlX3ZlcmlmaWVkGAkgASgIEioKCnZvdWNoZWRfYnkYCiABKAsyFi5yb3N0ZXIuSWRlbnRpdHlTZWxlY3QSEgoKZW50ZXJlZF9ieRgMIAEoCBIRCgl0ZW5hbnRfaWQYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKiAgoRRW1haWxQYXRjaFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEg8KB2FkZHJlc3MYECABKAkSMQoNZGF0ZV92ZXJpZmllZBgSIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV92ZXJpZmllZF9udWxsGBMgASgIEicKCnZvdWNoZWRfYnkYFCABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSFwoPdm91Y2hlZF9ieV9udWxsGBUgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIk8KEUVtYWlsQXBwbHlSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiQKEkVtYWlsRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgioAEKEEVtYWlsTGlzdFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnJvc3Rlci5FbWFpbEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISIwoGc2VsZWN0GAYgASgLMhMucm9zdGVyLkVtYWlsU2VsZWN0IkYKEUVtYWlsTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLkVtYWlsEhMKBG5leHQYAiABKAlCBaoBAggCIk8KC0VtYWlsRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIlcKEUVtYWlsV2F0Y2hSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiOwoSRW1haWxXYXRjaFJlc3BvbnNlEiUKBWl0ZW1zGAEgAygLMhYucm9zdGVyLkVtYWlsV2F0Y2hJdGVtIlEKDkVtYWlsV2F0Y2hJdGVtEgoKAmlkGAEgASgMEhwKBXZhbHVlGAIgASgLMg0ucm9zdGVyLkVtYWlsEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIihwEKEUVtYWlsQ2xhaW1SZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIhCgZob2xkZXIYAyABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfZXhwaXJlZBgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiXAoSRW1haWxDbGFpbVJlc3BvbnNlEhQKBXRva2VuGAEgASgJQgWqAQIIAhIwCgxkYXRlX2V4cGlyZWQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIisKE0VtYWlsQ29uZmlybVJlcXVlc3QSFAoFdG9rZW4YASABKAlCBaoBAggCIjQKFEVtYWlsQ29uZmlybVJlc3BvbnNlEhwKBWVtYWlsGAEgASgLMg0ucm9zdGVyLkVtYWlsIpEBChJFbWFpbEF0dGVzdFJlcXVlc3QSIQoGaG9sZGVyGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIWCgdhZGRyZXNzGAggASgJQgWqAQIIAhInCgp2b3VjaGVkX2J5GAogASgLMhMucm9zdGVyLklkZW50aXR5UmVmEhcKCHZlcmlmaWVkGAkgASgIQgWqAQIIAjLDBAoMRW1haWxTZXJ2aWNlEi0KA0FkZBIXLnJvc3Rlci5FbWFpbEFkZFJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSLQoDR2V0Ehcucm9zdGVyLkVtYWlsR2V0UmVxdWVzdBoNLnJvc3Rlci5FbWFpbBIxCgVQYXRjaBIZLnJvc3Rlci5FbWFpbFBhdGNoUmVxdWVzdBoNLnJvc3Rlci5FbWFpbBIxCgVBcHBseRIZLnJvc3Rlci5FbWFpbEFwcGx5UmVxdWVzdBoNLnJvc3Rlci5FbWFpbBI1CgVFcmFzZRIQLnJvc3Rlci5FbWFpbFJlZhoaLnJvc3Rlci5FbWFpbEVyYXNlUmVzcG9uc2USOwoETGlzdBIYLnJvc3Rlci5FbWFpbExpc3RSZXF1ZXN0Ghkucm9zdGVyLkVtYWlsTGlzdFJlc3BvbnNlEkAKBVdhdGNoEhkucm9zdGVyLkVtYWlsV2F0Y2hSZXF1ZXN0Ghoucm9zdGVyLkVtYWlsV2F0Y2hSZXNwb25zZTABEj4KBUNsYWltEhkucm9zdGVyLkVtYWlsQ2xhaW1SZXF1ZXN0Ghoucm9zdGVyLkVtYWlsQ2xhaW1SZXNwb25zZRJECgdDb25maXJtEhsucm9zdGVyLkVtYWlsQ29uZmlybVJlcXVlc3QaHC5yb3N0ZXIuRW1haWxDb25maXJtUmVzcG9uc2USMwoGQXR0ZXN0Ehoucm9zdGVyLkVtYWlsQXR0ZXN0UmVxdWVzdBoNLnJvc3Rlci5FbWFpbEIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_email, file_app_identity_svc_g, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChVhcHAvZW1haWxfc3ZjLmcucHJvdG8SBnJvc3RlciKiAgoPRW1haWxBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIWCgdhZGRyZXNzGAggASgJQgWqAQIIAhIxCg1kYXRlX3ZlcmlmaWVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBInCgp2b3VjaGVkX2J5GAogASgLMhMucm9zdGVyLklkZW50aXR5UmVmEhIKCmVudGVyZWRfYnkYDCABKAwSHgoJdGVuYW50X2lkGAsgASgMQguqAQIIAuqCFgIQQBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlUKD0VtYWlsR2V0UmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSIwoGc2VsZWN0GAIgASgLMhMucm9zdGVyLkVtYWlsU2VsZWN0InkKCEVtYWlsUmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABIsCgdhZGRyZXNzGAIgASgLMhkucm9zdGVyLkVtYWlsUmVmQnlBZGRyZXNzSAASIgoCYXQYCyABKAsyFC5yb3N0ZXIuRW1haWxSZWZCeUF0SABCBQoDa2V5IkcKEUVtYWlsUmVmQnlBZGRyZXNzEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHYWRkcmVzcxgIIAEoCSI6CgxFbWFpbFJlZkJ5QXQSGQoJdGVuYW50X2lkGAsgASgMQgbqghYCEEASDwoHYWRkcmVzcxgIIAEoCSL8AQoLRW1haWxTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDwoHYWRkcmVzcxgIIAEoCBIVCg1kYXRlX3ZlcmlmaWVkGAkgASgIEioKCnZvdWNoZWRfYnkYCiABKAsyFi5yb3N0ZXIuSWRlbnRpdHlTZWxlY3QSEgoKZW50ZXJlZF9ieRgMIAEoCBIRCgl0ZW5hbnRfaWQYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKiAgoRRW1haWxQYXRjaFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEg8KB2FkZHJlc3MYECABKAkSMQoNZGF0ZV92ZXJpZmllZBgSIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV92ZXJpZmllZF9udWxsGBMgASgIEicKCnZvdWNoZWRfYnkYFCABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSFwoPdm91Y2hlZF9ieV9udWxsGBUgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIiQKEkVtYWlsRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgioAEKEEVtYWlsTGlzdFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnJvc3Rlci5FbWFpbEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISIwoGc2VsZWN0GAYgASgLMhMucm9zdGVyLkVtYWlsU2VsZWN0IkYKEUVtYWlsTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLkVtYWlsEhMKBG5leHQYAiABKAlCBaoBAggCIk8KC0VtYWlsRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIlcKEUVtYWlsV2F0Y2hSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiOwoSRW1haWxXYXRjaFJlc3BvbnNlEiUKBWl0ZW1zGAEgAygLMhYucm9zdGVyLkVtYWlsV2F0Y2hJdGVtIlEKDkVtYWlsV2F0Y2hJdGVtEgoKAmlkGAEgASgMEhwKBXZhbHVlGAIgASgLMg0ucm9zdGVyLkVtYWlsEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIihwEKEUVtYWlsQ2xhaW1SZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIhCgZob2xkZXIYAyABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfZXhwaXJlZBgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiXAoSRW1haWxDbGFpbVJlc3BvbnNlEhQKBXRva2VuGAEgASgJQgWqAQIIAhIwCgxkYXRlX2V4cGlyZWQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIisKE0VtYWlsQ29uZmlybVJlcXVlc3QSFAoFdG9rZW4YASABKAlCBaoBAggCIjQKFEVtYWlsQ29uZmlybVJlc3BvbnNlEhwKBWVtYWlsGAEgASgLMg0ucm9zdGVyLkVtYWlsIpEBChJFbWFpbEF0dGVzdFJlcXVlc3QSIQoGaG9sZGVyGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIWCgdhZGRyZXNzGAggASgJQgWqAQIIAhInCgp2b3VjaGVkX2J5GAogASgLMhMucm9zdGVyLklkZW50aXR5UmVmEhcKCHZlcmlmaWVkGAkgASgIQgWqAQIIAjKQBAoMRW1haWxTZXJ2aWNlEi0KA0FkZBIXLnJvc3Rlci5FbWFpbEFkZFJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSLQoDR2V0Ehcucm9zdGVyLkVtYWlsR2V0UmVxdWVzdBoNLnJvc3Rlci5FbWFpbBIxCgVQYXRjaBIZLnJvc3Rlci5FbWFpbFBhdGNoUmVxdWVzdBoNLnJvc3Rlci5FbWFpbBI1CgVFcmFzZRIQLnJvc3Rlci5FbWFpbFJlZhoaLnJvc3Rlci5FbWFpbEVyYXNlUmVzcG9uc2USOwoETGlzdBIYLnJvc3Rlci5FbWFpbExpc3RSZXF1ZXN0Ghkucm9zdGVyLkVtYWlsTGlzdFJlc3BvbnNlEkAKBVdhdGNoEhkucm9zdGVyLkVtYWlsV2F0Y2hSZXF1ZXN0Ghoucm9zdGVyLkVtYWlsV2F0Y2hSZXNwb25zZTABEj4KBUNsYWltEhkucm9zdGVyLkVtYWlsQ2xhaW1SZXF1ZXN0Ghoucm9zdGVyLkVtYWlsQ2xhaW1SZXNwb25zZRJECgdDb25maXJtEhsucm9zdGVyLkVtYWlsQ29uZmlybVJlcXVlc3QaHC5yb3N0ZXIuRW1haWxDb25maXJtUmVzcG9uc2USMwoGQXR0ZXN0Ehoucm9zdGVyLkVtYWlsQXR0ZXN0UmVxdWVzdBoNLnJvc3Rlci5FbWFpbEIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_email, file_app_identity_svc_g, file_google_protobuf_timestamp, file_orm, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.EmailAddRequest
@@ -315,28 +313,6 @@ export const EmailPatchRequestSchema: GenMessage<EmailPatchRequest> = /*@__PURE_
   messageDesc(file_app_email_svc_g, 6);
 
 /**
- * @generated from message roster.EmailApplyRequest
- */
-export type EmailApplyRequest = Message<"roster.EmailApplyRequest"> & {
-  /**
-   * @generated from field: roster.EmailRef ref = 1;
-   */
-  ref?: EmailRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.EmailApplyRequest.
- * Use `create(EmailApplyRequestSchema)` to create a new message.
- */
-export const EmailApplyRequestSchema: GenMessage<EmailApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_email_svc_g, 7);
-
-/**
  * @generated from message roster.EmailEraseResponse
  */
 export type EmailEraseResponse = Message<"roster.EmailEraseResponse"> & {
@@ -357,7 +333,7 @@ export type EmailEraseResponse = Message<"roster.EmailEraseResponse"> & {
  * Use `create(EmailEraseResponseSchema)` to create a new message.
  */
 export const EmailEraseResponseSchema: GenMessage<EmailEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_email_svc_g, 8);
+  messageDesc(file_app_email_svc_g, 7);
 
 /**
  * @generated from message roster.EmailListRequest
@@ -420,7 +396,7 @@ export type EmailListRequest = Message<"roster.EmailListRequest"> & {
  * Use `create(EmailListRequestSchema)` to create a new message.
  */
 export const EmailListRequestSchema: GenMessage<EmailListRequest> = /*@__PURE__*/
-  messageDesc(file_app_email_svc_g, 9);
+  messageDesc(file_app_email_svc_g, 8);
 
 /**
  * @generated from message roster.EmailListResponse
@@ -450,7 +426,7 @@ export type EmailListResponse = Message<"roster.EmailListResponse"> & {
  * Use `create(EmailListResponseSchema)` to create a new message.
  */
 export const EmailListResponseSchema: GenMessage<EmailListResponse> = /*@__PURE__*/
-  messageDesc(file_app_email_svc_g, 10);
+  messageDesc(file_app_email_svc_g, 9);
 
 /**
  * @generated from message roster.EmailFilter
@@ -472,7 +448,7 @@ export type EmailFilter = Message<"roster.EmailFilter"> & {
  * Use `create(EmailFilterSchema)` to create a new message.
  */
 export const EmailFilterSchema: GenMessage<EmailFilter> = /*@__PURE__*/
-  messageDesc(file_app_email_svc_g, 11);
+  messageDesc(file_app_email_svc_g, 10);
 
 /**
  * @generated from message roster.EmailWatchRequest
@@ -510,7 +486,7 @@ export type EmailWatchRequest = Message<"roster.EmailWatchRequest"> & {
  * Use `create(EmailWatchRequestSchema)` to create a new message.
  */
 export const EmailWatchRequestSchema: GenMessage<EmailWatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_email_svc_g, 12);
+  messageDesc(file_app_email_svc_g, 11);
 
 /**
  * @generated from message roster.EmailWatchResponse
@@ -529,7 +505,7 @@ export type EmailWatchResponse = Message<"roster.EmailWatchResponse"> & {
  * Use `create(EmailWatchResponseSchema)` to create a new message.
  */
 export const EmailWatchResponseSchema: GenMessage<EmailWatchResponse> = /*@__PURE__*/
-  messageDesc(file_app_email_svc_g, 13);
+  messageDesc(file_app_email_svc_g, 12);
 
 /**
  * @generated from message roster.EmailWatchItem
@@ -577,7 +553,7 @@ export type EmailWatchItem = Message<"roster.EmailWatchItem"> & {
  * Use `create(EmailWatchItemSchema)` to create a new message.
  */
 export const EmailWatchItemSchema: GenMessage<EmailWatchItem> = /*@__PURE__*/
-  messageDesc(file_app_email_svc_g, 14);
+  messageDesc(file_app_email_svc_g, 13);
 
 /**
  * @generated from message roster.EmailClaimRequest
@@ -628,7 +604,7 @@ export type EmailClaimRequest = Message<"roster.EmailClaimRequest"> & {
  * Use `create(EmailClaimRequestSchema)` to create a new message.
  */
 export const EmailClaimRequestSchema: GenMessage<EmailClaimRequest> = /*@__PURE__*/
-  messageDesc(file_app_email_svc_g, 15);
+  messageDesc(file_app_email_svc_g, 14);
 
 /**
  * @generated from message roster.EmailClaimResponse
@@ -652,7 +628,7 @@ export type EmailClaimResponse = Message<"roster.EmailClaimResponse"> & {
  * Use `create(EmailClaimResponseSchema)` to create a new message.
  */
 export const EmailClaimResponseSchema: GenMessage<EmailClaimResponse> = /*@__PURE__*/
-  messageDesc(file_app_email_svc_g, 16);
+  messageDesc(file_app_email_svc_g, 15);
 
 /**
  * @generated from message roster.EmailConfirmRequest
@@ -669,7 +645,7 @@ export type EmailConfirmRequest = Message<"roster.EmailConfirmRequest"> & {
  * Use `create(EmailConfirmRequestSchema)` to create a new message.
  */
 export const EmailConfirmRequestSchema: GenMessage<EmailConfirmRequest> = /*@__PURE__*/
-  messageDesc(file_app_email_svc_g, 17);
+  messageDesc(file_app_email_svc_g, 16);
 
 /**
  * @generated from message roster.EmailConfirmResponse
@@ -688,7 +664,7 @@ export type EmailConfirmResponse = Message<"roster.EmailConfirmResponse"> & {
  * Use `create(EmailConfirmResponseSchema)` to create a new message.
  */
 export const EmailConfirmResponseSchema: GenMessage<EmailConfirmResponse> = /*@__PURE__*/
-  messageDesc(file_app_email_svc_g, 18);
+  messageDesc(file_app_email_svc_g, 17);
 
 /**
  * @generated from message roster.EmailAttestRequest
@@ -737,7 +713,7 @@ export type EmailAttestRequest = Message<"roster.EmailAttestRequest"> & {
  * Use `create(EmailAttestRequestSchema)` to create a new message.
  */
 export const EmailAttestRequestSchema: GenMessage<EmailAttestRequest> = /*@__PURE__*/
-  messageDesc(file_app_email_svc_g, 19);
+  messageDesc(file_app_email_svc_g, 18);
 
 /**
  * @generated from service roster.EmailService
@@ -771,16 +747,6 @@ export const EmailService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof EmailPatchRequestSchema;
-    output: typeof EmailSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Email
-   *
-   * @generated from rpc roster.EmailService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof EmailApplyRequestSchema;
     output: typeof EmailSchema;
   },
   /**

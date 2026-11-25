@@ -9,8 +9,6 @@ import { file_app_site } from "./site_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { TenantRef, TenantSelect } from "../roster/payday/tenant_svc_pb.js";
 import { file_roster_payday_tenant_svc_g } from "../roster/payday/tenant_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -19,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/site_svc.g.proto.
  */
 export const file_app_site_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChRhcHAvc2l0ZV9zdmMuZy5wcm90bxIGcm9zdGVyIpwCCg5TaXRlQWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjIKBmxhYmVscxgHIAMoCzIiLnJvc3Rlci5TaXRlQWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiUgoOU2l0ZUdldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLlNpdGVSZWYSIgoGc2VsZWN0GAIgASgLMhIucm9zdGVyLlNpdGVTZWxlY3QiTQoHU2l0ZVJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASJQoEc2x1ZxgEIAEoCzIVLnJvc3Rlci5TaXRlUmVmQnlTbHVnSABCBQoDa2V5IkEKDVNpdGVSZWZCeVNsdWcSDQoFYWxpYXMYBCABKAkSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZiK7AQoKU2l0ZVNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgijgIKEFNpdGVQYXRjaFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLlNpdGVSZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjQKBmxhYmVscxgOIAMoCzIkLnJvc3Rlci5TaXRlUGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiTQoQU2l0ZUFwcGx5UmVxdWVzdBIcCgNyZWYYASABKAsyDy5yb3N0ZXIuU2l0ZVJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiMKEVNpdGVFcmFzZVJlc3BvbnNlEg4KBmVyYXNlZBgBIAEoCCKdAQoPU2l0ZUxpc3RSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5yb3N0ZXIuU2l0ZUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISIgoGc2VsZWN0GAYgASgLMhIucm9zdGVyLlNpdGVTZWxlY3QiRAoQU2l0ZUxpc3RSZXNwb25zZRIbCgVpdGVtcxgBIAMoCzIMLnJvc3Rlci5TaXRlEhMKBG5leHQYAiABKAlCBaoBAggCIk0KClNpdGVGaWx0ZXISHAoDcmVmGAEgASgLMg8ucm9zdGVyLlNpdGVSZWYSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZiJVChBTaXRlV2F0Y2hSZXF1ZXN0EiMKB2ZpbHRlcnMYASADKAsyEi5yb3N0ZXIuU2l0ZUZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiI5ChFTaXRlV2F0Y2hSZXNwb25zZRIkCgVpdGVtcxgBIAMoCzIVLnJvc3Rlci5TaXRlV2F0Y2hJdGVtIk8KDVNpdGVXYXRjaEl0ZW0SCgoCaWQYASABKAwSGwoFdmFsdWUYAiABKAsyDC5yb3N0ZXIuU2l0ZRIVCgZhY3Rpb24YAyABKAlCBaoBAggCMvkCCgtTaXRlU2VydmljZRIrCgNBZGQSFi5yb3N0ZXIuU2l0ZUFkZFJlcXVlc3QaDC5yb3N0ZXIuU2l0ZRIrCgNHZXQSFi5yb3N0ZXIuU2l0ZUdldFJlcXVlc3QaDC5yb3N0ZXIuU2l0ZRIvCgVQYXRjaBIYLnJvc3Rlci5TaXRlUGF0Y2hSZXF1ZXN0Ggwucm9zdGVyLlNpdGUSLwoFQXBwbHkSGC5yb3N0ZXIuU2l0ZUFwcGx5UmVxdWVzdBoMLnJvc3Rlci5TaXRlEjMKBUVyYXNlEg8ucm9zdGVyLlNpdGVSZWYaGS5yb3N0ZXIuU2l0ZUVyYXNlUmVzcG9uc2USOQoETGlzdBIXLnJvc3Rlci5TaXRlTGlzdFJlcXVlc3QaGC5yb3N0ZXIuU2l0ZUxpc3RSZXNwb25zZRI+CgVXYXRjaBIYLnJvc3Rlci5TaXRlV2F0Y2hSZXF1ZXN0Ghkucm9zdGVyLlNpdGVXYXRjaFJlc3BvbnNlMAFCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_site, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_tenant_svc_g]);
+  fileDesc("ChRhcHAvc2l0ZV9zdmMuZy5wcm90bxIGcm9zdGVyIpwCCg5TaXRlQWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEiEKBnRlbmFudBgCIAEoCzIRLnJvc3Rlci5UZW5hbnRSZWYSFAoFYWxpYXMYBCABKAlCBaoBAggCEhMKBG5hbWUYBSABKAlCBaoBAggCEhMKBGRlc2MYBiABKAlCBaoBAggCEjIKBmxhYmVscxgHIAMoCzIiLnJvc3Rlci5TaXRlQWRkUmVxdWVzdC5MYWJlbHNFbnRyeRIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiUgoOU2l0ZUdldFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLlNpdGVSZWYSIgoGc2VsZWN0GAIgASgLMhIucm9zdGVyLlNpdGVTZWxlY3QiTQoHU2l0ZVJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASJQoEc2x1ZxgEIAEoCzIVLnJvc3Rlci5TaXRlUmVmQnlTbHVnSABCBQoDa2V5IkEKDVNpdGVSZWZCeVNsdWcSDQoFYWxpYXMYBCABKAkSIQoGdGVuYW50GAIgASgLMhEucm9zdGVyLlRlbmFudFJlZiK7AQoKU2l0ZVNlbGVjdBILCgNhbGwYASABKAgSJAoGdGVuYW50GAIgASgLMhQucm9zdGVyLlRlbmFudFNlbGVjdBINCgVhbGlhcxgEIAEoCBIMCgRuYW1lGAUgASgIEgwKBGRlc2MYBiABKAgSDgoGbGFiZWxzGAcgASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgijgIKEFNpdGVQYXRjaFJlcXVlc3QSHAoDcmVmGAEgASgLMg8ucm9zdGVyLlNpdGVSZWYSDQoFYWxpYXMYCCABKAkSDAoEbmFtZRgKIAEoCRIMCgRkZXNjGAwgASgJEjQKBmxhYmVscxgOIAMoCzIkLnJvc3Rlci5TaXRlUGF0Y2hSZXF1ZXN0LkxhYmVsc0VudHJ5EjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIGi0KC0xhYmVsc0VudHJ5EgsKA2tleRgBIAEoCRINCgV2YWx1ZRgCIAEoCToCOAEiIwoRU2l0ZUVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIIp0BCg9TaXRlTGlzdFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLnJvc3Rlci5TaXRlRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAhIiCgZzZWxlY3QYBiABKAsyEi5yb3N0ZXIuU2l0ZVNlbGVjdCJEChBTaXRlTGlzdFJlc3BvbnNlEhsKBWl0ZW1zGAEgAygLMgwucm9zdGVyLlNpdGUSEwoEbmV4dBgCIAEoCUIFqgECCAIiTQoKU2l0ZUZpbHRlchIcCgNyZWYYASABKAsyDy5yb3N0ZXIuU2l0ZVJlZhIhCgZ0ZW5hbnQYAiABKAsyES5yb3N0ZXIuVGVuYW50UmVmIlUKEFNpdGVXYXRjaFJlcXVlc3QSIwoHZmlsdGVycxgBIAMoCzISLnJvc3Rlci5TaXRlRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjkKEVNpdGVXYXRjaFJlc3BvbnNlEiQKBWl0ZW1zGAEgAygLMhUucm9zdGVyLlNpdGVXYXRjaEl0ZW0iTwoNU2l0ZVdhdGNoSXRlbRIKCgJpZBgBIAEoDBIbCgV2YWx1ZRgCIAEoCzIMLnJvc3Rlci5TaXRlEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIyyAIKC1NpdGVTZXJ2aWNlEisKA0FkZBIWLnJvc3Rlci5TaXRlQWRkUmVxdWVzdBoMLnJvc3Rlci5TaXRlEisKA0dldBIWLnJvc3Rlci5TaXRlR2V0UmVxdWVzdBoMLnJvc3Rlci5TaXRlEi8KBVBhdGNoEhgucm9zdGVyLlNpdGVQYXRjaFJlcXVlc3QaDC5yb3N0ZXIuU2l0ZRIzCgVFcmFzZRIPLnJvc3Rlci5TaXRlUmVmGhkucm9zdGVyLlNpdGVFcmFzZVJlc3BvbnNlEjkKBExpc3QSFy5yb3N0ZXIuU2l0ZUxpc3RSZXF1ZXN0Ghgucm9zdGVyLlNpdGVMaXN0UmVzcG9uc2USPgoFV2F0Y2gSGC5yb3N0ZXIuU2l0ZVdhdGNoUmVxdWVzdBoZLnJvc3Rlci5TaXRlV2F0Y2hSZXNwb25zZTABQiFaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHJiCGVkaXRpb25zcOgH", [file_app_site, file_google_protobuf_timestamp, file_orm, file_roster_payday_tenant_svc_g]);
 
 /**
  * @generated from message roster.SiteAddRequest
@@ -260,28 +258,6 @@ export const SitePatchRequestSchema: GenMessage<SitePatchRequest> = /*@__PURE__*
   messageDesc(file_app_site_svc_g, 5);
 
 /**
- * @generated from message roster.SiteApplyRequest
- */
-export type SiteApplyRequest = Message<"roster.SiteApplyRequest"> & {
-  /**
-   * @generated from field: roster.SiteRef ref = 1;
-   */
-  ref?: SiteRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.SiteApplyRequest.
- * Use `create(SiteApplyRequestSchema)` to create a new message.
- */
-export const SiteApplyRequestSchema: GenMessage<SiteApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_site_svc_g, 6);
-
-/**
  * @generated from message roster.SiteEraseResponse
  */
 export type SiteEraseResponse = Message<"roster.SiteEraseResponse"> & {
@@ -302,7 +278,7 @@ export type SiteEraseResponse = Message<"roster.SiteEraseResponse"> & {
  * Use `create(SiteEraseResponseSchema)` to create a new message.
  */
 export const SiteEraseResponseSchema: GenMessage<SiteEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_site_svc_g, 7);
+  messageDesc(file_app_site_svc_g, 6);
 
 /**
  * @generated from message roster.SiteListRequest
@@ -365,7 +341,7 @@ export type SiteListRequest = Message<"roster.SiteListRequest"> & {
  * Use `create(SiteListRequestSchema)` to create a new message.
  */
 export const SiteListRequestSchema: GenMessage<SiteListRequest> = /*@__PURE__*/
-  messageDesc(file_app_site_svc_g, 8);
+  messageDesc(file_app_site_svc_g, 7);
 
 /**
  * @generated from message roster.SiteListResponse
@@ -395,7 +371,7 @@ export type SiteListResponse = Message<"roster.SiteListResponse"> & {
  * Use `create(SiteListResponseSchema)` to create a new message.
  */
 export const SiteListResponseSchema: GenMessage<SiteListResponse> = /*@__PURE__*/
-  messageDesc(file_app_site_svc_g, 9);
+  messageDesc(file_app_site_svc_g, 8);
 
 /**
  * @generated from message roster.SiteFilter
@@ -417,7 +393,7 @@ export type SiteFilter = Message<"roster.SiteFilter"> & {
  * Use `create(SiteFilterSchema)` to create a new message.
  */
 export const SiteFilterSchema: GenMessage<SiteFilter> = /*@__PURE__*/
-  messageDesc(file_app_site_svc_g, 10);
+  messageDesc(file_app_site_svc_g, 9);
 
 /**
  * @generated from message roster.SiteWatchRequest
@@ -455,7 +431,7 @@ export type SiteWatchRequest = Message<"roster.SiteWatchRequest"> & {
  * Use `create(SiteWatchRequestSchema)` to create a new message.
  */
 export const SiteWatchRequestSchema: GenMessage<SiteWatchRequest> = /*@__PURE__*/
-  messageDesc(file_app_site_svc_g, 11);
+  messageDesc(file_app_site_svc_g, 10);
 
 /**
  * @generated from message roster.SiteWatchResponse
@@ -474,7 +450,7 @@ export type SiteWatchResponse = Message<"roster.SiteWatchResponse"> & {
  * Use `create(SiteWatchResponseSchema)` to create a new message.
  */
 export const SiteWatchResponseSchema: GenMessage<SiteWatchResponse> = /*@__PURE__*/
-  messageDesc(file_app_site_svc_g, 12);
+  messageDesc(file_app_site_svc_g, 11);
 
 /**
  * @generated from message roster.SiteWatchItem
@@ -522,7 +498,7 @@ export type SiteWatchItem = Message<"roster.SiteWatchItem"> & {
  * Use `create(SiteWatchItemSchema)` to create a new message.
  */
 export const SiteWatchItemSchema: GenMessage<SiteWatchItem> = /*@__PURE__*/
-  messageDesc(file_app_site_svc_g, 13);
+  messageDesc(file_app_site_svc_g, 12);
 
 /**
  * @generated from service roster.SiteService
@@ -556,16 +532,6 @@ export const SiteService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof SitePatchRequestSchema;
-    output: typeof SiteSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Site
-   *
-   * @generated from rpc roster.SiteService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof SiteApplyRequestSchema;
     output: typeof SiteSchema;
   },
   /**

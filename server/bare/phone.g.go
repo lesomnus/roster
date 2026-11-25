@@ -401,16 +401,6 @@ var phoneOrmEntity = ormpatch.MustEntityOf(rstr.File_app_phone_proto, "Phone")
 var phonePatchColumns = entpatch.Columns{
 	1: phone.FieldId, 2: phone.HolderColumn, 8: phone.FieldNumber, 9: phone.FieldKind, 11: phone.FieldTenantId, 13: phone.FieldDateUpdated, 14: phone.FieldDateErased, 15: phone.FieldDateCreated}
 
-func (s PhoneServiceServer) Apply(ctx context.Context, req *rstr.PhoneApplyRequest) (*rstr.Phone, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.PhoneService_Apply_FullMethodName)
-}
-
 func (s PhoneServiceServer) apply(ctx context.Context, ref *rstr.PhoneRef, doc *patchpb.Patch, by string) (*rstr.Phone, error) {
 	plan := &ormpatch.Plan{Entity: phoneOrmEntity}
 	if doc != nil {

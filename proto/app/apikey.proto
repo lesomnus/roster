@@ -183,7 +183,6 @@ message ApiKey {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [

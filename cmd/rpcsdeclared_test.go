@@ -48,4 +48,37 @@ func TestNoRpcIsDeclaredThatNothingServesAndNothingCalls(t *testing.T) {
 		slices.Sort(has)
 		x.Equal(want, has, "%s declares RPCs nothing here serves or calls", name)
 	}
+
+	// `Apply` is a verb of its own, and nothing serves it: no port takes a
+	// general write and the box has no command for one. So an entity declares
+	// it where a verb written by hand writes through it, and nowhere else:
+	// `Role.Narrow`, a tenant's `Close` and `Restore`, and the scopes of a
+	// connection a file declares. Every entity that had a `Patch` had one
+	// (#531).
+	applied := map[string]string{
+		"roster.RoleService":       "server/core/narrow.go, Role.Narrow",
+		"roster.TenantService":     "server/core/close.go, Tenant.Close and Restore",
+		"roster.ConnectionService": "cmd/resources.go, a declared connection's scopes",
+	}
+	// And a tenant has no `Erase`: no port served it, the box says what ends
+	// one instead, and a tenant is closed (#279).
+	erased := map[string]bool{"roster.TenantService": false}
+
+	protoregistry.GlobalFiles.RangeFiles(func(file protoreflect.FileDescriptor) bool {
+		if file.Package() != "roster" {
+			return true
+		}
+		for i := range file.Services().Len() {
+			s := file.Services().Get(i)
+			name := string(s.FullName())
+
+			_, want := applied[name]
+			x.Equal(want, s.Methods().ByName("Apply") != nil, "%s: Apply declared is %v, and what calls it in process is %q", name, !want, applied[name])
+			if want, ok := erased[name]; ok {
+				x.Equal(want, s.Methods().ByName("Erase") != nil, "%s declares an Erase", name)
+			}
+		}
+
+		return true
+	})
 }

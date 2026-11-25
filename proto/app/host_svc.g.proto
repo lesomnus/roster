@@ -4,7 +4,6 @@ package roster;
 import "app/host.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
-import "patch/patch.proto";
 import "roster/payday/tenant_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -16,8 +15,6 @@ service HostService {
   rpc Get(HostGetRequest) returns (Host);
   // Patch updates an existing Host
   rpc Patch(HostPatchRequest) returns (Host);
-  // Apply applies a patch document to an existing Host
-  rpc Apply(HostApplyRequest) returns (Host);
   // Erase deletes a Host
   rpc Erase(HostRef) returns (HostEraseResponse);
   // List reads Hosts a page at a time.
@@ -33,8 +30,6 @@ service MailDomainService {
   rpc Get(MailDomainGetRequest) returns (MailDomain);
   // Patch updates an existing MailDomain
   rpc Patch(MailDomainPatchRequest) returns (MailDomain);
-  // Apply applies a patch document to an existing MailDomain
-  rpc Apply(MailDomainApplyRequest) returns (MailDomain);
   // Erase deletes a MailDomain
   rpc Erase(MailDomainRef) returns (MailDomainEraseResponse);
   // List reads MailDomains a page at a time.
@@ -51,8 +46,6 @@ service HostProofService {
   rpc Get(HostProofGetRequest) returns (HostProof);
   // Patch updates an existing HostProof
   rpc Patch(HostProofPatchRequest) returns (HostProof);
-  // Apply applies a patch document to an existing HostProof
-  rpc Apply(HostProofApplyRequest) returns (HostProof);
   // Erase deletes a HostProof
   rpc Erase(HostProofRef) returns (HostProofEraseResponse);
   // List reads HostProofs a page at a time.
@@ -118,11 +111,6 @@ message HostPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message HostApplyRequest {
-  HostRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message HostEraseResponse {
@@ -256,11 +244,6 @@ message MailDomainPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message MailDomainApplyRequest {
-  MailDomainRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message MailDomainEraseResponse {
@@ -400,11 +383,6 @@ message HostProofPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message HostProofApplyRequest {
-  HostProofRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message HostProofEraseResponse {

@@ -22,7 +22,6 @@ const (
 	EmailService_Add_FullMethodName     = "/roster.EmailService/Add"
 	EmailService_Get_FullMethodName     = "/roster.EmailService/Get"
 	EmailService_Patch_FullMethodName   = "/roster.EmailService/Patch"
-	EmailService_Apply_FullMethodName   = "/roster.EmailService/Apply"
 	EmailService_Erase_FullMethodName   = "/roster.EmailService/Erase"
 	EmailService_List_FullMethodName    = "/roster.EmailService/List"
 	EmailService_Watch_FullMethodName   = "/roster.EmailService/Watch"
@@ -41,8 +40,6 @@ type EmailServiceClient interface {
 	Get(ctx context.Context, in *EmailGetRequest, opts ...grpc.CallOption) (*Email, error)
 	// Patch updates an existing Email
 	Patch(ctx context.Context, in *EmailPatchRequest, opts ...grpc.CallOption) (*Email, error)
-	// Apply applies a patch document to an existing Email
-	Apply(ctx context.Context, in *EmailApplyRequest, opts ...grpc.CallOption) (*Email, error)
 	// Erase deletes a Email
 	Erase(ctx context.Context, in *EmailRef, opts ...grpc.CallOption) (*EmailEraseResponse, error)
 	// List reads Emails a page at a time.
@@ -197,16 +194,6 @@ func (c *emailServiceClient) Patch(ctx context.Context, in *EmailPatchRequest, o
 	return out, nil
 }
 
-func (c *emailServiceClient) Apply(ctx context.Context, in *EmailApplyRequest, opts ...grpc.CallOption) (*Email, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Email)
-	err := c.cc.Invoke(ctx, EmailService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *emailServiceClient) Erase(ctx context.Context, in *EmailRef, opts ...grpc.CallOption) (*EmailEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(EmailEraseResponse)
@@ -286,8 +273,6 @@ type EmailServiceServer interface {
 	Get(context.Context, *EmailGetRequest) (*Email, error)
 	// Patch updates an existing Email
 	Patch(context.Context, *EmailPatchRequest) (*Email, error)
-	// Apply applies a patch document to an existing Email
-	Apply(context.Context, *EmailApplyRequest) (*Email, error)
 	// Erase deletes a Email
 	Erase(context.Context, *EmailRef) (*EmailEraseResponse, error)
 	// List reads Emails a page at a time.
@@ -421,9 +406,6 @@ func (UnimplementedEmailServiceServer) Get(context.Context, *EmailGetRequest) (*
 func (UnimplementedEmailServiceServer) Patch(context.Context, *EmailPatchRequest) (*Email, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
 }
-func (UnimplementedEmailServiceServer) Apply(context.Context, *EmailApplyRequest) (*Email, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
 func (UnimplementedEmailServiceServer) Erase(context.Context, *EmailRef) (*EmailEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
@@ -513,24 +495,6 @@ func _EmailService_Patch_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(EmailServiceServer).Patch(ctx, req.(*EmailPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _EmailService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(EmailApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(EmailServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: EmailService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(EmailServiceServer).Apply(ctx, req.(*EmailApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -654,10 +618,6 @@ var EmailService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _EmailService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _EmailService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

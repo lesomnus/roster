@@ -4,7 +4,6 @@ package roster;
 import "app/consent.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
-import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -16,8 +15,6 @@ service ConsentService {
   rpc Get(ConsentGetRequest) returns (Consent);
   // Patch updates an existing Consent
   rpc Patch(ConsentPatchRequest) returns (Consent);
-  // Apply applies a patch document to an existing Consent
-  rpc Apply(ConsentApplyRequest) returns (Consent);
   // Erase deletes a Consent
   rpc Erase(ConsentRef) returns (ConsentEraseResponse);
   // List reads Consents a page at a time.
@@ -119,11 +116,6 @@ message ConsentPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message ConsentApplyRequest {
-  ConsentRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message ConsentEraseResponse {

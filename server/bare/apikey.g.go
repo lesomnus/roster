@@ -460,16 +460,6 @@ var apiKeyOrmEntity = ormpatch.MustEntityOf(rstr.File_app_apikey_proto, "ApiKey"
 var apiKeyPatchColumns = entpatch.Columns{
 	1: apikey.FieldId, 2: apikey.HolderColumn, 4: apikey.FieldAlias, 6: apikey.FieldDesc, 8: apikey.FieldMethods, 9: apikey.FieldSecret, 10: apikey.FieldDateUsed, 11: apikey.FieldDateExpired, 12: apikey.FieldDateAuthenticated, 16: apikey.AppColumn, 13: apikey.FieldDateUpdated, 14: apikey.FieldDateErased, 15: apikey.FieldDateCreated}
 
-func (s ApiKeyServiceServer) Apply(ctx context.Context, req *rstr.ApiKeyApplyRequest) (*rstr.ApiKey, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.ApiKeyService_Apply_FullMethodName)
-}
-
 func (s ApiKeyServiceServer) apply(ctx context.Context, ref *rstr.ApiKeyRef, doc *patchpb.Patch, by string) (*rstr.ApiKey, error) {
 	plan := &ormpatch.Plan{Entity: apiKeyOrmEntity}
 	if doc != nil {

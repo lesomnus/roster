@@ -189,7 +189,6 @@ message Host {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [
@@ -313,7 +312,6 @@ message MailDomain {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [
@@ -469,7 +467,6 @@ message HostProof {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [

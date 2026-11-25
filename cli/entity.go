@@ -38,8 +38,8 @@ import (
 //
 // Nothing here says which entities there are or which verbs they have. `ls`
 // exists for an entity that declared `list:` and not otherwise, so the commands
-// and the schema cannot disagree; see `payday/pdcmd`. One verb is taken back
-// out by hand, since the schema declares it and no server does it: a tenant's
+// and the schema cannot disagree; see `payday/pdcmd`. One verb is put in by
+// hand where the schema has none, to say what is done instead: a tenant's
 // `erase` ([newCmdTenantNotErased]).
 //
 // # Two ways in, and `client.addr` chooses -- or `--HAL` does
@@ -197,9 +197,9 @@ func NewCmdEntities(c *cmd.Config) xli.Commands {
 	overlays(t)
 	nowhere(t)
 
-	if err := t.Replace("tenant/erase", newCmdTenantNotErased()); err != nil {
-		// A path the schema no longer has, which is a mistake in this file
-		// rather than something a deployment can cause.
+	if err := t.Add("tenant/erase", newCmdTenantNotErased()); err != nil {
+		// A path the schema has, which is a mistake in this file rather than
+		// something a deployment can cause.
 		panic(err)
 	}
 
@@ -333,13 +333,14 @@ func nowhere(t *pdcmd.Tree) {
 	}
 }
 
-// newCmdTenantNotErased is what stands where `tenant erase` was built.
+// newCmdTenantNotErased is what stands where `tenant erase` would be.
 //
-// The tree is built from the schema, and `Tenant` declares an erase, so there
+// The tree is built from the schema, and `Tenant` declared an erase, so there
 // was a `roster tenant erase`. It could never work: every row of a tenant is
 // keyed to it, and what the command printed was the database's own words about
-// a foreign key, at every point of a tenant's life (#279). The server refuses
-// the method now, in a sentence ([core.NotErased]).
+// a foreign key, at every point of a tenant's life (#279). `Tenant` has no
+// `Erase` now, so the tree builds no command, and this one says what does end
+// a tenant ([core.NotErased]).
 //
 // # Not offered, and answered all the same
 //

@@ -80,8 +80,6 @@ func TestAGeneralWriteDoesNotWriteANamePastItsProof(t *testing.T) {
 		Ref: app.HostRef_builder{Id: h.GetId()}.Build(), Name: z.Ptr("never-proved.victim.example"), DateUpdated: h.GetDateUpdated(),
 	}.Build())
 	notServed("Host.Patch", err)
-	_, err = hosts.Apply(wire, app.HostApplyRequest_builder{Ref: app.HostRef_builder{Id: h.GetId()}.Build()}.Build())
-	notServed("Host.Apply", err)
 
 	_, err = front.New(b.Ungated).WhoseHost(ctx, app.FrontWhoseHostRequest_builder{Host: "never-proved.victim.example"}.Build())
 	x.Equal(codes.NotFound, status.Code(err), "a name nobody proved answers a tenant: %v", err)
@@ -93,8 +91,6 @@ func TestAGeneralWriteDoesNotWriteANamePastItsProof(t *testing.T) {
 		DateUpdated: later.GetDateUpdated(),
 	}.Build())
 	notServed("HostProof.Patch", err)
-	_, err = proofs.Apply(wire, app.HostProofApplyRequest_builder{Ref: app.HostProofRef_builder{Id: later.GetId()}.Build()}.Build())
-	notServed("HostProof.Apply", err)
 
 	tenants := app.NewTenantServiceClient(conn)
 	ref := app.TenantRef_builder{Id: b.Contoso.Bytes()}.Build()

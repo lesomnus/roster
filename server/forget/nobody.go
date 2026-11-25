@@ -159,7 +159,7 @@ func namedBy(of names, row uuid.UUID) predicate.Holder {
 
 // naming is every write that names a person, by the method that makes it
 // ([bare.Change.By]): an `Add` of each kind keyed to a holder that a server
-// adds, and the two writes that move a nomination's `acts_as`, which is the
+// adds, and the `Patch` that moves a nomination's `acts_as`, which is the
 // only such edge that is not fixed when its row is made. A session is keyed
 // to a holder and has no `Add`: its store writes it through ent, past every
 // recorder (`server/session`).
@@ -188,5 +188,4 @@ var naming = map[string]names{
 
 	app.NominationService_Add_FullMethodName:   {nomination.Table, []string{nomination.ActsAsColumn}},
 	app.NominationService_Patch_FullMethodName: {nomination.Table, []string{nomination.ActsAsColumn}},
-	app.NominationService_Apply_FullMethodName: {nomination.Table, []string{nomination.ActsAsColumn}},
 }

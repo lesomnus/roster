@@ -482,16 +482,6 @@ var groupOrmEntity = ormpatch.MustEntityOf(rstr.File_app_group_proto, "Group")
 var groupPatchColumns = entpatch.Columns{
 	1: group.FieldId, 2: group.TenantColumn, 3: group.SiteColumn, 4: group.FieldAlias, 5: group.FieldName, 6: group.FieldDesc, 7: group.FieldLabels, 8: group.AppColumn, 13: group.FieldDateUpdated, 14: group.FieldDateErased, 15: group.FieldDateCreated}
 
-func (s GroupServiceServer) Apply(ctx context.Context, req *rstr.GroupApplyRequest) (*rstr.Group, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.GroupService_Apply_FullMethodName)
-}
-
 func (s GroupServiceServer) apply(ctx context.Context, ref *rstr.GroupRef, doc *patchpb.Patch, by string) (*rstr.Group, error) {
 	plan := &ormpatch.Plan{Entity: groupOrmEntity}
 	if doc != nil {
@@ -1101,16 +1091,6 @@ var groupExposureOrmEntity = ormpatch.MustEntityOf(rstr.File_app_group_proto, "G
 
 var groupExposurePatchColumns = entpatch.Columns{
 	1: groupexposure.FieldId, 2: groupexposure.GroupColumn, 8: groupexposure.FieldClient, 13: groupexposure.FieldDateUpdated, 14: groupexposure.FieldDateErased, 15: groupexposure.FieldDateCreated}
-
-func (s GroupExposureServiceServer) Apply(ctx context.Context, req *rstr.GroupExposureApplyRequest) (*rstr.GroupExposure, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.GroupExposureService_Apply_FullMethodName)
-}
 
 func (s GroupExposureServiceServer) apply(ctx context.Context, ref *rstr.GroupExposureRef, doc *patchpb.Patch, by string) (*rstr.GroupExposure, error) {
 	plan := &ormpatch.Plan{Entity: groupExposureOrmEntity}

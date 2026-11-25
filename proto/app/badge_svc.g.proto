@@ -4,7 +4,6 @@ package roster;
 import "app/badge.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
-import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -16,8 +15,6 @@ service BadgeService {
   rpc Get(BadgeGetRequest) returns (Badge);
   // Patch updates an existing Badge
   rpc Patch(BadgePatchRequest) returns (Badge);
-  // Apply applies a patch document to an existing Badge
-  rpc Apply(BadgeApplyRequest) returns (Badge);
   // Erase deletes a Badge
   rpc Erase(BadgeRef) returns (BadgeEraseResponse);
   // List reads Badges a page at a time.
@@ -140,11 +137,6 @@ message BadgePatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message BadgeApplyRequest {
-  BadgeRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message BadgeEraseResponse {

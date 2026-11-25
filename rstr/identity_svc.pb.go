@@ -7,7 +7,6 @@
 package rstr
 
 import (
-	patchpb "github.com/lesomnus/protobuf-patch/patchpb"
 	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -1086,99 +1085,6 @@ func (b0 IdentityPatchRequest_builder) Build() *IdentityPatchRequest {
 	return m0
 }
 
-type IdentityApplyRequest struct {
-	state            protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Ref   *IdentityRef           `protobuf:"bytes,1,opt,name=ref"`
-	xxx_hidden_Patch *patchpb.Patch         `protobuf:"bytes,2,opt,name=patch"`
-	unknownFields    protoimpl.UnknownFields
-	sizeCache        protoimpl.SizeCache
-}
-
-func (x *IdentityApplyRequest) Reset() {
-	*x = IdentityApplyRequest{}
-	mi := &file_app_identity_svc_g_proto_msgTypes[6]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *IdentityApplyRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*IdentityApplyRequest) ProtoMessage() {}
-
-func (x *IdentityApplyRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_identity_svc_g_proto_msgTypes[6]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-func (x *IdentityApplyRequest) GetRef() *IdentityRef {
-	if x != nil {
-		return x.xxx_hidden_Ref
-	}
-	return nil
-}
-
-func (x *IdentityApplyRequest) GetPatch() *patchpb.Patch {
-	if x != nil {
-		return x.xxx_hidden_Patch
-	}
-	return nil
-}
-
-func (x *IdentityApplyRequest) SetRef(v *IdentityRef) {
-	x.xxx_hidden_Ref = v
-}
-
-func (x *IdentityApplyRequest) SetPatch(v *patchpb.Patch) {
-	x.xxx_hidden_Patch = v
-}
-
-func (x *IdentityApplyRequest) HasRef() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Ref != nil
-}
-
-func (x *IdentityApplyRequest) HasPatch() bool {
-	if x == nil {
-		return false
-	}
-	return x.xxx_hidden_Patch != nil
-}
-
-func (x *IdentityApplyRequest) ClearRef() {
-	x.xxx_hidden_Ref = nil
-}
-
-func (x *IdentityApplyRequest) ClearPatch() {
-	x.xxx_hidden_Patch = nil
-}
-
-type IdentityApplyRequest_builder struct {
-	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
-
-	Ref   *IdentityRef
-	Patch *patchpb.Patch
-}
-
-func (b0 IdentityApplyRequest_builder) Build() *IdentityApplyRequest {
-	m0 := &IdentityApplyRequest{}
-	b, x := &b0, m0
-	_, _ = b, x
-	x.xxx_hidden_Ref = b.Ref
-	x.xxx_hidden_Patch = b.Patch
-	return m0
-}
-
 type IdentityEraseResponse struct {
 	state                  protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Erased      bool                   `protobuf:"varint,1,opt,name=erased"`
@@ -1190,7 +1096,7 @@ type IdentityEraseResponse struct {
 
 func (x *IdentityEraseResponse) Reset() {
 	*x = IdentityEraseResponse{}
-	mi := &file_app_identity_svc_g_proto_msgTypes[7]
+	mi := &file_app_identity_svc_g_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1202,7 +1108,7 @@ func (x *IdentityEraseResponse) String() string {
 func (*IdentityEraseResponse) ProtoMessage() {}
 
 func (x *IdentityEraseResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_identity_svc_g_proto_msgTypes[7]
+	mi := &file_app_identity_svc_g_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1272,7 +1178,7 @@ type IdentityListRequest struct {
 
 func (x *IdentityListRequest) Reset() {
 	*x = IdentityListRequest{}
-	mi := &file_app_identity_svc_g_proto_msgTypes[8]
+	mi := &file_app_identity_svc_g_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1284,7 +1190,7 @@ func (x *IdentityListRequest) String() string {
 func (*IdentityListRequest) ProtoMessage() {}
 
 func (x *IdentityListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_identity_svc_g_proto_msgTypes[8]
+	mi := &file_app_identity_svc_g_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1416,7 +1322,7 @@ type IdentityListResponse struct {
 
 func (x *IdentityListResponse) Reset() {
 	*x = IdentityListResponse{}
-	mi := &file_app_identity_svc_g_proto_msgTypes[9]
+	mi := &file_app_identity_svc_g_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1428,7 +1334,7 @@ func (x *IdentityListResponse) String() string {
 func (*IdentityListResponse) ProtoMessage() {}
 
 func (x *IdentityListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_identity_svc_g_proto_msgTypes[9]
+	mi := &file_app_identity_svc_g_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1499,7 +1405,7 @@ type IdentityFilter struct {
 
 func (x *IdentityFilter) Reset() {
 	*x = IdentityFilter{}
-	mi := &file_app_identity_svc_g_proto_msgTypes[10]
+	mi := &file_app_identity_svc_g_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1511,7 +1417,7 @@ func (x *IdentityFilter) String() string {
 func (*IdentityFilter) ProtoMessage() {}
 
 func (x *IdentityFilter) ProtoReflect() protoreflect.Message {
-	mi := &file_app_identity_svc_g_proto_msgTypes[10]
+	mi := &file_app_identity_svc_g_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1624,7 +1530,7 @@ type IdentityWatchRequest struct {
 
 func (x *IdentityWatchRequest) Reset() {
 	*x = IdentityWatchRequest{}
-	mi := &file_app_identity_svc_g_proto_msgTypes[11]
+	mi := &file_app_identity_svc_g_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1636,7 +1542,7 @@ func (x *IdentityWatchRequest) String() string {
 func (*IdentityWatchRequest) ProtoMessage() {}
 
 func (x *IdentityWatchRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_identity_svc_g_proto_msgTypes[11]
+	mi := &file_app_identity_svc_g_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1710,7 +1616,7 @@ type IdentityWatchResponse struct {
 
 func (x *IdentityWatchResponse) Reset() {
 	*x = IdentityWatchResponse{}
-	mi := &file_app_identity_svc_g_proto_msgTypes[12]
+	mi := &file_app_identity_svc_g_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1722,7 +1628,7 @@ func (x *IdentityWatchResponse) String() string {
 func (*IdentityWatchResponse) ProtoMessage() {}
 
 func (x *IdentityWatchResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_app_identity_svc_g_proto_msgTypes[12]
+	mi := &file_app_identity_svc_g_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1774,7 +1680,7 @@ type IdentityWatchItem struct {
 
 func (x *IdentityWatchItem) Reset() {
 	*x = IdentityWatchItem{}
-	mi := &file_app_identity_svc_g_proto_msgTypes[13]
+	mi := &file_app_identity_svc_g_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1786,7 +1692,7 @@ func (x *IdentityWatchItem) String() string {
 func (*IdentityWatchItem) ProtoMessage() {}
 
 func (x *IdentityWatchItem) ProtoReflect() protoreflect.Message {
-	mi := &file_app_identity_svc_g_proto_msgTypes[13]
+	mi := &file_app_identity_svc_g_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1907,7 +1813,7 @@ type IdentityResubjectRequest struct {
 
 func (x *IdentityResubjectRequest) Reset() {
 	*x = IdentityResubjectRequest{}
-	mi := &file_app_identity_svc_g_proto_msgTypes[14]
+	mi := &file_app_identity_svc_g_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1919,7 +1825,7 @@ func (x *IdentityResubjectRequest) String() string {
 func (*IdentityResubjectRequest) ProtoMessage() {}
 
 func (x *IdentityResubjectRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_identity_svc_g_proto_msgTypes[14]
+	mi := &file_app_identity_svc_g_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2020,7 +1926,7 @@ type IdentityAttestRequest struct {
 
 func (x *IdentityAttestRequest) Reset() {
 	*x = IdentityAttestRequest{}
-	mi := &file_app_identity_svc_g_proto_msgTypes[15]
+	mi := &file_app_identity_svc_g_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2032,7 +1938,7 @@ func (x *IdentityAttestRequest) String() string {
 func (*IdentityAttestRequest) ProtoMessage() {}
 
 func (x *IdentityAttestRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_app_identity_svc_g_proto_msgTypes[15]
+	mi := &file_app_identity_svc_g_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2112,7 +2018,7 @@ var File_app_identity_svc_g_proto protoreflect.FileDescriptor
 
 const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\n" +
-	"\x18app/identity_svc.g.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\x11patch/patch.proto\x1a roster/payday/holder_svc.g.proto\"\x84\x02\n" +
+	"\x18app/identity_svc.g.proto\x12\x06roster\x1a\x12app/identity.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a roster/payday/holder_svc.g.proto\"\x84\x02\n" +
 	"\x12IdentityAddRequest\x12\x16\n" +
 	"\x02id\x18\x01 \x01(\fB\x06\xea\x82\x16\x02\x10@R\x02id\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12!\n" +
@@ -2150,10 +2056,7 @@ const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\bprovider\x18\x10 \x01(\tR\bprovider\x12\x18\n" +
 	"\asubject\x18\x12 \x01(\tR\asubject\x12=\n" +
 	"\fdate_updated\x18\x1a \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12,\n" +
-	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"a\n" +
-	"\x14IdentityApplyRequest\x12%\n" +
-	"\x03ref\x18\x01 \x01(\v2\x13.roster.IdentityRefR\x03ref\x12\"\n" +
-	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"/\n" +
+	"\x12date_updated_force\x18\x1b \x01(\bR\x10dateUpdatedForce\"/\n" +
 	"\x15IdentityEraseResponse\x12\x16\n" +
 	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xd0\x01\n" +
 	"\x13IdentityListRequest\x120\n" +
@@ -2185,19 +2088,18 @@ const file_app_identity_svc_g_proto_rawDesc = "" +
 	"\x15IdentityAttestRequest\x12)\n" +
 	"\x06holder\x18\x02 \x01(\v2\x11.roster.HolderRefR\x06holder\x12!\n" +
 	"\bprovider\x18\b \x01(\tB\x05\xaa\x01\x02\b\x02R\bprovider\x12\x1f\n" +
-	"\asubject\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\asubject2\xb1\x04\n" +
+	"\asubject\x18\t \x01(\tB\x05\xaa\x01\x02\b\x02R\asubject2\xf8\x03\n" +
 	"\x0fIdentityService\x123\n" +
 	"\x03Add\x12\x1a.roster.IdentityAddRequest\x1a\x10.roster.Identity\x123\n" +
 	"\x03Get\x12\x1a.roster.IdentityGetRequest\x1a\x10.roster.Identity\x127\n" +
-	"\x05Patch\x12\x1c.roster.IdentityPatchRequest\x1a\x10.roster.Identity\x127\n" +
-	"\x05Apply\x12\x1c.roster.IdentityApplyRequest\x1a\x10.roster.Identity\x12;\n" +
+	"\x05Patch\x12\x1c.roster.IdentityPatchRequest\x1a\x10.roster.Identity\x12;\n" +
 	"\x05Erase\x12\x13.roster.IdentityRef\x1a\x1d.roster.IdentityEraseResponse\x12A\n" +
 	"\x04List\x12\x1b.roster.IdentityListRequest\x1a\x1c.roster.IdentityListResponse\x12F\n" +
 	"\x05Watch\x12\x1c.roster.IdentityWatchRequest\x1a\x1d.roster.IdentityWatchResponse0\x01\x12?\n" +
 	"\tResubject\x12 .roster.IdentityResubjectRequest\x1a\x10.roster.Identity\x129\n" +
 	"\x06Attest\x12\x1d.roster.IdentityAttestRequest\x1a\x10.roster.IdentityB!Z\x1fgithub.com/lesomnus/roster/rstrb\beditionsp\xe8\a"
 
-var file_app_identity_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
+var file_app_identity_svc_g_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
 var file_app_identity_svc_g_proto_goTypes = []any{
 	(*IdentityAddRequest)(nil),       // 0: roster.IdentityAddRequest
 	(*IdentityGetRequest)(nil),       // 1: roster.IdentityGetRequest
@@ -2205,67 +2107,61 @@ var file_app_identity_svc_g_proto_goTypes = []any{
 	(*IdentityRefBySubject)(nil),     // 3: roster.IdentityRefBySubject
 	(*IdentitySelect)(nil),           // 4: roster.IdentitySelect
 	(*IdentityPatchRequest)(nil),     // 5: roster.IdentityPatchRequest
-	(*IdentityApplyRequest)(nil),     // 6: roster.IdentityApplyRequest
-	(*IdentityEraseResponse)(nil),    // 7: roster.IdentityEraseResponse
-	(*IdentityListRequest)(nil),      // 8: roster.IdentityListRequest
-	(*IdentityListResponse)(nil),     // 9: roster.IdentityListResponse
-	(*IdentityFilter)(nil),           // 10: roster.IdentityFilter
-	(*IdentityWatchRequest)(nil),     // 11: roster.IdentityWatchRequest
-	(*IdentityWatchResponse)(nil),    // 12: roster.IdentityWatchResponse
-	(*IdentityWatchItem)(nil),        // 13: roster.IdentityWatchItem
-	(*IdentityResubjectRequest)(nil), // 14: roster.IdentityResubjectRequest
-	(*IdentityAttestRequest)(nil),    // 15: roster.IdentityAttestRequest
-	(*HolderRef)(nil),                // 16: roster.HolderRef
-	(*timestamppb.Timestamp)(nil),    // 17: google.protobuf.Timestamp
-	(*HolderSelect)(nil),             // 18: roster.HolderSelect
-	(*patchpb.Patch)(nil),            // 19: patch.Patch
-	(*Identity)(nil),                 // 20: roster.Identity
+	(*IdentityEraseResponse)(nil),    // 6: roster.IdentityEraseResponse
+	(*IdentityListRequest)(nil),      // 7: roster.IdentityListRequest
+	(*IdentityListResponse)(nil),     // 8: roster.IdentityListResponse
+	(*IdentityFilter)(nil),           // 9: roster.IdentityFilter
+	(*IdentityWatchRequest)(nil),     // 10: roster.IdentityWatchRequest
+	(*IdentityWatchResponse)(nil),    // 11: roster.IdentityWatchResponse
+	(*IdentityWatchItem)(nil),        // 12: roster.IdentityWatchItem
+	(*IdentityResubjectRequest)(nil), // 13: roster.IdentityResubjectRequest
+	(*IdentityAttestRequest)(nil),    // 14: roster.IdentityAttestRequest
+	(*HolderRef)(nil),                // 15: roster.HolderRef
+	(*timestamppb.Timestamp)(nil),    // 16: google.protobuf.Timestamp
+	(*HolderSelect)(nil),             // 17: roster.HolderSelect
+	(*Identity)(nil),                 // 18: roster.Identity
 }
 var file_app_identity_svc_g_proto_depIdxs = []int32{
-	16, // 0: roster.IdentityAddRequest.holder:type_name -> roster.HolderRef
-	17, // 1: roster.IdentityAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	15, // 0: roster.IdentityAddRequest.holder:type_name -> roster.HolderRef
+	16, // 1: roster.IdentityAddRequest.date_created:type_name -> google.protobuf.Timestamp
 	2,  // 2: roster.IdentityGetRequest.ref:type_name -> roster.IdentityRef
 	4,  // 3: roster.IdentityGetRequest.select:type_name -> roster.IdentitySelect
 	3,  // 4: roster.IdentityRef.subject:type_name -> roster.IdentityRefBySubject
-	18, // 5: roster.IdentitySelect.holder:type_name -> roster.HolderSelect
+	17, // 5: roster.IdentitySelect.holder:type_name -> roster.HolderSelect
 	2,  // 6: roster.IdentityPatchRequest.ref:type_name -> roster.IdentityRef
-	17, // 7: roster.IdentityPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 8: roster.IdentityApplyRequest.ref:type_name -> roster.IdentityRef
-	19, // 9: roster.IdentityApplyRequest.patch:type_name -> patch.Patch
-	10, // 10: roster.IdentityListRequest.filters:type_name -> roster.IdentityFilter
-	4,  // 11: roster.IdentityListRequest.select:type_name -> roster.IdentitySelect
-	20, // 12: roster.IdentityListResponse.items:type_name -> roster.Identity
-	2,  // 13: roster.IdentityFilter.ref:type_name -> roster.IdentityRef
-	16, // 14: roster.IdentityFilter.holder:type_name -> roster.HolderRef
-	10, // 15: roster.IdentityWatchRequest.filters:type_name -> roster.IdentityFilter
-	13, // 16: roster.IdentityWatchResponse.items:type_name -> roster.IdentityWatchItem
-	20, // 17: roster.IdentityWatchItem.value:type_name -> roster.Identity
-	2,  // 18: roster.IdentityResubjectRequest.ref:type_name -> roster.IdentityRef
-	17, // 19: roster.IdentityResubjectRequest.date_updated:type_name -> google.protobuf.Timestamp
-	16, // 20: roster.IdentityAttestRequest.holder:type_name -> roster.HolderRef
-	0,  // 21: roster.IdentityService.Add:input_type -> roster.IdentityAddRequest
-	1,  // 22: roster.IdentityService.Get:input_type -> roster.IdentityGetRequest
-	5,  // 23: roster.IdentityService.Patch:input_type -> roster.IdentityPatchRequest
-	6,  // 24: roster.IdentityService.Apply:input_type -> roster.IdentityApplyRequest
-	2,  // 25: roster.IdentityService.Erase:input_type -> roster.IdentityRef
-	8,  // 26: roster.IdentityService.List:input_type -> roster.IdentityListRequest
-	11, // 27: roster.IdentityService.Watch:input_type -> roster.IdentityWatchRequest
-	14, // 28: roster.IdentityService.Resubject:input_type -> roster.IdentityResubjectRequest
-	15, // 29: roster.IdentityService.Attest:input_type -> roster.IdentityAttestRequest
-	20, // 30: roster.IdentityService.Add:output_type -> roster.Identity
-	20, // 31: roster.IdentityService.Get:output_type -> roster.Identity
-	20, // 32: roster.IdentityService.Patch:output_type -> roster.Identity
-	20, // 33: roster.IdentityService.Apply:output_type -> roster.Identity
-	7,  // 34: roster.IdentityService.Erase:output_type -> roster.IdentityEraseResponse
-	9,  // 35: roster.IdentityService.List:output_type -> roster.IdentityListResponse
-	12, // 36: roster.IdentityService.Watch:output_type -> roster.IdentityWatchResponse
-	20, // 37: roster.IdentityService.Resubject:output_type -> roster.Identity
-	20, // 38: roster.IdentityService.Attest:output_type -> roster.Identity
-	30, // [30:39] is the sub-list for method output_type
-	21, // [21:30] is the sub-list for method input_type
-	21, // [21:21] is the sub-list for extension type_name
-	21, // [21:21] is the sub-list for extension extendee
-	0,  // [0:21] is the sub-list for field type_name
+	16, // 7: roster.IdentityPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	9,  // 8: roster.IdentityListRequest.filters:type_name -> roster.IdentityFilter
+	4,  // 9: roster.IdentityListRequest.select:type_name -> roster.IdentitySelect
+	18, // 10: roster.IdentityListResponse.items:type_name -> roster.Identity
+	2,  // 11: roster.IdentityFilter.ref:type_name -> roster.IdentityRef
+	15, // 12: roster.IdentityFilter.holder:type_name -> roster.HolderRef
+	9,  // 13: roster.IdentityWatchRequest.filters:type_name -> roster.IdentityFilter
+	12, // 14: roster.IdentityWatchResponse.items:type_name -> roster.IdentityWatchItem
+	18, // 15: roster.IdentityWatchItem.value:type_name -> roster.Identity
+	2,  // 16: roster.IdentityResubjectRequest.ref:type_name -> roster.IdentityRef
+	16, // 17: roster.IdentityResubjectRequest.date_updated:type_name -> google.protobuf.Timestamp
+	15, // 18: roster.IdentityAttestRequest.holder:type_name -> roster.HolderRef
+	0,  // 19: roster.IdentityService.Add:input_type -> roster.IdentityAddRequest
+	1,  // 20: roster.IdentityService.Get:input_type -> roster.IdentityGetRequest
+	5,  // 21: roster.IdentityService.Patch:input_type -> roster.IdentityPatchRequest
+	2,  // 22: roster.IdentityService.Erase:input_type -> roster.IdentityRef
+	7,  // 23: roster.IdentityService.List:input_type -> roster.IdentityListRequest
+	10, // 24: roster.IdentityService.Watch:input_type -> roster.IdentityWatchRequest
+	13, // 25: roster.IdentityService.Resubject:input_type -> roster.IdentityResubjectRequest
+	14, // 26: roster.IdentityService.Attest:input_type -> roster.IdentityAttestRequest
+	18, // 27: roster.IdentityService.Add:output_type -> roster.Identity
+	18, // 28: roster.IdentityService.Get:output_type -> roster.Identity
+	18, // 29: roster.IdentityService.Patch:output_type -> roster.Identity
+	6,  // 30: roster.IdentityService.Erase:output_type -> roster.IdentityEraseResponse
+	8,  // 31: roster.IdentityService.List:output_type -> roster.IdentityListResponse
+	11, // 32: roster.IdentityService.Watch:output_type -> roster.IdentityWatchResponse
+	18, // 33: roster.IdentityService.Resubject:output_type -> roster.Identity
+	18, // 34: roster.IdentityService.Attest:output_type -> roster.Identity
+	27, // [27:35] is the sub-list for method output_type
+	19, // [19:27] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_app_identity_svc_g_proto_init() }
@@ -2285,7 +2181,7 @@ func file_app_identity_svc_g_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_app_identity_svc_g_proto_rawDesc), len(file_app_identity_svc_g_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   16,
+			NumMessages:   15,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

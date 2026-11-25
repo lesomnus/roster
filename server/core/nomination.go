@@ -71,9 +71,8 @@ func (s coreNomination) Add(ctx context.Context, req *app.NominationAddRequest) 
 // change, because re-pointing a nomination is nominating somebody.
 //
 // The tenant is read off the row: the edge is immutable, so what a patch is
-// about is whatever the row already names. `Apply` stands on the transport
-// alone, which is where every general write in this package stands and why
-// (`escalate.go`, "the one place it is not").
+// about is whatever the row already names. A nomination has no `Apply`, which
+// nothing here calls (#531).
 func (s coreNomination) Patch(ctx context.Context, req *app.NominationPatchRequest) (*app.Nomination, error) {
 	if err := s.acrossTheTenant(ctx, app.NominationService_Patch_FullMethodName); err != nil {
 		return nil, err

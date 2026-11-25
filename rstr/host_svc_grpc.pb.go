@@ -22,7 +22,6 @@ const (
 	HostService_Add_FullMethodName    = "/roster.HostService/Add"
 	HostService_Get_FullMethodName    = "/roster.HostService/Get"
 	HostService_Patch_FullMethodName  = "/roster.HostService/Patch"
-	HostService_Apply_FullMethodName  = "/roster.HostService/Apply"
 	HostService_Erase_FullMethodName  = "/roster.HostService/Erase"
 	HostService_List_FullMethodName   = "/roster.HostService/List"
 	HostService_Update_FullMethodName = "/roster.HostService/Update"
@@ -38,8 +37,6 @@ type HostServiceClient interface {
 	Get(ctx context.Context, in *HostGetRequest, opts ...grpc.CallOption) (*Host, error)
 	// Patch updates an existing Host
 	Patch(ctx context.Context, in *HostPatchRequest, opts ...grpc.CallOption) (*Host, error)
-	// Apply applies a patch document to an existing Host
-	Apply(ctx context.Context, in *HostApplyRequest, opts ...grpc.CallOption) (*Host, error)
 	// Erase deletes a Host
 	Erase(ctx context.Context, in *HostRef, opts ...grpc.CallOption) (*HostEraseResponse, error)
 	// List reads Hosts a page at a time.
@@ -86,16 +83,6 @@ func (c *hostServiceClient) Patch(ctx context.Context, in *HostPatchRequest, opt
 	return out, nil
 }
 
-func (c *hostServiceClient) Apply(ctx context.Context, in *HostApplyRequest, opts ...grpc.CallOption) (*Host, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Host)
-	err := c.cc.Invoke(ctx, HostService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *hostServiceClient) Erase(ctx context.Context, in *HostRef, opts ...grpc.CallOption) (*HostEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HostEraseResponse)
@@ -136,8 +123,6 @@ type HostServiceServer interface {
 	Get(context.Context, *HostGetRequest) (*Host, error)
 	// Patch updates an existing Host
 	Patch(context.Context, *HostPatchRequest) (*Host, error)
-	// Apply applies a patch document to an existing Host
-	Apply(context.Context, *HostApplyRequest) (*Host, error)
 	// Erase deletes a Host
 	Erase(context.Context, *HostRef) (*HostEraseResponse, error)
 	// List reads Hosts a page at a time.
@@ -162,9 +147,6 @@ func (UnimplementedHostServiceServer) Get(context.Context, *HostGetRequest) (*Ho
 }
 func (UnimplementedHostServiceServer) Patch(context.Context, *HostPatchRequest) (*Host, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedHostServiceServer) Apply(context.Context, *HostApplyRequest) (*Host, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedHostServiceServer) Erase(context.Context, *HostRef) (*HostEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -250,24 +232,6 @@ func _HostService_Patch_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HostService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HostApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HostServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HostService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HostServiceServer).Apply(ctx, req.(*HostApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _HostService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HostRef)
 	if err := dec(in); err != nil {
@@ -342,10 +306,6 @@ var HostService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _HostService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _HostService_Apply_Handler,
-		},
-		{
 			MethodName: "Erase",
 			Handler:    _HostService_Erase_Handler,
 		},
@@ -366,7 +326,6 @@ const (
 	MailDomainService_Add_FullMethodName    = "/roster.MailDomainService/Add"
 	MailDomainService_Get_FullMethodName    = "/roster.MailDomainService/Get"
 	MailDomainService_Patch_FullMethodName  = "/roster.MailDomainService/Patch"
-	MailDomainService_Apply_FullMethodName  = "/roster.MailDomainService/Apply"
 	MailDomainService_Erase_FullMethodName  = "/roster.MailDomainService/Erase"
 	MailDomainService_List_FullMethodName   = "/roster.MailDomainService/List"
 	MailDomainService_Update_FullMethodName = "/roster.MailDomainService/Update"
@@ -382,8 +341,6 @@ type MailDomainServiceClient interface {
 	Get(ctx context.Context, in *MailDomainGetRequest, opts ...grpc.CallOption) (*MailDomain, error)
 	// Patch updates an existing MailDomain
 	Patch(ctx context.Context, in *MailDomainPatchRequest, opts ...grpc.CallOption) (*MailDomain, error)
-	// Apply applies a patch document to an existing MailDomain
-	Apply(ctx context.Context, in *MailDomainApplyRequest, opts ...grpc.CallOption) (*MailDomain, error)
 	// Erase deletes a MailDomain
 	Erase(ctx context.Context, in *MailDomainRef, opts ...grpc.CallOption) (*MailDomainEraseResponse, error)
 	// List reads MailDomains a page at a time.
@@ -431,16 +388,6 @@ func (c *mailDomainServiceClient) Patch(ctx context.Context, in *MailDomainPatch
 	return out, nil
 }
 
-func (c *mailDomainServiceClient) Apply(ctx context.Context, in *MailDomainApplyRequest, opts ...grpc.CallOption) (*MailDomain, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(MailDomain)
-	err := c.cc.Invoke(ctx, MailDomainService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *mailDomainServiceClient) Erase(ctx context.Context, in *MailDomainRef, opts ...grpc.CallOption) (*MailDomainEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(MailDomainEraseResponse)
@@ -481,8 +428,6 @@ type MailDomainServiceServer interface {
 	Get(context.Context, *MailDomainGetRequest) (*MailDomain, error)
 	// Patch updates an existing MailDomain
 	Patch(context.Context, *MailDomainPatchRequest) (*MailDomain, error)
-	// Apply applies a patch document to an existing MailDomain
-	Apply(context.Context, *MailDomainApplyRequest) (*MailDomain, error)
 	// Erase deletes a MailDomain
 	Erase(context.Context, *MailDomainRef) (*MailDomainEraseResponse, error)
 	// List reads MailDomains a page at a time.
@@ -508,9 +453,6 @@ func (UnimplementedMailDomainServiceServer) Get(context.Context, *MailDomainGetR
 }
 func (UnimplementedMailDomainServiceServer) Patch(context.Context, *MailDomainPatchRequest) (*MailDomain, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedMailDomainServiceServer) Apply(context.Context, *MailDomainApplyRequest) (*MailDomain, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedMailDomainServiceServer) Erase(context.Context, *MailDomainRef) (*MailDomainEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -596,24 +538,6 @@ func _MailDomainService_Patch_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _MailDomainService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(MailDomainApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(MailDomainServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: MailDomainService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(MailDomainServiceServer).Apply(ctx, req.(*MailDomainApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _MailDomainService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(MailDomainRef)
 	if err := dec(in); err != nil {
@@ -688,10 +612,6 @@ var MailDomainService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _MailDomainService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _MailDomainService_Apply_Handler,
-		},
-		{
 			MethodName: "Erase",
 			Handler:    _MailDomainService_Erase_Handler,
 		},
@@ -712,7 +632,6 @@ const (
 	HostProofService_Add_FullMethodName   = "/roster.HostProofService/Add"
 	HostProofService_Get_FullMethodName   = "/roster.HostProofService/Get"
 	HostProofService_Patch_FullMethodName = "/roster.HostProofService/Patch"
-	HostProofService_Apply_FullMethodName = "/roster.HostProofService/Apply"
 	HostProofService_Erase_FullMethodName = "/roster.HostProofService/Erase"
 	HostProofService_List_FullMethodName  = "/roster.HostProofService/List"
 )
@@ -727,8 +646,6 @@ type HostProofServiceClient interface {
 	Get(ctx context.Context, in *HostProofGetRequest, opts ...grpc.CallOption) (*HostProof, error)
 	// Patch updates an existing HostProof
 	Patch(ctx context.Context, in *HostProofPatchRequest, opts ...grpc.CallOption) (*HostProof, error)
-	// Apply applies a patch document to an existing HostProof
-	Apply(ctx context.Context, in *HostProofApplyRequest, opts ...grpc.CallOption) (*HostProof, error)
 	// Erase deletes a HostProof
 	Erase(ctx context.Context, in *HostProofRef, opts ...grpc.CallOption) (*HostProofEraseResponse, error)
 	// List reads HostProofs a page at a time.
@@ -773,16 +690,6 @@ func (c *hostProofServiceClient) Patch(ctx context.Context, in *HostProofPatchRe
 	return out, nil
 }
 
-func (c *hostProofServiceClient) Apply(ctx context.Context, in *HostProofApplyRequest, opts ...grpc.CallOption) (*HostProof, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(HostProof)
-	err := c.cc.Invoke(ctx, HostProofService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *hostProofServiceClient) Erase(ctx context.Context, in *HostProofRef, opts ...grpc.CallOption) (*HostProofEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(HostProofEraseResponse)
@@ -813,8 +720,6 @@ type HostProofServiceServer interface {
 	Get(context.Context, *HostProofGetRequest) (*HostProof, error)
 	// Patch updates an existing HostProof
 	Patch(context.Context, *HostProofPatchRequest) (*HostProof, error)
-	// Apply applies a patch document to an existing HostProof
-	Apply(context.Context, *HostProofApplyRequest) (*HostProof, error)
 	// Erase deletes a HostProof
 	Erase(context.Context, *HostProofRef) (*HostProofEraseResponse, error)
 	// List reads HostProofs a page at a time.
@@ -837,9 +742,6 @@ func (UnimplementedHostProofServiceServer) Get(context.Context, *HostProofGetReq
 }
 func (UnimplementedHostProofServiceServer) Patch(context.Context, *HostProofPatchRequest) (*HostProof, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedHostProofServiceServer) Apply(context.Context, *HostProofApplyRequest) (*HostProof, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedHostProofServiceServer) Erase(context.Context, *HostProofRef) (*HostProofEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -922,24 +824,6 @@ func _HostProofService_Patch_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _HostProofService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HostProofApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(HostProofServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: HostProofService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(HostProofServiceServer).Apply(ctx, req.(*HostProofApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _HostProofService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(HostProofRef)
 	if err := dec(in); err != nil {
@@ -994,10 +878,6 @@ var HostProofService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _HostProofService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _HostProofService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

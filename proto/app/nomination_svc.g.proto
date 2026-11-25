@@ -4,7 +4,6 @@ package roster;
 import "app/nomination.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
-import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 import "roster/payday/tenant_svc.g.proto";
 
@@ -17,8 +16,6 @@ service NominationService {
   rpc Get(NominationGetRequest) returns (Nomination);
   // Patch updates an existing Nomination
   rpc Patch(NominationPatchRequest) returns (Nomination);
-  // Apply applies a patch document to an existing Nomination
-  rpc Apply(NominationApplyRequest) returns (Nomination);
   // Erase deletes a Nomination
   rpc Erase(NominationRef) returns (NominationEraseResponse);
   // List reads Nominations a page at a time.
@@ -106,11 +103,6 @@ message NominationPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message NominationApplyRequest {
-  NominationRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message NominationEraseResponse {

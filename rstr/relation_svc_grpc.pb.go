@@ -22,7 +22,6 @@ const (
 	RelationService_Add_FullMethodName   = "/roster.RelationService/Add"
 	RelationService_Get_FullMethodName   = "/roster.RelationService/Get"
 	RelationService_Patch_FullMethodName = "/roster.RelationService/Patch"
-	RelationService_Apply_FullMethodName = "/roster.RelationService/Apply"
 	RelationService_Erase_FullMethodName = "/roster.RelationService/Erase"
 	RelationService_List_FullMethodName  = "/roster.RelationService/List"
 )
@@ -37,8 +36,6 @@ type RelationServiceClient interface {
 	Get(ctx context.Context, in *RelationGetRequest, opts ...grpc.CallOption) (*Relation, error)
 	// Patch updates an existing Relation
 	Patch(ctx context.Context, in *RelationPatchRequest, opts ...grpc.CallOption) (*Relation, error)
-	// Apply applies a patch document to an existing Relation
-	Apply(ctx context.Context, in *RelationApplyRequest, opts ...grpc.CallOption) (*Relation, error)
 	// Erase deletes a Relation
 	Erase(ctx context.Context, in *RelationRef, opts ...grpc.CallOption) (*RelationEraseResponse, error)
 	// List reads Relations a page at a time.
@@ -83,16 +80,6 @@ func (c *relationServiceClient) Patch(ctx context.Context, in *RelationPatchRequ
 	return out, nil
 }
 
-func (c *relationServiceClient) Apply(ctx context.Context, in *RelationApplyRequest, opts ...grpc.CallOption) (*Relation, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Relation)
-	err := c.cc.Invoke(ctx, RelationService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *relationServiceClient) Erase(ctx context.Context, in *RelationRef, opts ...grpc.CallOption) (*RelationEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RelationEraseResponse)
@@ -123,8 +110,6 @@ type RelationServiceServer interface {
 	Get(context.Context, *RelationGetRequest) (*Relation, error)
 	// Patch updates an existing Relation
 	Patch(context.Context, *RelationPatchRequest) (*Relation, error)
-	// Apply applies a patch document to an existing Relation
-	Apply(context.Context, *RelationApplyRequest) (*Relation, error)
 	// Erase deletes a Relation
 	Erase(context.Context, *RelationRef) (*RelationEraseResponse, error)
 	// List reads Relations a page at a time.
@@ -147,9 +132,6 @@ func (UnimplementedRelationServiceServer) Get(context.Context, *RelationGetReque
 }
 func (UnimplementedRelationServiceServer) Patch(context.Context, *RelationPatchRequest) (*Relation, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedRelationServiceServer) Apply(context.Context, *RelationApplyRequest) (*Relation, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedRelationServiceServer) Erase(context.Context, *RelationRef) (*RelationEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -232,24 +214,6 @@ func _RelationService_Patch_Handler(srv interface{}, ctx context.Context, dec fu
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RelationService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(RelationApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RelationServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RelationService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RelationServiceServer).Apply(ctx, req.(*RelationApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _RelationService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RelationRef)
 	if err := dec(in); err != nil {
@@ -304,10 +268,6 @@ var RelationService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _RelationService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _RelationService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

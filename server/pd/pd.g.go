@@ -1466,46 +1466,6 @@ func (s sinkApiKey) Patch(ctx context.Context, req *rstr.ApiKeyPatchRequest) (*r
 	return s.ApiKeyServiceServer.Patch(ctx, req)
 }
 
-// Apply refuses a document that writes an alias in any form but the one it
-// is kept in, which is what a Patch folds the alias it is given into: so the
-// alias kept is the same whichever wrote it.
-//
-// And it forgets what the transaction was told about the row, before it
-// is written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkApiKey) Apply(ctx context.Context, req *rstr.ApiKeyApplyRequest) (*rstr.ApiKey, error) {
-	seen.Forget(s.store.Db.Driver(), "ApiKey", req.GetRef())
-
-	if !req.HasPatch() {
-		return s.ApiKeyServiceServer.Apply(ctx, req)
-	}
-
-	plan, err := ormpatch.Compile(sinkApiKeyEntity, req.GetPatch())
-	if err != nil {
-		// The server behind refuses it, in its own words.
-		return s.ApiKeyServiceServer.Apply(ctx, req)
-	}
-	if w, ok := plan.WriteTo(4); ok {
-		given := ""
-		if c, ok := w.Op.(ormpatch.SetColumn); ok {
-			given = c.Value.String()
-		}
-		v, err := slug.ParseAlias(given)
-		if err != nil {
-			return nil, pderr.At("alias", err)
-		}
-		if v != given {
-			return nil, pderr.Invalidf("alias", "is kept as %q; a document writes it in that form, folded and without surrounding spaces", v)
-		}
-	}
-
-	return s.ApiKeyServiceServer.Apply(ctx, req)
-}
-
-// sinkApiKeyEntity is what a ApiKey document is compiled against: the entity
-// parsed from the file that declares it, as the server behind parses it.
-var sinkApiKeyEntity = ormpatch.MustEntityOf((*rstr.ApiKey)(nil).ProtoReflect().Descriptor().ParentFile(), "ApiKey")
-
 // Erase forgets what the transaction was told about the row, before it is
 // erased: whether a frame may see it, and where a walk from it arrives.
 // Neither is true of a row that is gone, nor of another put under its
@@ -2049,15 +2009,6 @@ func (s sinkBadge) Erase(ctx context.Context, req *rstr.BadgeRef) (*rstr.BadgeEr
 	return s.BadgeServiceServer.Erase(ctx, req)
 }
 
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkBadge) Apply(ctx context.Context, req *rstr.BadgeApplyRequest) (*rstr.Badge, error) {
-	seen.Forget(s.store.Db.Driver(), "Badge", req.GetRef())
-
-	return s.BadgeServiceServer.Apply(ctx, req)
-}
-
 // Patch forgets what the transaction was told about the row, before it is
 // written: a request may move it to a set the caller cannot see. See
 // [seen.Forget].
@@ -2377,15 +2328,6 @@ func (s sinkBinding) Erase(ctx context.Context, req *rstr.BindingRef) (*rstr.Bin
 	seen.Forget(s.store.Db.Driver(), "Binding", req)
 
 	return s.BindingServiceServer.Erase(ctx, req)
-}
-
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkBinding) Apply(ctx context.Context, req *rstr.BindingApplyRequest) (*rstr.Binding, error) {
-	seen.Forget(s.store.Db.Driver(), "Binding", req.GetRef())
-
-	return s.BindingServiceServer.Apply(ctx, req)
 }
 
 // Patch forgets what the transaction was told about the row, before it is
@@ -3026,15 +2968,6 @@ func (s sinkConsent) Erase(ctx context.Context, req *rstr.ConsentRef) (*rstr.Con
 	return s.ConsentServiceServer.Erase(ctx, req)
 }
 
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkConsent) Apply(ctx context.Context, req *rstr.ConsentApplyRequest) (*rstr.Consent, error) {
-	seen.Forget(s.store.Db.Driver(), "Consent", req.GetRef())
-
-	return s.ConsentServiceServer.Apply(ctx, req)
-}
-
 // Patch forgets what the transaction was told about the row, before it is
 // written: a request may move it to a set the caller cannot see. See
 // [seen.Forget].
@@ -3598,15 +3531,6 @@ func (s sinkCredential) Erase(ctx context.Context, req *rstr.CredentialRef) (*rs
 	return s.CredentialServiceServer.Erase(ctx, req)
 }
 
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkCredential) Apply(ctx context.Context, req *rstr.CredentialApplyRequest) (*rstr.Credential, error) {
-	seen.Forget(s.store.Db.Driver(), "Credential", req.GetRef())
-
-	return s.CredentialServiceServer.Apply(ctx, req)
-}
-
 // Patch forgets what the transaction was told about the row, before it is
 // written: a request may move it to a set the caller cannot see. See
 // [seen.Forget].
@@ -4058,15 +3982,6 @@ func (s sinkDelegation) Erase(ctx context.Context, req *rstr.DelegationRef) (*rs
 	return s.DelegationServiceServer.Erase(ctx, req)
 }
 
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkDelegation) Apply(ctx context.Context, req *rstr.DelegationApplyRequest) (*rstr.Delegation, error) {
-	seen.Forget(s.store.Db.Driver(), "Delegation", req.GetRef())
-
-	return s.DelegationServiceServer.Apply(ctx, req)
-}
-
 // Patch forgets what the transaction was told about the row, before it is
 // written: a request may move it to a set the caller cannot see. See
 // [seen.Forget].
@@ -4352,15 +4267,6 @@ func (s sinkEmail) Erase(ctx context.Context, req *rstr.EmailRef) (*rstr.EmailEr
 	seen.Forget(s.store.Db.Driver(), "Email", req)
 
 	return s.EmailServiceServer.Erase(ctx, req)
-}
-
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkEmail) Apply(ctx context.Context, req *rstr.EmailApplyRequest) (*rstr.Email, error) {
-	seen.Forget(s.store.Db.Driver(), "Email", req.GetRef())
-
-	return s.EmailServiceServer.Apply(ctx, req)
 }
 
 // Patch forgets what the transaction was told about the row, before it is
@@ -4939,46 +4845,6 @@ func (s sinkGroup) Patch(ctx context.Context, req *rstr.GroupPatchRequest) (*rst
 	return s.GroupServiceServer.Patch(ctx, req)
 }
 
-// Apply refuses a document that writes an alias in any form but the one it
-// is kept in, which is what a Patch folds the alias it is given into: so the
-// alias kept is the same whichever wrote it.
-//
-// And it forgets what the transaction was told about the row, before it
-// is written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkGroup) Apply(ctx context.Context, req *rstr.GroupApplyRequest) (*rstr.Group, error) {
-	seen.Forget(s.store.Db.Driver(), "Group", req.GetRef())
-
-	if !req.HasPatch() {
-		return s.GroupServiceServer.Apply(ctx, req)
-	}
-
-	plan, err := ormpatch.Compile(sinkGroupEntity, req.GetPatch())
-	if err != nil {
-		// The server behind refuses it, in its own words.
-		return s.GroupServiceServer.Apply(ctx, req)
-	}
-	if w, ok := plan.WriteTo(4); ok {
-		given := ""
-		if c, ok := w.Op.(ormpatch.SetColumn); ok {
-			given = c.Value.String()
-		}
-		v, err := slug.ParseAlias(given)
-		if err != nil {
-			return nil, pderr.At("alias", err)
-		}
-		if v != given {
-			return nil, pderr.Invalidf("alias", "is kept as %q; a document writes it in that form, folded and without surrounding spaces", v)
-		}
-	}
-
-	return s.GroupServiceServer.Apply(ctx, req)
-}
-
-// sinkGroupEntity is what a Group document is compiled against: the entity
-// parsed from the file that declares it, as the server behind parses it.
-var sinkGroupEntity = ormpatch.MustEntityOf((*rstr.Group)(nil).ProtoReflect().Descriptor().ParentFile(), "Group")
-
 // Erase forgets what the transaction was told about the row, before it is
 // erased: whether a frame may see it, and where a walk from it arrives.
 // Neither is true of a row that is gone, nor of another put under its
@@ -5272,15 +5138,6 @@ func (s sinkGroupExposure) Erase(ctx context.Context, req *rstr.GroupExposureRef
 	return s.GroupExposureServiceServer.Erase(ctx, req)
 }
 
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkGroupExposure) Apply(ctx context.Context, req *rstr.GroupExposureApplyRequest) (*rstr.GroupExposure, error) {
-	seen.Forget(s.store.Db.Driver(), "GroupExposure", req.GetRef())
-
-	return s.GroupExposureServiceServer.Apply(ctx, req)
-}
-
 // Patch forgets what the transaction was told about the row, before it is
 // written: a request may move it to a set the caller cannot see. See
 // [seen.Forget].
@@ -5546,15 +5403,6 @@ func (s sinkGroupMembership) Erase(ctx context.Context, req *rstr.GroupMembershi
 	seen.Forget(s.store.Db.Driver(), "GroupMembership", req)
 
 	return s.GroupMembershipServiceServer.Erase(ctx, req)
-}
-
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkGroupMembership) Apply(ctx context.Context, req *rstr.GroupMembershipApplyRequest) (*rstr.GroupMembership, error) {
-	seen.Forget(s.store.Db.Driver(), "GroupMembership", req.GetRef())
-
-	return s.GroupMembershipServiceServer.Apply(ctx, req)
 }
 
 // Patch forgets what the transaction was told about the row, before it is
@@ -5927,46 +5775,6 @@ func (s sinkHolder) Patch(ctx context.Context, req *rstr.HolderPatchRequest) (*r
 
 	return s.HolderServiceServer.Patch(ctx, req)
 }
-
-// Apply refuses a document that writes an alias in any form but the one it
-// is kept in, which is what a Patch folds the alias it is given into: so the
-// alias kept is the same whichever wrote it.
-//
-// And it forgets what the transaction was told about the row, before it
-// is written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkHolder) Apply(ctx context.Context, req *rstr.HolderApplyRequest) (*rstr.Holder, error) {
-	seen.Forget(s.store.Db.Driver(), "Holder", req.GetRef())
-
-	if !req.HasPatch() {
-		return s.HolderServiceServer.Apply(ctx, req)
-	}
-
-	plan, err := ormpatch.Compile(sinkHolderEntity, req.GetPatch())
-	if err != nil {
-		// The server behind refuses it, in its own words.
-		return s.HolderServiceServer.Apply(ctx, req)
-	}
-	if w, ok := plan.WriteTo(4); ok {
-		given := ""
-		if c, ok := w.Op.(ormpatch.SetColumn); ok {
-			given = c.Value.String()
-		}
-		v, err := slug.ParseAlias(given)
-		if err != nil {
-			return nil, pderr.At("alias", err)
-		}
-		if v != given {
-			return nil, pderr.Invalidf("alias", "is kept as %q; a document writes it in that form, folded and without surrounding spaces", v)
-		}
-	}
-
-	return s.HolderServiceServer.Apply(ctx, req)
-}
-
-// sinkHolderEntity is what a Holder document is compiled against: the entity
-// parsed from the file that declares it, as the server behind parses it.
-var sinkHolderEntity = ormpatch.MustEntityOf((*rstr.Holder)(nil).ProtoReflect().Descriptor().ParentFile(), "Holder")
 
 // Erase forgets what the transaction was told about the row, before it is
 // erased: whether a frame may see it, and where a walk from it arrives.
@@ -6436,15 +6244,6 @@ func (s sinkHost) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.HostErase
 	return s.HostServiceServer.Erase(ctx, req)
 }
 
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkHost) Apply(ctx context.Context, req *rstr.HostApplyRequest) (*rstr.Host, error) {
-	seen.Forget(s.store.Db.Driver(), "Host", req.GetRef())
-
-	return s.HostServiceServer.Apply(ctx, req)
-}
-
 // Patch forgets what the transaction was told about the row, before it is
 // written: a request may move it to a set the caller cannot see. See
 // [seen.Forget].
@@ -6710,15 +6509,6 @@ func (s sinkHostProof) Erase(ctx context.Context, req *rstr.HostProofRef) (*rstr
 	seen.Forget(s.store.Db.Driver(), "HostProof", req)
 
 	return s.HostProofServiceServer.Erase(ctx, req)
-}
-
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkHostProof) Apply(ctx context.Context, req *rstr.HostProofApplyRequest) (*rstr.HostProof, error) {
-	seen.Forget(s.store.Db.Driver(), "HostProof", req.GetRef())
-
-	return s.HostProofServiceServer.Apply(ctx, req)
 }
 
 // Patch forgets what the transaction was told about the row, before it is
@@ -7006,15 +6796,6 @@ func (s sinkIdentity) Erase(ctx context.Context, req *rstr.IdentityRef) (*rstr.I
 	seen.Forget(s.store.Db.Driver(), "Identity", req)
 
 	return s.IdentityServiceServer.Erase(ctx, req)
-}
-
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkIdentity) Apply(ctx context.Context, req *rstr.IdentityApplyRequest) (*rstr.Identity, error) {
-	seen.Forget(s.store.Db.Driver(), "Identity", req.GetRef())
-
-	return s.IdentityServiceServer.Apply(ctx, req)
 }
 
 // Patch forgets what the transaction was told about the row, before it is
@@ -7755,15 +7536,6 @@ func (s sinkMailDomain) Erase(ctx context.Context, req *rstr.MailDomainRef) (*rs
 	return s.MailDomainServiceServer.Erase(ctx, req)
 }
 
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkMailDomain) Apply(ctx context.Context, req *rstr.MailDomainApplyRequest) (*rstr.MailDomain, error) {
-	seen.Forget(s.store.Db.Driver(), "MailDomain", req.GetRef())
-
-	return s.MailDomainServiceServer.Apply(ctx, req)
-}
-
 // Patch forgets what the transaction was told about the row, before it is
 // written: a request may move it to a set the caller cannot see. See
 // [seen.Forget].
@@ -8029,15 +7801,6 @@ func (s sinkNomination) Erase(ctx context.Context, req *rstr.NominationRef) (*rs
 	seen.Forget(s.store.Db.Driver(), "Nomination", req)
 
 	return s.NominationServiceServer.Erase(ctx, req)
-}
-
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkNomination) Apply(ctx context.Context, req *rstr.NominationApplyRequest) (*rstr.Nomination, error) {
-	seen.Forget(s.store.Db.Driver(), "Nomination", req.GetRef())
-
-	return s.NominationServiceServer.Apply(ctx, req)
 }
 
 // Patch forgets what the transaction was told about the row, before it is
@@ -8544,15 +8307,6 @@ func (s sinkPhone) Erase(ctx context.Context, req *rstr.PhoneRef) (*rstr.PhoneEr
 	return s.PhoneServiceServer.Erase(ctx, req)
 }
 
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkPhone) Apply(ctx context.Context, req *rstr.PhoneApplyRequest) (*rstr.Phone, error) {
-	seen.Forget(s.store.Db.Driver(), "Phone", req.GetRef())
-
-	return s.PhoneServiceServer.Apply(ctx, req)
-}
-
 // Patch forgets what the transaction was told about the row, before it is
 // written: a request may move it to a set the caller cannot see. See
 // [seen.Forget].
@@ -8884,15 +8638,6 @@ func (s sinkRelation) Erase(ctx context.Context, req *rstr.RelationRef) (*rstr.R
 	seen.Forget(s.store.Db.Driver(), "Relation", req)
 
 	return s.RelationServiceServer.Erase(ctx, req)
-}
-
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkRelation) Apply(ctx context.Context, req *rstr.RelationApplyRequest) (*rstr.Relation, error) {
-	seen.Forget(s.store.Db.Driver(), "Relation", req.GetRef())
-
-	return s.RelationServiceServer.Apply(ctx, req)
 }
 
 // Patch forgets what the transaction was told about the row, before it is
@@ -9947,46 +9692,6 @@ func (s sinkSite) Patch(ctx context.Context, req *rstr.SitePatchRequest) (*rstr.
 	return s.SiteServiceServer.Patch(ctx, req)
 }
 
-// Apply refuses a document that writes an alias in any form but the one it
-// is kept in, which is what a Patch folds the alias it is given into: so the
-// alias kept is the same whichever wrote it.
-//
-// And it forgets what the transaction was told about the row, before it
-// is written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkSite) Apply(ctx context.Context, req *rstr.SiteApplyRequest) (*rstr.Site, error) {
-	seen.Forget(s.store.Db.Driver(), "Site", req.GetRef())
-
-	if !req.HasPatch() {
-		return s.SiteServiceServer.Apply(ctx, req)
-	}
-
-	plan, err := ormpatch.Compile(sinkSiteEntity, req.GetPatch())
-	if err != nil {
-		// The server behind refuses it, in its own words.
-		return s.SiteServiceServer.Apply(ctx, req)
-	}
-	if w, ok := plan.WriteTo(4); ok {
-		given := ""
-		if c, ok := w.Op.(ormpatch.SetColumn); ok {
-			given = c.Value.String()
-		}
-		v, err := slug.ParseAlias(given)
-		if err != nil {
-			return nil, pderr.At("alias", err)
-		}
-		if v != given {
-			return nil, pderr.Invalidf("alias", "is kept as %q; a document writes it in that form, folded and without surrounding spaces", v)
-		}
-	}
-
-	return s.SiteServiceServer.Apply(ctx, req)
-}
-
-// sinkSiteEntity is what a Site document is compiled against: the entity
-// parsed from the file that declares it, as the server behind parses it.
-var sinkSiteEntity = ormpatch.MustEntityOf((*rstr.Site)(nil).ProtoReflect().Descriptor().ParentFile(), "Site")
-
 // Erase forgets what the transaction was told about the row, before it is
 // erased: whether a frame may see it, and where a walk from it arrives.
 // Neither is true of a row that is gone, nor of another put under its
@@ -10437,15 +10142,6 @@ func (s sinkSiteMembership) Erase(ctx context.Context, req *rstr.SiteMembershipR
 	seen.Forget(s.store.Db.Driver(), "SiteMembership", req)
 
 	return s.SiteMembershipServiceServer.Erase(ctx, req)
-}
-
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkSiteMembership) Apply(ctx context.Context, req *rstr.SiteMembershipApplyRequest) (*rstr.SiteMembership, error) {
-	seen.Forget(s.store.Db.Driver(), "SiteMembership", req.GetRef())
-
-	return s.SiteMembershipServiceServer.Apply(ctx, req)
 }
 
 // Patch forgets what the transaction was told about the row, before it is
@@ -11003,46 +10699,6 @@ func (s sinkTeam) Patch(ctx context.Context, req *rstr.TeamPatchRequest) (*rstr.
 	return s.TeamServiceServer.Patch(ctx, req)
 }
 
-// Apply refuses a document that writes an alias in any form but the one it
-// is kept in, which is what a Patch folds the alias it is given into: so the
-// alias kept is the same whichever wrote it.
-//
-// And it forgets what the transaction was told about the row, before it
-// is written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkTeam) Apply(ctx context.Context, req *rstr.TeamApplyRequest) (*rstr.Team, error) {
-	seen.Forget(s.store.Db.Driver(), "Team", req.GetRef())
-
-	if !req.HasPatch() {
-		return s.TeamServiceServer.Apply(ctx, req)
-	}
-
-	plan, err := ormpatch.Compile(sinkTeamEntity, req.GetPatch())
-	if err != nil {
-		// The server behind refuses it, in its own words.
-		return s.TeamServiceServer.Apply(ctx, req)
-	}
-	if w, ok := plan.WriteTo(4); ok {
-		given := ""
-		if c, ok := w.Op.(ormpatch.SetColumn); ok {
-			given = c.Value.String()
-		}
-		v, err := slug.ParseAlias(given)
-		if err != nil {
-			return nil, pderr.At("alias", err)
-		}
-		if v != given {
-			return nil, pderr.Invalidf("alias", "is kept as %q; a document writes it in that form, folded and without surrounding spaces", v)
-		}
-	}
-
-	return s.TeamServiceServer.Apply(ctx, req)
-}
-
-// sinkTeamEntity is what a Team document is compiled against: the entity
-// parsed from the file that declares it, as the server behind parses it.
-var sinkTeamEntity = ormpatch.MustEntityOf((*rstr.Team)(nil).ProtoReflect().Descriptor().ParentFile(), "Team")
-
 // Erase forgets what the transaction was told about the row, before it is
 // erased: whether a frame may see it, and where a walk from it arrives.
 // Neither is true of a row that is gone, nor of another put under its
@@ -11518,15 +11174,6 @@ func (s sinkTeamMembership) Erase(ctx context.Context, req *rstr.TeamMembershipR
 	seen.Forget(s.store.Db.Driver(), "TeamMembership", req)
 
 	return s.TeamMembershipServiceServer.Erase(ctx, req)
-}
-
-// Apply forgets what the transaction was told about the row, before it is
-// written: a document may move it to a set the caller cannot see. See
-// [seen.Forget].
-func (s sinkTeamMembership) Apply(ctx context.Context, req *rstr.TeamMembershipApplyRequest) (*rstr.TeamMembership, error) {
-	seen.Forget(s.store.Db.Driver(), "TeamMembership", req.GetRef())
-
-	return s.TeamMembershipServiceServer.Apply(ctx, req)
 }
 
 // Patch forgets what the transaction was told about the row, before it is
@@ -12124,16 +11771,6 @@ func (s sinkTenant) Apply(ctx context.Context, req *rstr.TenantApplyRequest) (*r
 // parsed from the file that declares it, as the server behind parses it.
 var sinkTenantEntity = ormpatch.MustEntityOf((*rstr.Tenant)(nil).ProtoReflect().Descriptor().ParentFile(), "Tenant")
 
-// Erase forgets what the transaction was told about the row, before it is
-// erased: whether a frame may see it, and where a walk from it arrives.
-// Neither is true of a row that is gone, nor of another put under its
-// key. See [seen.Forget].
-func (s sinkTenant) Erase(ctx context.Context, req *rstr.TenantRef) (*rstr.TenantEraseResponse, error) {
-	seen.Forget(s.store.Db.Driver(), "Tenant", req)
-
-	return s.TenantServiceServer.Erase(ctx, req)
-}
-
 // orderTenant is how Tenants come back.
 //
 // The last column is the key, and it is not decoration: a cursor cannot
@@ -12532,12 +12169,6 @@ func (s Gate) Tenant() rstr.TenantServiceServer {
 // deployment, through a server this layer is not in front of.
 func (s gateTenant) admit(ctx context.Context, req *rstr.TenantAddRequest) (*rstr.TenantAddRequest, error) {
 	return nil, gate.ErrDeployment("put up")
-}
-
-// Erase is not served either, and it would take everything in the tenant
-// with it.
-func (s gateTenant) Erase(ctx context.Context, req *rstr.TenantRef) (*rstr.TenantEraseResponse, error) {
-	return nil, gate.ErrDeployment("taken down")
 }
 
 type gateHolder struct {
@@ -13150,55 +12781,6 @@ func (s gateEmail) Patch(ctx context.Context, req *rstr.EmailPatchRequest) (*rst
 	return s.EmailServiceServer.Patch(ctx, req)
 }
 
-// Apply refuses a document that moves an edge onto a row this caller cannot
-// see, as Patch refuses a request that does.
-//
-// A document names the row an edge points at by its key, and the server
-// behind writes that key into the column as it is -- compiling a document
-// reads nothing. So the read Patch is asked is asked here of the key the
-// document lands in the column, compiled the way the server behind will.
-func (s gateEmail) Apply(ctx context.Context, req *rstr.EmailApplyRequest) (*rstr.Email, error) {
-	if !req.HasPatch() {
-		// Nothing written, and the server behind refuses it in its own words.
-		return s.EmailServiceServer.Apply(ctx, req)
-	}
-
-	plan, err := ormpatch.Compile(gateEmailEntity, req.GetPatch())
-	if err != nil {
-		// Refused here rather than passed on, in the codes the server behind
-		// gives the same document: one this layer cannot read is one it can
-		// say nothing about.
-		if errors.Is(err, ormpatch.ErrUnsupported) {
-			return nil, status.Errorf(codes.Unimplemented, "%s", err)
-		}
-
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-	}
-	if w, ok := plan.WriteTo(10); ok {
-		if k, ok := w.Op.(ormpatch.SetEdge); ok {
-			ref := rstr.IdentityRef_builder{Id: k.Key.Bytes()}.Build()
-			if err := seen.Visible(ctx, s.Gate.drv, "Identity", ref, func() error {
-				_, err := s.Gate.Next().Identity().Get(ctx, rstr.IdentityGetRequest_builder{
-					Ref: ref,
-				}.Build())
-				return err
-			}); err != nil {
-				if status.Code(err) == codes.NotFound {
-					return nil, gate.ErrNotFound("Identity")
-				}
-
-				return nil, err
-			}
-		}
-	}
-
-	return s.EmailServiceServer.Apply(ctx, req)
-}
-
-// gateEmailEntity is what a Email document is compiled against: the entity
-// parsed from the file that declares it, as the server behind parses it.
-var gateEmailEntity = ormpatch.MustEntityOf((*rstr.Email)(nil).ProtoReflect().Descriptor().ParentFile(), "Email")
-
 type gateGroup struct {
 	Gate
 	rstr.GroupServiceServer
@@ -13415,55 +12997,6 @@ func (s gateGroupMembership) Patch(ctx context.Context, req *rstr.GroupMembershi
 
 	return s.GroupMembershipServiceServer.Patch(ctx, req)
 }
-
-// Apply refuses a document that moves an edge onto a row this caller cannot
-// see, as Patch refuses a request that does.
-//
-// A document names the row an edge points at by its key, and the server
-// behind writes that key into the column as it is -- compiling a document
-// reads nothing. So the read Patch is asked is asked here of the key the
-// document lands in the column, compiled the way the server behind will.
-func (s gateGroupMembership) Apply(ctx context.Context, req *rstr.GroupMembershipApplyRequest) (*rstr.GroupMembership, error) {
-	if !req.HasPatch() {
-		// Nothing written, and the server behind refuses it in its own words.
-		return s.GroupMembershipServiceServer.Apply(ctx, req)
-	}
-
-	plan, err := ormpatch.Compile(gateGroupMembershipEntity, req.GetPatch())
-	if err != nil {
-		// Refused here rather than passed on, in the codes the server behind
-		// gives the same document: one this layer cannot read is one it can
-		// say nothing about.
-		if errors.Is(err, ormpatch.ErrUnsupported) {
-			return nil, status.Errorf(codes.Unimplemented, "%s", err)
-		}
-
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-	}
-	if w, ok := plan.WriteTo(9); ok {
-		if k, ok := w.Op.(ormpatch.SetEdge); ok {
-			ref := rstr.RoleRef_builder{Id: k.Key.Bytes()}.Build()
-			if err := seen.Visible(ctx, s.Gate.drv, "Role", ref, func() error {
-				_, err := s.Gate.Next().Role().Get(ctx, rstr.RoleGetRequest_builder{
-					Ref: ref,
-				}.Build())
-				return err
-			}); err != nil {
-				if status.Code(err) == codes.NotFound {
-					return nil, gate.ErrNotFound("Role")
-				}
-
-				return nil, err
-			}
-		}
-	}
-
-	return s.GroupMembershipServiceServer.Apply(ctx, req)
-}
-
-// gateGroupMembershipEntity is what a GroupMembership document is compiled against: the entity
-// parsed from the file that declares it, as the server behind parses it.
-var gateGroupMembershipEntity = ormpatch.MustEntityOf((*rstr.GroupMembership)(nil).ProtoReflect().Descriptor().ParentFile(), "GroupMembership")
 
 type gateHost struct {
 	Gate
@@ -13787,55 +13320,6 @@ func (s gateNomination) Patch(ctx context.Context, req *rstr.NominationPatchRequ
 
 	return s.NominationServiceServer.Patch(ctx, req)
 }
-
-// Apply refuses a document that moves an edge onto a row this caller cannot
-// see, as Patch refuses a request that does.
-//
-// A document names the row an edge points at by its key, and the server
-// behind writes that key into the column as it is -- compiling a document
-// reads nothing. So the read Patch is asked is asked here of the key the
-// document lands in the column, compiled the way the server behind will.
-func (s gateNomination) Apply(ctx context.Context, req *rstr.NominationApplyRequest) (*rstr.Nomination, error) {
-	if !req.HasPatch() {
-		// Nothing written, and the server behind refuses it in its own words.
-		return s.NominationServiceServer.Apply(ctx, req)
-	}
-
-	plan, err := ormpatch.Compile(gateNominationEntity, req.GetPatch())
-	if err != nil {
-		// Refused here rather than passed on, in the codes the server behind
-		// gives the same document: one this layer cannot read is one it can
-		// say nothing about.
-		if errors.Is(err, ormpatch.ErrUnsupported) {
-			return nil, status.Errorf(codes.Unimplemented, "%s", err)
-		}
-
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-	}
-	if w, ok := plan.WriteTo(9); ok {
-		if k, ok := w.Op.(ormpatch.SetEdge); ok {
-			ref := rstr.HolderRef_builder{Id: k.Key.Bytes()}.Build()
-			if err := seen.Visible(ctx, s.Gate.drv, "Holder", ref, func() error {
-				_, err := s.Gate.Next().Holder().Get(ctx, rstr.HolderGetRequest_builder{
-					Ref: ref,
-				}.Build())
-				return err
-			}); err != nil {
-				if status.Code(err) == codes.NotFound {
-					return nil, gate.ErrNotFound("Holder")
-				}
-
-				return nil, err
-			}
-		}
-	}
-
-	return s.NominationServiceServer.Apply(ctx, req)
-}
-
-// gateNominationEntity is what a Nomination document is compiled against: the entity
-// parsed from the file that declares it, as the server behind parses it.
-var gateNominationEntity = ormpatch.MustEntityOf((*rstr.Nomination)(nil).ProtoReflect().Descriptor().ParentFile(), "Nomination")
 
 type gatePhone struct {
 	Gate
@@ -14275,55 +13759,6 @@ func (s gateTeamMembership) Patch(ctx context.Context, req *rstr.TeamMembershipP
 	return s.TeamMembershipServiceServer.Patch(ctx, req)
 }
 
-// Apply refuses a document that moves an edge onto a row this caller cannot
-// see, as Patch refuses a request that does.
-//
-// A document names the row an edge points at by its key, and the server
-// behind writes that key into the column as it is -- compiling a document
-// reads nothing. So the read Patch is asked is asked here of the key the
-// document lands in the column, compiled the way the server behind will.
-func (s gateTeamMembership) Apply(ctx context.Context, req *rstr.TeamMembershipApplyRequest) (*rstr.TeamMembership, error) {
-	if !req.HasPatch() {
-		// Nothing written, and the server behind refuses it in its own words.
-		return s.TeamMembershipServiceServer.Apply(ctx, req)
-	}
-
-	plan, err := ormpatch.Compile(gateTeamMembershipEntity, req.GetPatch())
-	if err != nil {
-		// Refused here rather than passed on, in the codes the server behind
-		// gives the same document: one this layer cannot read is one it can
-		// say nothing about.
-		if errors.Is(err, ormpatch.ErrUnsupported) {
-			return nil, status.Errorf(codes.Unimplemented, "%s", err)
-		}
-
-		return nil, status.Errorf(codes.InvalidArgument, "%s", err)
-	}
-	if w, ok := plan.WriteTo(9); ok {
-		if k, ok := w.Op.(ormpatch.SetEdge); ok {
-			ref := rstr.RoleRef_builder{Id: k.Key.Bytes()}.Build()
-			if err := seen.Visible(ctx, s.Gate.drv, "Role", ref, func() error {
-				_, err := s.Gate.Next().Role().Get(ctx, rstr.RoleGetRequest_builder{
-					Ref: ref,
-				}.Build())
-				return err
-			}); err != nil {
-				if status.Code(err) == codes.NotFound {
-					return nil, gate.ErrNotFound("Role")
-				}
-
-				return nil, err
-			}
-		}
-	}
-
-	return s.TeamMembershipServiceServer.Apply(ctx, req)
-}
-
-// gateTeamMembershipEntity is what a TeamMembership document is compiled against: the entity
-// parsed from the file that declares it, as the server behind parses it.
-var gateTeamMembershipEntity = ormpatch.MustEntityOf((*rstr.TeamMembership)(nil).ProtoReflect().Descriptor().ParentFile(), "TeamMembership")
-
 // guardedTenant enforces method declarations on in-process calls too.
 type guardedTenant struct{ rstr.TenantServiceServer }
 
@@ -14357,14 +13792,6 @@ func (s guardedTenant) Apply(ctx context.Context, req *rstr.TenantApplyRequest) 
 	}
 
 	return s.TenantServiceServer.Apply(ctx, req)
-}
-
-func (s guardedTenant) Erase(ctx context.Context, req *rstr.TenantRef) (*rstr.TenantEraseResponse, error) {
-	if err := gate.Direct(ctx, rstr.TenantService_Erase_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.TenantServiceServer.Erase(ctx, req)
 }
 
 func (s guardedTenant) List(ctx context.Context, req *rstr.TenantListRequest) (*rstr.TenantListResponse, error) {
@@ -14424,14 +13851,6 @@ func (s guardedHolder) Patch(ctx context.Context, req *rstr.HolderPatchRequest) 
 	}
 
 	return s.HolderServiceServer.Patch(ctx, req)
-}
-
-func (s guardedHolder) Apply(ctx context.Context, req *rstr.HolderApplyRequest) (*rstr.Holder, error) {
-	if err := gate.Direct(ctx, rstr.HolderService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.HolderServiceServer.Apply(ctx, req)
 }
 
 func (s guardedHolder) Erase(ctx context.Context, req *rstr.HolderRef) (*rstr.HolderEraseResponse, error) {
@@ -14597,14 +14016,6 @@ func (s guardedApiKey) Patch(ctx context.Context, req *rstr.ApiKeyPatchRequest) 
 	return s.ApiKeyServiceServer.Patch(ctx, req)
 }
 
-func (s guardedApiKey) Apply(ctx context.Context, req *rstr.ApiKeyApplyRequest) (*rstr.ApiKey, error) {
-	if err := gate.Direct(ctx, rstr.ApiKeyService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.ApiKeyServiceServer.Apply(ctx, req)
-}
-
 func (s guardedApiKey) Erase(ctx context.Context, req *rstr.ApiKeyRef) (*rstr.ApiKeyEraseResponse, error) {
 	if err := gate.Direct(ctx, rstr.ApiKeyService_Erase_FullMethodName); err != nil {
 		return nil, err
@@ -14654,14 +14065,6 @@ func (s guardedBadge) Patch(ctx context.Context, req *rstr.BadgePatchRequest) (*
 	}
 
 	return s.BadgeServiceServer.Patch(ctx, req)
-}
-
-func (s guardedBadge) Apply(ctx context.Context, req *rstr.BadgeApplyRequest) (*rstr.Badge, error) {
-	if err := gate.Direct(ctx, rstr.BadgeService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.BadgeServiceServer.Apply(ctx, req)
 }
 
 func (s guardedBadge) Erase(ctx context.Context, req *rstr.BadgeRef) (*rstr.BadgeEraseResponse, error) {
@@ -14790,14 +14193,6 @@ func (s guardedConsent) Patch(ctx context.Context, req *rstr.ConsentPatchRequest
 	return s.ConsentServiceServer.Patch(ctx, req)
 }
 
-func (s guardedConsent) Apply(ctx context.Context, req *rstr.ConsentApplyRequest) (*rstr.Consent, error) {
-	if err := gate.Direct(ctx, rstr.ConsentService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.ConsentServiceServer.Apply(ctx, req)
-}
-
 func (s guardedConsent) Erase(ctx context.Context, req *rstr.ConsentRef) (*rstr.ConsentEraseResponse, error) {
 	if err := gate.Direct(ctx, rstr.ConsentService_Erase_FullMethodName); err != nil {
 		return nil, err
@@ -14900,14 +14295,6 @@ func (s guardedIdentity) Patch(ctx context.Context, req *rstr.IdentityPatchReque
 	return s.IdentityServiceServer.Patch(ctx, req)
 }
 
-func (s guardedIdentity) Apply(ctx context.Context, req *rstr.IdentityApplyRequest) (*rstr.Identity, error) {
-	if err := gate.Direct(ctx, rstr.IdentityService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.IdentityServiceServer.Apply(ctx, req)
-}
-
 func (s guardedIdentity) Erase(ctx context.Context, req *rstr.IdentityRef) (*rstr.IdentityEraseResponse, error) {
 	if err := gate.Direct(ctx, rstr.IdentityService_Erase_FullMethodName); err != nil {
 		return nil, err
@@ -14973,14 +14360,6 @@ func (s guardedEmail) Patch(ctx context.Context, req *rstr.EmailPatchRequest) (*
 	}
 
 	return s.EmailServiceServer.Patch(ctx, req)
-}
-
-func (s guardedEmail) Apply(ctx context.Context, req *rstr.EmailApplyRequest) (*rstr.Email, error) {
-	if err := gate.Direct(ctx, rstr.EmailService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.EmailServiceServer.Apply(ctx, req)
 }
 
 func (s guardedEmail) Erase(ctx context.Context, req *rstr.EmailRef) (*rstr.EmailEraseResponse, error) {
@@ -15056,14 +14435,6 @@ func (s guardedCredential) Patch(ctx context.Context, req *rstr.CredentialPatchR
 	}
 
 	return s.CredentialServiceServer.Patch(ctx, req)
-}
-
-func (s guardedCredential) Apply(ctx context.Context, req *rstr.CredentialApplyRequest) (*rstr.Credential, error) {
-	if err := gate.Direct(ctx, rstr.CredentialService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.CredentialServiceServer.Apply(ctx, req)
 }
 
 func (s guardedCredential) Erase(ctx context.Context, req *rstr.CredentialRef) (*rstr.CredentialEraseResponse, error) {
@@ -15149,14 +14520,6 @@ func (s guardedDelegation) Patch(ctx context.Context, req *rstr.DelegationPatchR
 	return s.DelegationServiceServer.Patch(ctx, req)
 }
 
-func (s guardedDelegation) Apply(ctx context.Context, req *rstr.DelegationApplyRequest) (*rstr.Delegation, error) {
-	if err := gate.Direct(ctx, rstr.DelegationService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.DelegationServiceServer.Apply(ctx, req)
-}
-
 func (s guardedDelegation) Erase(ctx context.Context, req *rstr.DelegationRef) (*rstr.DelegationEraseResponse, error) {
 	if err := gate.Direct(ctx, rstr.DelegationService_Erase_FullMethodName); err != nil {
 		return nil, err
@@ -15224,14 +14587,6 @@ func (s guardedSite) Patch(ctx context.Context, req *rstr.SitePatchRequest) (*rs
 	return s.SiteServiceServer.Patch(ctx, req)
 }
 
-func (s guardedSite) Apply(ctx context.Context, req *rstr.SiteApplyRequest) (*rstr.Site, error) {
-	if err := gate.Direct(ctx, rstr.SiteService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.SiteServiceServer.Apply(ctx, req)
-}
-
 func (s guardedSite) Erase(ctx context.Context, req *rstr.SiteRef) (*rstr.SiteEraseResponse, error) {
 	if err := gate.Direct(ctx, rstr.SiteService_Erase_FullMethodName); err != nil {
 		return nil, err
@@ -15281,14 +14636,6 @@ func (s guardedGroup) Patch(ctx context.Context, req *rstr.GroupPatchRequest) (*
 	}
 
 	return s.GroupServiceServer.Patch(ctx, req)
-}
-
-func (s guardedGroup) Apply(ctx context.Context, req *rstr.GroupApplyRequest) (*rstr.Group, error) {
-	if err := gate.Direct(ctx, rstr.GroupService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.GroupServiceServer.Apply(ctx, req)
 }
 
 func (s guardedGroup) Erase(ctx context.Context, req *rstr.GroupRef) (*rstr.GroupEraseResponse, error) {
@@ -15344,14 +14691,6 @@ func (s guardedGroupExposure) Patch(ctx context.Context, req *rstr.GroupExposure
 	return s.GroupExposureServiceServer.Patch(ctx, req)
 }
 
-func (s guardedGroupExposure) Apply(ctx context.Context, req *rstr.GroupExposureApplyRequest) (*rstr.GroupExposure, error) {
-	if err := gate.Direct(ctx, rstr.GroupExposureService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.GroupExposureServiceServer.Apply(ctx, req)
-}
-
 func (s guardedGroupExposure) Erase(ctx context.Context, req *rstr.GroupExposureRef) (*rstr.GroupExposureEraseResponse, error) {
 	if err := gate.Direct(ctx, rstr.GroupExposureService_Erase_FullMethodName); err != nil {
 		return nil, err
@@ -15393,14 +14732,6 @@ func (s guardedHost) Patch(ctx context.Context, req *rstr.HostPatchRequest) (*rs
 	}
 
 	return s.HostServiceServer.Patch(ctx, req)
-}
-
-func (s guardedHost) Apply(ctx context.Context, req *rstr.HostApplyRequest) (*rstr.Host, error) {
-	if err := gate.Direct(ctx, rstr.HostService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.HostServiceServer.Apply(ctx, req)
 }
 
 func (s guardedHost) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.HostEraseResponse, error) {
@@ -15454,14 +14785,6 @@ func (s guardedMailDomain) Patch(ctx context.Context, req *rstr.MailDomainPatchR
 	return s.MailDomainServiceServer.Patch(ctx, req)
 }
 
-func (s guardedMailDomain) Apply(ctx context.Context, req *rstr.MailDomainApplyRequest) (*rstr.MailDomain, error) {
-	if err := gate.Direct(ctx, rstr.MailDomainService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.MailDomainServiceServer.Apply(ctx, req)
-}
-
 func (s guardedMailDomain) Erase(ctx context.Context, req *rstr.MailDomainRef) (*rstr.MailDomainEraseResponse, error) {
 	if err := gate.Direct(ctx, rstr.MailDomainService_Erase_FullMethodName); err != nil {
 		return nil, err
@@ -15511,14 +14834,6 @@ func (s guardedHostProof) Patch(ctx context.Context, req *rstr.HostProofPatchReq
 	}
 
 	return s.HostProofServiceServer.Patch(ctx, req)
-}
-
-func (s guardedHostProof) Apply(ctx context.Context, req *rstr.HostProofApplyRequest) (*rstr.HostProof, error) {
-	if err := gate.Direct(ctx, rstr.HostProofService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.HostProofServiceServer.Apply(ctx, req)
 }
 
 func (s guardedHostProof) Erase(ctx context.Context, req *rstr.HostProofRef) (*rstr.HostProofEraseResponse, error) {
@@ -15674,14 +14989,6 @@ func (s guardedBinding) Patch(ctx context.Context, req *rstr.BindingPatchRequest
 	return s.BindingServiceServer.Patch(ctx, req)
 }
 
-func (s guardedBinding) Apply(ctx context.Context, req *rstr.BindingApplyRequest) (*rstr.Binding, error) {
-	if err := gate.Direct(ctx, rstr.BindingService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.BindingServiceServer.Apply(ctx, req)
-}
-
 func (s guardedBinding) Erase(ctx context.Context, req *rstr.BindingRef) (*rstr.BindingEraseResponse, error) {
 	if err := gate.Direct(ctx, rstr.BindingService_Erase_FullMethodName); err != nil {
 		return nil, err
@@ -15723,14 +15030,6 @@ func (s guardedTeam) Patch(ctx context.Context, req *rstr.TeamPatchRequest) (*rs
 	}
 
 	return s.TeamServiceServer.Patch(ctx, req)
-}
-
-func (s guardedTeam) Apply(ctx context.Context, req *rstr.TeamApplyRequest) (*rstr.Team, error) {
-	if err := gate.Direct(ctx, rstr.TeamService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.TeamServiceServer.Apply(ctx, req)
 }
 
 func (s guardedTeam) Erase(ctx context.Context, req *rstr.TeamRef) (*rstr.TeamEraseResponse, error) {
@@ -15786,14 +15085,6 @@ func (s guardedSiteMembership) Patch(ctx context.Context, req *rstr.SiteMembersh
 	return s.SiteMembershipServiceServer.Patch(ctx, req)
 }
 
-func (s guardedSiteMembership) Apply(ctx context.Context, req *rstr.SiteMembershipApplyRequest) (*rstr.SiteMembership, error) {
-	if err := gate.Direct(ctx, rstr.SiteMembershipService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.SiteMembershipServiceServer.Apply(ctx, req)
-}
-
 func (s guardedSiteMembership) Erase(ctx context.Context, req *rstr.SiteMembershipRef) (*rstr.SiteMembershipEraseResponse, error) {
 	if err := gate.Direct(ctx, rstr.SiteMembershipService_Erase_FullMethodName); err != nil {
 		return nil, err
@@ -15845,14 +15136,6 @@ func (s guardedTeamMembership) Patch(ctx context.Context, req *rstr.TeamMembersh
 	}
 
 	return s.TeamMembershipServiceServer.Patch(ctx, req)
-}
-
-func (s guardedTeamMembership) Apply(ctx context.Context, req *rstr.TeamMembershipApplyRequest) (*rstr.TeamMembership, error) {
-	if err := gate.Direct(ctx, rstr.TeamMembershipService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.TeamMembershipServiceServer.Apply(ctx, req)
 }
 
 func (s guardedTeamMembership) Erase(ctx context.Context, req *rstr.TeamMembershipRef) (*rstr.TeamMembershipEraseResponse, error) {
@@ -15908,14 +15191,6 @@ func (s guardedGroupMembership) Patch(ctx context.Context, req *rstr.GroupMember
 	return s.GroupMembershipServiceServer.Patch(ctx, req)
 }
 
-func (s guardedGroupMembership) Apply(ctx context.Context, req *rstr.GroupMembershipApplyRequest) (*rstr.GroupMembership, error) {
-	if err := gate.Direct(ctx, rstr.GroupMembershipService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.GroupMembershipServiceServer.Apply(ctx, req)
-}
-
 func (s guardedGroupMembership) Erase(ctx context.Context, req *rstr.GroupMembershipRef) (*rstr.GroupMembershipEraseResponse, error) {
 	if err := gate.Direct(ctx, rstr.GroupMembershipService_Erase_FullMethodName); err != nil {
 		return nil, err
@@ -15957,14 +15232,6 @@ func (s guardedNomination) Patch(ctx context.Context, req *rstr.NominationPatchR
 	}
 
 	return s.NominationServiceServer.Patch(ctx, req)
-}
-
-func (s guardedNomination) Apply(ctx context.Context, req *rstr.NominationApplyRequest) (*rstr.Nomination, error) {
-	if err := gate.Direct(ctx, rstr.NominationService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.NominationServiceServer.Apply(ctx, req)
 }
 
 func (s guardedNomination) Erase(ctx context.Context, req *rstr.NominationRef) (*rstr.NominationEraseResponse, error) {
@@ -16018,14 +15285,6 @@ func (s guardedPhone) Patch(ctx context.Context, req *rstr.PhonePatchRequest) (*
 	return s.PhoneServiceServer.Patch(ctx, req)
 }
 
-func (s guardedPhone) Apply(ctx context.Context, req *rstr.PhoneApplyRequest) (*rstr.Phone, error) {
-	if err := gate.Direct(ctx, rstr.PhoneService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.PhoneServiceServer.Apply(ctx, req)
-}
-
 func (s guardedPhone) Erase(ctx context.Context, req *rstr.PhoneRef) (*rstr.PhoneEraseResponse, error) {
 	if err := gate.Direct(ctx, rstr.PhoneService_Erase_FullMethodName); err != nil {
 		return nil, err
@@ -16067,14 +15326,6 @@ func (s guardedRelation) Patch(ctx context.Context, req *rstr.RelationPatchReque
 	}
 
 	return s.RelationServiceServer.Patch(ctx, req)
-}
-
-func (s guardedRelation) Apply(ctx context.Context, req *rstr.RelationApplyRequest) (*rstr.Relation, error) {
-	if err := gate.Direct(ctx, rstr.RelationService_Apply_FullMethodName); err != nil {
-		return nil, err
-	}
-
-	return s.RelationServiceServer.Apply(ctx, req)
 }
 
 func (s guardedRelation) Erase(ctx context.Context, req *rstr.RelationRef) (*rstr.RelationEraseResponse, error) {
@@ -20813,12 +20064,6 @@ func (s secretApiKey) Patch(ctx context.Context, req *rstr.ApiKeyPatchRequest) (
 	return hideApiKey(v), err
 }
 
-func (s secretApiKey) Apply(ctx context.Context, req *rstr.ApiKeyApplyRequest) (*rstr.ApiKey, error) {
-	v, err := s.ApiKeyServiceServer.Apply(ctx, req)
-
-	return hideApiKey(v), err
-}
-
 func (s secretApiKey) List(ctx context.Context, req *rstr.ApiKeyListRequest) (*rstr.ApiKeyListResponse, error) {
 	v, err := s.ApiKeyServiceServer.List(ctx, req)
 	if v == nil {
@@ -20886,12 +20131,6 @@ func (s secretBadge) Get(ctx context.Context, req *rstr.BadgeGetRequest) (*rstr.
 
 func (s secretBadge) Patch(ctx context.Context, req *rstr.BadgePatchRequest) (*rstr.Badge, error) {
 	v, err := s.BadgeServiceServer.Patch(ctx, req)
-
-	return hideBadge(v), err
-}
-
-func (s secretBadge) Apply(ctx context.Context, req *rstr.BadgeApplyRequest) (*rstr.Badge, error) {
-	v, err := s.BadgeServiceServer.Apply(ctx, req)
 
 	return hideBadge(v), err
 }
@@ -21032,12 +20271,6 @@ func (s secretCredential) Patch(ctx context.Context, req *rstr.CredentialPatchRe
 	return hideCredential(v), err
 }
 
-func (s secretCredential) Apply(ctx context.Context, req *rstr.CredentialApplyRequest) (*rstr.Credential, error) {
-	v, err := s.CredentialServiceServer.Apply(ctx, req)
-
-	return hideCredential(v), err
-}
-
 func (s secretCredential) List(ctx context.Context, req *rstr.CredentialListRequest) (*rstr.CredentialListResponse, error) {
 	v, err := s.CredentialServiceServer.List(ctx, req)
 	if v == nil {
@@ -21127,12 +20360,6 @@ func (s secretDelegation) Get(ctx context.Context, req *rstr.DelegationGetReques
 
 func (s secretDelegation) Patch(ctx context.Context, req *rstr.DelegationPatchRequest) (*rstr.Delegation, error) {
 	v, err := s.DelegationServiceServer.Patch(ctx, req)
-
-	return hideDelegation(v), err
-}
-
-func (s secretDelegation) Apply(ctx context.Context, req *rstr.DelegationApplyRequest) (*rstr.Delegation, error) {
-	v, err := s.DelegationServiceServer.Apply(ctx, req)
 
 	return hideDelegation(v), err
 }
@@ -21410,11 +20637,6 @@ func (s interceptTenant) Apply(ctx context.Context, req *rstr.TenantApplyRequest
 		rstr.TenantService_Apply_FullMethodName, req, s.TenantServiceServer.Apply)
 }
 
-func (s interceptTenant) Erase(ctx context.Context, req *rstr.TenantRef) (*rstr.TenantEraseResponse, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
-		rstr.TenantService_Erase_FullMethodName, req, s.TenantServiceServer.Erase)
-}
-
 func (s interceptTenant) List(ctx context.Context, req *rstr.TenantListRequest) (*rstr.TenantListResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.TenantServiceServer,
 		rstr.TenantService_List_FullMethodName, req, s.TenantServiceServer.List)
@@ -21457,11 +20679,6 @@ func (s interceptHolder) Get(ctx context.Context, req *rstr.HolderGetRequest) (*
 func (s interceptHolder) Patch(ctx context.Context, req *rstr.HolderPatchRequest) (*rstr.Holder, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
 		rstr.HolderService_Patch_FullMethodName, req, s.HolderServiceServer.Patch)
-}
-
-func (s interceptHolder) Apply(ctx context.Context, req *rstr.HolderApplyRequest) (*rstr.Holder, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HolderServiceServer,
-		rstr.HolderService_Apply_FullMethodName, req, s.HolderServiceServer.Apply)
 }
 
 func (s interceptHolder) Erase(ctx context.Context, req *rstr.HolderRef) (*rstr.HolderEraseResponse, error) {
@@ -21573,11 +20790,6 @@ func (s interceptApiKey) Patch(ctx context.Context, req *rstr.ApiKeyPatchRequest
 		rstr.ApiKeyService_Patch_FullMethodName, req, s.ApiKeyServiceServer.Patch)
 }
 
-func (s interceptApiKey) Apply(ctx context.Context, req *rstr.ApiKeyApplyRequest) (*rstr.ApiKey, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ApiKeyServiceServer,
-		rstr.ApiKeyService_Apply_FullMethodName, req, s.ApiKeyServiceServer.Apply)
-}
-
 func (s interceptApiKey) Erase(ctx context.Context, req *rstr.ApiKeyRef) (*rstr.ApiKeyEraseResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ApiKeyServiceServer,
 		rstr.ApiKeyService_Erase_FullMethodName, req, s.ApiKeyServiceServer.Erase)
@@ -21615,11 +20827,6 @@ func (s interceptBadge) Get(ctx context.Context, req *rstr.BadgeGetRequest) (*rs
 func (s interceptBadge) Patch(ctx context.Context, req *rstr.BadgePatchRequest) (*rstr.Badge, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.BadgeServiceServer,
 		rstr.BadgeService_Patch_FullMethodName, req, s.BadgeServiceServer.Patch)
-}
-
-func (s interceptBadge) Apply(ctx context.Context, req *rstr.BadgeApplyRequest) (*rstr.Badge, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.BadgeServiceServer,
-		rstr.BadgeService_Apply_FullMethodName, req, s.BadgeServiceServer.Apply)
 }
 
 func (s interceptBadge) Erase(ctx context.Context, req *rstr.BadgeRef) (*rstr.BadgeEraseResponse, error) {
@@ -21715,11 +20922,6 @@ func (s interceptConsent) Patch(ctx context.Context, req *rstr.ConsentPatchReque
 		rstr.ConsentService_Patch_FullMethodName, req, s.ConsentServiceServer.Patch)
 }
 
-func (s interceptConsent) Apply(ctx context.Context, req *rstr.ConsentApplyRequest) (*rstr.Consent, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.ConsentServiceServer,
-		rstr.ConsentService_Apply_FullMethodName, req, s.ConsentServiceServer.Apply)
-}
-
 func (s interceptConsent) Erase(ctx context.Context, req *rstr.ConsentRef) (*rstr.ConsentEraseResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.ConsentServiceServer,
 		rstr.ConsentService_Erase_FullMethodName, req, s.ConsentServiceServer.Erase)
@@ -21798,11 +21000,6 @@ func (s interceptIdentity) Patch(ctx context.Context, req *rstr.IdentityPatchReq
 		rstr.IdentityService_Patch_FullMethodName, req, s.IdentityServiceServer.Patch)
 }
 
-func (s interceptIdentity) Apply(ctx context.Context, req *rstr.IdentityApplyRequest) (*rstr.Identity, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.IdentityServiceServer,
-		rstr.IdentityService_Apply_FullMethodName, req, s.IdentityServiceServer.Apply)
-}
-
 func (s interceptIdentity) Erase(ctx context.Context, req *rstr.IdentityRef) (*rstr.IdentityEraseResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.IdentityServiceServer,
 		rstr.IdentityService_Erase_FullMethodName, req, s.IdentityServiceServer.Erase)
@@ -21850,11 +21047,6 @@ func (s interceptEmail) Get(ctx context.Context, req *rstr.EmailGetRequest) (*rs
 func (s interceptEmail) Patch(ctx context.Context, req *rstr.EmailPatchRequest) (*rstr.Email, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.EmailServiceServer,
 		rstr.EmailService_Patch_FullMethodName, req, s.EmailServiceServer.Patch)
-}
-
-func (s interceptEmail) Apply(ctx context.Context, req *rstr.EmailApplyRequest) (*rstr.Email, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.EmailServiceServer,
-		rstr.EmailService_Apply_FullMethodName, req, s.EmailServiceServer.Apply)
 }
 
 func (s interceptEmail) Erase(ctx context.Context, req *rstr.EmailRef) (*rstr.EmailEraseResponse, error) {
@@ -21909,11 +21101,6 @@ func (s interceptCredential) Get(ctx context.Context, req *rstr.CredentialGetReq
 func (s interceptCredential) Patch(ctx context.Context, req *rstr.CredentialPatchRequest) (*rstr.Credential, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
 		rstr.CredentialService_Patch_FullMethodName, req, s.CredentialServiceServer.Patch)
-}
-
-func (s interceptCredential) Apply(ctx context.Context, req *rstr.CredentialApplyRequest) (*rstr.Credential, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.CredentialServiceServer,
-		rstr.CredentialService_Apply_FullMethodName, req, s.CredentialServiceServer.Apply)
 }
 
 func (s interceptCredential) Erase(ctx context.Context, req *rstr.CredentialRef) (*rstr.CredentialEraseResponse, error) {
@@ -21975,11 +21162,6 @@ func (s interceptDelegation) Patch(ctx context.Context, req *rstr.DelegationPatc
 		rstr.DelegationService_Patch_FullMethodName, req, s.DelegationServiceServer.Patch)
 }
 
-func (s interceptDelegation) Apply(ctx context.Context, req *rstr.DelegationApplyRequest) (*rstr.Delegation, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
-		rstr.DelegationService_Apply_FullMethodName, req, s.DelegationServiceServer.Apply)
-}
-
 func (s interceptDelegation) Erase(ctx context.Context, req *rstr.DelegationRef) (*rstr.DelegationEraseResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.DelegationServiceServer,
 		rstr.DelegationService_Erase_FullMethodName, req, s.DelegationServiceServer.Erase)
@@ -22029,11 +21211,6 @@ func (s interceptSite) Patch(ctx context.Context, req *rstr.SitePatchRequest) (*
 		rstr.SiteService_Patch_FullMethodName, req, s.SiteServiceServer.Patch)
 }
 
-func (s interceptSite) Apply(ctx context.Context, req *rstr.SiteApplyRequest) (*rstr.Site, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SiteServiceServer,
-		rstr.SiteService_Apply_FullMethodName, req, s.SiteServiceServer.Apply)
-}
-
 func (s interceptSite) Erase(ctx context.Context, req *rstr.SiteRef) (*rstr.SiteEraseResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SiteServiceServer,
 		rstr.SiteService_Erase_FullMethodName, req, s.SiteServiceServer.Erase)
@@ -22071,11 +21248,6 @@ func (s interceptGroup) Get(ctx context.Context, req *rstr.GroupGetRequest) (*rs
 func (s interceptGroup) Patch(ctx context.Context, req *rstr.GroupPatchRequest) (*rstr.Group, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.GroupServiceServer,
 		rstr.GroupService_Patch_FullMethodName, req, s.GroupServiceServer.Patch)
-}
-
-func (s interceptGroup) Apply(ctx context.Context, req *rstr.GroupApplyRequest) (*rstr.Group, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.GroupServiceServer,
-		rstr.GroupService_Apply_FullMethodName, req, s.GroupServiceServer.Apply)
 }
 
 func (s interceptGroup) Erase(ctx context.Context, req *rstr.GroupRef) (*rstr.GroupEraseResponse, error) {
@@ -22117,11 +21289,6 @@ func (s interceptGroupExposure) Patch(ctx context.Context, req *rstr.GroupExposu
 		rstr.GroupExposureService_Patch_FullMethodName, req, s.GroupExposureServiceServer.Patch)
 }
 
-func (s interceptGroupExposure) Apply(ctx context.Context, req *rstr.GroupExposureApplyRequest) (*rstr.GroupExposure, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.GroupExposureServiceServer,
-		rstr.GroupExposureService_Apply_FullMethodName, req, s.GroupExposureServiceServer.Apply)
-}
-
 func (s interceptGroupExposure) Erase(ctx context.Context, req *rstr.GroupExposureRef) (*rstr.GroupExposureEraseResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.GroupExposureServiceServer,
 		rstr.GroupExposureService_Erase_FullMethodName, req, s.GroupExposureServiceServer.Erase)
@@ -22154,11 +21321,6 @@ func (s interceptHost) Get(ctx context.Context, req *rstr.HostGetRequest) (*rstr
 func (s interceptHost) Patch(ctx context.Context, req *rstr.HostPatchRequest) (*rstr.Host, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.HostServiceServer,
 		rstr.HostService_Patch_FullMethodName, req, s.HostServiceServer.Patch)
-}
-
-func (s interceptHost) Apply(ctx context.Context, req *rstr.HostApplyRequest) (*rstr.Host, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HostServiceServer,
-		rstr.HostService_Apply_FullMethodName, req, s.HostServiceServer.Apply)
 }
 
 func (s interceptHost) Erase(ctx context.Context, req *rstr.HostRef) (*rstr.HostEraseResponse, error) {
@@ -22200,11 +21362,6 @@ func (s interceptMailDomain) Patch(ctx context.Context, req *rstr.MailDomainPatc
 		rstr.MailDomainService_Patch_FullMethodName, req, s.MailDomainServiceServer.Patch)
 }
 
-func (s interceptMailDomain) Apply(ctx context.Context, req *rstr.MailDomainApplyRequest) (*rstr.MailDomain, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.MailDomainServiceServer,
-		rstr.MailDomainService_Apply_FullMethodName, req, s.MailDomainServiceServer.Apply)
-}
-
 func (s interceptMailDomain) Erase(ctx context.Context, req *rstr.MailDomainRef) (*rstr.MailDomainEraseResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.MailDomainServiceServer,
 		rstr.MailDomainService_Erase_FullMethodName, req, s.MailDomainServiceServer.Erase)
@@ -22242,11 +21399,6 @@ func (s interceptHostProof) Get(ctx context.Context, req *rstr.HostProofGetReque
 func (s interceptHostProof) Patch(ctx context.Context, req *rstr.HostProofPatchRequest) (*rstr.HostProof, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.HostProofServiceServer,
 		rstr.HostProofService_Patch_FullMethodName, req, s.HostProofServiceServer.Patch)
-}
-
-func (s interceptHostProof) Apply(ctx context.Context, req *rstr.HostProofApplyRequest) (*rstr.HostProof, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.HostProofServiceServer,
-		rstr.HostProofService_Apply_FullMethodName, req, s.HostProofServiceServer.Apply)
 }
 
 func (s interceptHostProof) Erase(ctx context.Context, req *rstr.HostProofRef) (*rstr.HostProofEraseResponse, error) {
@@ -22366,11 +21518,6 @@ func (s interceptBinding) Patch(ctx context.Context, req *rstr.BindingPatchReque
 		rstr.BindingService_Patch_FullMethodName, req, s.BindingServiceServer.Patch)
 }
 
-func (s interceptBinding) Apply(ctx context.Context, req *rstr.BindingApplyRequest) (*rstr.Binding, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.BindingServiceServer,
-		rstr.BindingService_Apply_FullMethodName, req, s.BindingServiceServer.Apply)
-}
-
 func (s interceptBinding) Erase(ctx context.Context, req *rstr.BindingRef) (*rstr.BindingEraseResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.BindingServiceServer,
 		rstr.BindingService_Erase_FullMethodName, req, s.BindingServiceServer.Erase)
@@ -22403,11 +21550,6 @@ func (s interceptTeam) Get(ctx context.Context, req *rstr.TeamGetRequest) (*rstr
 func (s interceptTeam) Patch(ctx context.Context, req *rstr.TeamPatchRequest) (*rstr.Team, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.TeamServiceServer,
 		rstr.TeamService_Patch_FullMethodName, req, s.TeamServiceServer.Patch)
-}
-
-func (s interceptTeam) Apply(ctx context.Context, req *rstr.TeamApplyRequest) (*rstr.Team, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.TeamServiceServer,
-		rstr.TeamService_Apply_FullMethodName, req, s.TeamServiceServer.Apply)
 }
 
 func (s interceptTeam) Erase(ctx context.Context, req *rstr.TeamRef) (*rstr.TeamEraseResponse, error) {
@@ -22449,11 +21591,6 @@ func (s interceptSiteMembership) Patch(ctx context.Context, req *rstr.SiteMember
 		rstr.SiteMembershipService_Patch_FullMethodName, req, s.SiteMembershipServiceServer.Patch)
 }
 
-func (s interceptSiteMembership) Apply(ctx context.Context, req *rstr.SiteMembershipApplyRequest) (*rstr.SiteMembership, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.SiteMembershipServiceServer,
-		rstr.SiteMembershipService_Apply_FullMethodName, req, s.SiteMembershipServiceServer.Apply)
-}
-
 func (s interceptSiteMembership) Erase(ctx context.Context, req *rstr.SiteMembershipRef) (*rstr.SiteMembershipEraseResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.SiteMembershipServiceServer,
 		rstr.SiteMembershipService_Erase_FullMethodName, req, s.SiteMembershipServiceServer.Erase)
@@ -22491,11 +21628,6 @@ func (s interceptTeamMembership) Get(ctx context.Context, req *rstr.TeamMembersh
 func (s interceptTeamMembership) Patch(ctx context.Context, req *rstr.TeamMembershipPatchRequest) (*rstr.TeamMembership, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.TeamMembershipServiceServer,
 		rstr.TeamMembershipService_Patch_FullMethodName, req, s.TeamMembershipServiceServer.Patch)
-}
-
-func (s interceptTeamMembership) Apply(ctx context.Context, req *rstr.TeamMembershipApplyRequest) (*rstr.TeamMembership, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.TeamMembershipServiceServer,
-		rstr.TeamMembershipService_Apply_FullMethodName, req, s.TeamMembershipServiceServer.Apply)
 }
 
 func (s interceptTeamMembership) Erase(ctx context.Context, req *rstr.TeamMembershipRef) (*rstr.TeamMembershipEraseResponse, error) {
@@ -22537,11 +21669,6 @@ func (s interceptGroupMembership) Patch(ctx context.Context, req *rstr.GroupMemb
 		rstr.GroupMembershipService_Patch_FullMethodName, req, s.GroupMembershipServiceServer.Patch)
 }
 
-func (s interceptGroupMembership) Apply(ctx context.Context, req *rstr.GroupMembershipApplyRequest) (*rstr.GroupMembership, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
-		rstr.GroupMembershipService_Apply_FullMethodName, req, s.GroupMembershipServiceServer.Apply)
-}
-
 func (s interceptGroupMembership) Erase(ctx context.Context, req *rstr.GroupMembershipRef) (*rstr.GroupMembershipEraseResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.GroupMembershipServiceServer,
 		rstr.GroupMembershipService_Erase_FullMethodName, req, s.GroupMembershipServiceServer.Erase)
@@ -22574,11 +21701,6 @@ func (s interceptNomination) Get(ctx context.Context, req *rstr.NominationGetReq
 func (s interceptNomination) Patch(ctx context.Context, req *rstr.NominationPatchRequest) (*rstr.Nomination, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.NominationServiceServer,
 		rstr.NominationService_Patch_FullMethodName, req, s.NominationServiceServer.Patch)
-}
-
-func (s interceptNomination) Apply(ctx context.Context, req *rstr.NominationApplyRequest) (*rstr.Nomination, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.NominationServiceServer,
-		rstr.NominationService_Apply_FullMethodName, req, s.NominationServiceServer.Apply)
 }
 
 func (s interceptNomination) Erase(ctx context.Context, req *rstr.NominationRef) (*rstr.NominationEraseResponse, error) {
@@ -22620,11 +21742,6 @@ func (s interceptPhone) Patch(ctx context.Context, req *rstr.PhonePatchRequest) 
 		rstr.PhoneService_Patch_FullMethodName, req, s.PhoneServiceServer.Patch)
 }
 
-func (s interceptPhone) Apply(ctx context.Context, req *rstr.PhoneApplyRequest) (*rstr.Phone, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.PhoneServiceServer,
-		rstr.PhoneService_Apply_FullMethodName, req, s.PhoneServiceServer.Apply)
-}
-
 func (s interceptPhone) Erase(ctx context.Context, req *rstr.PhoneRef) (*rstr.PhoneEraseResponse, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.PhoneServiceServer,
 		rstr.PhoneService_Erase_FullMethodName, req, s.PhoneServiceServer.Erase)
@@ -22657,11 +21774,6 @@ func (s interceptRelation) Get(ctx context.Context, req *rstr.RelationGetRequest
 func (s interceptRelation) Patch(ctx context.Context, req *rstr.RelationPatchRequest) (*rstr.Relation, error) {
 	return grpcx.RunUnary(ctx, s.unary, s.RelationServiceServer,
 		rstr.RelationService_Patch_FullMethodName, req, s.RelationServiceServer.Patch)
-}
-
-func (s interceptRelation) Apply(ctx context.Context, req *rstr.RelationApplyRequest) (*rstr.Relation, error) {
-	return grpcx.RunUnary(ctx, s.unary, s.RelationServiceServer,
-		rstr.RelationService_Apply_FullMethodName, req, s.RelationServiceServer.Apply)
 }
 
 func (s interceptRelation) Erase(ctx context.Context, req *rstr.RelationRef) (*rstr.RelationEraseResponse, error) {
@@ -24303,34 +23415,24 @@ func (accessRecorder) Snapshots(method string) bare.SnapshotOptions {
 	switch method {
 	case rstr.ApiKeyService_Add_FullMethodName,
 		rstr.ApiKeyService_Patch_FullMethodName,
-		rstr.ApiKeyService_Apply_FullMethodName,
 		rstr.BadgeService_Add_FullMethodName,
 		rstr.BadgeService_Patch_FullMethodName,
-		rstr.BadgeService_Apply_FullMethodName,
 		rstr.BindingService_Add_FullMethodName,
 		rstr.BindingService_Patch_FullMethodName,
-		rstr.BindingService_Apply_FullMethodName,
 		rstr.CredentialService_Add_FullMethodName,
 		rstr.CredentialService_Patch_FullMethodName,
-		rstr.CredentialService_Apply_FullMethodName,
 		rstr.EmailService_Add_FullMethodName,
 		rstr.EmailService_Patch_FullMethodName,
-		rstr.EmailService_Apply_FullMethodName,
 		rstr.HolderService_Add_FullMethodName,
 		rstr.HolderService_Patch_FullMethodName,
-		rstr.HolderService_Apply_FullMethodName,
 		rstr.IdentityService_Add_FullMethodName,
 		rstr.IdentityService_Patch_FullMethodName,
-		rstr.IdentityService_Apply_FullMethodName,
 		rstr.NominationService_Add_FullMethodName,
 		rstr.NominationService_Patch_FullMethodName,
-		rstr.NominationService_Apply_FullMethodName,
 		rstr.PhoneService_Add_FullMethodName,
 		rstr.PhoneService_Patch_FullMethodName,
-		rstr.PhoneService_Apply_FullMethodName,
 		rstr.RelationService_Add_FullMethodName,
-		rstr.RelationService_Patch_FullMethodName,
-		rstr.RelationService_Apply_FullMethodName:
+		rstr.RelationService_Patch_FullMethodName:
 		return bare.SnapshotOptions{Value: true}
 	case rstr.ApiKeyService_Erase_FullMethodName,
 		rstr.BadgeService_Erase_FullMethodName,
@@ -25676,8 +24778,6 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.ApiKeyService_Patch_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.ApiKeyService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.ApiKeyService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.AuditService_Add_FullMethodName:
@@ -25686,15 +24786,11 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.BadgeService_Patch_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.BadgeService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.BadgeService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.BindingService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.BindingService_Patch_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.BindingService_Apply_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.BindingService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
@@ -25710,8 +24806,6 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.ConsentService_Patch_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.ConsentService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.ConsentService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.ContinuationService_Add_FullMethodName:
@@ -25722,15 +24816,11 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.CredentialService_Patch_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.CredentialService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.CredentialService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.DelegationService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.DelegationService_Patch_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.DelegationService_Apply_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.DelegationService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
@@ -25738,15 +24828,11 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.EmailService_Patch_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.EmailService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.EmailService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.GroupService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.GroupService_Patch_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.GroupService_Apply_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.GroupService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
@@ -25754,15 +24840,11 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.GroupExposureService_Patch_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.GroupExposureService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.GroupExposureService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.GroupMembershipService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.GroupMembershipService_Patch_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.GroupMembershipService_Apply_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.GroupMembershipService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
@@ -25770,15 +24852,11 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.HolderService_Patch_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.HolderService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.HolderService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.HostService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.HostService_Patch_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.HostService_Apply_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.HostService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
@@ -25786,15 +24864,11 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.HostProofService_Patch_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.HostProofService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.HostProofService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.IdentityService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.IdentityService_Patch_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.IdentityService_Apply_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.IdentityService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
@@ -25806,15 +24880,11 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.MailDomainService_Patch_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.MailDomainService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.MailDomainService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.NominationService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.NominationService_Patch_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.NominationService_Apply_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.NominationService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
@@ -25822,15 +24892,11 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.PhoneService_Patch_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.PhoneService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.PhoneService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.RelationService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.RelationService_Patch_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.RelationService_Apply_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.RelationService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
@@ -25846,15 +24912,11 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.SiteService_Patch_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.SiteService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.SiteService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.SiteMembershipService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.SiteMembershipService_Patch_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.SiteMembershipService_Apply_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.SiteMembershipService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
@@ -25862,15 +24924,11 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.TeamService_Patch_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.TeamService_Apply_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.TeamService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	case rstr.TeamMembershipService_Add_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_CREATED
 	case rstr.TeamMembershipService_Patch_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.TeamMembershipService_Apply_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.TeamMembershipService_Erase_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_DELETED
@@ -25880,8 +24938,6 @@ func resourceChangeKind(method string) pdpb.ChangeKind {
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
 	case rstr.TenantService_Apply_FullMethodName:
 		return pdpb.ChangeKind_CHANGE_KIND_UPDATED
-	case rstr.TenantService_Erase_FullMethodName:
-		return pdpb.ChangeKind_CHANGE_KIND_DELETED
 	default:
 		return pdpb.ChangeKind_CHANGE_KIND_UNSPECIFIED
 	}

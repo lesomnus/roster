@@ -118,7 +118,6 @@ message Group {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [
@@ -209,7 +208,6 @@ message GroupExposure {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [

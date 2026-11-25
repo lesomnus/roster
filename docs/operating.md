@@ -3211,10 +3211,10 @@ tenant:
 ```
 
 **There is no erase.** These steps are the whole of how a tenant ends.
-`TenantService/Erase` is in the schema and is served at no port: it answers
-`Unimplemented` (`501`), at `admin.addr` in a sentence that names the two steps
-above. `roster tenant --help` offers no `erase`, and `roster tenant erase` typed
-all the same prints that sentence and exits non-zero, having opened nothing.
+`TenantService` has no `Erase`: every port answers it as a method nobody
+serves, `Unimplemented` (`404` over HTTP). `roster tenant --help` offers no
+`erase`, and `roster tenant erase` typed all the same prints a sentence that
+names the two steps above and exits non-zero, having opened nothing.
 Every row of a tenant is keyed to its row, so the row does not go: destroyed, it
 stays, blank.
 

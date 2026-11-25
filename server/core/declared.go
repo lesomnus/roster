@@ -184,7 +184,8 @@ func (s coreNomination) declaredNomination(ctx context.Context, ref *app.Nominat
 
 // Erase, for every kind a deployment declares: refused on a declared row, as
 // every other write to one is. See the top of this file. A tenant's is not
-// here: no tenant is erased, declared or not ([coreTenant.Erase]).
+// here: no tenant is erased, declared or not, and `Tenant` has no `Erase`
+// ([NotErased]).
 //
 // A row that is not there to the caller -- nobody by that reference, another
 // tenant's, one erased already, one out of their reach -- is erased as the

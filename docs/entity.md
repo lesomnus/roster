@@ -98,10 +98,9 @@ payday's rather than each app's, because everything that reads a request reads
 it: the wall narrows every query by it, the trail stamps it, a rate limit counts
 against it. Its `alias` is unique across the whole deployment, so
 `@contoso/arm-01` says which tenant before it says which row. Unlike 👤 `Holder`
-its erase is declared **hard**, with no `date_erased` to stamp -- and it is
-served by nothing. Every row of a tenant is keyed to it, so the row cannot go
-while anything of it is there, and `TenantService/Erase` answers `Unimplemented`
-at every port. A tenant leaves by being closed and then destroyed, and the row
+payday declares its erase **hard**, with no `date_erased` to stamp, and roster's
+overlay switches it off: every row of a tenant is keyed to it, so the row cannot
+go while anything of it is there, and `TenantService` has no `Erase`. A tenant leaves by being closed and then destroyed, and the row
 stays (below).
 
 It carries one thing an operator decides about itself: `config.password`, which

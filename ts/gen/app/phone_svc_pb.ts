@@ -9,8 +9,6 @@ import { file_app_phone } from "./phone_pb.js";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../orm_pb.js";
-import type { Patch } from "../patch/patch_pb.js";
-import { file_patch_patch } from "../patch/patch_pb.js";
 import type { HolderRef, HolderSelect } from "../roster/payday/holder_svc_pb.js";
 import { file_roster_payday_holder_svc_g } from "../roster/payday/holder_svc_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -19,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/phone_svc.g.proto.
  */
 export const file_app_phone_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChVhcHAvcGhvbmVfc3ZjLmcucHJvdG8SBnJvc3RlciLGAQoPUGhvbmVBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIVCgZudW1iZXIYCCABKAlCBaoBAggCEhMKBGtpbmQYCSABKAlCBaoBAggCEh4KCXRlbmFudF9pZBgLIAEoDEILqgECCALqghYCEEASMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJVCg9QaG9uZUdldFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLlBob25lUmVmEiMKBnNlbGVjdBgCIAEoCzITLnJvc3Rlci5QaG9uZVNlbGVjdCJTCghQaG9uZVJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASKgoGbnVtYmVyGAIgASgLMhgucm9zdGVyLlBob25lUmVmQnlOdW1iZXJIAEIFCgNrZXkiUwoQUGhvbmVSZWZCeU51bWJlchIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEg4KBm51bWJlchgIIAEoCRIMCgRraW5kGAkgASgJIrIBCgtQaG9uZVNlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBIOCgZudW1iZXIYCCABKAgSDAoEa2luZBgJIAEoCBIRCgl0ZW5hbnRfaWQYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKeAQoRUGhvbmVQYXRjaFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLlBob25lUmVmEg4KBm51bWJlchgQIAEoCRIMCgRraW5kGBIgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIk8KEVBob25lQXBwbHlSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5QaG9uZVJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiQKElBob25lRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgioAEKEFBob25lTGlzdFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnJvc3Rlci5QaG9uZUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISIwoGc2VsZWN0GAYgASgLMhMucm9zdGVyLlBob25lU2VsZWN0IkYKEVBob25lTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLlBob25lEhMKBG5leHQYAiABKAlCBaoBAggCIk8KC1Bob25lRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5QaG9uZVJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmMsYCCgxQaG9uZVNlcnZpY2USLQoDQWRkEhcucm9zdGVyLlBob25lQWRkUmVxdWVzdBoNLnJvc3Rlci5QaG9uZRItCgNHZXQSFy5yb3N0ZXIuUGhvbmVHZXRSZXF1ZXN0Gg0ucm9zdGVyLlBob25lEjEKBVBhdGNoEhkucm9zdGVyLlBob25lUGF0Y2hSZXF1ZXN0Gg0ucm9zdGVyLlBob25lEjEKBUFwcGx5Ehkucm9zdGVyLlBob25lQXBwbHlSZXF1ZXN0Gg0ucm9zdGVyLlBob25lEjUKBUVyYXNlEhAucm9zdGVyLlBob25lUmVmGhoucm9zdGVyLlBob25lRXJhc2VSZXNwb25zZRI7CgRMaXN0Ehgucm9zdGVyLlBob25lTGlzdFJlcXVlc3QaGS5yb3N0ZXIuUGhvbmVMaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_phone, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChVhcHAvcGhvbmVfc3ZjLmcucHJvdG8SBnJvc3RlciLGAQoPUGhvbmVBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIVCgZudW1iZXIYCCABKAlCBaoBAggCEhMKBGtpbmQYCSABKAlCBaoBAggCEh4KCXRlbmFudF9pZBgLIAEoDEILqgECCALqghYCEEASMAoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCJVCg9QaG9uZUdldFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLlBob25lUmVmEiMKBnNlbGVjdBgCIAEoCzITLnJvc3Rlci5QaG9uZVNlbGVjdCJTCghQaG9uZVJlZhIUCgJpZBgBIAEoDEIG6oIWAhBASAASKgoGbnVtYmVyGAIgASgLMhgucm9zdGVyLlBob25lUmVmQnlOdW1iZXJIAEIFCgNrZXkiUwoQUGhvbmVSZWZCeU51bWJlchIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEg4KBm51bWJlchgIIAEoCRIMCgRraW5kGAkgASgJIrIBCgtQaG9uZVNlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBIOCgZudW1iZXIYCCABKAgSDAoEa2luZBgJIAEoCBIRCgl0ZW5hbnRfaWQYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKeAQoRUGhvbmVQYXRjaFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLlBob25lUmVmEg4KBm51bWJlchgQIAEoCRIMCgRraW5kGBIgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIiQKElBob25lRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgioAEKEFBob25lTGlzdFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnJvc3Rlci5QaG9uZUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISIwoGc2VsZWN0GAYgASgLMhMucm9zdGVyLlBob25lU2VsZWN0IkYKEVBob25lTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLlBob25lEhMKBG5leHQYAiABKAlCBaoBAggCIk8KC1Bob25lRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5QaG9uZVJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmMpMCCgxQaG9uZVNlcnZpY2USLQoDQWRkEhcucm9zdGVyLlBob25lQWRkUmVxdWVzdBoNLnJvc3Rlci5QaG9uZRItCgNHZXQSFy5yb3N0ZXIuUGhvbmVHZXRSZXF1ZXN0Gg0ucm9zdGVyLlBob25lEjEKBVBhdGNoEhkucm9zdGVyLlBob25lUGF0Y2hSZXF1ZXN0Gg0ucm9zdGVyLlBob25lEjUKBUVyYXNlEhAucm9zdGVyLlBob25lUmVmGhoucm9zdGVyLlBob25lRXJhc2VSZXNwb25zZRI7CgRMaXN0Ehgucm9zdGVyLlBob25lTGlzdFJlcXVlc3QaGS5yb3N0ZXIuUGhvbmVMaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_phone, file_google_protobuf_timestamp, file_orm, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.PhoneAddRequest
@@ -245,28 +243,6 @@ export const PhonePatchRequestSchema: GenMessage<PhonePatchRequest> = /*@__PURE_
   messageDesc(file_app_phone_svc_g, 5);
 
 /**
- * @generated from message roster.PhoneApplyRequest
- */
-export type PhoneApplyRequest = Message<"roster.PhoneApplyRequest"> & {
-  /**
-   * @generated from field: roster.PhoneRef ref = 1;
-   */
-  ref?: PhoneRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.PhoneApplyRequest.
- * Use `create(PhoneApplyRequestSchema)` to create a new message.
- */
-export const PhoneApplyRequestSchema: GenMessage<PhoneApplyRequest> = /*@__PURE__*/
-  messageDesc(file_app_phone_svc_g, 6);
-
-/**
  * @generated from message roster.PhoneEraseResponse
  */
 export type PhoneEraseResponse = Message<"roster.PhoneEraseResponse"> & {
@@ -287,7 +263,7 @@ export type PhoneEraseResponse = Message<"roster.PhoneEraseResponse"> & {
  * Use `create(PhoneEraseResponseSchema)` to create a new message.
  */
 export const PhoneEraseResponseSchema: GenMessage<PhoneEraseResponse> = /*@__PURE__*/
-  messageDesc(file_app_phone_svc_g, 7);
+  messageDesc(file_app_phone_svc_g, 6);
 
 /**
  * @generated from message roster.PhoneListRequest
@@ -350,7 +326,7 @@ export type PhoneListRequest = Message<"roster.PhoneListRequest"> & {
  * Use `create(PhoneListRequestSchema)` to create a new message.
  */
 export const PhoneListRequestSchema: GenMessage<PhoneListRequest> = /*@__PURE__*/
-  messageDesc(file_app_phone_svc_g, 8);
+  messageDesc(file_app_phone_svc_g, 7);
 
 /**
  * @generated from message roster.PhoneListResponse
@@ -380,7 +356,7 @@ export type PhoneListResponse = Message<"roster.PhoneListResponse"> & {
  * Use `create(PhoneListResponseSchema)` to create a new message.
  */
 export const PhoneListResponseSchema: GenMessage<PhoneListResponse> = /*@__PURE__*/
-  messageDesc(file_app_phone_svc_g, 9);
+  messageDesc(file_app_phone_svc_g, 8);
 
 /**
  * @generated from message roster.PhoneFilter
@@ -402,7 +378,7 @@ export type PhoneFilter = Message<"roster.PhoneFilter"> & {
  * Use `create(PhoneFilterSchema)` to create a new message.
  */
 export const PhoneFilterSchema: GenMessage<PhoneFilter> = /*@__PURE__*/
-  messageDesc(file_app_phone_svc_g, 10);
+  messageDesc(file_app_phone_svc_g, 9);
 
 /**
  * @generated from service roster.PhoneService
@@ -436,16 +412,6 @@ export const PhoneService: GenService<{
   patch: {
     methodKind: "unary";
     input: typeof PhonePatchRequestSchema;
-    output: typeof PhoneSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Phone
-   *
-   * @generated from rpc roster.PhoneService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof PhoneApplyRequestSchema;
     output: typeof PhoneSchema;
   },
   /**

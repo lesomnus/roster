@@ -4,7 +4,6 @@ package roster;
 import "app/site.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
-import "patch/patch.proto";
 import "roster/payday/tenant_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -16,8 +15,6 @@ service SiteService {
   rpc Get(SiteGetRequest) returns (Site);
   // Patch updates an existing Site
   rpc Patch(SitePatchRequest) returns (Site);
-  // Apply applies a patch document to an existing Site
-  rpc Apply(SiteApplyRequest) returns (Site);
   // Erase deletes a Site
   rpc Erase(SiteRef) returns (SiteEraseResponse);
   // List reads Sites a page at a time.
@@ -103,11 +100,6 @@ message SitePatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message SiteApplyRequest {
-  SiteRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message SiteEraseResponse {

@@ -584,7 +584,6 @@ const (
 	BindingService_Add_FullMethodName   = "/roster.BindingService/Add"
 	BindingService_Get_FullMethodName   = "/roster.BindingService/Get"
 	BindingService_Patch_FullMethodName = "/roster.BindingService/Patch"
-	BindingService_Apply_FullMethodName = "/roster.BindingService/Apply"
 	BindingService_Erase_FullMethodName = "/roster.BindingService/Erase"
 	BindingService_List_FullMethodName  = "/roster.BindingService/List"
 )
@@ -599,8 +598,6 @@ type BindingServiceClient interface {
 	Get(ctx context.Context, in *BindingGetRequest, opts ...grpc.CallOption) (*Binding, error)
 	// Patch updates an existing Binding
 	Patch(ctx context.Context, in *BindingPatchRequest, opts ...grpc.CallOption) (*Binding, error)
-	// Apply applies a patch document to an existing Binding
-	Apply(ctx context.Context, in *BindingApplyRequest, opts ...grpc.CallOption) (*Binding, error)
 	// Erase deletes a Binding
 	Erase(ctx context.Context, in *BindingRef, opts ...grpc.CallOption) (*BindingEraseResponse, error)
 	// List reads Bindings a page at a time.
@@ -645,16 +642,6 @@ func (c *bindingServiceClient) Patch(ctx context.Context, in *BindingPatchReques
 	return out, nil
 }
 
-func (c *bindingServiceClient) Apply(ctx context.Context, in *BindingApplyRequest, opts ...grpc.CallOption) (*Binding, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Binding)
-	err := c.cc.Invoke(ctx, BindingService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *bindingServiceClient) Erase(ctx context.Context, in *BindingRef, opts ...grpc.CallOption) (*BindingEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(BindingEraseResponse)
@@ -685,8 +672,6 @@ type BindingServiceServer interface {
 	Get(context.Context, *BindingGetRequest) (*Binding, error)
 	// Patch updates an existing Binding
 	Patch(context.Context, *BindingPatchRequest) (*Binding, error)
-	// Apply applies a patch document to an existing Binding
-	Apply(context.Context, *BindingApplyRequest) (*Binding, error)
 	// Erase deletes a Binding
 	Erase(context.Context, *BindingRef) (*BindingEraseResponse, error)
 	// List reads Bindings a page at a time.
@@ -709,9 +694,6 @@ func (UnimplementedBindingServiceServer) Get(context.Context, *BindingGetRequest
 }
 func (UnimplementedBindingServiceServer) Patch(context.Context, *BindingPatchRequest) (*Binding, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedBindingServiceServer) Apply(context.Context, *BindingApplyRequest) (*Binding, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedBindingServiceServer) Erase(context.Context, *BindingRef) (*BindingEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -794,24 +776,6 @@ func _BindingService_Patch_Handler(srv interface{}, ctx context.Context, dec fun
 	return interceptor(ctx, in, info, handler)
 }
 
-func _BindingService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(BindingApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(BindingServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: BindingService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(BindingServiceServer).Apply(ctx, req.(*BindingApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _BindingService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(BindingRef)
 	if err := dec(in); err != nil {
@@ -866,10 +830,6 @@ var BindingService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _BindingService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _BindingService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

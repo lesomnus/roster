@@ -22,7 +22,6 @@ const (
 	CredentialService_Add_FullMethodName    = "/roster.CredentialService/Add"
 	CredentialService_Get_FullMethodName    = "/roster.CredentialService/Get"
 	CredentialService_Patch_FullMethodName  = "/roster.CredentialService/Patch"
-	CredentialService_Apply_FullMethodName  = "/roster.CredentialService/Apply"
 	CredentialService_Erase_FullMethodName  = "/roster.CredentialService/Erase"
 	CredentialService_List_FullMethodName   = "/roster.CredentialService/List"
 	CredentialService_Watch_FullMethodName  = "/roster.CredentialService/Watch"
@@ -42,8 +41,6 @@ type CredentialServiceClient interface {
 	Get(ctx context.Context, in *CredentialGetRequest, opts ...grpc.CallOption) (*Credential, error)
 	// Patch updates an existing Credential
 	Patch(ctx context.Context, in *CredentialPatchRequest, opts ...grpc.CallOption) (*Credential, error)
-	// Apply applies a patch document to an existing Credential
-	Apply(ctx context.Context, in *CredentialApplyRequest, opts ...grpc.CallOption) (*Credential, error)
 	// Erase deletes a Credential
 	Erase(ctx context.Context, in *CredentialRef, opts ...grpc.CallOption) (*CredentialEraseResponse, error)
 	// List reads Credentials a page at a time.
@@ -227,16 +224,6 @@ func (c *credentialServiceClient) Patch(ctx context.Context, in *CredentialPatch
 	return out, nil
 }
 
-func (c *credentialServiceClient) Apply(ctx context.Context, in *CredentialApplyRequest, opts ...grpc.CallOption) (*Credential, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Credential)
-	err := c.cc.Invoke(ctx, CredentialService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *credentialServiceClient) Erase(ctx context.Context, in *CredentialRef, opts ...grpc.CallOption) (*CredentialEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CredentialEraseResponse)
@@ -326,8 +313,6 @@ type CredentialServiceServer interface {
 	Get(context.Context, *CredentialGetRequest) (*Credential, error)
 	// Patch updates an existing Credential
 	Patch(context.Context, *CredentialPatchRequest) (*Credential, error)
-	// Apply applies a patch document to an existing Credential
-	Apply(context.Context, *CredentialApplyRequest) (*Credential, error)
 	// Erase deletes a Credential
 	Erase(context.Context, *CredentialRef) (*CredentialEraseResponse, error)
 	// List reads Credentials a page at a time.
@@ -490,9 +475,6 @@ func (UnimplementedCredentialServiceServer) Get(context.Context, *CredentialGetR
 func (UnimplementedCredentialServiceServer) Patch(context.Context, *CredentialPatchRequest) (*Credential, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
 }
-func (UnimplementedCredentialServiceServer) Apply(context.Context, *CredentialApplyRequest) (*Credential, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
-}
 func (UnimplementedCredentialServiceServer) Erase(context.Context, *CredentialRef) (*CredentialEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
 }
@@ -585,24 +567,6 @@ func _CredentialService_Patch_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CredentialServiceServer).Patch(ctx, req.(*CredentialPatchRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _CredentialService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CredentialApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(CredentialServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: CredentialService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(CredentialServiceServer).Apply(ctx, req.(*CredentialApplyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -744,10 +708,6 @@ var CredentialService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _CredentialService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _CredentialService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

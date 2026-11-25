@@ -236,7 +236,7 @@ func newCmdControlEntities(c *cmd.Config) xli.Commands {
 	// plane's tree they go over the wire; this tree is local and nothing
 	// else, so here they could only refuse (#286).
 	for _, path := range []string{
-		"tenant/add", "tenant/erase", "tenant/close", "tenant/restore",
+		"tenant/add", "tenant/close", "tenant/restore",
 		"consent/agree", "consent/withdraw", "consent/settled", "email/claim", "email/confirm",
 	} {
 		if err := t.Drop(path); err != nil {

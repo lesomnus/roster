@@ -22,7 +22,6 @@ const (
 	SiteMembershipService_Add_FullMethodName   = "/roster.SiteMembershipService/Add"
 	SiteMembershipService_Get_FullMethodName   = "/roster.SiteMembershipService/Get"
 	SiteMembershipService_Patch_FullMethodName = "/roster.SiteMembershipService/Patch"
-	SiteMembershipService_Apply_FullMethodName = "/roster.SiteMembershipService/Apply"
 	SiteMembershipService_Erase_FullMethodName = "/roster.SiteMembershipService/Erase"
 	SiteMembershipService_List_FullMethodName  = "/roster.SiteMembershipService/List"
 	SiteMembershipService_Watch_FullMethodName = "/roster.SiteMembershipService/Watch"
@@ -38,8 +37,6 @@ type SiteMembershipServiceClient interface {
 	Get(ctx context.Context, in *SiteMembershipGetRequest, opts ...grpc.CallOption) (*SiteMembership, error)
 	// Patch updates an existing SiteMembership
 	Patch(ctx context.Context, in *SiteMembershipPatchRequest, opts ...grpc.CallOption) (*SiteMembership, error)
-	// Apply applies a patch document to an existing SiteMembership
-	Apply(ctx context.Context, in *SiteMembershipApplyRequest, opts ...grpc.CallOption) (*SiteMembership, error)
 	// Erase deletes a SiteMembership
 	Erase(ctx context.Context, in *SiteMembershipRef, opts ...grpc.CallOption) (*SiteMembershipEraseResponse, error)
 	// List reads SiteMemberships a page at a time.
@@ -104,16 +101,6 @@ func (c *siteMembershipServiceClient) Patch(ctx context.Context, in *SiteMembers
 	return out, nil
 }
 
-func (c *siteMembershipServiceClient) Apply(ctx context.Context, in *SiteMembershipApplyRequest, opts ...grpc.CallOption) (*SiteMembership, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(SiteMembership)
-	err := c.cc.Invoke(ctx, SiteMembershipService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *siteMembershipServiceClient) Erase(ctx context.Context, in *SiteMembershipRef, opts ...grpc.CallOption) (*SiteMembershipEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SiteMembershipEraseResponse)
@@ -163,8 +150,6 @@ type SiteMembershipServiceServer interface {
 	Get(context.Context, *SiteMembershipGetRequest) (*SiteMembership, error)
 	// Patch updates an existing SiteMembership
 	Patch(context.Context, *SiteMembershipPatchRequest) (*SiteMembership, error)
-	// Apply applies a patch document to an existing SiteMembership
-	Apply(context.Context, *SiteMembershipApplyRequest) (*SiteMembership, error)
 	// Erase deletes a SiteMembership
 	Erase(context.Context, *SiteMembershipRef) (*SiteMembershipEraseResponse, error)
 	// List reads SiteMemberships a page at a time.
@@ -207,9 +192,6 @@ func (UnimplementedSiteMembershipServiceServer) Get(context.Context, *SiteMember
 }
 func (UnimplementedSiteMembershipServiceServer) Patch(context.Context, *SiteMembershipPatchRequest) (*SiteMembership, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedSiteMembershipServiceServer) Apply(context.Context, *SiteMembershipApplyRequest) (*SiteMembership, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedSiteMembershipServiceServer) Erase(context.Context, *SiteMembershipRef) (*SiteMembershipEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -295,24 +277,6 @@ func _SiteMembershipService_Patch_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _SiteMembershipService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(SiteMembershipApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(SiteMembershipServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: SiteMembershipService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(SiteMembershipServiceServer).Apply(ctx, req.(*SiteMembershipApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _SiteMembershipService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SiteMembershipRef)
 	if err := dec(in); err != nil {
@@ -380,10 +344,6 @@ var SiteMembershipService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _SiteMembershipService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _SiteMembershipService_Apply_Handler,
-		},
-		{
 			MethodName: "Erase",
 			Handler:    _SiteMembershipService_Erase_Handler,
 		},
@@ -406,7 +366,6 @@ const (
 	TeamMembershipService_Add_FullMethodName   = "/roster.TeamMembershipService/Add"
 	TeamMembershipService_Get_FullMethodName   = "/roster.TeamMembershipService/Get"
 	TeamMembershipService_Patch_FullMethodName = "/roster.TeamMembershipService/Patch"
-	TeamMembershipService_Apply_FullMethodName = "/roster.TeamMembershipService/Apply"
 	TeamMembershipService_Erase_FullMethodName = "/roster.TeamMembershipService/Erase"
 	TeamMembershipService_List_FullMethodName  = "/roster.TeamMembershipService/List"
 	TeamMembershipService_Watch_FullMethodName = "/roster.TeamMembershipService/Watch"
@@ -422,8 +381,6 @@ type TeamMembershipServiceClient interface {
 	Get(ctx context.Context, in *TeamMembershipGetRequest, opts ...grpc.CallOption) (*TeamMembership, error)
 	// Patch updates an existing TeamMembership
 	Patch(ctx context.Context, in *TeamMembershipPatchRequest, opts ...grpc.CallOption) (*TeamMembership, error)
-	// Apply applies a patch document to an existing TeamMembership
-	Apply(ctx context.Context, in *TeamMembershipApplyRequest, opts ...grpc.CallOption) (*TeamMembership, error)
 	// Erase deletes a TeamMembership
 	Erase(ctx context.Context, in *TeamMembershipRef, opts ...grpc.CallOption) (*TeamMembershipEraseResponse, error)
 	// List reads TeamMemberships a page at a time.
@@ -488,16 +445,6 @@ func (c *teamMembershipServiceClient) Patch(ctx context.Context, in *TeamMembers
 	return out, nil
 }
 
-func (c *teamMembershipServiceClient) Apply(ctx context.Context, in *TeamMembershipApplyRequest, opts ...grpc.CallOption) (*TeamMembership, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(TeamMembership)
-	err := c.cc.Invoke(ctx, TeamMembershipService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *teamMembershipServiceClient) Erase(ctx context.Context, in *TeamMembershipRef, opts ...grpc.CallOption) (*TeamMembershipEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(TeamMembershipEraseResponse)
@@ -547,8 +494,6 @@ type TeamMembershipServiceServer interface {
 	Get(context.Context, *TeamMembershipGetRequest) (*TeamMembership, error)
 	// Patch updates an existing TeamMembership
 	Patch(context.Context, *TeamMembershipPatchRequest) (*TeamMembership, error)
-	// Apply applies a patch document to an existing TeamMembership
-	Apply(context.Context, *TeamMembershipApplyRequest) (*TeamMembership, error)
 	// Erase deletes a TeamMembership
 	Erase(context.Context, *TeamMembershipRef) (*TeamMembershipEraseResponse, error)
 	// List reads TeamMemberships a page at a time.
@@ -591,9 +536,6 @@ func (UnimplementedTeamMembershipServiceServer) Get(context.Context, *TeamMember
 }
 func (UnimplementedTeamMembershipServiceServer) Patch(context.Context, *TeamMembershipPatchRequest) (*TeamMembership, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedTeamMembershipServiceServer) Apply(context.Context, *TeamMembershipApplyRequest) (*TeamMembership, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedTeamMembershipServiceServer) Erase(context.Context, *TeamMembershipRef) (*TeamMembershipEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -679,24 +621,6 @@ func _TeamMembershipService_Patch_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
-func _TeamMembershipService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(TeamMembershipApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TeamMembershipServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: TeamMembershipService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TeamMembershipServiceServer).Apply(ctx, req.(*TeamMembershipApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _TeamMembershipService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(TeamMembershipRef)
 	if err := dec(in); err != nil {
@@ -764,10 +688,6 @@ var TeamMembershipService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _TeamMembershipService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _TeamMembershipService_Apply_Handler,
-		},
-		{
 			MethodName: "Erase",
 			Handler:    _TeamMembershipService_Erase_Handler,
 		},
@@ -790,7 +710,6 @@ const (
 	GroupMembershipService_Add_FullMethodName   = "/roster.GroupMembershipService/Add"
 	GroupMembershipService_Get_FullMethodName   = "/roster.GroupMembershipService/Get"
 	GroupMembershipService_Patch_FullMethodName = "/roster.GroupMembershipService/Patch"
-	GroupMembershipService_Apply_FullMethodName = "/roster.GroupMembershipService/Apply"
 	GroupMembershipService_Erase_FullMethodName = "/roster.GroupMembershipService/Erase"
 	GroupMembershipService_List_FullMethodName  = "/roster.GroupMembershipService/List"
 )
@@ -805,8 +724,6 @@ type GroupMembershipServiceClient interface {
 	Get(ctx context.Context, in *GroupMembershipGetRequest, opts ...grpc.CallOption) (*GroupMembership, error)
 	// Patch updates an existing GroupMembership
 	Patch(ctx context.Context, in *GroupMembershipPatchRequest, opts ...grpc.CallOption) (*GroupMembership, error)
-	// Apply applies a patch document to an existing GroupMembership
-	Apply(ctx context.Context, in *GroupMembershipApplyRequest, opts ...grpc.CallOption) (*GroupMembership, error)
 	// Erase deletes a GroupMembership
 	Erase(ctx context.Context, in *GroupMembershipRef, opts ...grpc.CallOption) (*GroupMembershipEraseResponse, error)
 	// List reads GroupMemberships a page at a time.
@@ -851,16 +768,6 @@ func (c *groupMembershipServiceClient) Patch(ctx context.Context, in *GroupMembe
 	return out, nil
 }
 
-func (c *groupMembershipServiceClient) Apply(ctx context.Context, in *GroupMembershipApplyRequest, opts ...grpc.CallOption) (*GroupMembership, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GroupMembership)
-	err := c.cc.Invoke(ctx, GroupMembershipService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *groupMembershipServiceClient) Erase(ctx context.Context, in *GroupMembershipRef, opts ...grpc.CallOption) (*GroupMembershipEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GroupMembershipEraseResponse)
@@ -891,8 +798,6 @@ type GroupMembershipServiceServer interface {
 	Get(context.Context, *GroupMembershipGetRequest) (*GroupMembership, error)
 	// Patch updates an existing GroupMembership
 	Patch(context.Context, *GroupMembershipPatchRequest) (*GroupMembership, error)
-	// Apply applies a patch document to an existing GroupMembership
-	Apply(context.Context, *GroupMembershipApplyRequest) (*GroupMembership, error)
 	// Erase deletes a GroupMembership
 	Erase(context.Context, *GroupMembershipRef) (*GroupMembershipEraseResponse, error)
 	// List reads GroupMemberships a page at a time.
@@ -915,9 +820,6 @@ func (UnimplementedGroupMembershipServiceServer) Get(context.Context, *GroupMemb
 }
 func (UnimplementedGroupMembershipServiceServer) Patch(context.Context, *GroupMembershipPatchRequest) (*GroupMembership, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedGroupMembershipServiceServer) Apply(context.Context, *GroupMembershipApplyRequest) (*GroupMembership, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedGroupMembershipServiceServer) Erase(context.Context, *GroupMembershipRef) (*GroupMembershipEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -1001,24 +903,6 @@ func _GroupMembershipService_Patch_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GroupMembershipService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GroupMembershipApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GroupMembershipServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: GroupMembershipService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GroupMembershipServiceServer).Apply(ctx, req.(*GroupMembershipApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _GroupMembershipService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GroupMembershipRef)
 	if err := dec(in); err != nil {
@@ -1073,10 +957,6 @@ var GroupMembershipService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _GroupMembershipService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _GroupMembershipService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

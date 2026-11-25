@@ -2,6 +2,7 @@ package cmd_test
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -9,6 +10,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/lesomnus/payday/audit"
 	"github.com/lesomnus/payday/pdtest"
@@ -18,14 +20,16 @@ import (
 	"github.com/lesomnus/roster/server/forget"
 )
 
-// TestATenantIsNotErased: `Tenant` declares a hard erase, and nothing ever
+// TestATenantIsNotErased: `Tenant` declared a hard erase, and nothing ever
 // erased one. Every tenant `Add` makes has a person and two roles keyed to it,
 // and a destroyed tenant keeps its people's blank rows, so the generated
 // delete met a foreign key at every point of a tenant's life. The gated ports
-// refuse the method in a sentence. `admin.addr` served it, and answered `500`
+// refused the method in a sentence. `admin.addr` served it, and answered `500`
 // with the database's words -- *FOREIGN KEY constraint failed* -- as
-// `roster tenant erase` printed them at the box. Right is one answer: no port
-// serves it, and what is said is what does end a tenant.
+// `roster tenant erase` printed them at the box. A layer then refused it in
+// one sentence at every port and beneath them. Right is no method at all
+// (#531): no server has it, every port answers it as a method nobody serves,
+// and the box says what does end a tenant.
 //
 // A tenant is closed, which shuts its people out and can be undone
 // (`TenantService/Close`), and destroyed after that by whoever runs the
@@ -70,19 +74,16 @@ func TestATenantIsNotErased(t *testing.T) {
 		t.Helper()
 
 		for _, p := range ports {
-			_, err := app.NewTenantServiceClient(p.conn).Erase(p.as, ref)
+			err := p.conn.Invoke(p.as, "/roster.TenantService/Erase", ref, &emptypb.Empty{})
 			require.Equal(t, codes.Unimplemented, status.Code(err), "%s: %v", p.name, err)
 			require.NotContains(t, err.Error(), "constraint", "%s answered in the database's words", p.name)
 		}
 
 		// And beneath every port, where a command at the box and the
-		// deployment's own work arrive: the layer says what does end one.
-		_, err := b.Ungated.Tenant().Erase(ctx, ref)
-		require.Equal(t, codes.Unimplemented, status.Code(err), "%v", err)
-		require.ErrorContains(t, err, "roster tenant close")
-		require.ErrorContains(t, err, "roster forget @")
+		// deployment's own work arrive, there is no method to call.
+		require.False(t, reflect.ValueOf(b.Ungated.Tenant()).MethodByName("Erase").IsValid(), "a server has a tenant's Erase")
 
-		_, err = b.Ent.Tenant.Get(ctx, bolt.Uuid())
+		_, err := b.Ent.Tenant.Get(ctx, bolt.Uuid())
 		require.NoError(t, err, "the row is gone")
 	}
 
@@ -109,7 +110,10 @@ func TestATenantIsNotErased(t *testing.T) {
 	t.Run("nor the deployment's own", func(t *testing.T) {
 		x := require.New(t)
 
-		_, err := b.Control.Ungated.Tenant().Erase(ctx, app.TenantRef_builder{Id: controlTenant(t, ctx, b.Server).Bytes()}.Build())
+		control, err := b.GrpcControl(ctx, b.Config)
+		x.NoError(err)
+		err = pdtest.Serve(t, control).Invoke(bearing(ctx, b.Token), "/roster.TenantService/Erase",
+			app.TenantRef_builder{Id: controlTenant(t, ctx, b.Server).Bytes()}.Build(), &emptypb.Empty{})
 		x.Equal(codes.Unimplemented, status.Code(err), "%v", err)
 	})
 }

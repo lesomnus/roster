@@ -22,7 +22,6 @@ const (
 	GroupService_Add_FullMethodName    = "/roster.GroupService/Add"
 	GroupService_Get_FullMethodName    = "/roster.GroupService/Get"
 	GroupService_Patch_FullMethodName  = "/roster.GroupService/Patch"
-	GroupService_Apply_FullMethodName  = "/roster.GroupService/Apply"
 	GroupService_Erase_FullMethodName  = "/roster.GroupService/Erase"
 	GroupService_List_FullMethodName   = "/roster.GroupService/List"
 	GroupService_Update_FullMethodName = "/roster.GroupService/Update"
@@ -38,8 +37,6 @@ type GroupServiceClient interface {
 	Get(ctx context.Context, in *GroupGetRequest, opts ...grpc.CallOption) (*Group, error)
 	// Patch updates an existing Group
 	Patch(ctx context.Context, in *GroupPatchRequest, opts ...grpc.CallOption) (*Group, error)
-	// Apply applies a patch document to an existing Group
-	Apply(ctx context.Context, in *GroupApplyRequest, opts ...grpc.CallOption) (*Group, error)
 	// Erase deletes a Group
 	Erase(ctx context.Context, in *GroupRef, opts ...grpc.CallOption) (*GroupEraseResponse, error)
 	// List reads Groups a page at a time.
@@ -86,16 +83,6 @@ func (c *groupServiceClient) Patch(ctx context.Context, in *GroupPatchRequest, o
 	return out, nil
 }
 
-func (c *groupServiceClient) Apply(ctx context.Context, in *GroupApplyRequest, opts ...grpc.CallOption) (*Group, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Group)
-	err := c.cc.Invoke(ctx, GroupService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *groupServiceClient) Erase(ctx context.Context, in *GroupRef, opts ...grpc.CallOption) (*GroupEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GroupEraseResponse)
@@ -136,8 +123,6 @@ type GroupServiceServer interface {
 	Get(context.Context, *GroupGetRequest) (*Group, error)
 	// Patch updates an existing Group
 	Patch(context.Context, *GroupPatchRequest) (*Group, error)
-	// Apply applies a patch document to an existing Group
-	Apply(context.Context, *GroupApplyRequest) (*Group, error)
 	// Erase deletes a Group
 	Erase(context.Context, *GroupRef) (*GroupEraseResponse, error)
 	// List reads Groups a page at a time.
@@ -162,9 +147,6 @@ func (UnimplementedGroupServiceServer) Get(context.Context, *GroupGetRequest) (*
 }
 func (UnimplementedGroupServiceServer) Patch(context.Context, *GroupPatchRequest) (*Group, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedGroupServiceServer) Apply(context.Context, *GroupApplyRequest) (*Group, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedGroupServiceServer) Erase(context.Context, *GroupRef) (*GroupEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -250,24 +232,6 @@ func _GroupService_Patch_Handler(srv interface{}, ctx context.Context, dec func(
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GroupService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GroupApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GroupServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: GroupService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GroupServiceServer).Apply(ctx, req.(*GroupApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _GroupService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GroupRef)
 	if err := dec(in); err != nil {
@@ -342,10 +306,6 @@ var GroupService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _GroupService_Patch_Handler,
 		},
 		{
-			MethodName: "Apply",
-			Handler:    _GroupService_Apply_Handler,
-		},
-		{
 			MethodName: "Erase",
 			Handler:    _GroupService_Erase_Handler,
 		},
@@ -366,7 +326,6 @@ const (
 	GroupExposureService_Add_FullMethodName   = "/roster.GroupExposureService/Add"
 	GroupExposureService_Get_FullMethodName   = "/roster.GroupExposureService/Get"
 	GroupExposureService_Patch_FullMethodName = "/roster.GroupExposureService/Patch"
-	GroupExposureService_Apply_FullMethodName = "/roster.GroupExposureService/Apply"
 	GroupExposureService_Erase_FullMethodName = "/roster.GroupExposureService/Erase"
 	GroupExposureService_List_FullMethodName  = "/roster.GroupExposureService/List"
 )
@@ -381,8 +340,6 @@ type GroupExposureServiceClient interface {
 	Get(ctx context.Context, in *GroupExposureGetRequest, opts ...grpc.CallOption) (*GroupExposure, error)
 	// Patch updates an existing GroupExposure
 	Patch(ctx context.Context, in *GroupExposurePatchRequest, opts ...grpc.CallOption) (*GroupExposure, error)
-	// Apply applies a patch document to an existing GroupExposure
-	Apply(ctx context.Context, in *GroupExposureApplyRequest, opts ...grpc.CallOption) (*GroupExposure, error)
 	// Erase deletes a GroupExposure
 	Erase(ctx context.Context, in *GroupExposureRef, opts ...grpc.CallOption) (*GroupExposureEraseResponse, error)
 	// List reads GroupExposures a page at a time.
@@ -427,16 +384,6 @@ func (c *groupExposureServiceClient) Patch(ctx context.Context, in *GroupExposur
 	return out, nil
 }
 
-func (c *groupExposureServiceClient) Apply(ctx context.Context, in *GroupExposureApplyRequest, opts ...grpc.CallOption) (*GroupExposure, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GroupExposure)
-	err := c.cc.Invoke(ctx, GroupExposureService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *groupExposureServiceClient) Erase(ctx context.Context, in *GroupExposureRef, opts ...grpc.CallOption) (*GroupExposureEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GroupExposureEraseResponse)
@@ -467,8 +414,6 @@ type GroupExposureServiceServer interface {
 	Get(context.Context, *GroupExposureGetRequest) (*GroupExposure, error)
 	// Patch updates an existing GroupExposure
 	Patch(context.Context, *GroupExposurePatchRequest) (*GroupExposure, error)
-	// Apply applies a patch document to an existing GroupExposure
-	Apply(context.Context, *GroupExposureApplyRequest) (*GroupExposure, error)
 	// Erase deletes a GroupExposure
 	Erase(context.Context, *GroupExposureRef) (*GroupExposureEraseResponse, error)
 	// List reads GroupExposures a page at a time.
@@ -491,9 +436,6 @@ func (UnimplementedGroupExposureServiceServer) Get(context.Context, *GroupExposu
 }
 func (UnimplementedGroupExposureServiceServer) Patch(context.Context, *GroupExposurePatchRequest) (*GroupExposure, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedGroupExposureServiceServer) Apply(context.Context, *GroupExposureApplyRequest) (*GroupExposure, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedGroupExposureServiceServer) Erase(context.Context, *GroupExposureRef) (*GroupExposureEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -576,24 +518,6 @@ func _GroupExposureService_Patch_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _GroupExposureService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GroupExposureApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(GroupExposureServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: GroupExposureService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(GroupExposureServiceServer).Apply(ctx, req.(*GroupExposureApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _GroupExposureService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GroupExposureRef)
 	if err := dec(in); err != nil {
@@ -648,10 +572,6 @@ var GroupExposureService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _GroupExposureService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _GroupExposureService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

@@ -144,7 +144,6 @@ message Consent {
       add: {}
       get: {}
       patch: {}
-      apply: {}
       erase: {}
     }
     indexes: [

@@ -4,7 +4,6 @@ package roster;
 import "app/phone.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
-import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -16,8 +15,6 @@ service PhoneService {
   rpc Get(PhoneGetRequest) returns (Phone);
   // Patch updates an existing Phone
   rpc Patch(PhonePatchRequest) returns (Phone);
-  // Apply applies a patch document to an existing Phone
-  rpc Apply(PhoneApplyRequest) returns (Phone);
   // Erase deletes a Phone
   rpc Erase(PhoneRef) returns (PhoneEraseResponse);
   // List reads Phones a page at a time.
@@ -83,11 +80,6 @@ message PhonePatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message PhoneApplyRequest {
-  PhoneRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message PhoneEraseResponse {

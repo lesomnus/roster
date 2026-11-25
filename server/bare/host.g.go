@@ -407,16 +407,6 @@ var hostOrmEntity = ormpatch.MustEntityOf(rstr.File_app_host_proto, "Host")
 var hostPatchColumns = entpatch.Columns{
 	1: host.FieldId, 2: host.TenantColumn, 5: host.FieldName, 6: host.FieldDesc, 7: host.FieldLabels, 9: host.FieldDateProved, 13: host.FieldDateUpdated, 14: host.FieldDateErased, 15: host.FieldDateCreated}
 
-func (s HostServiceServer) Apply(ctx context.Context, req *rstr.HostApplyRequest) (*rstr.Host, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.HostService_Apply_FullMethodName)
-}
-
 func (s HostServiceServer) apply(ctx context.Context, ref *rstr.HostRef, doc *patchpb.Patch, by string) (*rstr.Host, error) {
 	plan := &ormpatch.Plan{Entity: hostOrmEntity}
 	if doc != nil {
@@ -1032,16 +1022,6 @@ var mailDomainOrmEntity = ormpatch.MustEntityOf(rstr.File_app_host_proto, "MailD
 
 var mailDomainPatchColumns = entpatch.Columns{
 	1: maildomain.FieldId, 2: maildomain.TenantColumn, 5: maildomain.FieldName, 9: maildomain.FieldProvider, 6: maildomain.FieldDesc, 7: maildomain.FieldLabels, 13: maildomain.FieldDateUpdated, 14: maildomain.FieldDateErased, 15: maildomain.FieldDateCreated}
-
-func (s MailDomainServiceServer) Apply(ctx context.Context, req *rstr.MailDomainApplyRequest) (*rstr.MailDomain, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.MailDomainService_Apply_FullMethodName)
-}
 
 func (s MailDomainServiceServer) apply(ctx context.Context, ref *rstr.MailDomainRef, doc *patchpb.Patch, by string) (*rstr.MailDomain, error) {
 	plan := &ormpatch.Plan{Entity: mailDomainOrmEntity}
@@ -1666,16 +1646,6 @@ var hostProofOrmEntity = ormpatch.MustEntityOf(rstr.File_app_host_proto, "HostPr
 
 var hostProofPatchColumns = entpatch.Columns{
 	1: hostproof.FieldId, 2: hostproof.TenantColumn, 5: hostproof.FieldName, 9: hostproof.FieldToken, 10: hostproof.FieldDateExpired, 6: hostproof.FieldDesc, 13: hostproof.FieldDateUpdated, 14: hostproof.FieldDateErased, 15: hostproof.FieldDateCreated}
-
-func (s HostProofServiceServer) Apply(ctx context.Context, req *rstr.HostProofApplyRequest) (*rstr.HostProof, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.HostProofService_Apply_FullMethodName)
-}
 
 func (s HostProofServiceServer) apply(ctx context.Context, ref *rstr.HostProofRef, doc *patchpb.Patch, by string) (*rstr.HostProof, error) {
 	plan := &ormpatch.Plan{Entity: hostProofOrmEntity}

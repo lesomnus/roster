@@ -22,7 +22,6 @@ const (
 	ApiKeyService_Add_FullMethodName   = "/roster.ApiKeyService/Add"
 	ApiKeyService_Get_FullMethodName   = "/roster.ApiKeyService/Get"
 	ApiKeyService_Patch_FullMethodName = "/roster.ApiKeyService/Patch"
-	ApiKeyService_Apply_FullMethodName = "/roster.ApiKeyService/Apply"
 	ApiKeyService_Erase_FullMethodName = "/roster.ApiKeyService/Erase"
 	ApiKeyService_List_FullMethodName  = "/roster.ApiKeyService/List"
 	ApiKeyService_Issue_FullMethodName = "/roster.ApiKeyService/Issue"
@@ -38,8 +37,6 @@ type ApiKeyServiceClient interface {
 	Get(ctx context.Context, in *ApiKeyGetRequest, opts ...grpc.CallOption) (*ApiKey, error)
 	// Patch updates an existing ApiKey
 	Patch(ctx context.Context, in *ApiKeyPatchRequest, opts ...grpc.CallOption) (*ApiKey, error)
-	// Apply applies a patch document to an existing ApiKey
-	Apply(ctx context.Context, in *ApiKeyApplyRequest, opts ...grpc.CallOption) (*ApiKey, error)
 	// Erase deletes a ApiKey
 	Erase(ctx context.Context, in *ApiKeyRef, opts ...grpc.CallOption) (*ApiKeyEraseResponse, error)
 	// List reads ApiKeys a page at a time.
@@ -94,16 +91,6 @@ func (c *apiKeyServiceClient) Patch(ctx context.Context, in *ApiKeyPatchRequest,
 	return out, nil
 }
 
-func (c *apiKeyServiceClient) Apply(ctx context.Context, in *ApiKeyApplyRequest, opts ...grpc.CallOption) (*ApiKey, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ApiKey)
-	err := c.cc.Invoke(ctx, ApiKeyService_Apply_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *apiKeyServiceClient) Erase(ctx context.Context, in *ApiKeyRef, opts ...grpc.CallOption) (*ApiKeyEraseResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ApiKeyEraseResponse)
@@ -144,8 +131,6 @@ type ApiKeyServiceServer interface {
 	Get(context.Context, *ApiKeyGetRequest) (*ApiKey, error)
 	// Patch updates an existing ApiKey
 	Patch(context.Context, *ApiKeyPatchRequest) (*ApiKey, error)
-	// Apply applies a patch document to an existing ApiKey
-	Apply(context.Context, *ApiKeyApplyRequest) (*ApiKey, error)
 	// Erase deletes a ApiKey
 	Erase(context.Context, *ApiKeyRef) (*ApiKeyEraseResponse, error)
 	// List reads ApiKeys a page at a time.
@@ -178,9 +163,6 @@ func (UnimplementedApiKeyServiceServer) Get(context.Context, *ApiKeyGetRequest) 
 }
 func (UnimplementedApiKeyServiceServer) Patch(context.Context, *ApiKeyPatchRequest) (*ApiKey, error) {
 	return nil, status.Error(codes.Unimplemented, "method Patch not implemented")
-}
-func (UnimplementedApiKeyServiceServer) Apply(context.Context, *ApiKeyApplyRequest) (*ApiKey, error) {
-	return nil, status.Error(codes.Unimplemented, "method Apply not implemented")
 }
 func (UnimplementedApiKeyServiceServer) Erase(context.Context, *ApiKeyRef) (*ApiKeyEraseResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Erase not implemented")
@@ -266,24 +248,6 @@ func _ApiKeyService_Patch_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ApiKeyService_Apply_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ApiKeyApplyRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(ApiKeyServiceServer).Apply(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: ApiKeyService_Apply_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiKeyServiceServer).Apply(ctx, req.(*ApiKeyApplyRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _ApiKeyService_Erase_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ApiKeyRef)
 	if err := dec(in); err != nil {
@@ -356,10 +320,6 @@ var ApiKeyService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Patch",
 			Handler:    _ApiKeyService_Patch_Handler,
-		},
-		{
-			MethodName: "Apply",
-			Handler:    _ApiKeyService_Apply_Handler,
 		},
 		{
 			MethodName: "Erase",

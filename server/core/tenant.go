@@ -476,68 +476,19 @@ func (s living) Connection() app.ConnectionServiceServer {
 
 // NotErased is what is said to anybody who asks for a tenant to be erased:
 // that none is, and what ends one instead.
+//
+// `Tenant` has no `Erase` (`proto/ext/payday/tenant.ext.proto`). payday's
+// declares a hard one, a `DELETE` of the row, and every row of a tenant is
+// keyed to it, so it met a foreign key at every point of a tenant's life and
+// answered the database's words about that (#279). What was meant is one of
+// two acts with words of their own: closing, which is one row and is undone
+// ([coreTenant.Close]), and destroying, which forgets every person and
+// removes every other row, from a shell or a sweep (`server/forget`), and is
+// not reachable over the wire on purpose. So no server has the method, and
+// `roster tenant erase`, typed as every other entity's erase is, says this.
 const NotErased = "a tenant is not erased. It is closed, which shuts its people out and is undone while tenant.restore_within lasts " +
 	"(TenantService/Close; `roster tenant close @tenant`), and a closed one is destroyed by whoever runs this deployment, " +
 	"from a shell on the box (`roster forget @tenant`)"
-
-// Erase is not served: a tenant is not erased, by anybody, through any stack.
-//
-// # What it was
-//
-// `Tenant` declares a hard erase, and the generated one is a `DELETE` of the
-// row. Every row of a tenant is keyed to it, and `Add` makes a tenant with a
-// person and two roles; a destroyed one keeps the blank rows of its people.
-// So the delete met a foreign key at every point of a tenant's life, and what
-// a caller was answered was the database's own words about that: `Unknown`,
-// *FOREIGN KEY constraint failed*, `500` over HTTP. The gate refuses the
-// method in a sentence, so that was the answer wherever there is no gate --
-// `admin.addr`, and `roster tenant erase` at the box (#279).
-//
-// # Why it refuses rather than doing what was meant
-//
-// What was meant is one of two things, and they are different acts with
-// different words. Closing is one row and can be undone
-// ([coreTenant.Close]). Destroying forgets every person and removes every
-// other row, through ent and past every server, from a shell or a sweep
-// (`server/forget`): it is not reachable over the wire on purpose. A verb
-// called *erase* that did either would be the other one's surprise.
-//
-// `Unimplemented`, the gate's own code for it: this is not about who is
-// asking, and no credential changes it.
-func (s coreTenant) Erase(context.Context, *app.TenantRef) (*app.TenantEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, NotErased)
-}
-
-// NotErasedBuild says [NotErased] in front of a stack whose generated gate
-// would answer a tenant's `Erase` first, in its own words: *taken down by
-// whoever runs this deployment*, at `server.addr` and `control.addr`, where
-// `admin.addr` and the box said what does end a tenant. One question, one
-// answer, by whichever port it is asked.
-func NotErasedBuild() app.Builder {
-	return app.BuilderFunc(func(next app.Server) (app.Server, error) { return notErased{app.NewOverlay(next)}, nil })
-}
-
-type notErased struct{ app.Overlay }
-
-func (s notErased) Tenant() app.TenantServiceServer {
-	return notErasedTenant{s.Next().Tenant()}
-}
-
-// WithDriver is what nothing inherits; see `CLAUDE.md`, "Writing a layer".
-func (s notErased) WithDriver(drv dialect.Driver) (app.Server, error) {
-	next, err := enttx.Rebind(s.Next(), drv)
-	if err != nil {
-		return nil, err
-	}
-
-	return notErased{app.NewOverlay(next)}, nil
-}
-
-type notErasedTenant struct{ app.TenantServiceServer }
-
-func (notErasedTenant) Erase(context.Context, *app.TenantRef) (*app.TenantEraseResponse, error) {
-	return nil, status.Error(codes.Unimplemented, NotErased)
-}
 
 // Everyverb is what the first role of a tenant is called, and EveryMethod is
 // what it holds.

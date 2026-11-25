@@ -214,12 +214,6 @@ func TestWhatIsTheTenantsAsAWholeIsWrittenAcrossIt(t *testing.T) {
 				}.Build())
 				return err
 			}},
-			{"Apply", func(_, stack context.Context) error {
-				_, err := b.Walled.Host().Apply(stack, app.HostApplyRequest_builder{
-					Ref: seededHost(t, b, fresh("apply")+".contoso.test").Ref(), Patch: describing(t, "roster.Host", "desc"),
-				}.Build())
-				return err
-			}},
 		}},
 		{"host proof", []write{
 			{"Add", func(wire, _ context.Context) error {
@@ -234,12 +228,6 @@ func TestWhatIsTheTenantsAsAWholeIsWrittenAcrossIt(t *testing.T) {
 				p := seededProof(t, b, fresh("patch")+".contoso.test")
 				_, err := b.Walled.HostProof().Patch(stack, app.HostProofPatchRequest_builder{
 					Ref: p.Ref(), Desc: z.Ptr("patched"), DateUpdatedForce: z.Ptr(true),
-				}.Build())
-				return err
-			}},
-			{"Apply", func(_, stack context.Context) error {
-				_, err := b.Walled.HostProof().Apply(stack, app.HostProofApplyRequest_builder{
-					Ref: seededProof(t, b, fresh("apply")+".contoso.test").Ref(), Patch: describing(t, "roster.HostProof", "desc"),
 				}.Build())
 				return err
 			}},
@@ -267,12 +255,6 @@ func TestWhatIsTheTenantsAsAWholeIsWrittenAcrossIt(t *testing.T) {
 				}.Build())
 				return err
 			}},
-			{"Apply", func(_, stack context.Context) error {
-				_, err := b.Walled.MailDomain().Apply(stack, app.MailDomainApplyRequest_builder{
-					Ref: seededDomain(t, b, fresh("apply")+".contoso.test").Ref(), Patch: describing(t, "roster.MailDomain", "desc"),
-				}.Build())
-				return err
-			}},
 		}},
 		{"nomination", []write{
 			{"Add", func(wire, _ context.Context) error {
@@ -293,12 +275,6 @@ func TestWhatIsTheTenantsAsAWholeIsWrittenAcrossIt(t *testing.T) {
 				}.Build())
 				return err
 			}},
-			{"Apply", func(_, stack context.Context) error {
-				_, err := b.Walled.Nomination().Apply(stack, app.NominationApplyRequest_builder{
-					Ref: seededNomination(t, b, app2, fresh("apply-")).Ref(), Patch: describing(t, "roster.Nomination", "name"),
-				}.Build())
-				return err
-			}},
 		}},
 		{"site", []write{
 			{"Add", func(wire, _ context.Context) error {
@@ -313,13 +289,6 @@ func TestWhatIsTheTenantsAsAWholeIsWrittenAcrossIt(t *testing.T) {
 				_, err := b.Walled.Site().Patch(stack, app.SitePatchRequest_builder{
 					Ref:  app.SiteRef_builder{Id: b.site(t, ctx, b.Contoso, fresh("patch-")).Bytes()}.Build(),
 					Desc: z.Ptr("patched"), DateUpdatedForce: z.Ptr(true),
-				}.Build())
-				return err
-			}},
-			{"Apply", func(_, stack context.Context) error {
-				_, err := b.Walled.Site().Apply(stack, app.SiteApplyRequest_builder{
-					Ref:   app.SiteRef_builder{Id: b.site(t, ctx, b.Contoso, fresh("apply-")).Bytes()}.Build(),
-					Patch: describing(t, "roster.Site", "desc"),
 				}.Build())
 				return err
 			}},

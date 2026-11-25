@@ -436,16 +436,6 @@ var relationOrmEntity = ormpatch.MustEntityOf(rstr.File_app_relation_proto, "Rel
 var relationPatchColumns = entpatch.Columns{
 	1: relation.FieldId, 2: relation.HolderColumn, 7: relation.FieldLabels, 8: relation.OtherColumn, 11: relation.FieldTenantId, 13: relation.FieldDateUpdated, 14: relation.FieldDateErased, 15: relation.FieldDateCreated}
 
-func (s RelationServiceServer) Apply(ctx context.Context, req *rstr.RelationApplyRequest) (*rstr.Relation, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.RelationService_Apply_FullMethodName)
-}
-
 func (s RelationServiceServer) apply(ctx context.Context, ref *rstr.RelationRef, doc *patchpb.Patch, by string) (*rstr.Relation, error) {
 	plan := &ormpatch.Plan{Entity: relationOrmEntity}
 	if doc != nil {

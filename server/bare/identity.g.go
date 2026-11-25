@@ -401,16 +401,6 @@ var identityOrmEntity = ormpatch.MustEntityOf(rstr.File_app_identity_proto, "Ide
 var identityPatchColumns = entpatch.Columns{
 	1: identity.FieldId, 2: identity.HolderColumn, 8: identity.FieldProvider, 9: identity.FieldSubject, 10: identity.FieldTenantId, 13: identity.FieldDateUpdated, 14: identity.FieldDateErased, 15: identity.FieldDateCreated}
 
-func (s IdentityServiceServer) Apply(ctx context.Context, req *rstr.IdentityApplyRequest) (*rstr.Identity, error) {
-	if s.admission != nil {
-		ctx = request(ctx, req)
-	}
-	if !req.HasPatch() {
-		return nil, status.Errorf(codes.InvalidArgument, "%s", ormpatch.ErrNoPatch)
-	}
-	return s.apply(ctx, req.GetRef(), req.GetPatch(), rstr.IdentityService_Apply_FullMethodName)
-}
-
 func (s IdentityServiceServer) apply(ctx context.Context, ref *rstr.IdentityRef, doc *patchpb.Patch, by string) (*rstr.Identity, error) {
 	plan := &ormpatch.Plan{Entity: identityOrmEntity}
 	if doc != nil {

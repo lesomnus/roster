@@ -8,7 +8,6 @@ import "app/site_svc.g.proto";
 import "app/team_svc.g.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
-import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -20,8 +19,6 @@ service SiteMembershipService {
   rpc Get(SiteMembershipGetRequest) returns (SiteMembership);
   // Patch updates an existing SiteMembership
   rpc Patch(SiteMembershipPatchRequest) returns (SiteMembership);
-  // Apply applies a patch document to an existing SiteMembership
-  rpc Apply(SiteMembershipApplyRequest) returns (SiteMembership);
   // Erase deletes a SiteMembership
   rpc Erase(SiteMembershipRef) returns (SiteMembershipEraseResponse);
   // List reads SiteMemberships a page at a time.
@@ -55,8 +52,6 @@ service TeamMembershipService {
   rpc Get(TeamMembershipGetRequest) returns (TeamMembership);
   // Patch updates an existing TeamMembership
   rpc Patch(TeamMembershipPatchRequest) returns (TeamMembership);
-  // Apply applies a patch document to an existing TeamMembership
-  rpc Apply(TeamMembershipApplyRequest) returns (TeamMembership);
   // Erase deletes a TeamMembership
   rpc Erase(TeamMembershipRef) returns (TeamMembershipEraseResponse);
   // List reads TeamMemberships a page at a time.
@@ -90,8 +85,6 @@ service GroupMembershipService {
   rpc Get(GroupMembershipGetRequest) returns (GroupMembership);
   // Patch updates an existing GroupMembership
   rpc Patch(GroupMembershipPatchRequest) returns (GroupMembership);
-  // Apply applies a patch document to an existing GroupMembership
-  rpc Apply(GroupMembershipApplyRequest) returns (GroupMembership);
   // Erase deletes a GroupMembership
   rpc Erase(GroupMembershipRef) returns (GroupMembershipEraseResponse);
   // List reads GroupMemberships a page at a time.
@@ -147,11 +140,6 @@ message SiteMembershipPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message SiteMembershipApplyRequest {
-  SiteMembershipRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message SiteMembershipEraseResponse {
@@ -325,11 +313,6 @@ message TeamMembershipPatchRequest {
   bool date_updated_force = 27;
 }
 
-message TeamMembershipApplyRequest {
-  TeamMembershipRef ref = 1;
-  patch.Patch patch = 2;
-}
-
 message TeamMembershipEraseResponse {
   // Erased is whether this call is the one that erased the row.
   //
@@ -499,11 +482,6 @@ message GroupMembershipPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message GroupMembershipApplyRequest {
-  GroupMembershipRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message GroupMembershipEraseResponse {

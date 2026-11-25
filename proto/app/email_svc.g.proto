@@ -5,7 +5,6 @@ import "app/email.proto";
 import "app/identity_svc.g.proto";
 import "google/protobuf/timestamp.proto";
 import "orm.proto";
-import "patch/patch.proto";
 import "roster/payday/holder_svc.g.proto";
 
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -17,8 +16,6 @@ service EmailService {
   rpc Get(EmailGetRequest) returns (Email);
   // Patch updates an existing Email
   rpc Patch(EmailPatchRequest) returns (Email);
-  // Apply applies a patch document to an existing Email
-  rpc Apply(EmailApplyRequest) returns (Email);
   // Erase deletes a Email
   rpc Erase(EmailRef) returns (EmailEraseResponse);
   // List reads Emails a page at a time.
@@ -214,11 +211,6 @@ message EmailPatchRequest {
   // refused rather than assumed, because an unset field cannot be told
   // apart from a caller who never considered locking at all.
   bool date_updated_force = 27;
-}
-
-message EmailApplyRequest {
-  EmailRef ref = 1;
-  patch.Patch patch = 2;
 }
 
 message EmailEraseResponse {

@@ -71,9 +71,7 @@ func TestAGeneralWriteDoesNotOpenAKeysRow(t *testing.T) {
 	x.Equal(codes.Unimplemented, status.Code(err), "Patch: %v", err)
 	x.ErrorContains(err, "is not served")
 
-	_, err = c.Apply(as, app.ApiKeyApplyRequest_builder{Ref: theirs}.Build())
-	x.Equal(codes.Unimplemented, status.Code(err), "Apply: %v", err)
-	x.ErrorContains(err, "is not served")
+	// And a key has no `Apply`, which nothing here calls (#531).
 
 	t.Run("and the verbs of its own are still there", func(t *testing.T) {
 		x := require.New(t)
