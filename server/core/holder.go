@@ -477,6 +477,31 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 		}
 	}
 
+	// Their badge, beside the rest and not among them: it opens a station,
+	// and nothing that signs anybody in reads it. Written out as the
+	// credentials are, so the code and the verifier are absent rather than
+	// deselected.
+	b, err := s.Next().Badge().Get(ctx, app.BadgeGetRequest_builder{
+		Ref: app.BadgeRef_builder{Holder: app.BadgeRefByHolder_builder{Holder: who}.Build()}.Build(),
+		Select: app.BadgeSelect_builder{
+			DateRotated: z.Ptr(true),
+			DateLocked:  z.Ptr(true),
+		}.Build(),
+	}.Build())
+	switch {
+	case err == nil:
+		f := app.SignInBadge_builder{}
+		if u := b.GetDateRotated(); u != nil {
+			f.DateRotated = u
+		}
+		if s.badges.locked(b, time.Now()) {
+			f.DateLocked = b.GetDateLocked()
+		}
+		res.Badge = f.Build()
+	case status.Code(err) != codes.NotFound:
+		return nil, err
+	}
+
 	// The alias of each app a key is for, read once each, as the caller
 	// reads a holder: what a screen draws beside the identifier.
 	aliases := map[string]string{}

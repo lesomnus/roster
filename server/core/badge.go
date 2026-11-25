@@ -11,6 +11,7 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
+	"github.com/lesomnus/payday/access"
 	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pderr"
 	"github.com/lesomnus/payday/pdid"
@@ -478,6 +479,13 @@ func (s coreBadge) Verify(ctx context.Context, req *app.BadgeVerifyRequest) (*ap
 			return nil, err
 		}
 	}
+
+	// A read of who this is, on the access record: the answer carries no
+	// field the schema calls somebody's, so it is said here, by the badge that
+	// answered, in its tenant.
+	id, _ := pdid.From(v.GetId())
+	in, _ := pdid.From(v.GetTenantId())
+	access.Saw(ctx, access.Subject{Id: id, Tenant: in})
 
 	return app.BadgeVerifyResponse_builder{
 		Ok:     true,
