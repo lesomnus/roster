@@ -84,11 +84,10 @@ down*.
 `standing.Methods` is what the app's role at roster holds for all of this:
 `HolderService/Get`, `SyncService/Watch`, `EmailService/List` and
 `EmailService/Get`. It is the part of the role this package asks for; an app
-adds what it asks itself -- Loft adds the password check, the tenant read and
-its consent ledger.
+adds what it asks itself -- Loft adds the password check and the tenant read.
 
 ```sh
-roster app install --tenant acme \
+roster --as admin app install --tenant acme \
   --allow /roster.HolderService/Get,/roster.SyncService/Watch,/roster.EmailService/List,/roster.EmailService/Get \
   levyan
 ```

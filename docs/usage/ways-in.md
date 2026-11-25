@@ -128,7 +128,7 @@ that holder's bindings: everything a product does for one of your customers.
 A key narrowed to a tenant needs that tenant to have nominated somebody for it,
 which `roster app install --tenant T --allow … NAME` does: the holder, its role,
 the binding and the nomination, once -- and with `--serves`, the app's first
-role at itself and roster's verbs for it ([apps.md](../apps.md)).
+role at itself and roster's verbs for it ([apps.md](../apps.md#installing-one-roster-app-install)).
 
 Something a **tenant** runs -- their CI, their sync job, their own copy of an app
 -- is a holder in their tenant with an `rt_` ([below](#a-tenant-key--rt_)).
@@ -306,8 +306,10 @@ holder ends the keys that are for it, whoever's they are.
 **It is the app's row.** The app itself and its administrators, who hold
 roster's verbs for it, list the keys that are for it -- of one person, or of
 everybody -- read one and end one, whoever's it is; none of roster's and none
-of another app's ([../apps.md](../apps.md) § *An app's page of somebody's
-keys*). Minting one stays the person's.
+of another app's ([../apps.md](../apps.md) § *Giving an app's users API
+tokens*). Minting one stays the person's: at a terminal's sign-in that names
+the app (§ *For an app*), or by the app as them, through a delegation naming
+`ApiKeyService/Issue` that they handed it (§ *One somebody hands an app*).
 
 ### A terminal, signed in from a browser
 
@@ -385,8 +387,8 @@ asking more than its approver holds is; answered to that app at `Introspect`,
 and no credential at roster.
 
 **Anybody may begin one**, as before -- and so an app's own server begins one for
-the person in front of its page, and `loft auth login` does, against the same
-request `roster sign-in` sends. Nothing is minted without the person's approval
+the person in front of its page, and an app's own command line may, against the
+same request `roster sign-in` sends. Nothing is minted without the person's approval
 at the front door. The request is what such a client writes against:
 
 `POST /device/begin`, a JSON body of
