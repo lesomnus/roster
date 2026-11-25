@@ -5903,17 +5903,17 @@ const file_roster_payday_holder_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.HolderRefR\x03ref\x12%\n" +
 	"\x03app\x18\x02 \x01(\v2\x11.roster.HolderRefH\x00R\x03app\x12\x18\n" +
 	"\x06roster\x18\x03 \x01(\bH\x00R\x06rosterB\x04\n" +
-	"\x02at\"\xa1\x01\n" +
+	"\x02at\"\xb1\x01\n" +
 	"\x15HolderReachesResponse\x12\x18\n" +
 	"\amethods\x18\n" +
-	" \x03(\tR\amethods\x12\x14\n" +
-	"\x05sites\x18\v \x03(\fR\x05sites\x12$\n" +
+	" \x03(\tR\amethods\x12\x1c\n" +
+	"\x05sites\x18\v \x03(\fB\x06\xea\x82\x16\x02\x10@R\x05sites\x12$\n" +
 	"\n" +
 	"every_site\x18\f \x01(\bB\x05\xaa\x01\x02\b\x02R\teverySite\x12\x1e\n" +
 	"\n" +
 	"everywhere\x18\r \x03(\tR\n" +
-	"everywhere\x12\x12\n" +
-	"\x04apps\x18\x0e \x03(\fR\x04apps\"\xcc\x01\n" +
+	"everywhere\x12\x1a\n" +
+	"\x04apps\x18\x0e \x03(\fB\x06\xea\x82\x16\x02\x10@R\x04apps\"\xcc\x01\n" +
 	"\x13HolderSearchRequest\x12.\n" +
 	"\afilters\x18\x01 \x03(\v2\x14.roster.HolderFilterR\afilters\x12\f\n" +
 	"\x01q\x18\b \x01(\tR\x01q\x12\x1e\n" +

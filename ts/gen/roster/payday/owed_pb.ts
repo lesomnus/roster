@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/owed.proto.
  */
 export const file_roster_payday_owed: GenFile = /*@__PURE__*/
-  fileDesc("Chhyb3N0ZXIvcGF5ZGF5L293ZWQucHJvdG8SBnJvc3RlciK8AQoET3dlZBIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASFgoGb2JqZWN0GAggASgMQgbqghYCEEASDwoHaGVsZF9ieRgJIAMoDBI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6Ncr8FSIaIBIEb3dlZBoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABirsWCwj+AUICCgBICCoAQiZaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAmIIZWRpdGlvbnNw6Ac", [file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("Chhyb3N0ZXIvcGF5ZGF5L293ZWQucHJvdG8SBnJvc3RlciLEAQoET3dlZBIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASFgoGb2JqZWN0GAggASgMQgbqghYCEEASFwoHaGVsZF9ieRgJIAMoDEIG6oIWAhBAEjsKDGRhdGVfY3JlYXRlZBgPIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCCeqCFgVAAYIBADo1yvwVIhogEgRvd2VkGhAKDGRhdGVfY3JlYXRlZBAPGgYKAmlkEAGKuxYLCP4BQgIKAEgIKgBCJlofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cpIDAggCYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * Owed is an erasure owed: the archive's half of forgetting one object, which

@@ -505,7 +505,7 @@ message HolderReachesResponse {
   // The sites their bindings and teams name; empty with `every_site` false is
   // somebody narrowed to nothing. Each is said once, in the order of their
   // identifiers, which is the order they were made in.
-  repeated bytes sites = 11;
+  repeated bytes sites = 11 [(orm.field) = {type: TYPE_UUID}];
 
   // A binding with no site is the tenant's whole width.
   bool every_site = 12 [features.field_presence = IMPLICIT];
@@ -530,7 +530,7 @@ message HolderReachesResponse {
   // `methods` is held for one app is held over that app's rows alone. Each is
   // said once, in the order of their identifiers, as `sites` is. Of an answer
   // about roster; at an app there is none, and it is empty.
-  repeated bytes apps = 14;
+  repeated bytes apps = 14 [(orm.field) = {type: TYPE_UUID}];
 }
 
 message HolderSignsInRequest {
