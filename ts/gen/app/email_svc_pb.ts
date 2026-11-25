@@ -21,7 +21,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/email_svc.g.proto.
  */
 export const file_app_email_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChVhcHAvZW1haWxfc3ZjLmcucHJvdG8SBnJvc3RlciKiAgoPRW1haWxBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIWCgdhZGRyZXNzGAggASgJQgWqAQIIAhIxCg1kYXRlX3ZlcmlmaWVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBInCgp2b3VjaGVkX2J5GAogASgLMhMucm9zdGVyLklkZW50aXR5UmVmEhIKCmVudGVyZWRfYnkYDCABKAwSHgoJdGVuYW50X2lkGAsgASgMQguqAQIIAuqCFgIQQBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlUKD0VtYWlsR2V0UmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSIwoGc2VsZWN0GAIgASgLMhMucm9zdGVyLkVtYWlsU2VsZWN0InkKCEVtYWlsUmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABIsCgdhZGRyZXNzGAIgASgLMhkucm9zdGVyLkVtYWlsUmVmQnlBZGRyZXNzSAASIgoCYXQYCyABKAsyFC5yb3N0ZXIuRW1haWxSZWZCeUF0SABCBQoDa2V5IkcKEUVtYWlsUmVmQnlBZGRyZXNzEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHYWRkcmVzcxgIIAEoCSI6CgxFbWFpbFJlZkJ5QXQSGQoJdGVuYW50X2lkGAsgASgMQgbqghYCEEASDwoHYWRkcmVzcxgIIAEoCSL8AQoLRW1haWxTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDwoHYWRkcmVzcxgIIAEoCBIVCg1kYXRlX3ZlcmlmaWVkGAkgASgIEioKCnZvdWNoZWRfYnkYCiABKAsyFi5yb3N0ZXIuSWRlbnRpdHlTZWxlY3QSEgoKZW50ZXJlZF9ieRgMIAEoCBIRCgl0ZW5hbnRfaWQYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKiAgoRRW1haWxQYXRjaFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEg8KB2FkZHJlc3MYECABKAkSMQoNZGF0ZV92ZXJpZmllZBgSIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV92ZXJpZmllZF9udWxsGBMgASgIEicKCnZvdWNoZWRfYnkYFCABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSFwoPdm91Y2hlZF9ieV9udWxsGBUgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIk8KEUVtYWlsQXBwbHlSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiQKEkVtYWlsRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiewoQRW1haWxMaXN0UmVxdWVzdBIkCgdmaWx0ZXJzGAEgAygLMhMucm9zdGVyLkVtYWlsRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJGChFFbWFpbExpc3RSZXNwb25zZRIcCgVpdGVtcxgBIAMoCzINLnJvc3Rlci5FbWFpbBITCgRuZXh0GAIgASgJQgWqAQIIAiJPCgtFbWFpbEZpbHRlchIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZiJXChFFbWFpbFdhdGNoUmVxdWVzdBIkCgdmaWx0ZXJzGAEgAygLMhMucm9zdGVyLkVtYWlsRmlsdGVyEhwKDXNraXBfc25hcHNob3QYAiABKAhCBaoBAggCIjsKEkVtYWlsV2F0Y2hSZXNwb25zZRIlCgVpdGVtcxgBIAMoCzIWLnJvc3Rlci5FbWFpbFdhdGNoSXRlbSJRCg5FbWFpbFdhdGNoSXRlbRIKCgJpZBgBIAEoDBIcCgV2YWx1ZRgCIAEoCzINLnJvc3Rlci5FbWFpbBIVCgZhY3Rpb24YAyABKAlCBaoBAggCIocBChFFbWFpbENsYWltUmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSIQoGaG9sZGVyGAMgASgLMhEucm9zdGVyLkhvbGRlclJlZhIwCgxkYXRlX2V4cGlyZWQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlwKEkVtYWlsQ2xhaW1SZXNwb25zZRIUCgV0b2tlbhgBIAEoCUIFqgECCAISMAoMZGF0ZV9leHBpcmVkGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCIrChNFbWFpbENvbmZpcm1SZXF1ZXN0EhQKBXRva2VuGAEgASgJQgWqAQIIAiI0ChRFbWFpbENvbmZpcm1SZXNwb25zZRIcCgVlbWFpbBgBIAEoCzINLnJvc3Rlci5FbWFpbCKRAQoSRW1haWxBdHRlc3RSZXF1ZXN0EiEKBmhvbGRlchgBIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSFgoHYWRkcmVzcxgIIAEoCUIFqgECCAISJwoKdm91Y2hlZF9ieRgKIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIXCgh2ZXJpZmllZBgJIAEoCEIFqgECCAIywwQKDEVtYWlsU2VydmljZRItCgNBZGQSFy5yb3N0ZXIuRW1haWxBZGRSZXF1ZXN0Gg0ucm9zdGVyLkVtYWlsEi0KA0dldBIXLnJvc3Rlci5FbWFpbEdldFJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSMQoFUGF0Y2gSGS5yb3N0ZXIuRW1haWxQYXRjaFJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSMQoFQXBwbHkSGS5yb3N0ZXIuRW1haWxBcHBseVJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSNQoFRXJhc2USEC5yb3N0ZXIuRW1haWxSZWYaGi5yb3N0ZXIuRW1haWxFcmFzZVJlc3BvbnNlEjsKBExpc3QSGC5yb3N0ZXIuRW1haWxMaXN0UmVxdWVzdBoZLnJvc3Rlci5FbWFpbExpc3RSZXNwb25zZRJACgVXYXRjaBIZLnJvc3Rlci5FbWFpbFdhdGNoUmVxdWVzdBoaLnJvc3Rlci5FbWFpbFdhdGNoUmVzcG9uc2UwARI+CgVDbGFpbRIZLnJvc3Rlci5FbWFpbENsYWltUmVxdWVzdBoaLnJvc3Rlci5FbWFpbENsYWltUmVzcG9uc2USRAoHQ29uZmlybRIbLnJvc3Rlci5FbWFpbENvbmZpcm1SZXF1ZXN0Ghwucm9zdGVyLkVtYWlsQ29uZmlybVJlc3BvbnNlEjMKBkF0dGVzdBIaLnJvc3Rlci5FbWFpbEF0dGVzdFJlcXVlc3QaDS5yb3N0ZXIuRW1haWxCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_email, file_app_identity_svc_g, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChVhcHAvZW1haWxfc3ZjLmcucHJvdG8SBnJvc3RlciKiAgoPRW1haWxBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIWCgdhZGRyZXNzGAggASgJQgWqAQIIAhIxCg1kYXRlX3ZlcmlmaWVkGAkgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBInCgp2b3VjaGVkX2J5GAogASgLMhMucm9zdGVyLklkZW50aXR5UmVmEhIKCmVudGVyZWRfYnkYDCABKAwSHgoJdGVuYW50X2lkGAsgASgMQguqAQIIAuqCFgIQQBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIlUKD0VtYWlsR2V0UmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuRW1haWxSZWYSIwoGc2VsZWN0GAIgASgLMhMucm9zdGVyLkVtYWlsU2VsZWN0InkKCEVtYWlsUmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABIsCgdhZGRyZXNzGAIgASgLMhkucm9zdGVyLkVtYWlsUmVmQnlBZGRyZXNzSAASIgoCYXQYCyABKAsyFC5yb3N0ZXIuRW1haWxSZWZCeUF0SABCBQoDa2V5IkcKEUVtYWlsUmVmQnlBZGRyZXNzEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSDwoHYWRkcmVzcxgIIAEoCSI6CgxFbWFpbFJlZkJ5QXQSGQoJdGVuYW50X2lkGAsgASgMQgbqghYCEEASDwoHYWRkcmVzcxgIIAEoCSL8AQoLRW1haWxTZWxlY3QSCwoDYWxsGAEgASgIEiQKBmhvbGRlchgCIAEoCzIULnJvc3Rlci5Ib2xkZXJTZWxlY3QSDwoHYWRkcmVzcxgIIAEoCBIVCg1kYXRlX3ZlcmlmaWVkGAkgASgIEioKCnZvdWNoZWRfYnkYCiABKAsyFi5yb3N0ZXIuSWRlbnRpdHlTZWxlY3QSEgoKZW50ZXJlZF9ieRgMIAEoCBIRCgl0ZW5hbnRfaWQYCyABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKiAgoRRW1haWxQYXRjaFJlcXVlc3QSHQoDcmVmGAEgASgLMhAucm9zdGVyLkVtYWlsUmVmEg8KB2FkZHJlc3MYECABKAkSMQoNZGF0ZV92ZXJpZmllZBgSIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV92ZXJpZmllZF9udWxsGBMgASgIEicKCnZvdWNoZWRfYnkYFCABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSFwoPdm91Y2hlZF9ieV9udWxsGBUgASgIEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIk8KEUVtYWlsQXBwbHlSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIiQKEkVtYWlsRXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgioAEKEEVtYWlsTGlzdFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnJvc3Rlci5FbWFpbEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISIwoGc2VsZWN0GAYgASgLMhMucm9zdGVyLkVtYWlsU2VsZWN0IkYKEUVtYWlsTGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLkVtYWlsEhMKBG5leHQYAiABKAlCBaoBAggCIk8KC0VtYWlsRmlsdGVyEh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmIlcKEUVtYWlsV2F0Y2hSZXF1ZXN0EiQKB2ZpbHRlcnMYASADKAsyEy5yb3N0ZXIuRW1haWxGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiOwoSRW1haWxXYXRjaFJlc3BvbnNlEiUKBWl0ZW1zGAEgAygLMhYucm9zdGVyLkVtYWlsV2F0Y2hJdGVtIlEKDkVtYWlsV2F0Y2hJdGVtEgoKAmlkGAEgASgMEhwKBXZhbHVlGAIgASgLMg0ucm9zdGVyLkVtYWlsEhUKBmFjdGlvbhgDIAEoCUIFqgECCAIihwEKEUVtYWlsQ2xhaW1SZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5FbWFpbFJlZhIhCgZob2xkZXIYAyABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEjAKDGRhdGVfZXhwaXJlZBgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAiXAoSRW1haWxDbGFpbVJlc3BvbnNlEhQKBXRva2VuGAEgASgJQgWqAQIIAhIwCgxkYXRlX2V4cGlyZWQYAiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIisKE0VtYWlsQ29uZmlybVJlcXVlc3QSFAoFdG9rZW4YASABKAlCBaoBAggCIjQKFEVtYWlsQ29uZmlybVJlc3BvbnNlEhwKBWVtYWlsGAEgASgLMg0ucm9zdGVyLkVtYWlsIpEBChJFbWFpbEF0dGVzdFJlcXVlc3QSIQoGaG9sZGVyGAEgASgLMhEucm9zdGVyLkhvbGRlclJlZhIWCgdhZGRyZXNzGAggASgJQgWqAQIIAhInCgp2b3VjaGVkX2J5GAogASgLMhMucm9zdGVyLklkZW50aXR5UmVmEhcKCHZlcmlmaWVkGAkgASgIQgWqAQIIAjLDBAoMRW1haWxTZXJ2aWNlEi0KA0FkZBIXLnJvc3Rlci5FbWFpbEFkZFJlcXVlc3QaDS5yb3N0ZXIuRW1haWwSLQoDR2V0Ehcucm9zdGVyLkVtYWlsR2V0UmVxdWVzdBoNLnJvc3Rlci5FbWFpbBIxCgVQYXRjaBIZLnJvc3Rlci5FbWFpbFBhdGNoUmVxdWVzdBoNLnJvc3Rlci5FbWFpbBIxCgVBcHBseRIZLnJvc3Rlci5FbWFpbEFwcGx5UmVxdWVzdBoNLnJvc3Rlci5FbWFpbBI1CgVFcmFzZRIQLnJvc3Rlci5FbWFpbFJlZhoaLnJvc3Rlci5FbWFpbEVyYXNlUmVzcG9uc2USOwoETGlzdBIYLnJvc3Rlci5FbWFpbExpc3RSZXF1ZXN0Ghkucm9zdGVyLkVtYWlsTGlzdFJlc3BvbnNlEkAKBVdhdGNoEhkucm9zdGVyLkVtYWlsV2F0Y2hSZXF1ZXN0Ghoucm9zdGVyLkVtYWlsV2F0Y2hSZXNwb25zZTABEj4KBUNsYWltEhkucm9zdGVyLkVtYWlsQ2xhaW1SZXF1ZXN0Ghoucm9zdGVyLkVtYWlsQ2xhaW1SZXNwb25zZRJECgdDb25maXJtEhsucm9zdGVyLkVtYWlsQ29uZmlybVJlcXVlc3QaHC5yb3N0ZXIuRW1haWxDb25maXJtUmVzcG9uc2USMwoGQXR0ZXN0Ehoucm9zdGVyLkVtYWlsQXR0ZXN0UmVxdWVzdBoNLnJvc3Rlci5FbWFpbEIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_email, file_app_identity_svc_g, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.EmailAddRequest
@@ -399,6 +399,20 @@ export type EmailListRequest = Message<"roster.EmailListRequest"> & {
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: roster.EmailSelect select = 6;
+   */
+  select?: EmailSelect | undefined;
 };
 
 /**
@@ -465,13 +479,15 @@ export const EmailFilterSchema: GenMessage<EmailFilter> = /*@__PURE__*/
  */
 export type EmailWatchRequest = Message<"roster.EmailWatchRequest"> & {
   /**
-   * Which rows to watch, in the same words List takes them: what is watched is
-   * what that list would answer with, now and afterwards.
+   * Which rows to watch, each named by its filter's ref. A filter that names
+   * no row is refused, though List takes it: what a stream is about is the
+   * rows its filters name, resolved once when it opens, and not what a List
+   * of the same filters would answer later. The first message is that List's
+   * answer now.
    *
-   * Required, and bounded the way a List is -- for a heavier reason. A list
-   * runs its filters once; a watch runs them again for every write that touches
-   * the entity, for as long as the stream is open. A watch with no filters is
-   * the whole table, forever, which is the one shape that has no cap at all.
+   * Required, and bounded as a List's filters are. A watch with no filters
+   * would be the whole table, forever, which is the one shape that has no cap
+   * at all.
    *
    * @generated from field: repeated roster.EmailFilter filters = 1;
    */
@@ -528,7 +544,7 @@ export type EmailWatchItem = Message<"roster.EmailWatchItem"> & {
 
   /**
    * The row as it is now, and **absent when it is no longer one this caller may
-   * see**: erased, or moved out of the filters this stream named.
+   * see** as a write to it left it: erased, or out of this caller's sight.
    *
    * Absence is the whole of how a removal is said. There is no flag for it, and
    * there is deliberately no way to tell those two apart -- a stream that
@@ -536,7 +552,8 @@ export type EmailWatchItem = Message<"roster.EmailWatchItem"> & {
    * about rows that stopped being theirs, which is the thing the wall is for.
    *
    * It is only ever said about a row this stream has already carried. One that
-   * never matched is not news.
+   * never matched is not news. And only of a row a write touched: a row that
+   * left this caller's sight because what they may see changed is not said.
    *
    * @generated from field: roster.Email value = 2;
    */
@@ -789,15 +806,23 @@ export const EmailService: GenService<{
   /**
    * Watch the Emails this caller may see, as they are now and as they change.
    *
-   * What arrives is **state and never a delta**, so a client converges rather
-   * than replays: it keeps what it was last told about a row and replaces it.
-   * An event it did not receive is one it does not need, since the next one
-   * about that row carries the whole of it.
+   * What arrives is **state and never a delta**: an item is the whole of a row
+   * as this caller's Get reads it when the item is sent, and a client replaces
+   * what it held of that row. An item is sent when a write touches a row the
+   * stream is about, so a row erased, or taken out of this caller's sight by a
+   * write, arrives with no value. A row that leaves this caller's sight with no
+   * write to it -- what they may see changed, not the row -- is not said, and a
+   * client goes on holding it for as long as the stream is open.
+   *
+   * A stream that cannot keep up is ended, and is not let skip: an open stream
+   * has missed nothing. One that ended has, and asking again is how it is put
+   * right, since the first message of the new one is everything that matches
+   * then; a row that stopped matching in between is in no message of either.
    *
    * The first message is everything that matches right now, so a client does
    * not have to List first and race the subscription. A row may arrive twice --
    * once in that first message and once as a change that happened while it was
-   * being read -- and that is harmless for the same reason.
+   * being read -- and that is harmless, since each is the whole row.
    *
    * @generated from rpc roster.EmailService.Watch
    */

@@ -991,6 +991,7 @@ type LinkListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *LinkSelect            `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1050,6 +1051,13 @@ func (x *LinkListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *LinkListRequest) GetSelect() *LinkSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *LinkListRequest) SetFilters(v []*LinkFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1064,6 +1072,21 @@ func (x *LinkListRequest) SetAfter(v string) {
 
 func (x *LinkListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *LinkListRequest) SetSelect(v *LinkSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *LinkListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *LinkListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type LinkListRequest_builder struct {
@@ -1086,6 +1109,15 @@ type LinkListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *LinkSelect
 }
 
 func (b0 LinkListRequest_builder) Build() *LinkListRequest {
@@ -1096,6 +1128,7 @@ func (b0 LinkListRequest_builder) Build() *LinkListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1286,12 +1319,13 @@ const file_app_link_svc_g_proto_rawDesc = "" +
 	"dateErased\x12!\n" +
 	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"+\n" +
 	"\x11LinkEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x98\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xc4\x01\n" +
 	"\x0fLinkListRequest\x12,\n" +
 	"\afilters\x18\x01 \x03(\v2\x12.roster.LinkFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"Q\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12*\n" +
+	"\x06select\x18\x06 \x01(\v2\x12.roster.LinkSelectR\x06select\"Q\n" +
 	"\x10LinkListResponse\x12\"\n" +
 	"\x05items\x18\x01 \x03(\v2\f.roster.LinkR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"/\n" +
@@ -1331,21 +1365,22 @@ var file_app_link_svc_g_proto_depIdxs = []int32{
 	11, // 6: roster.LinkSelect.holder:type_name -> roster.HolderSelect
 	12, // 7: roster.LinkSelect.email:type_name -> roster.EmailSelect
 	7,  // 8: roster.LinkListRequest.filters:type_name -> roster.LinkFilter
-	13, // 9: roster.LinkListResponse.items:type_name -> roster.Link
-	2,  // 10: roster.LinkFilter.ref:type_name -> roster.LinkRef
-	0,  // 11: roster.LinkService.Add:input_type -> roster.LinkAddRequest
-	1,  // 12: roster.LinkService.Get:input_type -> roster.LinkGetRequest
-	2,  // 13: roster.LinkService.Erase:input_type -> roster.LinkRef
-	5,  // 14: roster.LinkService.List:input_type -> roster.LinkListRequest
-	13, // 15: roster.LinkService.Add:output_type -> roster.Link
-	13, // 16: roster.LinkService.Get:output_type -> roster.Link
-	4,  // 17: roster.LinkService.Erase:output_type -> roster.LinkEraseResponse
-	6,  // 18: roster.LinkService.List:output_type -> roster.LinkListResponse
-	15, // [15:19] is the sub-list for method output_type
-	11, // [11:15] is the sub-list for method input_type
-	11, // [11:11] is the sub-list for extension type_name
-	11, // [11:11] is the sub-list for extension extendee
-	0,  // [0:11] is the sub-list for field type_name
+	3,  // 9: roster.LinkListRequest.select:type_name -> roster.LinkSelect
+	13, // 10: roster.LinkListResponse.items:type_name -> roster.Link
+	2,  // 11: roster.LinkFilter.ref:type_name -> roster.LinkRef
+	0,  // 12: roster.LinkService.Add:input_type -> roster.LinkAddRequest
+	1,  // 13: roster.LinkService.Get:input_type -> roster.LinkGetRequest
+	2,  // 14: roster.LinkService.Erase:input_type -> roster.LinkRef
+	5,  // 15: roster.LinkService.List:input_type -> roster.LinkListRequest
+	13, // 16: roster.LinkService.Add:output_type -> roster.Link
+	13, // 17: roster.LinkService.Get:output_type -> roster.Link
+	4,  // 18: roster.LinkService.Erase:output_type -> roster.LinkEraseResponse
+	6,  // 19: roster.LinkService.List:output_type -> roster.LinkListResponse
+	16, // [16:20] is the sub-list for method output_type
+	12, // [12:16] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_app_link_svc_g_proto_init() }

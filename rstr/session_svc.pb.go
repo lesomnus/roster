@@ -629,6 +629,7 @@ type SessionListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *SessionSelect         `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -688,6 +689,13 @@ func (x *SessionListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *SessionListRequest) GetSelect() *SessionSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *SessionListRequest) SetFilters(v []*SessionFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -702,6 +710,21 @@ func (x *SessionListRequest) SetAfter(v string) {
 
 func (x *SessionListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *SessionListRequest) SetSelect(v *SessionSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *SessionListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *SessionListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type SessionListRequest_builder struct {
@@ -724,6 +747,15 @@ type SessionListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *SessionSelect
 }
 
 func (b0 SessionListRequest_builder) Build() *SessionListRequest {
@@ -734,6 +766,7 @@ func (b0 SessionListRequest_builder) Build() *SessionListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -910,12 +943,13 @@ const file_app_session_svc_g_proto_rawDesc = "" +
 	"\fdate_updated\x18\r \x01(\bR\vdateUpdated\x12\x1f\n" +
 	"\vdate_erased\x18\x0e \x01(\bR\n" +
 	"dateErased\x12!\n" +
-	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\x9e\x01\n" +
+	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"\xcd\x01\n" +
 	"\x12SessionListRequest\x12/\n" +
 	"\afilters\x18\x01 \x03(\v2\x15.roster.SessionFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"W\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12-\n" +
+	"\x06select\x18\x06 \x01(\v2\x15.roster.SessionSelectR\x06select\"W\n" +
 	"\x13SessionListResponse\x12%\n" +
 	"\x05items\x18\x01 \x03(\v2\x0f.roster.SessionR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"5\n" +
@@ -941,17 +975,18 @@ var file_app_session_svc_g_proto_depIdxs = []int32{
 	2, // 1: roster.SessionGetRequest.select:type_name -> roster.SessionSelect
 	6, // 2: roster.SessionSelect.holder:type_name -> roster.HolderSelect
 	5, // 3: roster.SessionListRequest.filters:type_name -> roster.SessionFilter
-	7, // 4: roster.SessionListResponse.items:type_name -> roster.Session
-	1, // 5: roster.SessionFilter.ref:type_name -> roster.SessionRef
-	0, // 6: roster.SessionService.Get:input_type -> roster.SessionGetRequest
-	3, // 7: roster.SessionService.List:input_type -> roster.SessionListRequest
-	7, // 8: roster.SessionService.Get:output_type -> roster.Session
-	4, // 9: roster.SessionService.List:output_type -> roster.SessionListResponse
-	8, // [8:10] is the sub-list for method output_type
-	6, // [6:8] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	2, // 4: roster.SessionListRequest.select:type_name -> roster.SessionSelect
+	7, // 5: roster.SessionListResponse.items:type_name -> roster.Session
+	1, // 6: roster.SessionFilter.ref:type_name -> roster.SessionRef
+	0, // 7: roster.SessionService.Get:input_type -> roster.SessionGetRequest
+	3, // 8: roster.SessionService.List:input_type -> roster.SessionListRequest
+	7, // 9: roster.SessionService.Get:output_type -> roster.Session
+	4, // 10: roster.SessionService.List:output_type -> roster.SessionListResponse
+	9, // [9:11] is the sub-list for method output_type
+	7, // [7:9] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_app_session_svc_g_proto_init() }

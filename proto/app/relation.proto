@@ -87,7 +87,13 @@ message Relation {
   }];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {
+      add: {}
+      get: {}
+      patch: {}
+      apply: {}
+      erase: {}
+    }
     indexes: [
       {
         name: "page"

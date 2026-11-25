@@ -19,7 +19,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/identity_svc.g.proto.
  */
 export const file_app_identity_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChhhcHAvaWRlbnRpdHlfc3ZjLmcucHJvdG8SBnJvc3RlciLOAQoSSWRlbnRpdHlBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIXCghwcm92aWRlchgIIAEoCUIFqgECCAISFgoHc3ViamVjdBgJIAEoCUIFqgECCAISHgoJdGVuYW50X2lkGAogASgMQguqAQIIAuqCFgIQQBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIl4KEklkZW50aXR5R2V0UmVxdWVzdBIgCgNyZWYYASABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSJgoGc2VsZWN0GAIgASgLMhYucm9zdGVyLklkZW50aXR5U2VsZWN0IlsKC0lkZW50aXR5UmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABIvCgdzdWJqZWN0GAogASgLMhwucm9zdGVyLklkZW50aXR5UmVmQnlTdWJqZWN0SABCBQoDa2V5IlQKFElkZW50aXR5UmVmQnlTdWJqZWN0EhkKCXRlbmFudF9pZBgKIAEoDEIG6oIWAhBAEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkiugEKDklkZW50aXR5U2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhAKCHByb3ZpZGVyGAggASgIEg8KB3N1YmplY3QYCSABKAgSEQoJdGVuYW50X2lkGAogASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiqQEKFElkZW50aXR5UGF0Y2hSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIQCghwcm92aWRlchgQIAEoCRIPCgdzdWJqZWN0GBIgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIlUKFElkZW50aXR5QXBwbHlSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIicKFUlkZW50aXR5RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgigQEKE0lkZW50aXR5TGlzdFJlcXVlc3QSJwoHZmlsdGVycxgBIAMoCzIWLnJvc3Rlci5JZGVudGl0eUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiTAoUSWRlbnRpdHlMaXN0UmVzcG9uc2USHwoFaXRlbXMYASADKAsyEC5yb3N0ZXIuSWRlbnRpdHkSEwoEbmV4dBgCIAEoCUIFqgECCAIicAoOSWRlbnRpdHlGaWx0ZXISIAoDcmVmGAEgASgLMhMucm9zdGVyLklkZW50aXR5UmVmEiEKBmhvbGRlchgCIAEoCzIRLnJvc3Rlci5Ib2xkZXJSZWYSGQoJdGVuYW50X2lkGAMgASgMQgbqghYCEEAiXQoUSWRlbnRpdHlXYXRjaFJlcXVlc3QSJwoHZmlsdGVycxgBIAMoCzIWLnJvc3Rlci5JZGVudGl0eUZpbHRlchIcCg1za2lwX3NuYXBzaG90GAIgASgIQgWqAQIIAiJBChVJZGVudGl0eVdhdGNoUmVzcG9uc2USKAoFaXRlbXMYASADKAsyGS5yb3N0ZXIuSWRlbnRpdHlXYXRjaEl0ZW0iVwoRSWRlbnRpdHlXYXRjaEl0ZW0SCgoCaWQYASABKAwSHwoFdmFsdWUYAiABKAsyEC5yb3N0ZXIuSWRlbnRpdHkSFQoGYWN0aW9uGAMgASgJQgWqAQIIAiKGAQoYSWRlbnRpdHlSZXN1YmplY3RSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIwCgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhYKB3N1YmplY3QYCSABKAlCBaoBAggCImsKFUlkZW50aXR5QXR0ZXN0UmVxdWVzdBIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhcKCHByb3ZpZGVyGAggASgJQgWqAQIIAhIWCgdzdWJqZWN0GAkgASgJQgWqAQIIAjKxBAoPSWRlbnRpdHlTZXJ2aWNlEjMKA0FkZBIaLnJvc3Rlci5JZGVudGl0eUFkZFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSMwoDR2V0Ehoucm9zdGVyLklkZW50aXR5R2V0UmVxdWVzdBoQLnJvc3Rlci5JZGVudGl0eRI3CgVQYXRjaBIcLnJvc3Rlci5JZGVudGl0eVBhdGNoUmVxdWVzdBoQLnJvc3Rlci5JZGVudGl0eRI3CgVBcHBseRIcLnJvc3Rlci5JZGVudGl0eUFwcGx5UmVxdWVzdBoQLnJvc3Rlci5JZGVudGl0eRI7CgVFcmFzZRITLnJvc3Rlci5JZGVudGl0eVJlZhodLnJvc3Rlci5JZGVudGl0eUVyYXNlUmVzcG9uc2USQQoETGlzdBIbLnJvc3Rlci5JZGVudGl0eUxpc3RSZXF1ZXN0Ghwucm9zdGVyLklkZW50aXR5TGlzdFJlc3BvbnNlEkYKBVdhdGNoEhwucm9zdGVyLklkZW50aXR5V2F0Y2hSZXF1ZXN0Gh0ucm9zdGVyLklkZW50aXR5V2F0Y2hSZXNwb25zZTABEj8KCVJlc3ViamVjdBIgLnJvc3Rlci5JZGVudGl0eVJlc3ViamVjdFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSOQoGQXR0ZXN0Eh0ucm9zdGVyLklkZW50aXR5QXR0ZXN0UmVxdWVzdBoQLnJvc3Rlci5JZGVudGl0eUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_identity, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
+  fileDesc("ChhhcHAvaWRlbnRpdHlfc3ZjLmcucHJvdG8SBnJvc3RlciLOAQoSSWRlbnRpdHlBZGRSZXF1ZXN0EhIKAmlkGAEgASgMQgbqghYCEEASIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIXCghwcm92aWRlchgIIAEoCUIFqgECCAISFgoHc3ViamVjdBgJIAEoCUIFqgECCAISHgoJdGVuYW50X2lkGAogASgMQguqAQIIAuqCFgIQQBIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wIl4KEklkZW50aXR5R2V0UmVxdWVzdBIgCgNyZWYYASABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSJgoGc2VsZWN0GAIgASgLMhYucm9zdGVyLklkZW50aXR5U2VsZWN0IlsKC0lkZW50aXR5UmVmEhQKAmlkGAEgASgMQgbqghYCEEBIABIvCgdzdWJqZWN0GAogASgLMhwucm9zdGVyLklkZW50aXR5UmVmQnlTdWJqZWN0SABCBQoDa2V5IlQKFElkZW50aXR5UmVmQnlTdWJqZWN0EhkKCXRlbmFudF9pZBgKIAEoDEIG6oIWAhBAEhAKCHByb3ZpZGVyGAggASgJEg8KB3N1YmplY3QYCSABKAkiugEKDklkZW50aXR5U2VsZWN0EgsKA2FsbBgBIAEoCBIkCgZob2xkZXIYAiABKAsyFC5yb3N0ZXIuSG9sZGVyU2VsZWN0EhAKCHByb3ZpZGVyGAggASgIEg8KB3N1YmplY3QYCSABKAgSEQoJdGVuYW50X2lkGAogASgIEhQKDGRhdGVfdXBkYXRlZBgNIAEoCBITCgtkYXRlX2VyYXNlZBgOIAEoCBIUCgxkYXRlX2NyZWF0ZWQYDyABKAgiqQEKFElkZW50aXR5UGF0Y2hSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIQCghwcm92aWRlchgQIAEoCRIPCgdzdWJqZWN0GBIgASgJEjAKDGRhdGVfdXBkYXRlZBgaIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGgoSZGF0ZV91cGRhdGVkX2ZvcmNlGBsgASgIIlUKFElkZW50aXR5QXBwbHlSZXF1ZXN0EiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIbCgVwYXRjaBgCIAEoCzIMLnBhdGNoLlBhdGNoIicKFUlkZW50aXR5RXJhc2VSZXNwb25zZRIOCgZlcmFzZWQYASABKAgiqQEKE0lkZW50aXR5TGlzdFJlcXVlc3QSJwoHZmlsdGVycxgBIAMoCzIWLnJvc3Rlci5JZGVudGl0eUZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISJgoGc2VsZWN0GAYgASgLMhYucm9zdGVyLklkZW50aXR5U2VsZWN0IkwKFElkZW50aXR5TGlzdFJlc3BvbnNlEh8KBWl0ZW1zGAEgAygLMhAucm9zdGVyLklkZW50aXR5EhMKBG5leHQYAiABKAlCBaoBAggCInAKDklkZW50aXR5RmlsdGVyEiAKA3JlZhgBIAEoCzITLnJvc3Rlci5JZGVudGl0eVJlZhIhCgZob2xkZXIYAiABKAsyES5yb3N0ZXIuSG9sZGVyUmVmEhkKCXRlbmFudF9pZBgDIAEoDEIG6oIWAhBAIl0KFElkZW50aXR5V2F0Y2hSZXF1ZXN0EicKB2ZpbHRlcnMYASADKAsyFi5yb3N0ZXIuSWRlbnRpdHlGaWx0ZXISHAoNc2tpcF9zbmFwc2hvdBgCIAEoCEIFqgECCAIiQQoVSWRlbnRpdHlXYXRjaFJlc3BvbnNlEigKBWl0ZW1zGAEgAygLMhkucm9zdGVyLklkZW50aXR5V2F0Y2hJdGVtIlcKEUlkZW50aXR5V2F0Y2hJdGVtEgoKAmlkGAEgASgMEh8KBXZhbHVlGAIgASgLMhAucm9zdGVyLklkZW50aXR5EhUKBmFjdGlvbhgDIAEoCUIFqgECCAIihgEKGElkZW50aXR5UmVzdWJqZWN0UmVxdWVzdBIgCgNyZWYYASABKAsyEy5yb3N0ZXIuSWRlbnRpdHlSZWYSMAoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIWCgdzdWJqZWN0GAkgASgJQgWqAQIIAiJrChVJZGVudGl0eUF0dGVzdFJlcXVlc3QSIQoGaG9sZGVyGAIgASgLMhEucm9zdGVyLkhvbGRlclJlZhIXCghwcm92aWRlchgIIAEoCUIFqgECCAISFgoHc3ViamVjdBgJIAEoCUIFqgECCAIysQQKD0lkZW50aXR5U2VydmljZRIzCgNBZGQSGi5yb3N0ZXIuSWRlbnRpdHlBZGRSZXF1ZXN0GhAucm9zdGVyLklkZW50aXR5EjMKA0dldBIaLnJvc3Rlci5JZGVudGl0eUdldFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSNwoFUGF0Y2gSHC5yb3N0ZXIuSWRlbnRpdHlQYXRjaFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSNwoFQXBwbHkSHC5yb3N0ZXIuSWRlbnRpdHlBcHBseVJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHkSOwoFRXJhc2USEy5yb3N0ZXIuSWRlbnRpdHlSZWYaHS5yb3N0ZXIuSWRlbnRpdHlFcmFzZVJlc3BvbnNlEkEKBExpc3QSGy5yb3N0ZXIuSWRlbnRpdHlMaXN0UmVxdWVzdBocLnJvc3Rlci5JZGVudGl0eUxpc3RSZXNwb25zZRJGCgVXYXRjaBIcLnJvc3Rlci5JZGVudGl0eVdhdGNoUmVxdWVzdBodLnJvc3Rlci5JZGVudGl0eVdhdGNoUmVzcG9uc2UwARI/CglSZXN1YmplY3QSIC5yb3N0ZXIuSWRlbnRpdHlSZXN1YmplY3RSZXF1ZXN0GhAucm9zdGVyLklkZW50aXR5EjkKBkF0dGVzdBIdLnJvc3Rlci5JZGVudGl0eUF0dGVzdFJlcXVlc3QaEC5yb3N0ZXIuSWRlbnRpdHlCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_identity, file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.IdentityAddRequest
@@ -329,6 +329,20 @@ export type IdentityListRequest = Message<"roster.IdentityListRequest"> & {
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: roster.IdentitySelect select = 6;
+   */
+  select?: IdentitySelect | undefined;
 };
 
 /**
@@ -400,13 +414,15 @@ export const IdentityFilterSchema: GenMessage<IdentityFilter> = /*@__PURE__*/
  */
 export type IdentityWatchRequest = Message<"roster.IdentityWatchRequest"> & {
   /**
-   * Which rows to watch, in the same words List takes them: what is watched is
-   * what that list would answer with, now and afterwards.
+   * Which rows to watch, each named by its filter's ref. A filter that names
+   * no row is refused, though List takes it: what a stream is about is the
+   * rows its filters name, resolved once when it opens, and not what a List
+   * of the same filters would answer later. The first message is that List's
+   * answer now.
    *
-   * Required, and bounded the way a List is -- for a heavier reason. A list
-   * runs its filters once; a watch runs them again for every write that touches
-   * the entity, for as long as the stream is open. A watch with no filters is
-   * the whole table, forever, which is the one shape that has no cap at all.
+   * Required, and bounded as a List's filters are. A watch with no filters
+   * would be the whole table, forever, which is the one shape that has no cap
+   * at all.
    *
    * @generated from field: repeated roster.IdentityFilter filters = 1;
    */
@@ -463,7 +479,7 @@ export type IdentityWatchItem = Message<"roster.IdentityWatchItem"> & {
 
   /**
    * The row as it is now, and **absent when it is no longer one this caller may
-   * see**: erased, or moved out of the filters this stream named.
+   * see** as a write to it left it: erased, or out of this caller's sight.
    *
    * Absence is the whole of how a removal is said. There is no flag for it, and
    * there is deliberately no way to tell those two apart -- a stream that
@@ -471,7 +487,8 @@ export type IdentityWatchItem = Message<"roster.IdentityWatchItem"> & {
    * about rows that stopped being theirs, which is the thing the wall is for.
    *
    * It is only ever said about a row this stream has already carried. One that
-   * never matched is not news.
+   * never matched is not news. And only of a row a write touched: a row that
+   * left this caller's sight because what they may see changed is not said.
    *
    * @generated from field: roster.Identity value = 2;
    */
@@ -632,15 +649,23 @@ export const IdentityService: GenService<{
   /**
    * Watch the Identitys this caller may see, as they are now and as they change.
    *
-   * What arrives is **state and never a delta**, so a client converges rather
-   * than replays: it keeps what it was last told about a row and replaces it.
-   * An event it did not receive is one it does not need, since the next one
-   * about that row carries the whole of it.
+   * What arrives is **state and never a delta**: an item is the whole of a row
+   * as this caller's Get reads it when the item is sent, and a client replaces
+   * what it held of that row. An item is sent when a write touches a row the
+   * stream is about, so a row erased, or taken out of this caller's sight by a
+   * write, arrives with no value. A row that leaves this caller's sight with no
+   * write to it -- what they may see changed, not the row -- is not said, and a
+   * client goes on holding it for as long as the stream is open.
+   *
+   * A stream that cannot keep up is ended, and is not let skip: an open stream
+   * has missed nothing. One that ended has, and asking again is how it is put
+   * right, since the first message of the new one is everything that matches
+   * then; a row that stopped matching in between is in no message of either.
    *
    * The first message is everything that matches right now, so a client does
    * not have to List first and race the subscription. A row may arrive twice --
    * once in that first message and once as a change that happened while it was
-   * being read -- and that is harmless for the same reason.
+   * being read -- and that is harmless, since each is the whole row.
    *
    * @generated from rpc roster.IdentityService.Watch
    */

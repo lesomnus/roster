@@ -7,8 +7,6 @@ import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import { file_orm } from "../../orm_pb.js";
-import type { Patch } from "../../patch/patch_pb.js";
-import { file_patch_patch } from "../../patch/patch_pb.js";
 import type { Audit, AuditSchema } from "./audit_pb.js";
 import { file_roster_payday_audit } from "./audit_pb.js";
 import type { Message } from "@bufbuild/protobuf";
@@ -17,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file roster/payday/audit_svc.g.proto.
  */
 export const file_roster_payday_audit_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("Ch9yb3N0ZXIvcGF5ZGF5L2F1ZGl0X3N2Yy5nLnByb3RvEgZyb3N0ZXIi9QMKD0F1ZGl0QWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEh4KCXRlbmFudF9pZBgCIAEoDEILqgECCALqghYCEEASHQoIYWN0b3JfaWQYCCABKAxCC6oBAggC6oIWAhBAEhkKCWNhbGxlcl9pZBgXIAEoDEIG6oIWAhBAEiAKEGNhbGxlcl90ZW5hbnRfaWQYGCABKAxCBuqCFgIQQBIQCghwcmVzZW5jZRgZIAEoCRIXCgh0cmFjZV9pZBgJIAEoDEIFqgECCAISFQoGYWN0aW9uGAogASgJQgWqAQIIAhIeCglvYmplY3RfaWQYCyABKAxCC6oBAggC6oIWAhBAEhQKBXBhdGNoGAwgASgMQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiQKD2FjdG9yX3RlbmFudF9pZBgQIAEoDEILqgECCALqghYCEEASFAoFdmFsdWUYESABKAxCBaoBAggCEiUKFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgSIAEoDEIG6oIWAhBAEg4KBmRvbWFpbhgTIAEoDRIOCgZmaWVsZHMYFCADKA0SDgoGZGlnZXN0GBUgASgMEhUKDWRpZ2VzdF9maWVsZHMYFiADKA0iVQoPQXVkaXRHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5BdWRpdFJlZhIjCgZzZWxlY3QYAiABKAsyEy5yb3N0ZXIuQXVkaXRTZWxlY3QiJwoIQXVkaXRSZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAQgUKA2tleSLmAgoLQXVkaXRTZWxlY3QSCwoDYWxsGAEgASgIEhEKCXRlbmFudF9pZBgCIAEoCBIQCghhY3Rvcl9pZBgIIAEoCBIRCgljYWxsZXJfaWQYFyABKAgSGAoQY2FsbGVyX3RlbmFudF9pZBgYIAEoCBIQCghwcmVzZW5jZRgZIAEoCBIQCgh0cmFjZV9pZBgJIAEoCBIOCgZhY3Rpb24YCiABKAgSEQoJb2JqZWN0X2lkGAsgASgIEg0KBXBhdGNoGAwgASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIXCg9hY3Rvcl90ZW5hbnRfaWQYECABKAgSDQoFdmFsdWUYESABKAgSHQoVY291bnRlcnBhcnRfdGVuYW50X2lkGBIgASgIEg4KBmRvbWFpbhgTIAEoCBIOCgZmaWVsZHMYFCABKAgSDgoGZGlnZXN0GBUgASgIEhUKDWRpZ2VzdF9maWVsZHMYFiABKAgikgQKEUF1ZGl0UGF0Y2hSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5BdWRpdFJlZhIZCgl0ZW5hbnRfaWQYBCABKAxCBuqCFgIQQBIYCghhY3Rvcl9pZBgQIAEoDEIG6oIWAhBAEhkKCWNhbGxlcl9pZBguIAEoDEIG6oIWAhBAEhYKDmNhbGxlcl9pZF9udWxsGC8gASgIEiAKEGNhbGxlcl90ZW5hbnRfaWQYMCABKAxCBuqCFgIQQBIdChVjYWxsZXJfdGVuYW50X2lkX251bGwYMSABKAgSEAoIcHJlc2VuY2UYMiABKAkSFQoNcHJlc2VuY2VfbnVsbBgzIAEoCBIQCgh0cmFjZV9pZBgSIAEoDBIOCgZhY3Rpb24YFCABKAkSGQoJb2JqZWN0X2lkGBYgASgMQgbqghYCEEASDQoFcGF0Y2gYGCABKAwSHwoPYWN0b3JfdGVuYW50X2lkGCAgASgMQgbqghYCEEASDQoFdmFsdWUYIiABKAwSJQoVY291bnRlcnBhcnRfdGVuYW50X2lkGCQgASgMQgbqghYCEEASIgoaY291bnRlcnBhcnRfdGVuYW50X2lkX251bGwYJSABKAgSDgoGZG9tYWluGCYgASgNEg4KBmZpZWxkcxgoIAMoDRIOCgZkaWdlc3QYKiABKAwSFQoNZGlnZXN0X2ZpZWxkcxgsIAMoDSJPChFBdWRpdEFwcGx5UmVxdWVzdBIdCgNyZWYYASABKAsyEC5yb3N0ZXIuQXVkaXRSZWYSGwoFcGF0Y2gYAiABKAsyDC5wYXRjaC5QYXRjaCIkChJBdWRpdEVyYXNlUmVzcG9uc2USDgoGZXJhc2VkGAEgASgIInsKEEF1ZGl0TGlzdFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnJvc3Rlci5BdWRpdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAIiRgoRQXVkaXRMaXN0UmVzcG9uc2USHAoFaXRlbXMYASADKAsyDS5yb3N0ZXIuQXVkaXQSEwoEbmV4dBgCIAEoCUIFqgECCAIipQEKC0F1ZGl0RmlsdGVyEhkKCW9iamVjdF9pZBgBIAEoDEIG6oIWAhBAEhgKCGFjdG9yX2lkGAIgASgMQgbqghYCEEASGQoJdGVuYW50X2lkGAMgASgMQgbqghYCEEASHwoPYWN0b3JfdGVuYW50X2lkGAQgASgMQgbqghYCEEASJQoVY291bnRlcnBhcnRfdGVuYW50X2lkGAUgASgMQgbqghYCEEAyxgIKDEF1ZGl0U2VydmljZRItCgNBZGQSFy5yb3N0ZXIuQXVkaXRBZGRSZXF1ZXN0Gg0ucm9zdGVyLkF1ZGl0Ei0KA0dldBIXLnJvc3Rlci5BdWRpdEdldFJlcXVlc3QaDS5yb3N0ZXIuQXVkaXQSMQoFUGF0Y2gSGS5yb3N0ZXIuQXVkaXRQYXRjaFJlcXVlc3QaDS5yb3N0ZXIuQXVkaXQSMQoFQXBwbHkSGS5yb3N0ZXIuQXVkaXRBcHBseVJlcXVlc3QaDS5yb3N0ZXIuQXVkaXQSNQoFRXJhc2USEC5yb3N0ZXIuQXVkaXRSZWYaGi5yb3N0ZXIuQXVkaXRFcmFzZVJlc3BvbnNlEjsKBExpc3QSGC5yb3N0ZXIuQXVkaXRMaXN0UmVxdWVzdBoZLnJvc3Rlci5BdWRpdExpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_patch_patch, file_roster_payday_audit]);
+  fileDesc("Ch9yb3N0ZXIvcGF5ZGF5L2F1ZGl0X3N2Yy5nLnByb3RvEgZyb3N0ZXIi9QMKD0F1ZGl0QWRkUmVxdWVzdBISCgJpZBgBIAEoDEIG6oIWAhBAEh4KCXRlbmFudF9pZBgCIAEoDEILqgECCALqghYCEEASHQoIYWN0b3JfaWQYCCABKAxCC6oBAggC6oIWAhBAEhkKCWNhbGxlcl9pZBgXIAEoDEIG6oIWAhBAEiAKEGNhbGxlcl90ZW5hbnRfaWQYGCABKAxCBuqCFgIQQBIQCghwcmVzZW5jZRgZIAEoCRIXCgh0cmFjZV9pZBgJIAEoDEIFqgECCAISFQoGYWN0aW9uGAogASgJQgWqAQIIAhIeCglvYmplY3RfaWQYCyABKAxCC6oBAggC6oIWAhBAEhQKBXBhdGNoGAwgASgMQgWqAQIIAhIwCgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiQKD2FjdG9yX3RlbmFudF9pZBgQIAEoDEILqgECCALqghYCEEASFAoFdmFsdWUYESABKAxCBaoBAggCEiUKFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgSIAEoDEIG6oIWAhBAEg4KBmRvbWFpbhgTIAEoDRIOCgZmaWVsZHMYFCADKA0SDgoGZGlnZXN0GBUgASgMEhUKDWRpZ2VzdF9maWVsZHMYFiADKA0iVQoPQXVkaXRHZXRSZXF1ZXN0Eh0KA3JlZhgBIAEoCzIQLnJvc3Rlci5BdWRpdFJlZhIjCgZzZWxlY3QYAiABKAsyEy5yb3N0ZXIuQXVkaXRTZWxlY3QiJwoIQXVkaXRSZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAQgUKA2tleSLmAgoLQXVkaXRTZWxlY3QSCwoDYWxsGAEgASgIEhEKCXRlbmFudF9pZBgCIAEoCBIQCghhY3Rvcl9pZBgIIAEoCBIRCgljYWxsZXJfaWQYFyABKAgSGAoQY2FsbGVyX3RlbmFudF9pZBgYIAEoCBIQCghwcmVzZW5jZRgZIAEoCBIQCgh0cmFjZV9pZBgJIAEoCBIOCgZhY3Rpb24YCiABKAgSEQoJb2JqZWN0X2lkGAsgASgIEg0KBXBhdGNoGAwgASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCBIXCg9hY3Rvcl90ZW5hbnRfaWQYECABKAgSDQoFdmFsdWUYESABKAgSHQoVY291bnRlcnBhcnRfdGVuYW50X2lkGBIgASgIEg4KBmRvbWFpbhgTIAEoCBIOCgZmaWVsZHMYFCABKAgSDgoGZGlnZXN0GBUgASgIEhUKDWRpZ2VzdF9maWVsZHMYFiABKAgioAEKEEF1ZGl0TGlzdFJlcXVlc3QSJAoHZmlsdGVycxgBIAMoCzITLnJvc3Rlci5BdWRpdEZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISIwoGc2VsZWN0GAYgASgLMhMucm9zdGVyLkF1ZGl0U2VsZWN0IkYKEUF1ZGl0TGlzdFJlc3BvbnNlEhwKBWl0ZW1zGAEgAygLMg0ucm9zdGVyLkF1ZGl0EhMKBG5leHQYAiABKAlCBaoBAggCIqUBCgtBdWRpdEZpbHRlchIZCglvYmplY3RfaWQYASABKAxCBuqCFgIQQBIYCghhY3Rvcl9pZBgCIAEoDEIG6oIWAhBAEhkKCXRlbmFudF9pZBgDIAEoDEIG6oIWAhBAEh8KD2FjdG9yX3RlbmFudF9pZBgEIAEoDEIG6oIWAhBAEiUKFWNvdW50ZXJwYXJ0X3RlbmFudF9pZBgFIAEoDEIG6oIWAhBAMqkBCgxBdWRpdFNlcnZpY2USLQoDQWRkEhcucm9zdGVyLkF1ZGl0QWRkUmVxdWVzdBoNLnJvc3Rlci5BdWRpdBItCgNHZXQSFy5yb3N0ZXIuQXVkaXRHZXRSZXF1ZXN0Gg0ucm9zdGVyLkF1ZGl0EjsKBExpc3QSGC5yb3N0ZXIuQXVkaXRMaXN0UmVxdWVzdBoZLnJvc3Rlci5BdWRpdExpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_google_protobuf_timestamp, file_orm, file_roster_payday_audit]);
 
 /**
  * @generated from message roster.AuditAddRequest
@@ -269,188 +267,6 @@ export const AuditSelectSchema: GenMessage<AuditSelect> = /*@__PURE__*/
   messageDesc(file_roster_payday_audit_svc_g, 3);
 
 /**
- * @generated from message roster.AuditPatchRequest
- */
-export type AuditPatchRequest = Message<"roster.AuditPatchRequest"> & {
-  /**
-   * @generated from field: roster.AuditRef ref = 1;
-   */
-  ref?: AuditRef | undefined;
-
-  /**
-   * @generated from field: bytes tenant_id = 4;
-   */
-  tenantId: Uint8Array;
-
-  /**
-   * @generated from field: bytes actor_id = 16;
-   */
-  actorId: Uint8Array;
-
-  /**
-   * @generated from field: bytes caller_id = 46;
-   */
-  callerId: Uint8Array;
-
-  /**
-   * Clear caller_id instead of writing it.
-   * It takes a field of its own because an unset value already means
-   * "leave it alone", so no value could have meant NULL. It wins
-   * outright: setting both this and caller_id clears.
-   *
-   * @generated from field: bool caller_id_null = 47;
-   */
-  callerIdNull: boolean;
-
-  /**
-   * @generated from field: bytes caller_tenant_id = 48;
-   */
-  callerTenantId: Uint8Array;
-
-  /**
-   * Clear caller_tenant_id instead of writing it.
-   * It takes a field of its own because an unset value already means
-   * "leave it alone", so no value could have meant NULL. It wins
-   * outright: setting both this and caller_tenant_id clears.
-   *
-   * @generated from field: bool caller_tenant_id_null = 49;
-   */
-  callerTenantIdNull: boolean;
-
-  /**
-   * @generated from field: string presence = 50;
-   */
-  presence: string;
-
-  /**
-   * Clear presence instead of writing it.
-   * It takes a field of its own because an unset value already means
-   * "leave it alone", so no value could have meant NULL. It wins
-   * outright: setting both this and presence clears.
-   *
-   * @generated from field: bool presence_null = 51;
-   */
-  presenceNull: boolean;
-
-  /**
-   * @generated from field: bytes trace_id = 18;
-   */
-  traceId: Uint8Array;
-
-  /**
-   * @generated from field: string action = 20;
-   */
-  action: string;
-
-  /**
-   * @generated from field: bytes object_id = 22;
-   */
-  objectId: Uint8Array;
-
-  /**
-   * @generated from field: bytes patch = 24;
-   */
-  patch: Uint8Array;
-
-  /**
-   * @generated from field: bytes actor_tenant_id = 32;
-   */
-  actorTenantId: Uint8Array;
-
-  /**
-   * @generated from field: bytes value = 34;
-   */
-  value: Uint8Array;
-
-  /**
-   * @generated from field: bytes counterpart_tenant_id = 36;
-   */
-  counterpartTenantId: Uint8Array;
-
-  /**
-   * Clear counterpart_tenant_id instead of writing it.
-   * It takes a field of its own because an unset value already means
-   * "leave it alone", so no value could have meant NULL. It wins
-   * outright: setting both this and counterpart_tenant_id clears.
-   *
-   * @generated from field: bool counterpart_tenant_id_null = 37;
-   */
-  counterpartTenantIdNull: boolean;
-
-  /**
-   * @generated from field: uint32 domain = 38;
-   */
-  domain: number;
-
-  /**
-   * @generated from field: repeated uint32 fields = 40;
-   */
-  fields: number[];
-
-  /**
-   * @generated from field: bytes digest = 42;
-   */
-  digest: Uint8Array;
-
-  /**
-   * @generated from field: repeated uint32 digest_fields = 44;
-   */
-  digestFields: number[];
-};
-
-/**
- * Describes the message roster.AuditPatchRequest.
- * Use `create(AuditPatchRequestSchema)` to create a new message.
- */
-export const AuditPatchRequestSchema: GenMessage<AuditPatchRequest> = /*@__PURE__*/
-  messageDesc(file_roster_payday_audit_svc_g, 4);
-
-/**
- * @generated from message roster.AuditApplyRequest
- */
-export type AuditApplyRequest = Message<"roster.AuditApplyRequest"> & {
-  /**
-   * @generated from field: roster.AuditRef ref = 1;
-   */
-  ref?: AuditRef | undefined;
-
-  /**
-   * @generated from field: patch.Patch patch = 2;
-   */
-  patch?: Patch | undefined;
-};
-
-/**
- * Describes the message roster.AuditApplyRequest.
- * Use `create(AuditApplyRequestSchema)` to create a new message.
- */
-export const AuditApplyRequestSchema: GenMessage<AuditApplyRequest> = /*@__PURE__*/
-  messageDesc(file_roster_payday_audit_svc_g, 5);
-
-/**
- * @generated from message roster.AuditEraseResponse
- */
-export type AuditEraseResponse = Message<"roster.AuditEraseResponse"> & {
-  /**
-   * Erased is whether this call is the one that erased the row.
-   *
-   * False for a row that was already gone, was never there, or is out
-   * of this caller's reach -- which are one answer on purpose, and the
-   * reason the RPC does not fail instead.
-   *
-   * @generated from field: bool erased = 1;
-   */
-  erased: boolean;
-};
-
-/**
- * Describes the message roster.AuditEraseResponse.
- * Use `create(AuditEraseResponseSchema)` to create a new message.
- */
-export const AuditEraseResponseSchema: GenMessage<AuditEraseResponse> = /*@__PURE__*/
-  messageDesc(file_roster_payday_audit_svc_g, 6);
-
-/**
  * @generated from message roster.AuditListRequest
  */
 export type AuditListRequest = Message<"roster.AuditListRequest"> & {
@@ -490,6 +306,20 @@ export type AuditListRequest = Message<"roster.AuditListRequest"> & {
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: roster.AuditSelect select = 6;
+   */
+  select?: AuditSelect | undefined;
 };
 
 /**
@@ -497,7 +327,7 @@ export type AuditListRequest = Message<"roster.AuditListRequest"> & {
  * Use `create(AuditListRequestSchema)` to create a new message.
  */
 export const AuditListRequestSchema: GenMessage<AuditListRequest> = /*@__PURE__*/
-  messageDesc(file_roster_payday_audit_svc_g, 7);
+  messageDesc(file_roster_payday_audit_svc_g, 4);
 
 /**
  * @generated from message roster.AuditListResponse
@@ -527,7 +357,7 @@ export type AuditListResponse = Message<"roster.AuditListResponse"> & {
  * Use `create(AuditListResponseSchema)` to create a new message.
  */
 export const AuditListResponseSchema: GenMessage<AuditListResponse> = /*@__PURE__*/
-  messageDesc(file_roster_payday_audit_svc_g, 8);
+  messageDesc(file_roster_payday_audit_svc_g, 5);
 
 /**
  * @generated from message roster.AuditFilter
@@ -564,7 +394,7 @@ export type AuditFilter = Message<"roster.AuditFilter"> & {
  * Use `create(AuditFilterSchema)` to create a new message.
  */
 export const AuditFilterSchema: GenMessage<AuditFilter> = /*@__PURE__*/
-  messageDesc(file_roster_payday_audit_svc_g, 9);
+  messageDesc(file_roster_payday_audit_svc_g, 6);
 
 /**
  * @generated from service roster.AuditService
@@ -589,36 +419,6 @@ export const AuditService: GenService<{
     methodKind: "unary";
     input: typeof AuditGetRequestSchema;
     output: typeof AuditSchema;
-  },
-  /**
-   * Patch updates an existing Audit
-   *
-   * @generated from rpc roster.AuditService.Patch
-   */
-  patch: {
-    methodKind: "unary";
-    input: typeof AuditPatchRequestSchema;
-    output: typeof AuditSchema;
-  },
-  /**
-   * Apply applies a patch document to an existing Audit
-   *
-   * @generated from rpc roster.AuditService.Apply
-   */
-  apply: {
-    methodKind: "unary";
-    input: typeof AuditApplyRequestSchema;
-    output: typeof AuditSchema;
-  },
-  /**
-   * Erase deletes a Audit
-   *
-   * @generated from rpc roster.AuditService.Erase
-   */
-  erase: {
-    methodKind: "unary";
-    input: typeof AuditRefSchema;
-    output: typeof AuditEraseResponseSchema;
   },
   /**
    * List reads Audits a page at a time.

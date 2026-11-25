@@ -1280,6 +1280,7 @@ type NominationListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *NominationSelect      `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1339,6 +1340,13 @@ func (x *NominationListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *NominationListRequest) GetSelect() *NominationSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *NominationListRequest) SetFilters(v []*NominationFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1353,6 +1361,21 @@ func (x *NominationListRequest) SetAfter(v string) {
 
 func (x *NominationListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *NominationListRequest) SetSelect(v *NominationSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *NominationListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *NominationListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type NominationListRequest_builder struct {
@@ -1375,6 +1398,15 @@ type NominationListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *NominationSelect
 }
 
 func (b0 NominationListRequest_builder) Build() *NominationListRequest {
@@ -1385,6 +1417,7 @@ func (b0 NominationListRequest_builder) Build() *NominationListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1681,13 +1714,15 @@ func (x *NominationWatchRequest) SetSkipSnapshot(v bool) {
 type NominationWatchRequest_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// Which rows to watch, in the same words List takes them: what is watched is
-	// what that list would answer with, now and afterwards.
+	// Which rows to watch, each named by its filter's ref. A filter that names
+	// no row is refused, though List takes it: what a stream is about is the
+	// rows its filters name, resolved once when it opens, and not what a List
+	// of the same filters would answer later. The first message is that List's
+	// answer now.
 	//
-	// Required, and bounded the way a List is -- for a heavier reason. A list
-	// runs its filters once; a watch runs them again for every write that touches
-	// the entity, for as long as the stream is open. A watch with no filters is
-	// the whole table, forever, which is the one shape that has no cap at all.
+	// Required, and bounded as a List's filters are. A watch with no filters
+	// would be the whole table, forever, which is the one shape that has no cap
+	// at all.
 	Filters []*NominationFilter
 	// Skip what is there now and send only what changes from here.
 	//
@@ -1868,7 +1903,7 @@ type NominationWatchItem_builder struct {
 	// Which row. Always said, since one that is gone still has to be named.
 	Id []byte
 	// The row as it is now, and **absent when it is no longer one this caller may
-	// see**: erased, or moved out of the filters this stream named.
+	// see** as a write to it left it: erased, or out of this caller's sight.
 	//
 	// Absence is the whole of how a removal is said. There is no flag for it, and
 	// there is deliberately no way to tell those two apart -- a stream that
@@ -1876,7 +1911,8 @@ type NominationWatchItem_builder struct {
 	// about rows that stopped being theirs, which is the thing the wall is for.
 	//
 	// It is only ever said about a row this stream has already carried. One that
-	// never matched is not news.
+	// never matched is not news. And only of a row a write touched: a row that
+	// left this caller's sight because what they may see changed is not said.
 	Value *Nomination
 	// The RPC that changed it, by the name gRPC knows it by. It is what the
 	// caller of *that* RPC asked for and not the write it became, so an RPC
@@ -1955,12 +1991,13 @@ const file_app_nomination_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.NominationRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
 	"\x17NominationEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa4\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xd6\x01\n" +
 	"\x15NominationListRequest\x122\n" +
 	"\afilters\x18\x01 \x03(\v2\x18.roster.NominationFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"]\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x120\n" +
+	"\x06select\x18\x06 \x01(\v2\x18.roster.NominationSelectR\x06select\"]\n" +
 	"\x16NominationListResponse\x12(\n" +
 	"\x05items\x18\x01 \x03(\v2\x12.roster.NominationR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xbb\x01\n" +
@@ -2032,32 +2069,33 @@ var file_app_nomination_svc_g_proto_depIdxs = []int32{
 	2,  // 14: roster.NominationApplyRequest.ref:type_name -> roster.NominationRef
 	21, // 15: roster.NominationApplyRequest.patch:type_name -> patch.Patch
 	10, // 16: roster.NominationListRequest.filters:type_name -> roster.NominationFilter
-	22, // 17: roster.NominationListResponse.items:type_name -> roster.Nomination
-	2,  // 18: roster.NominationFilter.ref:type_name -> roster.NominationRef
-	16, // 19: roster.NominationFilter.tenant:type_name -> roster.TenantRef
-	17, // 20: roster.NominationFilter.acts_as:type_name -> roster.HolderRef
-	10, // 21: roster.NominationWatchRequest.filters:type_name -> roster.NominationFilter
-	13, // 22: roster.NominationWatchResponse.items:type_name -> roster.NominationWatchItem
-	22, // 23: roster.NominationWatchItem.value:type_name -> roster.Nomination
-	0,  // 24: roster.NominationService.Add:input_type -> roster.NominationAddRequest
-	1,  // 25: roster.NominationService.Get:input_type -> roster.NominationGetRequest
-	5,  // 26: roster.NominationService.Patch:input_type -> roster.NominationPatchRequest
-	6,  // 27: roster.NominationService.Apply:input_type -> roster.NominationApplyRequest
-	2,  // 28: roster.NominationService.Erase:input_type -> roster.NominationRef
-	8,  // 29: roster.NominationService.List:input_type -> roster.NominationListRequest
-	11, // 30: roster.NominationService.Watch:input_type -> roster.NominationWatchRequest
-	22, // 31: roster.NominationService.Add:output_type -> roster.Nomination
-	22, // 32: roster.NominationService.Get:output_type -> roster.Nomination
-	22, // 33: roster.NominationService.Patch:output_type -> roster.Nomination
-	22, // 34: roster.NominationService.Apply:output_type -> roster.Nomination
-	7,  // 35: roster.NominationService.Erase:output_type -> roster.NominationEraseResponse
-	9,  // 36: roster.NominationService.List:output_type -> roster.NominationListResponse
-	12, // 37: roster.NominationService.Watch:output_type -> roster.NominationWatchResponse
-	31, // [31:38] is the sub-list for method output_type
-	24, // [24:31] is the sub-list for method input_type
-	24, // [24:24] is the sub-list for extension type_name
-	24, // [24:24] is the sub-list for extension extendee
-	0,  // [0:24] is the sub-list for field type_name
+	4,  // 17: roster.NominationListRequest.select:type_name -> roster.NominationSelect
+	22, // 18: roster.NominationListResponse.items:type_name -> roster.Nomination
+	2,  // 19: roster.NominationFilter.ref:type_name -> roster.NominationRef
+	16, // 20: roster.NominationFilter.tenant:type_name -> roster.TenantRef
+	17, // 21: roster.NominationFilter.acts_as:type_name -> roster.HolderRef
+	10, // 22: roster.NominationWatchRequest.filters:type_name -> roster.NominationFilter
+	13, // 23: roster.NominationWatchResponse.items:type_name -> roster.NominationWatchItem
+	22, // 24: roster.NominationWatchItem.value:type_name -> roster.Nomination
+	0,  // 25: roster.NominationService.Add:input_type -> roster.NominationAddRequest
+	1,  // 26: roster.NominationService.Get:input_type -> roster.NominationGetRequest
+	5,  // 27: roster.NominationService.Patch:input_type -> roster.NominationPatchRequest
+	6,  // 28: roster.NominationService.Apply:input_type -> roster.NominationApplyRequest
+	2,  // 29: roster.NominationService.Erase:input_type -> roster.NominationRef
+	8,  // 30: roster.NominationService.List:input_type -> roster.NominationListRequest
+	11, // 31: roster.NominationService.Watch:input_type -> roster.NominationWatchRequest
+	22, // 32: roster.NominationService.Add:output_type -> roster.Nomination
+	22, // 33: roster.NominationService.Get:output_type -> roster.Nomination
+	22, // 34: roster.NominationService.Patch:output_type -> roster.Nomination
+	22, // 35: roster.NominationService.Apply:output_type -> roster.Nomination
+	7,  // 36: roster.NominationService.Erase:output_type -> roster.NominationEraseResponse
+	9,  // 37: roster.NominationService.List:output_type -> roster.NominationListResponse
+	12, // 38: roster.NominationService.Watch:output_type -> roster.NominationWatchResponse
+	32, // [32:39] is the sub-list for method output_type
+	25, // [25:32] is the sub-list for method input_type
+	25, // [25:25] is the sub-list for extension type_name
+	25, // [25:25] is the sub-list for extension extendee
+	0,  // [0:25] is the sub-list for field type_name
 }
 
 func init() { file_app_nomination_svc_g_proto_init() }

@@ -1242,6 +1242,7 @@ type HostListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *HostSelect            `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1301,6 +1302,13 @@ func (x *HostListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *HostListRequest) GetSelect() *HostSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *HostListRequest) SetFilters(v []*HostFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1315,6 +1323,21 @@ func (x *HostListRequest) SetAfter(v string) {
 
 func (x *HostListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *HostListRequest) SetSelect(v *HostSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *HostListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *HostListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type HostListRequest_builder struct {
@@ -1337,6 +1360,15 @@ type HostListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *HostSelect
 }
 
 func (b0 HostListRequest_builder) Build() *HostListRequest {
@@ -1347,6 +1379,7 @@ func (b0 HostListRequest_builder) Build() *HostListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -2944,6 +2977,7 @@ type MailDomainListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *MailDomainSelect      `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -3003,6 +3037,13 @@ func (x *MailDomainListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *MailDomainListRequest) GetSelect() *MailDomainSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *MailDomainListRequest) SetFilters(v []*MailDomainFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -3017,6 +3058,21 @@ func (x *MailDomainListRequest) SetAfter(v string) {
 
 func (x *MailDomainListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *MailDomainListRequest) SetSelect(v *MailDomainSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *MailDomainListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *MailDomainListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type MailDomainListRequest_builder struct {
@@ -3039,6 +3095,15 @@ type MailDomainListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *MailDomainSelect
 }
 
 func (b0 MailDomainListRequest_builder) Build() *MailDomainListRequest {
@@ -3049,6 +3114,7 @@ func (b0 MailDomainListRequest_builder) Build() *MailDomainListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -4671,6 +4737,7 @@ type HostProofListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *HostProofSelect       `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -4730,6 +4797,13 @@ func (x *HostProofListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *HostProofListRequest) GetSelect() *HostProofSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *HostProofListRequest) SetFilters(v []*HostProofFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -4744,6 +4818,21 @@ func (x *HostProofListRequest) SetAfter(v string) {
 
 func (x *HostProofListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *HostProofListRequest) SetSelect(v *HostProofSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *HostProofListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *HostProofListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type HostProofListRequest_builder struct {
@@ -4766,6 +4855,15 @@ type HostProofListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *HostProofSelect
 }
 
 func (b0 HostProofListRequest_builder) Build() *HostProofListRequest {
@@ -4776,6 +4874,7 @@ func (b0 HostProofListRequest_builder) Build() *HostProofListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -5007,12 +5106,13 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x0f.roster.HostRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"+\n" +
 	"\x11HostEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x98\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xc4\x01\n" +
 	"\x0fHostListRequest\x12,\n" +
 	"\afilters\x18\x01 \x03(\v2\x12.roster.HostFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"Q\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12*\n" +
+	"\x06select\x18\x06 \x01(\v2\x12.roster.HostSelectR\x06select\"Q\n" +
 	"\x10HostListResponse\x12\"\n" +
 	"\x05items\x18\x01 \x03(\v2\f.roster.HostR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"Z\n" +
@@ -5072,12 +5172,13 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x15.roster.MailDomainRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"1\n" +
 	"\x17MailDomainEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa4\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xd6\x01\n" +
 	"\x15MailDomainListRequest\x122\n" +
 	"\afilters\x18\x01 \x03(\v2\x18.roster.MailDomainFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"]\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x120\n" +
+	"\x06select\x18\x06 \x01(\v2\x18.roster.MailDomainSelectR\x06select\"]\n" +
 	"\x16MailDomainListResponse\x12(\n" +
 	"\x05items\x18\x01 \x03(\v2\x12.roster.MailDomainR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"f\n" +
@@ -5131,12 +5232,13 @@ const file_app_host_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x14.roster.HostProofRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"0\n" +
 	"\x16HostProofEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa2\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xd3\x01\n" +
 	"\x14HostProofListRequest\x121\n" +
 	"\afilters\x18\x01 \x03(\v2\x17.roster.HostProofFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"[\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12/\n" +
+	"\x06select\x18\x06 \x01(\v2\x17.roster.HostProofSelectR\x06select\"[\n" +
 	"\x15HostProofListResponse\x12'\n" +
 	"\x05items\x18\x01 \x03(\v2\x11.roster.HostProofR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"d\n" +
@@ -5230,92 +5332,95 @@ var file_app_host_svc_g_proto_depIdxs = []int32{
 	2,  // 11: roster.HostApplyRequest.ref:type_name -> roster.HostRef
 	41, // 12: roster.HostApplyRequest.patch:type_name -> patch.Patch
 	9,  // 13: roster.HostListRequest.filters:type_name -> roster.HostFilter
-	42, // 14: roster.HostListResponse.items:type_name -> roster.Host
-	2,  // 15: roster.HostFilter.ref:type_name -> roster.HostRef
-	38, // 16: roster.HostFilter.tenant:type_name -> roster.TenantRef
-	2,  // 17: roster.HostUpdateRequest.ref:type_name -> roster.HostRef
-	39, // 18: roster.HostUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	38, // 19: roster.MailDomainAddRequest.tenant:type_name -> roster.TenantRef
-	36, // 20: roster.MailDomainAddRequest.labels:type_name -> roster.MailDomainAddRequest.LabelsEntry
-	39, // 21: roster.MailDomainAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	13, // 22: roster.MailDomainGetRequest.ref:type_name -> roster.MailDomainRef
-	15, // 23: roster.MailDomainGetRequest.select:type_name -> roster.MailDomainSelect
-	14, // 24: roster.MailDomainRef.at:type_name -> roster.MailDomainRefByAt
-	38, // 25: roster.MailDomainRefByAt.tenant:type_name -> roster.TenantRef
-	40, // 26: roster.MailDomainSelect.tenant:type_name -> roster.TenantSelect
-	13, // 27: roster.MailDomainPatchRequest.ref:type_name -> roster.MailDomainRef
-	37, // 28: roster.MailDomainPatchRequest.labels:type_name -> roster.MailDomainPatchRequest.LabelsEntry
-	39, // 29: roster.MailDomainPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	13, // 30: roster.MailDomainApplyRequest.ref:type_name -> roster.MailDomainRef
-	41, // 31: roster.MailDomainApplyRequest.patch:type_name -> patch.Patch
-	21, // 32: roster.MailDomainListRequest.filters:type_name -> roster.MailDomainFilter
-	43, // 33: roster.MailDomainListResponse.items:type_name -> roster.MailDomain
-	13, // 34: roster.MailDomainFilter.ref:type_name -> roster.MailDomainRef
-	38, // 35: roster.MailDomainFilter.tenant:type_name -> roster.TenantRef
-	13, // 36: roster.MailDomainUpdateRequest.ref:type_name -> roster.MailDomainRef
-	39, // 37: roster.MailDomainUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	38, // 38: roster.HostProofAddRequest.tenant:type_name -> roster.TenantRef
-	39, // 39: roster.HostProofAddRequest.date_expired:type_name -> google.protobuf.Timestamp
-	39, // 40: roster.HostProofAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	25, // 41: roster.HostProofGetRequest.ref:type_name -> roster.HostProofRef
-	27, // 42: roster.HostProofGetRequest.select:type_name -> roster.HostProofSelect
-	26, // 43: roster.HostProofRef.at:type_name -> roster.HostProofRefByAt
-	38, // 44: roster.HostProofRefByAt.tenant:type_name -> roster.TenantRef
-	40, // 45: roster.HostProofSelect.tenant:type_name -> roster.TenantSelect
-	25, // 46: roster.HostProofPatchRequest.ref:type_name -> roster.HostProofRef
-	39, // 47: roster.HostProofPatchRequest.date_expired:type_name -> google.protobuf.Timestamp
-	39, // 48: roster.HostProofPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	25, // 49: roster.HostProofApplyRequest.ref:type_name -> roster.HostProofRef
-	41, // 50: roster.HostProofApplyRequest.patch:type_name -> patch.Patch
-	33, // 51: roster.HostProofListRequest.filters:type_name -> roster.HostProofFilter
-	44, // 52: roster.HostProofListResponse.items:type_name -> roster.HostProof
-	25, // 53: roster.HostProofFilter.ref:type_name -> roster.HostProofRef
-	38, // 54: roster.HostProofFilter.tenant:type_name -> roster.TenantRef
-	0,  // 55: roster.HostService.Add:input_type -> roster.HostAddRequest
-	1,  // 56: roster.HostService.Get:input_type -> roster.HostGetRequest
-	4,  // 57: roster.HostService.Patch:input_type -> roster.HostPatchRequest
-	5,  // 58: roster.HostService.Apply:input_type -> roster.HostApplyRequest
-	2,  // 59: roster.HostService.Erase:input_type -> roster.HostRef
-	7,  // 60: roster.HostService.List:input_type -> roster.HostListRequest
-	10, // 61: roster.HostService.Update:input_type -> roster.HostUpdateRequest
-	11, // 62: roster.MailDomainService.Add:input_type -> roster.MailDomainAddRequest
-	12, // 63: roster.MailDomainService.Get:input_type -> roster.MailDomainGetRequest
-	16, // 64: roster.MailDomainService.Patch:input_type -> roster.MailDomainPatchRequest
-	17, // 65: roster.MailDomainService.Apply:input_type -> roster.MailDomainApplyRequest
-	13, // 66: roster.MailDomainService.Erase:input_type -> roster.MailDomainRef
-	19, // 67: roster.MailDomainService.List:input_type -> roster.MailDomainListRequest
-	22, // 68: roster.MailDomainService.Update:input_type -> roster.MailDomainUpdateRequest
-	23, // 69: roster.HostProofService.Add:input_type -> roster.HostProofAddRequest
-	24, // 70: roster.HostProofService.Get:input_type -> roster.HostProofGetRequest
-	28, // 71: roster.HostProofService.Patch:input_type -> roster.HostProofPatchRequest
-	29, // 72: roster.HostProofService.Apply:input_type -> roster.HostProofApplyRequest
-	25, // 73: roster.HostProofService.Erase:input_type -> roster.HostProofRef
-	31, // 74: roster.HostProofService.List:input_type -> roster.HostProofListRequest
-	42, // 75: roster.HostService.Add:output_type -> roster.Host
-	42, // 76: roster.HostService.Get:output_type -> roster.Host
-	42, // 77: roster.HostService.Patch:output_type -> roster.Host
-	42, // 78: roster.HostService.Apply:output_type -> roster.Host
-	6,  // 79: roster.HostService.Erase:output_type -> roster.HostEraseResponse
-	8,  // 80: roster.HostService.List:output_type -> roster.HostListResponse
-	42, // 81: roster.HostService.Update:output_type -> roster.Host
-	43, // 82: roster.MailDomainService.Add:output_type -> roster.MailDomain
-	43, // 83: roster.MailDomainService.Get:output_type -> roster.MailDomain
-	43, // 84: roster.MailDomainService.Patch:output_type -> roster.MailDomain
-	43, // 85: roster.MailDomainService.Apply:output_type -> roster.MailDomain
-	18, // 86: roster.MailDomainService.Erase:output_type -> roster.MailDomainEraseResponse
-	20, // 87: roster.MailDomainService.List:output_type -> roster.MailDomainListResponse
-	43, // 88: roster.MailDomainService.Update:output_type -> roster.MailDomain
-	44, // 89: roster.HostProofService.Add:output_type -> roster.HostProof
-	44, // 90: roster.HostProofService.Get:output_type -> roster.HostProof
-	44, // 91: roster.HostProofService.Patch:output_type -> roster.HostProof
-	44, // 92: roster.HostProofService.Apply:output_type -> roster.HostProof
-	30, // 93: roster.HostProofService.Erase:output_type -> roster.HostProofEraseResponse
-	32, // 94: roster.HostProofService.List:output_type -> roster.HostProofListResponse
-	75, // [75:95] is the sub-list for method output_type
-	55, // [55:75] is the sub-list for method input_type
-	55, // [55:55] is the sub-list for extension type_name
-	55, // [55:55] is the sub-list for extension extendee
-	0,  // [0:55] is the sub-list for field type_name
+	3,  // 14: roster.HostListRequest.select:type_name -> roster.HostSelect
+	42, // 15: roster.HostListResponse.items:type_name -> roster.Host
+	2,  // 16: roster.HostFilter.ref:type_name -> roster.HostRef
+	38, // 17: roster.HostFilter.tenant:type_name -> roster.TenantRef
+	2,  // 18: roster.HostUpdateRequest.ref:type_name -> roster.HostRef
+	39, // 19: roster.HostUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	38, // 20: roster.MailDomainAddRequest.tenant:type_name -> roster.TenantRef
+	36, // 21: roster.MailDomainAddRequest.labels:type_name -> roster.MailDomainAddRequest.LabelsEntry
+	39, // 22: roster.MailDomainAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	13, // 23: roster.MailDomainGetRequest.ref:type_name -> roster.MailDomainRef
+	15, // 24: roster.MailDomainGetRequest.select:type_name -> roster.MailDomainSelect
+	14, // 25: roster.MailDomainRef.at:type_name -> roster.MailDomainRefByAt
+	38, // 26: roster.MailDomainRefByAt.tenant:type_name -> roster.TenantRef
+	40, // 27: roster.MailDomainSelect.tenant:type_name -> roster.TenantSelect
+	13, // 28: roster.MailDomainPatchRequest.ref:type_name -> roster.MailDomainRef
+	37, // 29: roster.MailDomainPatchRequest.labels:type_name -> roster.MailDomainPatchRequest.LabelsEntry
+	39, // 30: roster.MailDomainPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	13, // 31: roster.MailDomainApplyRequest.ref:type_name -> roster.MailDomainRef
+	41, // 32: roster.MailDomainApplyRequest.patch:type_name -> patch.Patch
+	21, // 33: roster.MailDomainListRequest.filters:type_name -> roster.MailDomainFilter
+	15, // 34: roster.MailDomainListRequest.select:type_name -> roster.MailDomainSelect
+	43, // 35: roster.MailDomainListResponse.items:type_name -> roster.MailDomain
+	13, // 36: roster.MailDomainFilter.ref:type_name -> roster.MailDomainRef
+	38, // 37: roster.MailDomainFilter.tenant:type_name -> roster.TenantRef
+	13, // 38: roster.MailDomainUpdateRequest.ref:type_name -> roster.MailDomainRef
+	39, // 39: roster.MailDomainUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	38, // 40: roster.HostProofAddRequest.tenant:type_name -> roster.TenantRef
+	39, // 41: roster.HostProofAddRequest.date_expired:type_name -> google.protobuf.Timestamp
+	39, // 42: roster.HostProofAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	25, // 43: roster.HostProofGetRequest.ref:type_name -> roster.HostProofRef
+	27, // 44: roster.HostProofGetRequest.select:type_name -> roster.HostProofSelect
+	26, // 45: roster.HostProofRef.at:type_name -> roster.HostProofRefByAt
+	38, // 46: roster.HostProofRefByAt.tenant:type_name -> roster.TenantRef
+	40, // 47: roster.HostProofSelect.tenant:type_name -> roster.TenantSelect
+	25, // 48: roster.HostProofPatchRequest.ref:type_name -> roster.HostProofRef
+	39, // 49: roster.HostProofPatchRequest.date_expired:type_name -> google.protobuf.Timestamp
+	39, // 50: roster.HostProofPatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	25, // 51: roster.HostProofApplyRequest.ref:type_name -> roster.HostProofRef
+	41, // 52: roster.HostProofApplyRequest.patch:type_name -> patch.Patch
+	33, // 53: roster.HostProofListRequest.filters:type_name -> roster.HostProofFilter
+	27, // 54: roster.HostProofListRequest.select:type_name -> roster.HostProofSelect
+	44, // 55: roster.HostProofListResponse.items:type_name -> roster.HostProof
+	25, // 56: roster.HostProofFilter.ref:type_name -> roster.HostProofRef
+	38, // 57: roster.HostProofFilter.tenant:type_name -> roster.TenantRef
+	0,  // 58: roster.HostService.Add:input_type -> roster.HostAddRequest
+	1,  // 59: roster.HostService.Get:input_type -> roster.HostGetRequest
+	4,  // 60: roster.HostService.Patch:input_type -> roster.HostPatchRequest
+	5,  // 61: roster.HostService.Apply:input_type -> roster.HostApplyRequest
+	2,  // 62: roster.HostService.Erase:input_type -> roster.HostRef
+	7,  // 63: roster.HostService.List:input_type -> roster.HostListRequest
+	10, // 64: roster.HostService.Update:input_type -> roster.HostUpdateRequest
+	11, // 65: roster.MailDomainService.Add:input_type -> roster.MailDomainAddRequest
+	12, // 66: roster.MailDomainService.Get:input_type -> roster.MailDomainGetRequest
+	16, // 67: roster.MailDomainService.Patch:input_type -> roster.MailDomainPatchRequest
+	17, // 68: roster.MailDomainService.Apply:input_type -> roster.MailDomainApplyRequest
+	13, // 69: roster.MailDomainService.Erase:input_type -> roster.MailDomainRef
+	19, // 70: roster.MailDomainService.List:input_type -> roster.MailDomainListRequest
+	22, // 71: roster.MailDomainService.Update:input_type -> roster.MailDomainUpdateRequest
+	23, // 72: roster.HostProofService.Add:input_type -> roster.HostProofAddRequest
+	24, // 73: roster.HostProofService.Get:input_type -> roster.HostProofGetRequest
+	28, // 74: roster.HostProofService.Patch:input_type -> roster.HostProofPatchRequest
+	29, // 75: roster.HostProofService.Apply:input_type -> roster.HostProofApplyRequest
+	25, // 76: roster.HostProofService.Erase:input_type -> roster.HostProofRef
+	31, // 77: roster.HostProofService.List:input_type -> roster.HostProofListRequest
+	42, // 78: roster.HostService.Add:output_type -> roster.Host
+	42, // 79: roster.HostService.Get:output_type -> roster.Host
+	42, // 80: roster.HostService.Patch:output_type -> roster.Host
+	42, // 81: roster.HostService.Apply:output_type -> roster.Host
+	6,  // 82: roster.HostService.Erase:output_type -> roster.HostEraseResponse
+	8,  // 83: roster.HostService.List:output_type -> roster.HostListResponse
+	42, // 84: roster.HostService.Update:output_type -> roster.Host
+	43, // 85: roster.MailDomainService.Add:output_type -> roster.MailDomain
+	43, // 86: roster.MailDomainService.Get:output_type -> roster.MailDomain
+	43, // 87: roster.MailDomainService.Patch:output_type -> roster.MailDomain
+	43, // 88: roster.MailDomainService.Apply:output_type -> roster.MailDomain
+	18, // 89: roster.MailDomainService.Erase:output_type -> roster.MailDomainEraseResponse
+	20, // 90: roster.MailDomainService.List:output_type -> roster.MailDomainListResponse
+	43, // 91: roster.MailDomainService.Update:output_type -> roster.MailDomain
+	44, // 92: roster.HostProofService.Add:output_type -> roster.HostProof
+	44, // 93: roster.HostProofService.Get:output_type -> roster.HostProof
+	44, // 94: roster.HostProofService.Patch:output_type -> roster.HostProof
+	44, // 95: roster.HostProofService.Apply:output_type -> roster.HostProof
+	30, // 96: roster.HostProofService.Erase:output_type -> roster.HostProofEraseResponse
+	32, // 97: roster.HostProofService.List:output_type -> roster.HostProofListResponse
+	78, // [78:98] is the sub-list for method output_type
+	58, // [58:78] is the sub-list for method input_type
+	58, // [58:58] is the sub-list for extension type_name
+	58, // [58:58] is the sub-list for extension extendee
+	0,  // [0:58] is the sub-list for field type_name
 }
 
 func init() { file_app_host_svc_g_proto_init() }

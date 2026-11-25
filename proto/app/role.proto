@@ -137,7 +137,13 @@ message Role {
   }];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {
+      add: {}
+      get: {}
+      patch: {}
+      apply: {}
+      erase: {}
+    }
     indexes: [
       {
         name: "page"
@@ -271,7 +277,13 @@ message Binding {
   }];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {
+      add: {}
+      get: {}
+      patch: {}
+      apply: {}
+      erase: {}
+    }
     indexes: [
       {
         name: "page"

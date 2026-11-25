@@ -944,6 +944,7 @@ type ContinuationListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *ContinuationSelect    `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1003,6 +1004,13 @@ func (x *ContinuationListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *ContinuationListRequest) GetSelect() *ContinuationSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *ContinuationListRequest) SetFilters(v []*ContinuationFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1017,6 +1025,21 @@ func (x *ContinuationListRequest) SetAfter(v string) {
 
 func (x *ContinuationListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *ContinuationListRequest) SetSelect(v *ContinuationSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *ContinuationListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *ContinuationListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type ContinuationListRequest_builder struct {
@@ -1039,6 +1062,15 @@ type ContinuationListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *ContinuationSelect
 }
 
 func (b0 ContinuationListRequest_builder) Build() *ContinuationListRequest {
@@ -1049,6 +1081,7 @@ func (b0 ContinuationListRequest_builder) Build() *ContinuationListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -1238,12 +1271,13 @@ const file_app_continuation_svc_g_proto_rawDesc = "" +
 	"dateErased\x12!\n" +
 	"\fdate_created\x18\x0f \x01(\bR\vdateCreated\"3\n" +
 	"\x19ContinuationEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xa8\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xdc\x01\n" +
 	"\x17ContinuationListRequest\x124\n" +
 	"\afilters\x18\x01 \x03(\v2\x1a.roster.ContinuationFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"a\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x122\n" +
+	"\x06select\x18\x06 \x01(\v2\x1a.roster.ContinuationSelectR\x06select\"a\n" +
 	"\x18ContinuationListResponse\x12*\n" +
 	"\x05items\x18\x01 \x03(\v2\x14.roster.ContinuationR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"?\n" +
@@ -1278,21 +1312,22 @@ var file_app_continuation_svc_g_proto_depIdxs = []int32{
 	3,  // 4: roster.ContinuationGetRequest.select:type_name -> roster.ContinuationSelect
 	10, // 5: roster.ContinuationSelect.holder:type_name -> roster.HolderSelect
 	7,  // 6: roster.ContinuationListRequest.filters:type_name -> roster.ContinuationFilter
-	11, // 7: roster.ContinuationListResponse.items:type_name -> roster.Continuation
-	2,  // 8: roster.ContinuationFilter.ref:type_name -> roster.ContinuationRef
-	0,  // 9: roster.ContinuationService.Add:input_type -> roster.ContinuationAddRequest
-	1,  // 10: roster.ContinuationService.Get:input_type -> roster.ContinuationGetRequest
-	2,  // 11: roster.ContinuationService.Erase:input_type -> roster.ContinuationRef
-	5,  // 12: roster.ContinuationService.List:input_type -> roster.ContinuationListRequest
-	11, // 13: roster.ContinuationService.Add:output_type -> roster.Continuation
-	11, // 14: roster.ContinuationService.Get:output_type -> roster.Continuation
-	4,  // 15: roster.ContinuationService.Erase:output_type -> roster.ContinuationEraseResponse
-	6,  // 16: roster.ContinuationService.List:output_type -> roster.ContinuationListResponse
-	13, // [13:17] is the sub-list for method output_type
-	9,  // [9:13] is the sub-list for method input_type
-	9,  // [9:9] is the sub-list for extension type_name
-	9,  // [9:9] is the sub-list for extension extendee
-	0,  // [0:9] is the sub-list for field type_name
+	3,  // 7: roster.ContinuationListRequest.select:type_name -> roster.ContinuationSelect
+	11, // 8: roster.ContinuationListResponse.items:type_name -> roster.Continuation
+	2,  // 9: roster.ContinuationFilter.ref:type_name -> roster.ContinuationRef
+	0,  // 10: roster.ContinuationService.Add:input_type -> roster.ContinuationAddRequest
+	1,  // 11: roster.ContinuationService.Get:input_type -> roster.ContinuationGetRequest
+	2,  // 12: roster.ContinuationService.Erase:input_type -> roster.ContinuationRef
+	5,  // 13: roster.ContinuationService.List:input_type -> roster.ContinuationListRequest
+	11, // 14: roster.ContinuationService.Add:output_type -> roster.Continuation
+	11, // 15: roster.ContinuationService.Get:output_type -> roster.Continuation
+	4,  // 16: roster.ContinuationService.Erase:output_type -> roster.ContinuationEraseResponse
+	6,  // 17: roster.ContinuationService.List:output_type -> roster.ContinuationListResponse
+	14, // [14:18] is the sub-list for method output_type
+	10, // [10:14] is the sub-list for method input_type
+	10, // [10:10] is the sub-list for extension type_name
+	10, // [10:10] is the sub-list for extension extendee
+	0,  // [0:10] is the sub-list for field type_name
 }
 
 func init() { file_app_continuation_svc_g_proto_init() }

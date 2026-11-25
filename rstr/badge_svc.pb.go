@@ -1649,6 +1649,7 @@ type BadgeListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *BadgeSelect           `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1708,6 +1709,13 @@ func (x *BadgeListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *BadgeListRequest) GetSelect() *BadgeSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *BadgeListRequest) SetFilters(v []*BadgeFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1722,6 +1730,21 @@ func (x *BadgeListRequest) SetAfter(v string) {
 
 func (x *BadgeListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *BadgeListRequest) SetSelect(v *BadgeSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *BadgeListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *BadgeListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type BadgeListRequest_builder struct {
@@ -1744,6 +1767,15 @@ type BadgeListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *BadgeSelect
 }
 
 func (b0 BadgeListRequest_builder) Build() *BadgeListRequest {
@@ -1754,6 +1786,7 @@ func (b0 BadgeListRequest_builder) Build() *BadgeListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -2450,12 +2483,13 @@ const file_app_badge_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.BadgeRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\",\n" +
 	"\x12BadgeEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9a\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xc7\x01\n" +
 	"\x10BadgeListRequest\x12-\n" +
 	"\afilters\x18\x01 \x03(\v2\x13.roster.BadgeFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"S\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12+\n" +
+	"\x06select\x18\x06 \x01(\v2\x13.roster.BadgeSelectR\x06select\"S\n" +
 	"\x11BadgeListResponse\x12#\n" +
 	"\x05items\x18\x01 \x03(\v2\r.roster.BadgeR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x81\x01\n" +
@@ -2534,35 +2568,36 @@ var file_app_badge_svc_g_proto_depIdxs = []int32{
 	2,  // 14: roster.BadgeApplyRequest.ref:type_name -> roster.BadgeRef
 	20, // 15: roster.BadgeApplyRequest.patch:type_name -> patch.Patch
 	11, // 16: roster.BadgeListRequest.filters:type_name -> roster.BadgeFilter
-	21, // 17: roster.BadgeListResponse.items:type_name -> roster.Badge
-	2,  // 18: roster.BadgeFilter.ref:type_name -> roster.BadgeRef
-	17, // 19: roster.BadgeFilter.holder:type_name -> roster.HolderRef
-	17, // 20: roster.BadgeEnrolRequest.holder:type_name -> roster.HolderRef
-	17, // 21: roster.BadgeUnlockRequest.holder:type_name -> roster.HolderRef
-	18, // 22: roster.BadgeUnlockResponse.date_locked:type_name -> google.protobuf.Timestamp
-	0,  // 23: roster.BadgeService.Add:input_type -> roster.BadgeAddRequest
-	1,  // 24: roster.BadgeService.Get:input_type -> roster.BadgeGetRequest
-	6,  // 25: roster.BadgeService.Patch:input_type -> roster.BadgePatchRequest
-	7,  // 26: roster.BadgeService.Apply:input_type -> roster.BadgeApplyRequest
-	2,  // 27: roster.BadgeService.Erase:input_type -> roster.BadgeRef
-	9,  // 28: roster.BadgeService.List:input_type -> roster.BadgeListRequest
-	12, // 29: roster.BadgeService.Enrol:input_type -> roster.BadgeEnrolRequest
-	13, // 30: roster.BadgeService.Unlock:input_type -> roster.BadgeUnlockRequest
-	15, // 31: roster.BadgeService.Verify:input_type -> roster.BadgeVerifyRequest
-	21, // 32: roster.BadgeService.Add:output_type -> roster.Badge
-	21, // 33: roster.BadgeService.Get:output_type -> roster.Badge
-	21, // 34: roster.BadgeService.Patch:output_type -> roster.Badge
-	21, // 35: roster.BadgeService.Apply:output_type -> roster.Badge
-	8,  // 36: roster.BadgeService.Erase:output_type -> roster.BadgeEraseResponse
-	10, // 37: roster.BadgeService.List:output_type -> roster.BadgeListResponse
-	21, // 38: roster.BadgeService.Enrol:output_type -> roster.Badge
-	14, // 39: roster.BadgeService.Unlock:output_type -> roster.BadgeUnlockResponse
-	16, // 40: roster.BadgeService.Verify:output_type -> roster.BadgeVerifyResponse
-	32, // [32:41] is the sub-list for method output_type
-	23, // [23:32] is the sub-list for method input_type
-	23, // [23:23] is the sub-list for extension type_name
-	23, // [23:23] is the sub-list for extension extendee
-	0,  // [0:23] is the sub-list for field type_name
+	5,  // 17: roster.BadgeListRequest.select:type_name -> roster.BadgeSelect
+	21, // 18: roster.BadgeListResponse.items:type_name -> roster.Badge
+	2,  // 19: roster.BadgeFilter.ref:type_name -> roster.BadgeRef
+	17, // 20: roster.BadgeFilter.holder:type_name -> roster.HolderRef
+	17, // 21: roster.BadgeEnrolRequest.holder:type_name -> roster.HolderRef
+	17, // 22: roster.BadgeUnlockRequest.holder:type_name -> roster.HolderRef
+	18, // 23: roster.BadgeUnlockResponse.date_locked:type_name -> google.protobuf.Timestamp
+	0,  // 24: roster.BadgeService.Add:input_type -> roster.BadgeAddRequest
+	1,  // 25: roster.BadgeService.Get:input_type -> roster.BadgeGetRequest
+	6,  // 26: roster.BadgeService.Patch:input_type -> roster.BadgePatchRequest
+	7,  // 27: roster.BadgeService.Apply:input_type -> roster.BadgeApplyRequest
+	2,  // 28: roster.BadgeService.Erase:input_type -> roster.BadgeRef
+	9,  // 29: roster.BadgeService.List:input_type -> roster.BadgeListRequest
+	12, // 30: roster.BadgeService.Enrol:input_type -> roster.BadgeEnrolRequest
+	13, // 31: roster.BadgeService.Unlock:input_type -> roster.BadgeUnlockRequest
+	15, // 32: roster.BadgeService.Verify:input_type -> roster.BadgeVerifyRequest
+	21, // 33: roster.BadgeService.Add:output_type -> roster.Badge
+	21, // 34: roster.BadgeService.Get:output_type -> roster.Badge
+	21, // 35: roster.BadgeService.Patch:output_type -> roster.Badge
+	21, // 36: roster.BadgeService.Apply:output_type -> roster.Badge
+	8,  // 37: roster.BadgeService.Erase:output_type -> roster.BadgeEraseResponse
+	10, // 38: roster.BadgeService.List:output_type -> roster.BadgeListResponse
+	21, // 39: roster.BadgeService.Enrol:output_type -> roster.Badge
+	14, // 40: roster.BadgeService.Unlock:output_type -> roster.BadgeUnlockResponse
+	16, // 41: roster.BadgeService.Verify:output_type -> roster.BadgeVerifyResponse
+	33, // [33:42] is the sub-list for method output_type
+	24, // [24:33] is the sub-list for method input_type
+	24, // [24:24] is the sub-list for extension type_name
+	24, // [24:24] is the sub-list for extension extendee
+	0,  // [0:24] is the sub-list for field type_name
 }
 
 func init() { file_app_badge_svc_g_proto_init() }

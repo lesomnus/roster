@@ -114,7 +114,13 @@ message Group {
   }];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {
+      add: {}
+      get: {}
+      patch: {}
+      apply: {}
+      erase: {}
+    }
     indexes: [
       {
         name: "page"
@@ -199,7 +205,13 @@ message GroupExposure {
   }];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {
+      add: {}
+      get: {}
+      patch: {}
+      apply: {}
+      erase: {}
+    }
     indexes: [
       {
         name: "page"

@@ -185,7 +185,13 @@ message Host {
   }];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {
+      add: {}
+      get: {}
+      patch: {}
+      apply: {}
+      erase: {}
+    }
     indexes: [
       {
         name: "page"
@@ -303,7 +309,13 @@ message MailDomain {
   }];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {
+      add: {}
+      get: {}
+      patch: {}
+      apply: {}
+      erase: {}
+    }
     indexes: [
       {
         name: "page"
@@ -453,7 +465,13 @@ message HostProof {
   }];
 
   option (orm.message) = {
-    rpc: {crud: true}
+    rpc: {
+      add: {}
+      get: {}
+      patch: {}
+      apply: {}
+      erase: {}
+    }
     indexes: [
       {
         name: "page"

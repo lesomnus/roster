@@ -52,7 +52,16 @@ breaking:
     # a field going from implicit to explicit presence does not, since its bytes
     # and its JSON are the same either way.
     - FIELD_WIRE_JSON_COMPATIBLE_CARDINALITY
+    # For one change, in place of `FIELD_NO_DELETE` below: `orm` took out
+    # `RpcOptions.crud` and reserved its number (protobuf-orm/protobuf-orm#4),
+    # and this check reads the imports as well, where an `ignore_only` names
+    # this module's files alone. A field deleted and its number not reserved
+    # still fails. Out with the first change after this reaches `main`, with
+    # the `ignore_only` at the end (#531).
+    - FIELD_NO_DELETE_UNLESS_NUMBER_RESERVED
   except:
+    # For one change: see `FIELD_NO_DELETE_UNLESS_NUMBER_RESERVED` above.
+    - FIELD_NO_DELETE
     - MESSAGE_NO_DELETE
     - ENUM_NO_DELETE
     - SERVICE_NO_DELETE
@@ -82,3 +91,18 @@ breaking:
     # their pin (CLAUDE.md). From the launch on, put it back: then it is a
     # compile error somebody else has to fix.
     - FIELD_SAME_CARDINALITY
+  # One change, on purpose and before the first app's launch (CLAUDE.md):
+  # roster moves onto the payday whose trail has `Add` and `Get` alone, since
+  # nothing patches, applies to or erases a row of it and its layer refused
+  # all three to everybody (#531). `AuditService` loses `Patch`, `Apply` and
+  # `Erase`, and their requests and answer go with them. Nothing a caller was
+  # served moves.
+  #
+  # Out with the first change after this reaches `main`, which is the only
+  # baseline here, as #234 took #233's out: left in, it is a hole in the check
+  # for the next change to that file.
+  ignore_only:
+    RPC_NO_DELETE:
+      - proto/roster/payday/audit_svc.g.proto
+    PACKAGE_MESSAGE_NO_DELETE:
+      - proto/roster/payday/audit_svc.g.proto

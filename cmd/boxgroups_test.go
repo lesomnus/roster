@@ -55,9 +55,9 @@ func boxCommand(root *xli.Command, path ...string) *xli.Command {
 // TestNoCommandIsOfferedThatWorksNowhere: the help offers no command and no
 // flag that cannot work in either mode.
 //
-// The tree is built from the schema, and offered `audit add`, `audit patch`
-// and `audit erase` on both planes, which every server refuses (*the trail is
-// written by what happened, not by anybody asking*); `control tenant close` and
+// The tree is built from the schema, and offered `audit add` on both planes,
+// which every server refuses (*the trail is written by what happened, not by
+// anybody asking*); `control tenant close` and
 // `control tenant restore`, of the one tenant the control plane has, which is
 // the deployment; and `vouch enrol --tenant` and `--address`, refused whenever
 // they were given. Answered: each offered, and each a refusal when run; right
@@ -76,10 +76,8 @@ func TestNoCommandIsOfferedThatWorksNowhere(t *testing.T) {
 
 	x.NotNil(boxCommand(root, "audit", "list"), "the tree is not where this looks")
 	x.NotNil(boxCommand(root, "control", "audit", "list"))
-	for _, verb := range []string{"add", "patch", "erase"} {
-		x.Nil(boxCommand(root, "audit", verb), "audit %s is offered", verb)
-		x.Nil(boxCommand(root, "control", "audit", verb), "control audit %s is offered", verb)
-	}
+	x.Nil(boxCommand(root, "audit", "add"), "audit add is offered")
+	x.Nil(boxCommand(root, "control", "audit", "add"), "control audit add is offered")
 
 	x.NotNil(boxCommand(root, "tenant", "close"), "a customer is closed")
 	x.NotNil(boxCommand(root, "tenant", "restore"))

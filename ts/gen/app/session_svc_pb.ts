@@ -15,7 +15,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/session_svc.g.proto.
  */
 export const file_app_session_svc_g: GenFile = /*@__PURE__*/
-  fileDesc("ChdhcHAvc2Vzc2lvbl9zdmMuZy5wcm90bxIGcm9zdGVyIlsKEVNlc3Npb25HZXRSZXF1ZXN0Eh8KA3JlZhgBIAEoCzISLnJvc3Rlci5TZXNzaW9uUmVmEiUKBnNlbGVjdBgCIAEoCzIVLnJvc3Rlci5TZXNzaW9uU2VsZWN0IjsKClNlc3Npb25SZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAEhAKBnNlY3JldBgJIAEoDEgAQgUKA2tleSLnAQoNU2Vzc2lvblNlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBINCgVncmFudBgIIAEoCBIOCgZzZWNyZXQYCSABKAgSGgoSZGF0ZV9hdXRoZW50aWNhdGVkGAogASgIEhQKDGRhdGVfZXhwaXJlZBgLIAEoCBIRCglkYXRlX2lkbGUYDCABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCJ/ChJTZXNzaW9uTGlzdFJlcXVlc3QSJgoHZmlsdGVycxgBIAMoCzIVLnJvc3Rlci5TZXNzaW9uRmlsdGVyEhMKBHNpemUYAiABKAVCBaoBAggCEhQKBWFmdGVyGAMgASgJQgWqAQIIAhIWCgdyZXZlcnNlGAQgASgIQgWqAQIIAiJKChNTZXNzaW9uTGlzdFJlc3BvbnNlEh4KBWl0ZW1zGAEgAygLMg8ucm9zdGVyLlNlc3Npb24SEwoEbmV4dBgCIAEoCUIFqgECCAIiMAoNU2Vzc2lvbkZpbHRlchIfCgNyZWYYASABKAsyEi5yb3N0ZXIuU2Vzc2lvblJlZjKEAQoOU2Vzc2lvblNlcnZpY2USMQoDR2V0Ehkucm9zdGVyLlNlc3Npb25HZXRSZXF1ZXN0Gg8ucm9zdGVyLlNlc3Npb24SPwoETGlzdBIaLnJvc3Rlci5TZXNzaW9uTGlzdFJlcXVlc3QaGy5yb3N0ZXIuU2Vzc2lvbkxpc3RSZXNwb25zZUIhWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RyYghlZGl0aW9uc3DoBw", [file_app_session, file_orm, file_roster_payday_holder_svc_g]);
+  fileDesc("ChdhcHAvc2Vzc2lvbl9zdmMuZy5wcm90bxIGcm9zdGVyIlsKEVNlc3Npb25HZXRSZXF1ZXN0Eh8KA3JlZhgBIAEoCzISLnJvc3Rlci5TZXNzaW9uUmVmEiUKBnNlbGVjdBgCIAEoCzIVLnJvc3Rlci5TZXNzaW9uU2VsZWN0IjsKClNlc3Npb25SZWYSFAoCaWQYASABKAxCBuqCFgIQQEgAEhAKBnNlY3JldBgJIAEoDEgAQgUKA2tleSLnAQoNU2Vzc2lvblNlbGVjdBILCgNhbGwYASABKAgSJAoGaG9sZGVyGAIgASgLMhQucm9zdGVyLkhvbGRlclNlbGVjdBINCgVncmFudBgIIAEoCBIOCgZzZWNyZXQYCSABKAgSGgoSZGF0ZV9hdXRoZW50aWNhdGVkGAogASgIEhQKDGRhdGVfZXhwaXJlZBgLIAEoCBIRCglkYXRlX2lkbGUYDCABKAgSFAoMZGF0ZV91cGRhdGVkGA0gASgIEhMKC2RhdGVfZXJhc2VkGA4gASgIEhQKDGRhdGVfY3JlYXRlZBgPIAEoCCKmAQoSU2Vzc2lvbkxpc3RSZXF1ZXN0EiYKB2ZpbHRlcnMYASADKAsyFS5yb3N0ZXIuU2Vzc2lvbkZpbHRlchITCgRzaXplGAIgASgFQgWqAQIIAhIUCgVhZnRlchgDIAEoCUIFqgECCAISFgoHcmV2ZXJzZRgEIAEoCEIFqgECCAISJQoGc2VsZWN0GAYgASgLMhUucm9zdGVyLlNlc3Npb25TZWxlY3QiSgoTU2Vzc2lvbkxpc3RSZXNwb25zZRIeCgVpdGVtcxgBIAMoCzIPLnJvc3Rlci5TZXNzaW9uEhMKBG5leHQYAiABKAlCBaoBAggCIjAKDVNlc3Npb25GaWx0ZXISHwoDcmVmGAEgASgLMhIucm9zdGVyLlNlc3Npb25SZWYyhAEKDlNlc3Npb25TZXJ2aWNlEjEKA0dldBIZLnJvc3Rlci5TZXNzaW9uR2V0UmVxdWVzdBoPLnJvc3Rlci5TZXNzaW9uEj8KBExpc3QSGi5yb3N0ZXIuU2Vzc2lvbkxpc3RSZXF1ZXN0Ghsucm9zdGVyLlNlc3Npb25MaXN0UmVzcG9uc2VCIVofZ2l0aHViLmNvbS9sZXNvbW51cy9yb3N0ZXIvcnN0cmIIZWRpdGlvbnNw6Ac", [file_app_session, file_orm, file_roster_payday_holder_svc_g]);
 
 /**
  * @generated from message roster.SessionGetRequest
@@ -170,6 +170,20 @@ export type SessionListRequest = Message<"roster.SessionListRequest"> & {
    * @generated from field: bool reverse = 4 [features.field_presence = IMPLICIT];
    */
   reverse: boolean;
+
+  /**
+   * Which fields of each row to answer with, and which edges filled and how
+   * deep, as a Get's select says it. Unset is what a list answers without
+   * one. Each row is read as a Get of it with this select would read it, each
+   * edge through what the caller may see of its entity; a list costs one
+   * read for the rows and one for each edge selected, at any depth, however
+   * many rows the page holds.
+   *
+   * Field 6 in every entity: 5 is the order's, declared or not.
+   *
+   * @generated from field: roster.SessionSelect select = 6;
+   */
+  select?: SessionSelect | undefined;
 };
 
 /**

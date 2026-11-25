@@ -248,11 +248,12 @@ message Holder {
     }
   ];
 
-  // An overlay may add an index and nothing else of `(orm.message)`. These
+  // payday's Holder declares no `Apply`, and roster asks for it. The indexes
   // are what make "the person their directory calls this" one read: unique
   // within a tenant, as a `userName` is unique at a SCIM endpoint and a
   // subject at a connection.
   option (orm.message) = {
+    rpc: {apply: {}}
     indexes: [
       {
         name: "named"

@@ -1658,6 +1658,7 @@ type TenantListRequest struct {
 	xxx_hidden_Size    int32                  `protobuf:"varint,2,opt,name=size"`
 	xxx_hidden_After   string                 `protobuf:"bytes,3,opt,name=after"`
 	xxx_hidden_Reverse bool                   `protobuf:"varint,4,opt,name=reverse"`
+	xxx_hidden_Select  *TenantSelect          `protobuf:"bytes,6,opt,name=select"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1717,6 +1718,13 @@ func (x *TenantListRequest) GetReverse() bool {
 	return false
 }
 
+func (x *TenantListRequest) GetSelect() *TenantSelect {
+	if x != nil {
+		return x.xxx_hidden_Select
+	}
+	return nil
+}
+
 func (x *TenantListRequest) SetFilters(v []*TenantFilter) {
 	x.xxx_hidden_Filters = &v
 }
@@ -1731,6 +1739,21 @@ func (x *TenantListRequest) SetAfter(v string) {
 
 func (x *TenantListRequest) SetReverse(v bool) {
 	x.xxx_hidden_Reverse = v
+}
+
+func (x *TenantListRequest) SetSelect(v *TenantSelect) {
+	x.xxx_hidden_Select = v
+}
+
+func (x *TenantListRequest) HasSelect() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_Select != nil
+}
+
+func (x *TenantListRequest) ClearSelect() {
+	x.xxx_hidden_Select = nil
 }
 
 type TenantListRequest_builder struct {
@@ -1753,6 +1776,15 @@ type TenantListRequest_builder struct {
 	// from the other end. A cursor is of the way it was read, so the next page
 	// carries on that way, and one of the other way is refused.
 	Reverse bool
+	// Which fields of each row to answer with, and which edges filled and how
+	// deep, as a Get's select says it. Unset is what a list answers without
+	// one. Each row is read as a Get of it with this select would read it, each
+	// edge through what the caller may see of its entity; a list costs one
+	// read for the rows and one for each edge selected, at any depth, however
+	// many rows the page holds.
+	//
+	// Field 6 in every entity: 5 is the order's, declared or not.
+	Select *TenantSelect
 }
 
 func (b0 TenantListRequest_builder) Build() *TenantListRequest {
@@ -1763,6 +1795,7 @@ func (b0 TenantListRequest_builder) Build() *TenantListRequest {
 	x.xxx_hidden_Size = b.Size
 	x.xxx_hidden_After = b.After
 	x.xxx_hidden_Reverse = b.Reverse
+	x.xxx_hidden_Select = b.Select
 	return m0
 }
 
@@ -2386,12 +2419,13 @@ const file_roster_payday_tenant_svc_g_proto_rawDesc = "" +
 	"\x03ref\x18\x01 \x01(\v2\x11.roster.TenantRefR\x03ref\x12\"\n" +
 	"\x05patch\x18\x02 \x01(\v2\f.patch.PatchR\x05patch\"-\n" +
 	"\x13TenantEraseResponse\x12\x16\n" +
-	"\x06erased\x18\x01 \x01(\bR\x06erased\"\x9c\x01\n" +
+	"\x06erased\x18\x01 \x01(\bR\x06erased\"\xca\x01\n" +
 	"\x11TenantListRequest\x12.\n" +
 	"\afilters\x18\x01 \x03(\v2\x14.roster.TenantFilterR\afilters\x12\x19\n" +
 	"\x04size\x18\x02 \x01(\x05B\x05\xaa\x01\x02\b\x02R\x04size\x12\x1b\n" +
 	"\x05after\x18\x03 \x01(\tB\x05\xaa\x01\x02\b\x02R\x05after\x12\x1f\n" +
-	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\"U\n" +
+	"\areverse\x18\x04 \x01(\bB\x05\xaa\x01\x02\b\x02R\areverse\x12,\n" +
+	"\x06select\x18\x06 \x01(\v2\x14.roster.TenantSelectR\x06select\"U\n" +
 	"\x12TenantListResponse\x12$\n" +
 	"\x05items\x18\x01 \x03(\v2\x0e.roster.TenantR\x05items\x12\x19\n" +
 	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"3\n" +
@@ -2466,39 +2500,40 @@ var file_roster_payday_tenant_svc_g_proto_depIdxs = []int32{
 	2,  // 15: roster.TenantApplyRequest.ref:type_name -> roster.TenantRef
 	18, // 16: roster.TenantApplyRequest.patch:type_name -> patch.Patch
 	9,  // 17: roster.TenantListRequest.filters:type_name -> roster.TenantFilter
-	19, // 18: roster.TenantListResponse.items:type_name -> roster.Tenant
-	2,  // 19: roster.TenantFilter.ref:type_name -> roster.TenantRef
-	2,  // 20: roster.TenantUpdateRequest.ref:type_name -> roster.TenantRef
-	16, // 21: roster.TenantUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	15, // 22: roster.TenantUpdateRequest.labels:type_name -> roster.TenantUpdateRequest.LabelsEntry
-	17, // 23: roster.TenantUpdateRequest.config:type_name -> roster.TenantConfig
-	2,  // 24: roster.TenantCloseRequest.ref:type_name -> roster.TenantRef
-	16, // 25: roster.TenantCloseRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 26: roster.TenantRestoreRequest.ref:type_name -> roster.TenantRef
-	16, // 27: roster.TenantRestoreRequest.date_updated:type_name -> google.protobuf.Timestamp
-	0,  // 28: roster.TenantService.Add:input_type -> roster.TenantAddRequest
-	1,  // 29: roster.TenantService.Get:input_type -> roster.TenantGetRequest
-	4,  // 30: roster.TenantService.Patch:input_type -> roster.TenantPatchRequest
-	5,  // 31: roster.TenantService.Apply:input_type -> roster.TenantApplyRequest
-	2,  // 32: roster.TenantService.Erase:input_type -> roster.TenantRef
-	7,  // 33: roster.TenantService.List:input_type -> roster.TenantListRequest
-	10, // 34: roster.TenantService.Update:input_type -> roster.TenantUpdateRequest
-	11, // 35: roster.TenantService.Close:input_type -> roster.TenantCloseRequest
-	12, // 36: roster.TenantService.Restore:input_type -> roster.TenantRestoreRequest
-	19, // 37: roster.TenantService.Add:output_type -> roster.Tenant
-	19, // 38: roster.TenantService.Get:output_type -> roster.Tenant
-	19, // 39: roster.TenantService.Patch:output_type -> roster.Tenant
-	19, // 40: roster.TenantService.Apply:output_type -> roster.Tenant
-	6,  // 41: roster.TenantService.Erase:output_type -> roster.TenantEraseResponse
-	8,  // 42: roster.TenantService.List:output_type -> roster.TenantListResponse
-	19, // 43: roster.TenantService.Update:output_type -> roster.Tenant
-	19, // 44: roster.TenantService.Close:output_type -> roster.Tenant
-	19, // 45: roster.TenantService.Restore:output_type -> roster.Tenant
-	37, // [37:46] is the sub-list for method output_type
-	28, // [28:37] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	3,  // 18: roster.TenantListRequest.select:type_name -> roster.TenantSelect
+	19, // 19: roster.TenantListResponse.items:type_name -> roster.Tenant
+	2,  // 20: roster.TenantFilter.ref:type_name -> roster.TenantRef
+	2,  // 21: roster.TenantUpdateRequest.ref:type_name -> roster.TenantRef
+	16, // 22: roster.TenantUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	15, // 23: roster.TenantUpdateRequest.labels:type_name -> roster.TenantUpdateRequest.LabelsEntry
+	17, // 24: roster.TenantUpdateRequest.config:type_name -> roster.TenantConfig
+	2,  // 25: roster.TenantCloseRequest.ref:type_name -> roster.TenantRef
+	16, // 26: roster.TenantCloseRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 27: roster.TenantRestoreRequest.ref:type_name -> roster.TenantRef
+	16, // 28: roster.TenantRestoreRequest.date_updated:type_name -> google.protobuf.Timestamp
+	0,  // 29: roster.TenantService.Add:input_type -> roster.TenantAddRequest
+	1,  // 30: roster.TenantService.Get:input_type -> roster.TenantGetRequest
+	4,  // 31: roster.TenantService.Patch:input_type -> roster.TenantPatchRequest
+	5,  // 32: roster.TenantService.Apply:input_type -> roster.TenantApplyRequest
+	2,  // 33: roster.TenantService.Erase:input_type -> roster.TenantRef
+	7,  // 34: roster.TenantService.List:input_type -> roster.TenantListRequest
+	10, // 35: roster.TenantService.Update:input_type -> roster.TenantUpdateRequest
+	11, // 36: roster.TenantService.Close:input_type -> roster.TenantCloseRequest
+	12, // 37: roster.TenantService.Restore:input_type -> roster.TenantRestoreRequest
+	19, // 38: roster.TenantService.Add:output_type -> roster.Tenant
+	19, // 39: roster.TenantService.Get:output_type -> roster.Tenant
+	19, // 40: roster.TenantService.Patch:output_type -> roster.Tenant
+	19, // 41: roster.TenantService.Apply:output_type -> roster.Tenant
+	6,  // 42: roster.TenantService.Erase:output_type -> roster.TenantEraseResponse
+	8,  // 43: roster.TenantService.List:output_type -> roster.TenantListResponse
+	19, // 44: roster.TenantService.Update:output_type -> roster.Tenant
+	19, // 45: roster.TenantService.Close:output_type -> roster.Tenant
+	19, // 46: roster.TenantService.Restore:output_type -> roster.Tenant
+	38, // [38:47] is the sub-list for method output_type
+	29, // [29:38] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_roster_payday_tenant_svc_g_proto_init() }
