@@ -272,7 +272,7 @@ func TestAnAdminPortWithNobodyToBeIsRefused(t *testing.T) {
 // `docker stop` and every orchestrator send SIGTERM. Only `os.Interrupt` was
 // registered, so the graceful path -- GracefulStop, the spin teardown, the
 // deferred stops for the other listeners -- ran on an interactive Ctrl-C and
-// nowhere else. Under Docker roster is PId 1, where SIGTERM has no default
+// nowhere else. Under Docker roster is PID 1, where SIGTERM has no default
 // handler at all, so every `docker stop` waited out the grace period and ended
 // in SIGKILL; anywhere else the default disposition kills the process on the
 // spot, which is what this test observes.

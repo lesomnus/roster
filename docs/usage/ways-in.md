@@ -874,7 +874,7 @@ customers. An authenticator app; a security key is registered by a browser at
 the name it will be asked for at.
 
 ```sh
-roster --as admin control vouch enrol @admin        # an otpauth:// Uri, once, on stdout
+roster --as admin control vouch enrol @admin        # an otpauth:// URI, once, on stdout
 roster --as admin control vouch prove --code-stdin @admin
 ```
 

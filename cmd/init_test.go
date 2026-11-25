@@ -103,7 +103,18 @@ func TestInitLeavesADeploymentThatWorks(t *testing.T) {
 	// granted in. A permission nobody reads about is one nobody remembers is
 	// there, and a pattern printed as prose is one nobody can grep for.
 	x.Contains(out, "/roster.*/*")
-	x.Contains(out, "every Rpc roster serves")
+	x.Contains(out, "every RPC roster serves")
+	everything, err := s.Control.Ent.Role.Query().Only(ctx)
+	x.NoError(err)
+	x.Equal("Every RPC roster serves, including ones added by a later release.", everything.Desc)
+
+	// In the manual's words: the page it names is the admin console, which
+	// is the glossary's word for it on every page, and `RPC` is how the manual
+	// writes the acronym. It named the page `console` alone, twice, and said
+	// `Rpc`, which no page could show as printed.
+	x.Contains(out, "sign in to the admin console as admin.")
+	x.Contains(out, "the admin console makes the first one")
+	x.NotRegexp(`(?i)\bthe console\b`, out)
 
 	// And the customer that is not there, which is the half that used to read
 	// as its opposite: this printed `sign in as: @contoso/admin`, and a data

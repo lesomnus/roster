@@ -230,7 +230,7 @@ func allow(ctx context.Context, at app.Server, in pdid.Id, to pdid.Id) error {
 		r, err = at.Role().Add(ctx, app.RoleAddRequest_builder{
 			Tenant: app.TenantRef_builder{Id: in.Bytes()}.Build(),
 			Alias:  Everyverb,
-			Desc:   "Every Rpc roster serves, including ones added by a later release.",
+			Desc:   "Every RPC roster serves, including ones added by a later release.",
 
 			// A pattern rather than an enumeration, for the reason in
 			// `Role.methods`: a list written here is what existed the day it

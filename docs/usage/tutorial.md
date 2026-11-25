@@ -26,20 +26,19 @@ roster init
 ```
 control plane
   holder admin is 01a0332f-d4d6-8334-a802-98a7402c0dd8
-  bound to role "everything" = /roster.*/* -- every Rpc roster serves, now and after an upgrade
+  bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
   password  on standard output, alone
 
-…
+sign in to the admin console as admin. that password is shown once and is not stored -- write it down now.
 EQwFb5X74bcKhtm9LbQ1erW23bOXNxxmP672FfKGvkY
 
 there are no customers yet, which is the right state to start in.
-…
+the admin console makes the first one -- a tenant, somebody in it, and the
+role that lets them administer it. see docs/operating.md.
 ```
 
 The password is the one line on standard output, and the rest is on standard
-error. The lines shown as `…` say to sign in to the admin console as admin, that
-the password is shown once and is not stored, and that the admin console makes
-the first customer, with a pointer to `docs/operating.md`.
+error.
 
 Two files appeared beside you: `roster.db` and `roster-control.db`. A key must
 not live in the tables it protects, so who may call this deployment is a

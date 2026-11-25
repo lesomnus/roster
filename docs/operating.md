@@ -342,12 +342,14 @@ roster init
 ```
 control plane
   holder admin is 019ff2...
-  bound to role "everything" = /roster.*/* -- every Rpc roster serves, now and after an upgrade
+  bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
   password  on standard output, alone
 
 sign in to the admin console as admin. that password is shown once and is not stored -- write it down now.
 
 there are no customers yet, which is the right state to start in.
+the admin console makes the first one -- a tenant, somebody in it, and the
+role that lets them administer it. see docs/operating.md.
 ```
 
 That is standard error. The password it made is the one line on standard

@@ -302,7 +302,7 @@ func (v WebAuthn) Compare(row, b []byte, since int64) (bool, int64, error) {
 	if err := res.Verify(
 		challenge,
 		p.RelyingParty,
-		"", // no appId: the U2F compatibility path is not offered
+		"", // no appID: the U2F compatibility path is not offered
 		p.Origins,
 		nil, // no opaque origins, as at registration
 		nil,

@@ -6,6 +6,9 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -53,6 +56,16 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 	x.NoError(err, "init: %s", out)
 	c.Client.As = "admin" // who `init` made, named at the box (#284)
 	x.Contains(out, "no customers yet", "the state the tutorial starts from")
+
+	// What `init` printed is shown whole and as printed, here and in the
+	// operating page's § The first operator. It named the admin console
+	// `console` alone, a word the glossary settled against on every page, so
+	// the tutorial showed those lines as `…` and the operating page left one
+	// out and wrote another as it was not printed; nothing compared either
+	// block with the output. A page that shows output is held to it.
+	for _, page := range []string{"usage/tutorial.md", "operating.md"} {
+		x.Equal(initPrintedAsShown(out), initShownOn(t, page), "%s shows `roster init` printing something else", page)
+	}
 
 	// The server the curl half talks to. Built once; the commands below build
 	// their own on the same files, which is the tutorial's arrangement too --
@@ -248,6 +261,39 @@ func TestTheTutorialRunsAsWritten(t *testing.T) {
 		r.Writer = io.Discard
 		x.NoError(r.Run(ctx, []string{"vouch", "unlock", "@newco/alice"}))
 	})
+}
+
+// initShownOn is the block a page shows `roster init` printing, as
+// [initPrintedAsShown] reads it.
+func initShownOn(t *testing.T, page string) []string {
+	t.Helper()
+
+	doc, err := os.ReadFile(filepath.Join("..", "docs", page))
+	require.NoError(t, err)
+
+	m := regexp.MustCompile("(?s)```sh\n(?:[^`]*\n)?roster init\n```\n+```\n(.*?)```").FindSubmatch(doc)
+	require.NotNil(t, m, "%s shows no block of what `roster init` printed", page)
+
+	return initPrintedAsShown(string(m[1]))
+}
+
+// initPrintedAsShown is what `roster init` printed, or a page shows it
+// printing, with what differs between two runs left out: the identifier it
+// made and the password, which is the one line on standard output and which
+// a page may show where a terminal does or not at all.
+func initPrintedAsShown(v string) []string {
+	made := regexp.MustCompile(`^(  holder \S+ is )\S+`)
+	password := regexp.MustCompile(`^[A-Za-z0-9_-]{40,}$`)
+
+	var vs []string
+	for _, line := range strings.Split(strings.TrimRight(v, "\n"), "\n") {
+		if password.MatchString(line) {
+			continue
+		}
+		vs = append(vs, made.ReplaceAllString(line, "${1}…"))
+	}
+
+	return vs
 }
 
 // bind is `echo '{…}' | roster binding add -`, which is how the tutorial

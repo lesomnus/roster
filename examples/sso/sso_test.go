@@ -50,7 +50,7 @@ import (
 
 const clientId = "example-app"
 
-// idp is an OpenId Provider, small but not a mock: it serves the documents
+// idp is an OpenID Provider, small but not a mock: it serves the documents
 // `go-oidc` fetches and signs tokens `go-oidc` verifies. A mock would agree
 // with whatever this package believes, which is the one thing not worth
 // checking.
