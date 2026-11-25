@@ -178,6 +178,12 @@ message Role {
           {name: "tenant", number: 2}
         ]
         unique: true
+      },
+      // What a list of one app's roles reads through (`list.by` names
+      // `app`).
+      {
+        name: "by_app"
+        refs: [{name: "app", number: 9}]
       }
     ]
   };
@@ -188,7 +194,7 @@ message Role {
         {field: {name: "date_created", number: 15}},
         {field: {name: "id", number: 1}}
       ]
-      by: [{name: "ref"}, {name: "tenant"}, {name: "site"}]
+      by: [{name: "ref"}, {name: "tenant"}, {name: "site"}, {name: "app"}]
       size: 20
       max: 100
     }
@@ -319,6 +325,12 @@ message Binding {
       {
         name: "by_group"
         refs: [{name: "group", number: 9}]
+      },
+      // What a list of one app's bindings reads through (`list.by` names
+      // `app`).
+      {
+        name: "by_app"
+        refs: [{name: "app", number: 10}]
       }
     ]
   };
@@ -330,7 +342,7 @@ message Binding {
         {field: {name: "date_created", number: 15}},
         {field: {name: "id", number: 1}}
       ]
-      by: [{name: "ref"}, {name: "role"}, {name: "holder"}, {name: "group"}, {name: "site"}]
+      by: [{name: "ref"}, {name: "role"}, {name: "holder"}, {name: "group"}, {name: "site"}, {name: "app"}]
       size: 20
       max: 100
     }

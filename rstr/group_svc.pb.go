@@ -1544,6 +1544,7 @@ type GroupFilter struct {
 	xxx_hidden_Ref    *GroupRef              `protobuf:"bytes,1,opt,name=ref"`
 	xxx_hidden_Tenant *TenantRef             `protobuf:"bytes,2,opt,name=tenant"`
 	xxx_hidden_Site   *SiteRef               `protobuf:"bytes,3,opt,name=site"`
+	xxx_hidden_App    *HolderRef             `protobuf:"bytes,4,opt,name=app"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -1594,6 +1595,13 @@ func (x *GroupFilter) GetSite() *SiteRef {
 	return nil
 }
 
+func (x *GroupFilter) GetApp() *HolderRef {
+	if x != nil {
+		return x.xxx_hidden_App
+	}
+	return nil
+}
+
 func (x *GroupFilter) SetRef(v *GroupRef) {
 	x.xxx_hidden_Ref = v
 }
@@ -1604,6 +1612,10 @@ func (x *GroupFilter) SetTenant(v *TenantRef) {
 
 func (x *GroupFilter) SetSite(v *SiteRef) {
 	x.xxx_hidden_Site = v
+}
+
+func (x *GroupFilter) SetApp(v *HolderRef) {
+	x.xxx_hidden_App = v
 }
 
 func (x *GroupFilter) HasRef() bool {
@@ -1627,6 +1639,13 @@ func (x *GroupFilter) HasSite() bool {
 	return x.xxx_hidden_Site != nil
 }
 
+func (x *GroupFilter) HasApp() bool {
+	if x == nil {
+		return false
+	}
+	return x.xxx_hidden_App != nil
+}
+
 func (x *GroupFilter) ClearRef() {
 	x.xxx_hidden_Ref = nil
 }
@@ -1639,12 +1658,17 @@ func (x *GroupFilter) ClearSite() {
 	x.xxx_hidden_Site = nil
 }
 
+func (x *GroupFilter) ClearApp() {
+	x.xxx_hidden_App = nil
+}
+
 type GroupFilter_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Ref    *GroupRef
 	Tenant *TenantRef
 	Site   *SiteRef
+	App    *HolderRef
 }
 
 func (b0 GroupFilter_builder) Build() *GroupFilter {
@@ -1654,6 +1678,7 @@ func (b0 GroupFilter_builder) Build() *GroupFilter {
 	x.xxx_hidden_Ref = b.Ref
 	x.xxx_hidden_Tenant = b.Tenant
 	x.xxx_hidden_Site = b.Site
+	x.xxx_hidden_App = b.App
 	return m0
 }
 
@@ -3150,11 +3175,12 @@ const file_app_group_svc_g_proto_rawDesc = "" +
 	"\x06select\x18\x06 \x01(\v2\x13.roster.GroupSelectR\x06select\"S\n" +
 	"\x11GroupListResponse\x12#\n" +
 	"\x05items\x18\x01 \x03(\v2\r.roster.GroupR\x05items\x12\x19\n" +
-	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\x81\x01\n" +
+	"\x04next\x18\x02 \x01(\tB\x05\xaa\x01\x02\b\x02R\x04next\"\xa6\x01\n" +
 	"\vGroupFilter\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\x12)\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x11.roster.TenantRefR\x06tenant\x12#\n" +
-	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\"\x9f\x01\n" +
+	"\x04site\x18\x03 \x01(\v2\x0f.roster.SiteRefR\x04site\x12#\n" +
+	"\x03app\x18\x04 \x01(\v2\x11.roster.HolderRefR\x03app\"\x9f\x01\n" +
 	"\x12GroupUpdateRequest\x12\"\n" +
 	"\x03ref\x18\x01 \x01(\v2\x10.roster.GroupRefR\x03ref\x12=\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampR\vdateUpdated\x12\x12\n" +
@@ -3272,49 +3298,50 @@ var file_app_group_svc_g_proto_depIdxs = []int32{
 	2,  // 18: roster.GroupFilter.ref:type_name -> roster.GroupRef
 	23, // 19: roster.GroupFilter.tenant:type_name -> roster.TenantRef
 	24, // 20: roster.GroupFilter.site:type_name -> roster.SiteRef
-	2,  // 21: roster.GroupUpdateRequest.ref:type_name -> roster.GroupRef
-	26, // 22: roster.GroupUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
-	2,  // 23: roster.GroupExposureAddRequest.group:type_name -> roster.GroupRef
-	26, // 24: roster.GroupExposureAddRequest.date_created:type_name -> google.protobuf.Timestamp
-	13, // 25: roster.GroupExposureGetRequest.ref:type_name -> roster.GroupExposureRef
-	15, // 26: roster.GroupExposureGetRequest.select:type_name -> roster.GroupExposureSelect
-	14, // 27: roster.GroupExposureRef.carried:type_name -> roster.GroupExposureRefByCarried
-	2,  // 28: roster.GroupExposureRefByCarried.group:type_name -> roster.GroupRef
-	4,  // 29: roster.GroupExposureSelect.group:type_name -> roster.GroupSelect
-	13, // 30: roster.GroupExposurePatchRequest.ref:type_name -> roster.GroupExposureRef
-	26, // 31: roster.GroupExposurePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
-	20, // 32: roster.GroupExposureListRequest.filters:type_name -> roster.GroupExposureFilter
-	15, // 33: roster.GroupExposureListRequest.select:type_name -> roster.GroupExposureSelect
-	31, // 34: roster.GroupExposureListResponse.items:type_name -> roster.GroupExposure
-	13, // 35: roster.GroupExposureFilter.ref:type_name -> roster.GroupExposureRef
-	2,  // 36: roster.GroupExposureFilter.group:type_name -> roster.GroupRef
-	0,  // 37: roster.GroupService.Add:input_type -> roster.GroupAddRequest
-	1,  // 38: roster.GroupService.Get:input_type -> roster.GroupGetRequest
-	5,  // 39: roster.GroupService.Patch:input_type -> roster.GroupPatchRequest
-	2,  // 40: roster.GroupService.Erase:input_type -> roster.GroupRef
-	7,  // 41: roster.GroupService.List:input_type -> roster.GroupListRequest
-	10, // 42: roster.GroupService.Update:input_type -> roster.GroupUpdateRequest
-	11, // 43: roster.GroupExposureService.Add:input_type -> roster.GroupExposureAddRequest
-	12, // 44: roster.GroupExposureService.Get:input_type -> roster.GroupExposureGetRequest
-	16, // 45: roster.GroupExposureService.Patch:input_type -> roster.GroupExposurePatchRequest
-	13, // 46: roster.GroupExposureService.Erase:input_type -> roster.GroupExposureRef
-	18, // 47: roster.GroupExposureService.List:input_type -> roster.GroupExposureListRequest
-	30, // 48: roster.GroupService.Add:output_type -> roster.Group
-	30, // 49: roster.GroupService.Get:output_type -> roster.Group
-	30, // 50: roster.GroupService.Patch:output_type -> roster.Group
-	6,  // 51: roster.GroupService.Erase:output_type -> roster.GroupEraseResponse
-	8,  // 52: roster.GroupService.List:output_type -> roster.GroupListResponse
-	30, // 53: roster.GroupService.Update:output_type -> roster.Group
-	31, // 54: roster.GroupExposureService.Add:output_type -> roster.GroupExposure
-	31, // 55: roster.GroupExposureService.Get:output_type -> roster.GroupExposure
-	31, // 56: roster.GroupExposureService.Patch:output_type -> roster.GroupExposure
-	17, // 57: roster.GroupExposureService.Erase:output_type -> roster.GroupExposureEraseResponse
-	19, // 58: roster.GroupExposureService.List:output_type -> roster.GroupExposureListResponse
-	48, // [48:59] is the sub-list for method output_type
-	37, // [37:48] is the sub-list for method input_type
-	37, // [37:37] is the sub-list for extension type_name
-	37, // [37:37] is the sub-list for extension extendee
-	0,  // [0:37] is the sub-list for field type_name
+	25, // 21: roster.GroupFilter.app:type_name -> roster.HolderRef
+	2,  // 22: roster.GroupUpdateRequest.ref:type_name -> roster.GroupRef
+	26, // 23: roster.GroupUpdateRequest.date_updated:type_name -> google.protobuf.Timestamp
+	2,  // 24: roster.GroupExposureAddRequest.group:type_name -> roster.GroupRef
+	26, // 25: roster.GroupExposureAddRequest.date_created:type_name -> google.protobuf.Timestamp
+	13, // 26: roster.GroupExposureGetRequest.ref:type_name -> roster.GroupExposureRef
+	15, // 27: roster.GroupExposureGetRequest.select:type_name -> roster.GroupExposureSelect
+	14, // 28: roster.GroupExposureRef.carried:type_name -> roster.GroupExposureRefByCarried
+	2,  // 29: roster.GroupExposureRefByCarried.group:type_name -> roster.GroupRef
+	4,  // 30: roster.GroupExposureSelect.group:type_name -> roster.GroupSelect
+	13, // 31: roster.GroupExposurePatchRequest.ref:type_name -> roster.GroupExposureRef
+	26, // 32: roster.GroupExposurePatchRequest.date_updated:type_name -> google.protobuf.Timestamp
+	20, // 33: roster.GroupExposureListRequest.filters:type_name -> roster.GroupExposureFilter
+	15, // 34: roster.GroupExposureListRequest.select:type_name -> roster.GroupExposureSelect
+	31, // 35: roster.GroupExposureListResponse.items:type_name -> roster.GroupExposure
+	13, // 36: roster.GroupExposureFilter.ref:type_name -> roster.GroupExposureRef
+	2,  // 37: roster.GroupExposureFilter.group:type_name -> roster.GroupRef
+	0,  // 38: roster.GroupService.Add:input_type -> roster.GroupAddRequest
+	1,  // 39: roster.GroupService.Get:input_type -> roster.GroupGetRequest
+	5,  // 40: roster.GroupService.Patch:input_type -> roster.GroupPatchRequest
+	2,  // 41: roster.GroupService.Erase:input_type -> roster.GroupRef
+	7,  // 42: roster.GroupService.List:input_type -> roster.GroupListRequest
+	10, // 43: roster.GroupService.Update:input_type -> roster.GroupUpdateRequest
+	11, // 44: roster.GroupExposureService.Add:input_type -> roster.GroupExposureAddRequest
+	12, // 45: roster.GroupExposureService.Get:input_type -> roster.GroupExposureGetRequest
+	16, // 46: roster.GroupExposureService.Patch:input_type -> roster.GroupExposurePatchRequest
+	13, // 47: roster.GroupExposureService.Erase:input_type -> roster.GroupExposureRef
+	18, // 48: roster.GroupExposureService.List:input_type -> roster.GroupExposureListRequest
+	30, // 49: roster.GroupService.Add:output_type -> roster.Group
+	30, // 50: roster.GroupService.Get:output_type -> roster.Group
+	30, // 51: roster.GroupService.Patch:output_type -> roster.Group
+	6,  // 52: roster.GroupService.Erase:output_type -> roster.GroupEraseResponse
+	8,  // 53: roster.GroupService.List:output_type -> roster.GroupListResponse
+	30, // 54: roster.GroupService.Update:output_type -> roster.Group
+	31, // 55: roster.GroupExposureService.Add:output_type -> roster.GroupExposure
+	31, // 56: roster.GroupExposureService.Get:output_type -> roster.GroupExposure
+	31, // 57: roster.GroupExposureService.Patch:output_type -> roster.GroupExposure
+	17, // 58: roster.GroupExposureService.Erase:output_type -> roster.GroupExposureEraseResponse
+	19, // 59: roster.GroupExposureService.List:output_type -> roster.GroupExposureListResponse
+	49, // [49:60] is the sub-list for method output_type
+	38, // [38:49] is the sub-list for method input_type
+	38, // [38:38] is the sub-list for extension type_name
+	38, // [38:38] is the sub-list for extension extendee
+	0,  // [0:38] is the sub-list for field type_name
 }
 
 func init() { file_app_group_svc_g_proto_init() }

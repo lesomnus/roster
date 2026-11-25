@@ -212,6 +212,12 @@ message ApiKey {
           {name: "holder", number: 2}
         ]
         unique: true
+      },
+      // What a list of one app's keys reads through (`list.by` names
+      // `app`).
+      {
+        name: "by_app"
+        refs: [{name: "app", number: 16}]
       }
     ]
   };
@@ -232,7 +238,8 @@ message ApiKey {
       // is declared `secret`.
       by: [
         {name: "ref"},
-        {name: "holder"}
+        {name: "holder"},
+        {name: "app"}
       ]
       size: 20
       max: 100

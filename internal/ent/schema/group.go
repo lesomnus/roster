@@ -71,6 +71,8 @@ func (Group) Indexes() []ent.Index {
 			StorageKey("group_slug").
 			Unique().
 			Annotations(entsql.IndexWhere("date_erased IS NULL")),
+		index.Fields("app_id").
+			StorageKey("group_by_app"),
 	}
 }
 

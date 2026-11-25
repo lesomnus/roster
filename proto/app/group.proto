@@ -144,6 +144,12 @@ message Group {
           {name: "tenant", number: 2}
         ]
         unique: true
+      },
+      // What a list of one app's groups reads through (`list.by` names
+      // `app`).
+      {
+        name: "by_app"
+        refs: [{name: "app", number: 8}]
       }
     ]
   };
@@ -154,7 +160,7 @@ message Group {
         {field: {name: "date_created", number: 15}},
         {field: {name: "id", number: 1}}
       ]
-      by: [{name: "ref"}, {name: "tenant"}, {name: "site"}]
+      by: [{name: "ref"}, {name: "tenant"}, {name: "site"}, {name: "app"}]
       size: 20
       max: 100
     }
