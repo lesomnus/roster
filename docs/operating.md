@@ -752,19 +752,28 @@ it.
 
 Standing here comes from the **port** rather than from a role, which is what
 lets an air gap have a roster operator instead of a mail server. Say what that
-means plainly: **this port is root.** It is the data plane with no wall, and two
-rules in `server/core` read bindings the caller has none of, so on this port they
-refuse nothing:
+means plainly: **this port is root.** It is the data plane with no wall, and the
+rule in `server/core` about whose account a way in is written into -- *their
+permissions are a subset of yours* -- reads bindings the caller has none of, so
+on this port it refuses nothing. Every verb that writes a way into somebody's
+account is answered here for any account of any tenant, an administrator's
+included:
 
-- **writing somebody's credential** (`Credential.Issue`, `Set`, `Unlock`) is not
-  held to *their permissions are a subset of yours*;
-- **writing a way into an account** (`Identity.Add`, `Email.Add`) is not either,
-  and this is the silent one -- those two carry the rule on the data plane, and
-  nothing about the call says which port it arrived at.
+- a key or a delegation that acts as them (`ApiKey.Issue`, `Delegation.Issue`);
+- a password, a second factor, and a lock cleared (`Credential.Issue`, `Enrol`,
+  `Unlock`), and a badge and its lock (`Badge.Enrol`, `Unlock`);
+- an account at a provider, or its subject moved (`Identity.Add`, `Resubject`),
+  and an address or a number a link or a code goes to (`Email.Add`,
+  `Phone.Add`).
+
+That is the list `server/core/handsover.go` keeps, and
+[wide-grants.md](usage/wide-grants.md) § *The same verbs at `admin.addr`* is its
+page. And this is the silent one: those verbs carry the rule on the data plane,
+and nothing about the call says which port it arrived at.
 
 So a role granted on this port is narrower than it looks: the methods it names
-are the ones a caller may reach, and the rules that would have narrowed *whose
-rows* are not running. Granting either of the two above is granting the account.
+are the ones a caller may reach, and the rule that would have narrowed *whose
+rows* is not running. Granting any of the verbs above is granting the account.
 `cmd/admin.go` is where that is written down beside the wiring.
 
 **What makes that acceptable is that it is no longer the only door.** A tenant's

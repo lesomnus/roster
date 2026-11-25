@@ -1416,7 +1416,9 @@ shapes and the difference is which of those two the deployment gets from where.
 
 **Self-hosted** -- a roster user running a front door for their own tenant --
 holds **one `rt_`**. It resolves to a holder inside that tenant, and the wall
-narrows every call with no discipline asked of the app.
+narrows every call with no discipline asked of the app. That is the account
+app's shape (`account.tenant_keys`); the Login App has only the other one, and
+refuses an `rt_` at start (`cli/login.go`).
 
 **Roster-hosted** -- one instance a roster operator runs for many tenants --
 holds **one `rk_`** and declares a name on every call. This page refused that for

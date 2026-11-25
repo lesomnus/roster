@@ -146,9 +146,10 @@ cure a registration mismatch, and putting the registration back must cure it
 with no restart. Take `AuthStyle` out and the rig fails on that line.
 
 **Touching `login/` means running `hydra.sh`.** It stands `compose.yaml` up
-from **nothing** and walks the flow seven times. Four are `curl` against the
+from **nothing** and walks the flow eight times. Five are `curl` against the
 protocol -- once per consent mode, once for an API the client is not
-registered for, and once with a second factor: to an
+registered for, once for a command line coming back to a loopback port it was
+not registered with, and once with a second factor: to an
 `id_token` whose `sub` is the `Holder.id` roster holds, a second flow Hydra
 skips the form for -- **and the claims in the token that one hands back** --
 then `Holder.Invalidate`, then the form asked for again, then the person
