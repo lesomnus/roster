@@ -37,11 +37,11 @@ import '#lib/style.css'
  * Where the app answers.
  *
  * `npm run dev` is a different origin from the server, so the server has to say
- * this page may call it — `origins:` under `control.http`. A build served by
+ * this page may call it — `origins:` under `admin.http`. A build served by
  * the app itself is same-origin and needs none of that.
  *
- * The **control** listener, which is what this console is: who runs the
- * customers, and where an operator signs in. Not `server.http`, which fronts
+ * The **admin** listener, which is what this console calls: the customers with
+ * no wall, and where an operator signs in. Not `server.http`, which fronts
  * the walled data plane where an operator's session names nobody; and not
  * `control.http`, which serves the RPCs a shell makes and no page at all.
  *
