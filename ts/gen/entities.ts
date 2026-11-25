@@ -17,6 +17,7 @@ import { AccessSchema } from './roster/payday/access_pb.js'
 import { ApiKeySchema } from './app/apikey_pb.js'
 import { ArchivedSchema } from './roster/payday/archived_pb.js'
 import { AuditSchema } from './roster/payday/audit_pb.js'
+import { BadgeSchema } from './app/badge_pb.js'
 import { BindingSchema, RoleSchema } from './app/role_pb.js'
 import { ConnectionSchema } from './app/connection_pb.js'
 import { ConsentSchema } from './app/consent_pb.js'
@@ -44,6 +45,7 @@ import { AccessService } from './roster/payday/access_svc_pb.js'
 import { ApiKeyService } from './app/apikey_svc_pb.js'
 import { ArchivedService } from './roster/payday/archived_svc_pb.js'
 import { AuditService } from './roster/payday/audit_svc_pb.js'
+import { BadgeService } from './app/badge_svc_pb.js'
 import { BindingService, RoleService } from './app/role_svc_pb.js'
 import { ConnectionService } from './app/connection_svc_pb.js'
 import { ConsentService } from './app/consent_svc_pb.js'
@@ -111,6 +113,19 @@ export const Audit = {
 	key: "id",
 	ids: ["id", "tenantId", "actorId", "callerId", "callerTenantId", "objectId", "actorTenantId", "counterpartTenantId"],
 	service: AuditService,
+} as const satisfies EntityDesc
+
+/** roster.Badge, as the store holds it. */
+export const Badge = {
+	typeName: "roster.Badge",
+	schema: BadgeSchema,
+	domain: 32,
+	version: "dateUpdated",
+	refs: [{ field: "holder", to: "roster.Holder" }],
+	key: "id",
+	ids: ["id", "tenantId"],
+	secrets: ["secret"],
+	service: BadgeService,
 } as const satisfies EntityDesc
 
 /** roster.Binding, as the store holds it. */
@@ -466,5 +481,5 @@ export const Tenant = {
 } as const satisfies EntityDesc
 
 /** Every entity of this app, which is what a store is opened over. */
-export const entities = [Access, ApiKey, Archived, Audit, Binding, Connection, Consent, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Owed, Phone, Relation, Role, RowSeal, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
+export const entities = [Access, ApiKey, Archived, Audit, Badge, Binding, Connection, Consent, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Outbox, Owed, Phone, Relation, Role, RowSeal, Session, Site, SiteMembership, Team, TeamMembership, Tenant] as const
 

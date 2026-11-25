@@ -134,5 +134,5 @@ tools over the schema and the account app is a front door -- which is the line
 
 - [position.md](position.md) — what roster is and where it stops, which is where
   most of these words get their force
-- [entity.md](entity.md) — the thirty-three tables the nouns above are rows in
+- [entity.md](entity.md) — the thirty-four tables the nouns above are rows in
 - [../CLAUDE.md](../CLAUDE.md) — the rules that use this vocabulary as given

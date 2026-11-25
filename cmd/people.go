@@ -9,6 +9,7 @@ import (
 	"github.com/lesomnus/payday/frame"
 
 	"github.com/lesomnus/roster/internal/ent/apikey"
+	"github.com/lesomnus/roster/internal/ent/badge"
 	"github.com/lesomnus/roster/internal/ent/consent"
 	"github.com/lesomnus/roster/internal/ent/continuation"
 	"github.com/lesomnus/roster/internal/ent/credential"
@@ -142,6 +143,15 @@ func (x people) ApiKeyScope(ctx context.Context) (predicate.ApiKey, error) {
 	}
 
 	return apikey.HasHolderWith(p), nil
+}
+
+func (x people) BadgeScope(ctx context.Context) (predicate.Badge, error) {
+	p, err := x.HolderScope(ctx)
+	if p == nil || err != nil {
+		return nil, err
+	}
+
+	return badge.HasHolderWith(p), nil
 }
 
 func (x people) ConsentScope(ctx context.Context) (predicate.Consent, error) {

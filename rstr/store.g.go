@@ -29,6 +29,7 @@ type Server interface {
 	Tenant() TenantServiceServer
 	Holder() HolderServiceServer
 	ApiKey() ApiKeyServiceServer
+	Badge() BadgeServiceServer
 	Connection() ConnectionServiceServer
 	Consent() ConsentServiceServer
 	Continuation() ContinuationServiceServer
@@ -69,6 +70,7 @@ func RegisterServer(g grpc.ServiceRegistrar, s Server) {
 	RegisterTenantServiceServer(g, s.Tenant())
 	RegisterHolderServiceServer(g, s.Holder())
 	RegisterApiKeyServiceServer(g, s.ApiKey())
+	RegisterBadgeServiceServer(g, s.Badge())
 	RegisterConnectionServiceServer(g, s.Connection())
 	RegisterConsentServiceServer(g, s.Consent())
 	RegisterContinuationServiceServer(g, s.Continuation())
@@ -105,6 +107,7 @@ type UnimplementedServer struct {
 	TenantServer          TenantServiceServer
 	HolderServer          HolderServiceServer
 	ApiKeyServer          ApiKeyServiceServer
+	BadgeServer           BadgeServiceServer
 	ConnectionServer      ConnectionServiceServer
 	ConsentServer         ConsentServiceServer
 	ContinuationServer    ContinuationServiceServer
@@ -140,6 +143,7 @@ type UnimplementedServer struct {
 func (UnimplementedServer) Tenant() TenantServiceServer { return UnimplementedTenantServiceServer{} }
 func (UnimplementedServer) Holder() HolderServiceServer { return UnimplementedHolderServiceServer{} }
 func (UnimplementedServer) ApiKey() ApiKeyServiceServer { return UnimplementedApiKeyServiceServer{} }
+func (UnimplementedServer) Badge() BadgeServiceServer   { return UnimplementedBadgeServiceServer{} }
 func (UnimplementedServer) Connection() ConnectionServiceServer {
 	return UnimplementedConnectionServiceServer{}
 }
@@ -203,6 +207,7 @@ type StaticServer struct {
 	TenantServer          TenantServiceServer
 	HolderServer          HolderServiceServer
 	ApiKeyServer          ApiKeyServiceServer
+	BadgeServer           BadgeServiceServer
 	ConnectionServer      ConnectionServiceServer
 	ConsentServer         ConsentServiceServer
 	ContinuationServer    ContinuationServiceServer
@@ -238,6 +243,7 @@ type StaticServer struct {
 func (s StaticServer) Tenant() TenantServiceServer                   { return s.TenantServer }
 func (s StaticServer) Holder() HolderServiceServer                   { return s.HolderServer }
 func (s StaticServer) ApiKey() ApiKeyServiceServer                   { return s.ApiKeyServer }
+func (s StaticServer) Badge() BadgeServiceServer                     { return s.BadgeServer }
 func (s StaticServer) Connection() ConnectionServiceServer           { return s.ConnectionServer }
 func (s StaticServer) Consent() ConsentServiceServer                 { return s.ConsentServer }
 func (s StaticServer) Continuation() ContinuationServiceServer       { return s.ContinuationServer }
@@ -273,6 +279,7 @@ type Client interface {
 	Tenant() TenantServiceClient
 	Holder() HolderServiceClient
 	ApiKey() ApiKeyServiceClient
+	Badge() BadgeServiceClient
 	Connection() ConnectionServiceClient
 	Consent() ConsentServiceClient
 	Continuation() ContinuationServiceClient
@@ -310,6 +317,7 @@ func NewClient(c *grpc.ClientConn) Client {
 		_Tenant:          NewTenantServiceClient(c),
 		_Holder:          NewHolderServiceClient(c),
 		_ApiKey:          NewApiKeyServiceClient(c),
+		_Badge:           NewBadgeServiceClient(c),
 		_Connection:      NewConnectionServiceClient(c),
 		_Consent:         NewConsentServiceClient(c),
 		_Continuation:    NewContinuationServiceClient(c),
@@ -347,6 +355,7 @@ type client struct {
 	_Tenant          TenantServiceClient
 	_Holder          HolderServiceClient
 	_ApiKey          ApiKeyServiceClient
+	_Badge           BadgeServiceClient
 	_Connection      ConnectionServiceClient
 	_Consent         ConsentServiceClient
 	_Continuation    ContinuationServiceClient
@@ -382,6 +391,7 @@ type client struct {
 func (c *client) Tenant() TenantServiceClient                   { return c._Tenant }
 func (c *client) Holder() HolderServiceClient                   { return c._Holder }
 func (c *client) ApiKey() ApiKeyServiceClient                   { return c._ApiKey }
+func (c *client) Badge() BadgeServiceClient                     { return c._Badge }
 func (c *client) Connection() ConnectionServiceClient           { return c._Connection }
 func (c *client) Consent() ConsentServiceClient                 { return c._Consent }
 func (c *client) Continuation() ContinuationServiceClient       { return c._Continuation }

@@ -214,6 +214,57 @@ var (
 			},
 		},
 	}
+	// BadgeColumns holds the columns for the "badge" table.
+	BadgeColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUuid, Unique: true},
+		{Name: "code", Type: field.TypeString},
+		{Name: "secret", Type: field.TypeBytes},
+		{Name: "failures", Type: field.TypeInt32},
+		{Name: "date_locked", Type: field.TypeTime, Nullable: true},
+		{Name: "date_rotated", Type: field.TypeTime, Nullable: true},
+		{Name: "tenant_id", Type: field.TypeUuid},
+		{Name: "date_updated", Type: field.TypeTime},
+		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
+		{Name: "date_created", Type: field.TypeTime, Nullable: true},
+		{Name: "holder_id", Type: field.TypeUuid},
+	}
+	// BadgeTable holds the schema information for the "badge" table.
+	BadgeTable = &schema.Table{
+		Name:       "badge",
+		Columns:    BadgeColumns,
+		PrimaryKey: []*schema.Column{BadgeColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "badge_holder_holder",
+				Columns:    []*schema.Column{BadgeColumns[10]},
+				RefColumns: []*schema.Column{HolderColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "badge_page",
+				Unique:  false,
+				Columns: []*schema.Column{BadgeColumns[6], BadgeColumns[9], BadgeColumns[0]},
+			},
+			{
+				Name:    "badge_code",
+				Unique:  true,
+				Columns: []*schema.Column{BadgeColumns[6], BadgeColumns[1]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+			{
+				Name:    "badge_holder",
+				Unique:  true,
+				Columns: []*schema.Column{BadgeColumns[10]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "date_erased IS NULL",
+				},
+			},
+		},
+	}
 	// BindingColumns holds the columns for the "binding" table.
 	BindingColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUuid, Unique: true},
@@ -1512,6 +1563,7 @@ var (
 		ApikeyTable,
 		ArchivedTable,
 		AuditTable,
+		BadgeTable,
 		BindingTable,
 		ConnectionTable,
 		ConsentTable,
@@ -1558,6 +1610,10 @@ func init() {
 	}
 	AuditTable.Annotation = &entsql.Annotation{
 		Table: "audit",
+	}
+	BadgeTable.ForeignKeys[0].RefTable = HolderTable
+	BadgeTable.Annotation = &entsql.Annotation{
+		Table: "badge",
 	}
 	BindingTable.ForeignKeys[0].RefTable = RoleTable
 	BindingTable.ForeignKeys[1].RefTable = SiteTable

@@ -1,0 +1,107 @@
+edition = "2023";
+
+package roster;
+
+import "app/badge.proto";
+import "google/protobuf/timestamp.proto";
+import "roster/payday/holder_svc.g.proto";
+
+// What this app adds to the generated contract for `Badge`.
+//
+// # Three verbs on the rows, and none of them a sign-in
+//
+// `Enrol` and `Unlock` are an administrator's writes, `Verify` a station's
+// question; each is a verb on this entity's rows, so an overlay here and not
+// a service of its own (CLAUDE.md, *Overlay before service*). None is held
+// by the tenant's `self-service` role, and nothing a person calls about
+// themselves reads a badge: a person has no door to set their own PIN at.
+//
+// The generated `Add` and the general writes are served at no port: `Add`
+// takes a verifier, and a caller sending one would walk past the PIN's rule
+// and the keyring. `Get`, `List` and `Erase` are served, and no read answers
+// the verifier.
+service BadgeService {
+  // Enrol makes somebody's badge, or replaces all of it where they have one:
+  // the code, the PIN, the count and the lock. Answers the badge as `Get`
+  // would, without the verifier.
+  //
+  // For whoever administers the tenant's people, and held to the rule every
+  // way in is held to: nobody writes a way into an account wider than their
+  // own (`mayReach`). A badge is a way in at every station that asks.
+  //
+  // The PIN is decimal digits, at least `vouch.badge.pin.min_length` of them
+  // and at most twelve. A code another person of the tenant has is
+  // `AlreadyExists`, naming the field and nobody. A deployment with no
+  // keyring is `Unimplemented`: the verifier is sealed under it.
+  rpc Enrol(BadgeEnrolRequest) returns (Badge);
+
+  // Unlock clears somebody's lock and their count, leaving the PIN. Held to
+  // `mayReach`, as a password's unlock is: a lock you may clear is one you
+  // could have caused.
+  rpc Unlock(BadgeUnlockRequest) returns (BadgeUnlockResponse);
+
+  // Verify answers whether a PIN is the one held for the badge that says
+  // `code`, in the caller's tenant.
+  //
+  // In the shape and the habit of `VouchService/Verify`, so that a station
+  // is written against one: the call succeeds and `ok` is false, one answer
+  // at one cost, for a code nobody has, a wrong PIN, somebody suspended,
+  // erased or of a closed tenant, and somebody the caller's grant does not
+  // reach -- a station bound in a site checks the badges of that site's
+  // people and no others. `locked` beside it for a badge that is locked,
+  // which a person at a station needs to be told. Anything else is roster
+  // not having answered.
+  //
+  // A wrong PIN is counted on the badge, and at `vouch.badge.lockout.
+  // failures` the badge locks; a locked badge is not compared and not
+  // counted. It makes no session, no delegation and nothing to sign out of:
+  // what a station holds afterwards is its app's own.
+  rpc Verify(BadgeVerifyRequest) returns (BadgeVerifyResponse);
+}
+
+message BadgeEnrolRequest {
+  // Whose badge, by reference -- an id or `@tenant/alias`.
+  HolderRef holder = 1;
+
+  // What the badge says: 1 to 128 bytes, no control character, compared as
+  // written.
+  string code = 2 [features.field_presence = IMPLICIT];
+
+  // The PIN, as typed: decimal digits. Hashed and sealed here, never stored
+  // as given.
+  string pin = 3 [features.field_presence = IMPLICIT];
+}
+
+message BadgeUnlockRequest {
+  // Whose badge, by reference -- an id or `@tenant/alias`.
+  HolderRef holder = 1;
+}
+
+message BadgeUnlockResponse {
+  // When it had locked, or unset if it was not locked -- so an administrator
+  // can tell "I opened it" from "it was not closed".
+  google.protobuf.Timestamp date_locked = 1;
+}
+
+message BadgeVerifyRequest {
+  // What the badge says, as the station read it.
+  string code = 1 [features.field_presence = IMPLICIT];
+
+  // The PIN, as typed.
+  string pin = 2 [features.field_presence = IMPLICIT];
+}
+
+message BadgeVerifyResponse {
+  // The PIN is the one held, and the badge's person may be let in. False for
+  // everything else, told apart by nothing but `locked`.
+  bool ok = 1 [features.field_presence = IMPLICIT];
+
+  // Whose badge it is, and their tenant, when `ok`; empty otherwise.
+  bytes holder = 2 [features.field_presence = IMPLICIT];
+  bytes tenant = 3 [features.field_presence = IMPLICIT];
+
+  // The badge is locked, and nothing was compared: somebody who administers
+  // its person unlocks it, or the deployment's `vouch.badge.lockout.for`
+  // runs out.
+  bool locked = 4 [features.field_presence = IMPLICIT];
+}

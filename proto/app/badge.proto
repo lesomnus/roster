@@ -1,0 +1,164 @@
+edition = "2023";
+
+package roster;
+
+import "roster/payday/holder.proto";
+import "google/protobuf/timestamp.proto";
+import "orm.proto";
+import "payday.proto";
+
+option features.field_presence = IMPLICIT;
+option go_package = "github.com/lesomnus/roster/rstr";
+
+// Badge is what opens a station for somebody: a card that says who it is,
+// and a PIN that says it is them.
+//
+// # Why it is a table of its own and not a kind of `Credential`
+//
+// Every door roster has reads `Credential` rows by walking them: a sign-in
+// offers each row somebody has as a second factor whatever its kind,
+// `HolderService/SignsIn` lists them among the ways in, and the rule that
+// keeps somebody's last way in counts them. A station's credential as a kind
+// would have to be left out by name in each of those places, and *no other
+// door takes it* would hold only for as long as nobody adds a place. As a
+// table of its own it holds by construction: nothing that signs anybody in
+// reads it, and the one verb that checks it, `BadgeService/Verify`, makes no
+// session, no delegation and nothing to sign out of (#413).
+//
+// # One for a person
+//
+// The index on `holder` says so. A badge is written whole by an
+// administrator (`BadgeService/Enrol`), which makes it or replaces all of
+// it; a person has no door to change their own PIN at, and one PIN across
+// the sites they work in is what the app that asked for this needed.
+//
+// # The PIN is too short for its hash to keep it
+//
+// Four digits are ten thousand guesses, which a copy of the rows runs
+// through in a second whatever the hash costs. So the verifier is the
+// password's hash of the PIN **sealed under the deployment's keyring**
+// (`vouch.keys`), as a one-time-password's seed is: a copy of the database
+// alone opens no station. What keeps a guess at a found badge slow is the
+// lock, five wrong answers and somebody has to be asked (`vouch.badge`).
+message Badge {
+  bytes id = 1 [(orm.field) = {
+    type: TYPE_UUID
+    key: true
+    default: ""
+  }];
+
+  // Whose badge it is. Immutable: a badge given to somebody else is that
+  // badge taken away and another enrolled.
+  Holder holder = 2 [(orm.edge) = {immutable: true}];
+
+  // 4..7 are empty on purpose. A badge has no name a person writes: it is
+  // named by what it says, below, and by whose it is.
+  reserved 4 to 7;
+
+  // What the badge says: what a station reads off the card, the number on
+  // it, whatever the station hands over to say which card it is. Not a
+  // secret -- it is printed on the card -- and unique in the tenant, so that
+  // it names one person.
+  //
+  // Compared as written, byte for byte. A station that reads one card in two
+  // spellings -- a leading zero, a case -- makes them one before it asks:
+  // roster does not know which of a reader's spellings are the same card.
+  //
+  // Personal (payday#92): it names somebody as much as an employee number
+  // does, so the trail records that it was written and never what.
+  string code = 8 [(payday.field) = {personal: true}];
+
+  // The PIN's verifier, never the PIN: its argon2id hash, sealed under the
+  // deployment's current key. Answered by no read; declared `secret`, which
+  // is what keeps it out of the trail as well (`Credential.secret` says how
+  // that was found).
+  bytes secret = 9 [(payday.field) = {secret: true}];
+
+  // How many wrong PINs in a row, counted on the row for the reason a
+  // password's are: counting anywhere else is counting per process.
+  int32 failures = 10;
+
+  // When it locked, and null while it is not. Not when it opens again,
+  // which is a password's column: a badge's lock lasts until somebody
+  // unlocks it, unless the deployment says for how long (`vouch.badge.
+  // lockout.for`), and the moment it locked is what both readings need.
+  google.protobuf.Timestamp date_locked = 11 [(orm.field) = {nullable: true}];
+
+  // When the PIN was last set, which is when the badge was last enrolled.
+  google.protobuf.Timestamp date_rotated = 12 [(orm.field) = {nullable: true}];
+
+  // The tenant `holder.tenant` reaches, kept here. payday stamps it, for
+  // `Identity.tenant_id`'s reasons: the index below is unique **in a
+  // tenant**, and an index reaches no edge. Immutable, so no write moves a
+  // row across the wall.
+  bytes tenant_id = 16 [(orm.field) = {
+    type: TYPE_UUID
+    immutable: true
+  }];
+
+  google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
+  google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
+  google.protobuf.Timestamp date_created = 15 [(orm.field) = {
+    immutable: true
+    default: ""
+  }];
+
+  option (orm.message) = {
+    // What `server/core` calls in process -- `Add` for `Enrol`, `Patch` for
+    // the count and the lock -- and what a caller is served: `Get`, `List`
+    // and `Erase`. `Add` and the general writes are served at no port
+    // (`closed` in `cmd/serve.go`): a caller sending a verifier would walk
+    // past the PIN's rule and the keyring.
+    rpc: {
+      add: {}
+      get: {}
+      patch: {}
+      erase: {}
+    }
+    indexes: [
+      {
+        name: "page"
+        refs: [
+          {name: "tenant_id", number: 16},
+          {name: "date_created", number: 15},
+          {name: "id", number: 1}
+        ]
+      },
+      // What a station asks by: the code, in the caller's tenant. Unique, so
+      // that a code names one person; the same code in two tenants is two
+      // badges of two operators, as an account at a provider is.
+      {
+        name: "code"
+        refs: [
+          {name: "tenant_id", number: 16},
+          {name: "code", number: 8}
+        ]
+        unique: true
+      },
+      // One for a person.
+      {
+        name: "holder"
+        refs: [
+          {name: "holder", number: 2}
+        ]
+        unique: true
+      }
+    ]
+  };
+  option (payday.entity) = {
+    domain: 32
+    tenanted: {via: "holder.tenant", stamp: "tenant_id"}
+
+    // No `watch:`, for `Link`'s reason: a watchable entity with a verifier
+    // streams it.
+    list: {
+      order: [
+        {field: {name: "date_created", number: 15}},
+        {field: {name: "id", number: 1}}
+      ]
+      by: [{name: "ref"}, {name: "holder"}, {name: "tenant_id"}]
+      size: 20
+      max: 100
+    }
+  };
+}

@@ -13,6 +13,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/archived"
 	"github.com/lesomnus/roster/internal/ent/audit"
+	"github.com/lesomnus/roster/internal/ent/badge"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/connection"
 	"github.com/lesomnus/roster/internal/ent/consent"
@@ -109,6 +110,7 @@ func checkColumn(t, c string) error {
 			apikey.Table:          apikey.ValidColumn,
 			archived.Table:        archived.ValidColumn,
 			audit.Table:           audit.ValidColumn,
+			badge.Table:           badge.ValidColumn,
 			binding.Table:         binding.ValidColumn,
 			connection.Table:      connection.ValidColumn,
 			consent.Table:         consent.ValidColumn,

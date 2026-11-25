@@ -10,6 +10,7 @@ import (
 	"github.com/protobuf-orm/ent/dialect/sql"
 
 	"github.com/lesomnus/roster/internal/ent/apikey"
+	"github.com/lesomnus/roster/internal/ent/badge"
 	"github.com/lesomnus/roster/internal/ent/binding"
 	"github.com/lesomnus/roster/internal/ent/consent"
 	"github.com/lesomnus/roster/internal/ent/continuation"
@@ -168,6 +169,7 @@ func namedBy(of names, row uuid.UUID) predicate.Holder {
 // kept past its account, and one is not begun for somebody who is nobody.
 var naming = map[string]names{
 	app.ApiKeyService_Add_FullMethodName:          {apikey.Table, []string{apikey.HolderColumn, apikey.AppColumn}},
+	app.BadgeService_Add_FullMethodName:           {badge.Table, []string{badge.HolderColumn}},
 	app.BindingService_Add_FullMethodName:         {binding.Table, []string{binding.HolderColumn, binding.AppColumn}},
 	app.ConsentService_Add_FullMethodName:         {consent.Table, []string{consent.HolderColumn}},
 	app.ContinuationService_Add_FullMethodName:    {continuation.Table, []string{continuation.HolderColumn}},

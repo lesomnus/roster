@@ -109,6 +109,7 @@ func Admin(s *Server) (app.Server, error) {
 			core.WithKeyring(s.Keyring),
 			core.WithLockout(s.Lockout),
 			core.WithPassword(s.Password),
+			core.WithBadge(s.Badge),
 			core.WithRestoreWithin(s.RestoreWithin),
 			core.WithDelegationLife(s.DelegationLife),
 

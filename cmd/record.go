@@ -27,6 +27,7 @@ import (
 
 	"github.com/lesomnus/roster/internal/ent"
 	entapikey "github.com/lesomnus/roster/internal/ent/apikey"
+	entbadge "github.com/lesomnus/roster/internal/ent/badge"
 	entbinding "github.com/lesomnus/roster/internal/ent/binding"
 	entcredential "github.com/lesomnus/roster/internal/ent/credential"
 	entemail "github.com/lesomnus/roster/internal/ent/email"
@@ -175,6 +176,15 @@ func tenantsOf(ctx context.Context, db *ent.Client, ids []pdid.Id) (map[pdid.Id]
 var whoseTenant = map[pdid.Domain]func(context.Context, *ent.Client, []uuid.UUID) (map[uuid.UUID]uuid.UUID, error){
 	pd.HolderDomain: func(ctx context.Context, db *ent.Client, ks []uuid.UUID) (map[uuid.UUID]uuid.UUID, error) {
 		rs, err := db.Holder.Query().Where(entholder.IdIn(ks...)).Select(entholder.FieldTenantId).All(ctx)
+		out := make(map[uuid.UUID]uuid.UUID, len(rs))
+		for _, r := range rs {
+			out[r.Id] = r.TenantId
+		}
+
+		return out, err
+	},
+	pd.BadgeDomain: func(ctx context.Context, db *ent.Client, ks []uuid.UUID) (map[uuid.UUID]uuid.UUID, error) {
+		rs, err := db.Badge.Query().Where(entbadge.IdIn(ks...)).Select(entbadge.FieldTenantId).All(ctx)
 		out := make(map[uuid.UUID]uuid.UUID, len(rs))
 		for _, r := range rs {
 			out[r.Id] = r.TenantId

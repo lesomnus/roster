@@ -12,6 +12,7 @@ import (
 	apikey "github.com/lesomnus/roster/internal/ent/apikey"
 	archived "github.com/lesomnus/roster/internal/ent/archived"
 	audit "github.com/lesomnus/roster/internal/ent/audit"
+	badge "github.com/lesomnus/roster/internal/ent/badge"
 	binding "github.com/lesomnus/roster/internal/ent/binding"
 	connection "github.com/lesomnus/roster/internal/ent/connection"
 	consent "github.com/lesomnus/roster/internal/ent/consent"
@@ -496,6 +497,8 @@ func WithAdmission(check Admission, entities ...string) Option {
 		a.methods["/roster.HolderService"] = "roster.Holder"
 		a.types["ApiKey"] = "roster.ApiKey"
 		a.methods["/roster.ApiKeyService"] = "roster.ApiKey"
+		a.types["Badge"] = "roster.Badge"
+		a.methods["/roster.BadgeService"] = "roster.Badge"
 		a.types["Connection"] = "roster.Connection"
 		a.methods["/roster.ConnectionService"] = "roster.Connection"
 		a.types["Consent"] = "roster.Consent"
@@ -703,6 +706,7 @@ type Scope interface {
 	TenantScope(ctx context.Context) (predicate.Tenant, error)
 	HolderScope(ctx context.Context) (predicate.Holder, error)
 	ApiKeyScope(ctx context.Context) (predicate.ApiKey, error)
+	BadgeScope(ctx context.Context) (predicate.Badge, error)
 	ConnectionScope(ctx context.Context) (predicate.Connection, error)
 	ConsentScope(ctx context.Context) (predicate.Consent, error)
 	ContinuationScope(ctx context.Context) (predicate.Continuation, error)
@@ -754,6 +758,9 @@ func (Unscoped) HolderScope(_ context.Context) (predicate.Holder, error) {
 	return nil, nil
 }
 func (Unscoped) ApiKeyScope(_ context.Context) (predicate.ApiKey, error) {
+	return nil, nil
+}
+func (Unscoped) BadgeScope(_ context.Context) (predicate.Badge, error) {
 	return nil, nil
 }
 func (Unscoped) ConnectionScope(_ context.Context) (predicate.Connection, error) {
@@ -924,6 +931,26 @@ func (ss Scopes) ApiKeyScope(ctx context.Context) (predicate.ApiKey, error) {
 	}
 
 	return apikey.And(ps...), nil
+}
+
+func (ss Scopes) BadgeScope(ctx context.Context) (predicate.Badge, error) {
+	ps := make([]predicate.Badge, 0, len(ss))
+	for _, s := range ss {
+		p, err := s.BadgeScope(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if p == nil {
+			continue
+		}
+
+		ps = append(ps, p)
+	}
+	if len(ps) == 0 {
+		return nil, nil
+	}
+
+	return badge.And(ps...), nil
 }
 
 func (ss Scopes) ConnectionScope(ctx context.Context) (predicate.Connection, error) {
@@ -1661,7 +1688,7 @@ func ItemError(i int, err error) error {
 // is rendered for that dialect, not just what this server writes.
 //
 // That set is also what a soft erasure needs, so this is the whole
-// check. ApiKey, Binding, Connection, Consent, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Phone, Relation, Role, Session, Site, SiteMembership, Team and TeamMembership free the names they held when a row
+// check. ApiKey, Badge, Binding, Connection, Consent, Continuation, Credential, Delegation, Email, Group, GroupExposure, GroupMembership, Holder, Host, HostProof, Identity, Link, MailDomain, Nomination, Phone, Relation, Role, Session, Site, SiteMembership, Team and TeamMembership free the names they held when a row
 // is erased, which is a unique index covering only the rows that are
 // still there -- a partial index, and the dialects above are the ones
 // that have one. MySQL does not, and ent writes the annotation out for
@@ -1702,6 +1729,7 @@ func (s Server) WithDriver(drv dialect.Driver) (rstr.Server, error) {
 func (s Server) Tenant() rstr.TenantServiceServer { return TenantServiceServer{Store: s.Store} }
 func (s Server) Holder() rstr.HolderServiceServer { return HolderServiceServer{Store: s.Store} }
 func (s Server) ApiKey() rstr.ApiKeyServiceServer { return ApiKeyServiceServer{Store: s.Store} }
+func (s Server) Badge() rstr.BadgeServiceServer   { return BadgeServiceServer{Store: s.Store} }
 func (s Server) Connection() rstr.ConnectionServiceServer {
 	return ConnectionServiceServer{Store: s.Store}
 }

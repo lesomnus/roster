@@ -168,6 +168,10 @@ type Server struct {
 	Lockout  vouch.Lockout
 	Password core.Password
 
+	// Badge is `vouch.badge` with the defaults filled in, for the same
+	// servers' `BadgeService`.
+	Badge core.Badge
+
 	// recheck is `stream.recheck`: how often a stream these servers have open
 	// is asked again who opened it ([AskedAgain]).
 	recheck time.Duration
@@ -640,6 +644,11 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// are malformed finds out when it starts rather than when somebody enrols.
 	lockout := vouch.Lockout{Failures: c.Vouch.Lockout.Failures, For: c.Vouch.Lockout.For}.Or(vouch.DefaultLockout)
 	password := core.Password{MinLength: c.Vouch.Password.MinLength, NoReuse: c.Vouch.Password.NoReuse}.Or()
+	badge := core.Badge{
+		MinLength: c.Vouch.Badge.Pin.MinLength,
+		Failures:  c.Vouch.Badge.Lockout.Failures,
+		For:       c.Vouch.Badge.Lockout.For,
+	}.Or()
 
 	keyring, err := vouch.NewKeyring(c.Vouch.Keys)
 	if err != nil {
@@ -685,7 +694,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// handed: a name taken is on the trail of whoever held it.
 	rules.Releasing = Releasing(client, content)
 
-	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin), core.WithDelegationLife(c.Delegation.Life)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild(), core.NotErasedBuild())
+	stacked, err := app.Build(walled.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithBadge(badge), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin), core.WithDelegationLife(c.Delegation.Life)), core.SelfBuild(), pd.AuditBuild(), pd.SecretBuild(), pd.GateBuild(), core.NotErasedBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -700,7 +709,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	// what this app means -- an identity linked by `init` or by an admin console
 	// is still an identity, and a subject that is an email address is still
 	// wrong.
-	ungated, err := app.Build(sink.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin), core.WithDelegationLife(c.Delegation.Life)), pd.AuditBuild())
+	ungated, err := app.Build(sink.WithWatch(w), core.Build(rules, core.On(drv, Locking(client)), core.WithBreached(core.Breached(leaked)), core.WithKeyring(keyring), core.WithPrefix(prefix), core.WithLockout(lockout), core.WithPassword(password), core.WithBadge(badge), core.WithProving(c.Host.Asking()), core.WithRestoreWithin(c.Tenant.RestoreWithin), core.WithDelegationLife(c.Delegation.Life)), pd.AuditBuild())
 	if err != nil {
 		db.Close()
 		return nil, err
@@ -709,7 +718,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	s := &Server{
 		PolicyFile: policyFile, policySources: policySources,
 		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, broker: c.Watch.Broker, Queue: queue, sink: sink, narrow: narrow,
-		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password, DelegationLife: c.Delegation.Life,
+		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password, Badge: badge, DelegationLife: c.Delegation.Life,
 		RestoreWithin: c.Tenant.RestoreWithin,
 		recheck:       c.Stream.Recheck,
 		owners:        owners,
@@ -803,7 +812,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 			// the one account in it that could not ask for a second proof:
 			// enrolling answered that the deployment held no key to wrap a
 			// seed with, whatever `vouch.keys` said (#275).
-			Vouch: VouchConfig{Lockout: c.Vouch.Lockout, Password: c.Vouch.Password, Keys: c.Vouch.Keys},
+			Vouch: VouchConfig{Lockout: c.Vouch.Lockout, Password: c.Vouch.Password, Badge: c.Vouch.Badge, Keys: c.Vouch.Keys},
 
 			// What the trail keeps of a write, and nothing else of `audit`
 			// (payday#92). It is one decision for the deployment's trail,
@@ -1458,6 +1467,11 @@ func Register(g grpc.ServiceRegistrar, s app.Server) {
 	// by method in `closed` -- so nothing on the wire answers with the `secret`
 	// column.
 	app.RegisterCredentialServiceServer(g, s.Credential())
+	// `BadgeService` for its overlays (`Enrol`, `Unlock`, `Verify`) and its
+	// `Get`, `List` and `Erase`, which answer no verifier: the column is
+	// cleared out of every answer. Its raw `Add` is shut by method in
+	// `closed`, and its general writes with everybody's.
+	app.RegisterBadgeServiceServer(g, s.Badge())
 	// `DelegationService` for its overlays (`Revoke`, `Exchange`) and its
 	// `Get`, `List` and `Erase`, which answer no token: the column is cleared
 	// out of every answer. Its raw `Add` is shut by method in `closed`.
@@ -1622,6 +1636,9 @@ func (s *Server) closed() func(method string) bool {
 		app.CredentialService_List_FullMethodName,
 		app.CredentialService_Watch_FullMethodName,
 		app.CredentialService_Add_FullMethodName,
+		// `Badge.Add` takes a verifier from the caller, which would walk past
+		// the PIN's rule and the keyring: a badge is made by `Enrol`.
+		app.BadgeService_Add_FullMethodName,
 		// `Credential.Erase` is served: it answers with no verifier and takes
 		// none, and `server/core` gives it the rules it needs (a password is
 		// replaced and not removed; not the last way in).

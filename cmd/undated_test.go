@@ -129,7 +129,7 @@ func TestNobodyAtAPortSaysWhenARowWasMade(t *testing.T) {
 		}
 		sort.Strings(shut)
 		require.Equal(t, []string{
-			app.ApiKeyService_Add_FullMethodName, app.ConsentService_Add_FullMethodName,
+			app.ApiKeyService_Add_FullMethodName, app.BadgeService_Add_FullMethodName, app.ConsentService_Add_FullMethodName,
 			app.CredentialService_Add_FullMethodName, app.DelegationService_Add_FullMethodName,
 		}, shut, "the `Add`s that are not served")
 		require.GreaterOrEqual(t, len(asked), 20, "%s", strings.Join(asked, " "))

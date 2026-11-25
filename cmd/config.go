@@ -942,6 +942,16 @@ func formed(c Config) error {
 		names[name] = true
 	}
 
+	// A PIN shorter than four digits is a thousand guesses, and the lock keeps
+	// a guess slow only where there are enough of them to be slow through; one
+	// longer than twelve is past what anybody types at a station. Zero is
+	// unsaid, which is four, and less than none is [lessThanNone]'s.
+	if n := c.Vouch.Badge.Pin.MinLength; n > 0 && (n < core.MinPinLength || n > core.MaxPinLength) {
+		return fmt.Errorf("vouch.badge.pin.min_length: %d, and a PIN is at least %d digits and at most %d. "+
+			"write a number from %d to %d, or take it out for %d", n, core.MinPinLength, core.MaxPinLength,
+			core.MinPinLength, core.MaxPinLength, core.MinPinLength)
+	}
+
 	for _, v := range []struct {
 		serves bool
 		meant  func() error
@@ -1170,6 +1180,30 @@ type VouchConfig struct {
 	// former passwords are refused. See `core.Password` for what is
 	// deliberately not here.
 	Password PasswordConfig `yaml:"password"`
+
+	// Badge is what a station's badge and PIN are held to, apart from a
+	// password's: how long a PIN is, and what locks a badge and for how
+	// long. See `core.Badge`.
+	Badge BadgeConfig `yaml:"badge"`
+}
+
+// BadgeConfig is `core.Badge` as a file says it.
+type BadgeConfig struct {
+	Pin     BadgePinConfig     `yaml:"pin"`
+	Lockout BadgeLockoutConfig `yaml:"lockout"`
+}
+
+// BadgePinConfig is how many digits a PIN is at least: four unless said,
+// never fewer and never more than twelve.
+type BadgePinConfig struct {
+	MinLength int `yaml:"min_length"`
+}
+
+// BadgeLockoutConfig is how many wrong PINs in a row lock a badge, five
+// unless said, and for how long: unset is until somebody unlocks it.
+type BadgeLockoutConfig struct {
+	Failures int32         `yaml:"failures"`
+	For      time.Duration `yaml:"for"`
 }
 
 // LockoutConfig is `vouch.Lockout` as a file says it.
