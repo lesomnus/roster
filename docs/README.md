@@ -69,6 +69,11 @@ roster-hosted for one, self-hosted): which key it holds, how a request says
 which tenant it is about, whose name lands in the trail, and what one client
 library can and cannot hide about the difference.
 
+[loft.md](loft.md) -- the worked case: Loft, a product on roster, step by step
+as it is built -- one self-hosted deployment for one tenant, shape C -- with what
+of roster carries each step and what it is on roster today; then the portal
+proposed for it and not built, and what that would need of roster.
+
 [relying-app.md](relying-app.md) -- what an app keeps asking roster about the
 people it signed in, and `standing`, the package that does it: an account's
 standing held to on every call, the sync stream followed in every process, and
