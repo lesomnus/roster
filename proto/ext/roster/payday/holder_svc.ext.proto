@@ -552,6 +552,23 @@ message HolderSignsInResponse {
   // too (`me.proto` says why). This is the screen that ends one of somebody
   // else's.
   repeated SignInKey keys = 15;
+
+  // And the badge that opens a station for them, where they have one: a
+  // field of its own and not among `credentials`, since a badge is no way
+  // into roster (`badge.proto`). Unset is none. What the badge says and the
+  // PIN's verifier are not here.
+  SignInBadge badge = 16;
+}
+
+// SignInBadge is what `SignsIn` says of somebody's badge: that there is one,
+// when its PIN was set, and whether it is locked. Numbered as `Badge` is.
+message SignInBadge {
+  // When the PIN was set: when the badge was last enrolled.
+  google.protobuf.Timestamp date_rotated = 12;
+
+  // When it locked, while it is locked; unset while it is not, and once a
+  // lock the deployment gave a time to has lifted.
+  google.protobuf.Timestamp date_locked = 11;
 }
 
 message HolderDisableRequest {
