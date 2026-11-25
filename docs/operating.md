@@ -1861,6 +1861,12 @@ vouch:
   password:
     min_length: 8
     no_reuse: 0         # former passwords refused; 0 keeps none
+  badge:                # a station's badge and PIN, apart from a password
+    pin:
+      min_length: 4     # decimal digits; never fewer than 4, never more than 12
+    lockout:
+      failures: 5       # wrong PINs in a row that lock a badge
+      for: 0s           # 0s, or unset: locked until somebody unlocks it
 ```
 
 Those are the defaults, so a file that says nothing gets them, and all of them are
@@ -1883,6 +1889,23 @@ costs nothing but disk. Named, it is a **refusal**: `Credential.Set` answers
 `FailedPrecondition` and the person picks again. The order is verified at startup
 rather than trusted, because an unsorted file answers *no* to things that are in
 it -- the quiet direction in the one feature whose whole job is to say yes.
+
+**`vouch.badge`** is a station's, and nothing about a password reads it
+([usage/ways-in.md](usage/ways-in.md) § *A badge and a PIN, at a station*). A PIN
+is four digits unless said, and a `min_length` under four or over twelve is
+refused at start. Five wrong PINs lock a badge **until somebody unlocks it**
+(`BadgeService/Unlock`): four digits are enough with the card in hand only while
+guessing stops after a few tries, and a lock that lifts every quarter of an hour
+is four hundred and eighty guesses a day at a found badge. A deployment that would
+rather it lifted says how long, and the count starts again from none once it has.
+A badge's PIN is sealed under `vouch.keys` as a seed is, so a deployment with no
+key holds no badge.
+
+**A deployment with stations has a row of the access record for every badge
+that opened one**, under the tenant of whoever it opened for, naming the station:
+a read of who somebody is, at every change of shift. It is the record that grows
+fastest there, and `audit.by.access` is its window
+([below](#who-read-whose-data)).
 
 **`vouch.keys`** is what a second factor's seed is sealed under, and a deployment
 with no key refuses to enrol rather than storing one in the clear. Each is

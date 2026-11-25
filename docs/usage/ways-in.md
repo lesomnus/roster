@@ -27,6 +27,7 @@ them*, and what an app does with the answer is the app's.
 | **`rd_`** delegation | short-lived, bound to the key it was issued to: minutes at a sign-in, a day at most when somebody hands one to an app | an app, *beside* its own key | the same interceptor |
 | an **identity** | `(tenant, provider, subject)` — an account somewhere else | nobody; it is a fact, not a secret | whoever verified the provider |
 | a **second factor** | TOTP seed, or a WebAuthn credential | a person, after the first factor | `VouchService.Verify` |
+| a **badge** and a PIN | a `Badge` row: what the card says, and the PIN's hash sealed under `vouch.keys` | a person, at an app's station; no way into roster | `BadgeService.Verify`, asked by the station's holder |
 
 ## A password
 
@@ -877,6 +878,68 @@ It counts from the code that proves it, and the admin console asks for it from
 then on. An operator who has lost the app is somebody at the box again:
 `roster --as admin control credential list` names the row, and `control
 credential erase` takes it away.
+
+## A badge and a PIN, at a station
+
+For an app whose stations people walk up to -- a line on a factory floor, a
+time clock -- and present a card and four digits. roster holds the badge and
+answers whether the PIN is the one for it; what the station does then is the
+app's. **It is no way into roster**: no sign-in takes one, it is never offered
+as a second factor, and the rule that keeps somebody's last way in does not
+count it.
+
+An administrator of the tenant's people writes it, the code the card says and a
+PIN, which makes the badge or replaces all of it -- the code, the PIN, the count
+and the lock. One for a person. The request goes on stdin, `-`, and the PIN in it
+from a variable, so it is in no shell's history and no process list:
+
+```sh
+printf '{"holder": "@contoso/park", "code": "0042-7781", "pin": "%s"}' "${PIN}" \
+  | roster --as admin badge enrol -
+roster --as admin badge unlock '{"holder": "@contoso/park"}'
+roster --as admin badge list
+roster --as admin badge erase 01a1e7ef-…
+```
+
+`BadgeService/Enrol`, `/Unlock` and `/Erase` are held to the rule every way in
+is: nobody writes one for somebody who holds more than they do. A code another
+person of the tenant has is refused, `AlreadyExists`, naming the field and
+nobody; it is compared as written, so a reader that spells one card two ways
+makes them one before it asks. Nothing of it is in the `self-service` role: a
+person has no door to set their own PIN at.
+
+**A PIN is decimal digits**, four at least unless the deployment says more
+(`vouch.badge`, [operating.md](../operating.md) § *Passwords, and what closes an
+account*), and twelve at most. **Five wrong PINs in a row lock the badge** until
+somebody unlocks it, unless the deployment gives the lock a time. A deployment
+with no `vouch.keys` holds no badge: the PIN's hash is sealed under it, because
+a hash of four digits keeps nothing from a copy of the rows, and each verb says
+so, `Unimplemented`.
+
+The station asks, as a holder of the tenant bound a role that names
+`BadgeService/Verify`:
+
+```
+BadgeService.Verify { code: "0042-7781", pin: "2580" }  -> { ok: true, holder: …, tenant: … }
+BadgeService.Verify { code: "0042-7781", pin: "1111" }  -> { }
+BadgeService.Verify { code: "0042-7781", pin: "2580" }  -> { locked: true }   # after five wrong
+```
+
+In `VouchService.Verify`'s habit: `ok` is false, one answer at one cost, for a
+code nobody has, a wrong PIN, somebody suspended or erased or of a closed
+tenant, and somebody the station's grant does not reach -- **bound in a site, a
+station checks the badges of that site's people**, and one of somebody outside
+it is a code nobody has. `locked` beside it is a person at a station being told
+to go and ask. Anything else is roster not having answered. It makes no session,
+no delegation and nothing to sign out of.
+
+`HolderService.SignsIn` says somebody's badge beside their ways in -- that there
+is one, when its PIN was set, whether it is locked -- and never what it says.
+The trail has each write -- an enrolment, a wrong PIN counted under the station
+that asked, the lock, the unlock, an erase -- and never the PIN. The access
+record has each verification that answered somebody, under their tenant, naming
+the station and the badge; [apps.md](../apps.md) § *A station that reads badges*
+is the app's side of it.
 
 ## Stopping one
 

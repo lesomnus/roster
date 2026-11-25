@@ -16,7 +16,7 @@ writing a role whose methods end in `*`.
 
 | | reads as | is |
 | --- | --- | --- |
-| [A person's verb, across the tenant](#a-persons-verb-across-the-tenant) | *may manage keys*, *may add an address* | every colleague who holds no more |
+| [A person's verb, across the tenant](#a-persons-verb-across-the-tenant) | *may manage keys*, *may add an address*, *may hand out badges* | every colleague who holds no more |
 | [`VouchService/Link` with `Redeem`](#vouchservicelink-with-redeem) | *may send recovery links* | every account of the tenant |
 | [`VouchService/Accept`](#vouchserviceaccept) | *may sign people in* | a credential for anybody, on the caller's word |
 | [`ConnectionService/Add` and `Update`](#connectionserviceadd-and-update) | *may set up sign-in through a directory* | everybody who signs in through it |
@@ -46,8 +46,10 @@ writing a role whose methods end in `*`.
 
 `ApiKeyService/Issue`, `DelegationService/Issue`, `CredentialService/Issue`,
 `/Enrol`, `/Unlock`, `IdentityService/Add`, `/Resubject`, `EmailService/Add`,
-`PhoneService/Add` -- each writes a way into an account, and each takes a
-*whose*.
+`PhoneService/Add`, `BadgeService/Enrol`, `BadgeService/Unlock` -- each writes
+a way into an account, and each takes a *whose*. A badge is a way in at every
+station that asks, as whoever it was written for, and a badge unlocked is five
+guesses more at it.
 
 **Reads as** *may manage their keys*. **Is** *may write a way into anybody who
 holds no more than they do* -- which, bound to two people, is each other.

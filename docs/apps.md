@@ -512,6 +512,44 @@ administrator showed to that client and nothing else of their membership
 that lives as long as the token, which is why an app that can ask still does,
 and never grants on `groups` or `teams` itself.
 
+### A station that reads badges
+
+An app whose people walk up to something -- a line's terminal, a time clock --
+and present a card and a PIN asks roster whether the PIN is the one for that
+card. **The station is a holder of the tenant**, or the app its stations belong
+to is: bound a role that names `BadgeService/Verify`, and bound it **in a site**
+where the stations are a site's, so that a station in Seoul checks the badges of
+Seoul's people and a Busan card is a card nobody has to it. It asks with its own
+key, and the tenant is its own; the request names none.
+
+```
+BadgeService.Verify { code: <what the card says>, pin: <the digits typed> }
+  -> { ok: true, holder: <the person>, tenant: <their tenant> }
+  -> { }                  # nobody's card, a wrong PIN, somebody stopped, somebody out of reach
+  -> { locked: true }     # too many wrong PINs; somebody who administers them unlocks it
+```
+
+Write the station against the three answers and nothing else: `ok` is whoever
+`holder` is, `locked` is a person to send to whoever administers them, and
+anything that is not an answer -- an error, a timeout -- is roster not having
+answered, so the station waits. `ok` is never told apart from `{}` by anything
+but itself, so a station cannot learn who a card is without its PIN.
+
+What the station holds afterwards is **the app's own**: a presence, the row
+the app writes on that answer to say this person is at this station, which
+payday's `auth.Represent` reads at each call the station makes for them -- the
+station the caller, the person the actor (payday's guide, *Work at a shared
+device, or through an agent*). It is not a session of roster's: `Verify` makes
+no session, no delegation and nothing to sign out of, and nothing of roster's
+asks whether a station still has somebody at it. Who may do what at the app
+once they are there is `HolderService/Reaches`, as for anybody.
+
+Each verification that answered somebody is on the access record, under their
+tenant, naming the station and the badge. Badges are written by whoever
+administers the tenant's people (`BadgeService/Enrol`,
+[usage/ways-in.md](usage/ways-in.md) § *A badge and a PIN, at a station*), not by
+the app.
+
 ## An app calling another app
 
 Loft calling levyan about acme has to show levyan it is `@acme/loft`, and its

@@ -74,6 +74,10 @@ var aPersonsVerbs = []string{
 	app.CredentialService_Issue_FullMethodName,
 	app.CredentialService_Enrol_FullMethodName,
 	app.CredentialService_Unlock_FullMethodName,
+	// A badge is a way in at every station that asks, as whoever it is
+	// written for; a lock cleared is guesses given back.
+	app.BadgeService_Enrol_FullMethodName,
+	app.BadgeService_Unlock_FullMethodName,
 	app.IdentityService_Add_FullMethodName,
 	// The subject of an account somebody already has, moved to one the caller
 	// names (`identity.go`, `Resubject`): whoever the directory says that is
