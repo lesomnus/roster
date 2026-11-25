@@ -286,7 +286,8 @@ func wholePart(v string) bool {
 }
 
 // Widest says so when what was just minted reaches further than its methods
-// read: the trail, a credential for anybody, a link to anybody's account.
+// read: the trail, a credential for anybody, a link to anybody's account, a
+// delegation of anything its person may call.
 //
 // # By the kind of key it is
 //
@@ -331,6 +332,7 @@ func Widest(kind string, methods []string) string {
 		{app.AuditService_Get_FullMethodName, ReadsItsTenantsTrail, ReadsTheTrail},
 		{app.VouchService_Accept_FullMethodName, MintsForAnybody, MintsForAnybody},
 		{app.VouchService_Link_FullMethodName, LinksAnybody, LinksAnybodyAnywhere},
+		{app.DelegationService_Issue_FullMethodName, MintsDelegations, MintsDelegationsAnywhere},
 	}
 
 	deployments := strings.HasPrefix(kind, keys.PrefixDeployment)
@@ -404,6 +406,24 @@ const LinksAnybodyAnywhere = "hands its caller a way into anybody's account.\n" 
 	"one: together they are every account of every tenant, an administrator's among\n" +
 	"them. They are for a front door -- the app people sign in at, which mails the\n" +
 	"link -- and for nothing and nobody else."
+
+// MintsDelegations is the fourth: a key that mints keys, by
+// `DelegationService/Issue` (#567). What a delegation carries is asked of what
+// the person it is of may call, and not of the list of the credential that
+// asks (`server/core/delegation.go`, `Issue`) -- so a key listing that one
+// method hands out everything its person may call, to any holder of the
+// tenant, which `docs/usage/wide-grants.md` § *A key that mints keys* says.
+const MintsDelegations = "hands whoever holds it a delegation of anything its person may call.\n" +
+	"`DelegationService/Issue` is asked what the person may call, and not what this key\n" +
+	"lists, and the delegation goes to any holder of the tenant, an app's or anybody's.\n" +
+	"Grant it only to something that is to hand that out."
+
+// MintsDelegationsAnywhere is that of a deployment's key, which names somebody
+// of any tenant it may write a way into.
+const MintsDelegationsAnywhere = "hands whoever holds it a delegation of anything its person may call,\n" +
+	"in every tenant: `DelegationService/Issue` is asked what the person it names may\n" +
+	"call, and not what this key lists, and the delegation goes to any holder of that\n" +
+	"person's tenant. Grant it only to something that is to hand that out."
 
 // There was a third, `BecomesAnOperator`, and it is gone because the hole it
 // warned about closed.

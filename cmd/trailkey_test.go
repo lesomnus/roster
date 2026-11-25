@@ -283,3 +283,41 @@ func TestAKeyIsToldWhatItsOwnKindReads(t *testing.T) {
 		}
 	})
 }
+
+// TestAKeyThatMintsDelegationsIsToldSo: a key that lists
+// `DelegationService/Issue` is told, as it is minted, that it hands whoever
+// holds it a delegation of anything its person may call -- of its tenant on a
+// customer's key, and of every tenant on a deployment's.
+//
+// What a delegation carries is asked of what the person it is of may call, and
+// not of the list of the credential that asks (`server/core/delegation.go`,
+// `Issue`), so a key listing that one method is a key that mints keys. The page
+// and `RoleService/HandsOver` said so, and `roster key add` printed nothing of
+// it: answered "", where the three it knew were said.
+func TestAKeyThatMintsDelegationsIsToldSo(t *testing.T) {
+	issue := []string{"/roster.DelegationService/Issue"}
+
+	t.Run("a customer's is told of its tenant", func(t *testing.T) {
+		x := require.New(t)
+
+		for _, kind := range []string{keys.PrefixTenant, keys.PrefixDelegation} {
+			v := cmd.Widest(kind, issue)
+			x.Contains(v, "`/roster.DelegationService/Issue`", kind)
+			x.Contains(v, "a delegation of anything", kind)
+			x.Contains(v, "and not what this key", kind)
+			x.NotContains(v, "every tenant", kind)
+		}
+	})
+
+	t.Run("a deployment's is told of every tenant", func(t *testing.T) {
+		x := require.New(t)
+
+		v := cmd.Widest(keys.PrefixDeployment, issue)
+		x.Contains(v, "a delegation of anything")
+		x.Contains(v, "in every tenant")
+	})
+
+	t.Run("and a pattern over it is told so too", func(t *testing.T) {
+		require.Contains(t, cmd.Widest(keys.PrefixTenant, []string{"/roster.DelegationService/*"}), "a delegation of anything")
+	})
+}

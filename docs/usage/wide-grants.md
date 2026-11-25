@@ -502,9 +502,10 @@ to a group, a deployment key, and a directory's key. Whoever is making one of
 those knows it is one.
 
 **A key is told at the terminal.** `roster key add` and `roster control key
-add` print a note when a key's methods reach the trail, `VouchService/Accept`
-or `VouchService/Link`, and the note is the one for that kind of key -- a
-tenant's, or every tenant's.
+add` print a note when a key's methods reach the trail, `VouchService/Accept`,
+`VouchService/Link` or `DelegationService/Issue`, and the note is the one for
+that kind of key -- a tenant's, or every tenant's
+(`TestAKeyThatMintsDelegationsIsToldSo`).
 
 **A role is told at the terminal, where it is written or bound.** After
 `roster role add`, `role widen` and `binding add` have made their write and
