@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"slices"
 	"strings"
 
@@ -8,6 +9,7 @@ import (
 	"google.golang.org/grpc/status"
 
 	"github.com/lesomnus/payday/frame"
+	"github.com/lesomnus/payday/pdid"
 
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/quote"
@@ -145,4 +147,92 @@ func mayBeOwned(alias string, sited bool, methods []string) error {
 	}
 
 	return nil
+}
+
+// What an organisation says of somebody is not theirs to change.
+//
+// # Why
+//
+// `HolderService/Update` replaces the whole profile and is somebody's own to
+// call ([Owning]), so a person changed their own department, employee number
+// and title with the call that changes their display name (#368). A directory
+// that provisions them writes those again when it next sends them, and one
+// without provisioning never does: the person's word stood as their
+// organisation's, read by every app that grants on a department.
+//
+// # The rule
+//
+// Three fields of a profile are what an organisation says of somebody
+// ([Organisational]), fixed here and no tenant's setting. On an `Update` of
+// the caller's own row, a profile that differs from what is stored in one of
+// them is refused, naming it. One that carries all three as they are stored
+// passes, so a page that reads a profile, changes the name and sends the
+// whole of it back is not refused; one that leaves one out where one is
+// stored differs, since the profile is replaced whole and leaving it out
+// would clear it. Nothing else of `Update` changes, and no verb, permission
+// or field is added: it is a rule about one's own row on the verb there is.
+//
+// # Who it does not hold
+//
+// Whoever's hold on `HolderService/Update` is not only over their own row:
+// somebody bound a role naming it -- across the tenant, in a site, on a team
+// -- writes their own department as they write anybody's, which is an
+// administrator of the tenant's people and a directory's provisioner. And a
+// write with no caller, or by the deployment: the box, a file.
+//
+// What is asked is whether the caller holds the verb by anything but [Owns],
+// as the gate reads it ([Rules.Held]), and not whether a binding of theirs
+// reaches this row: the two differ only for somebody who holds it in a site
+// they are not of, who is then not held by this either.
+//
+// An app acting for somebody through a delegation is that person here: the
+// frame's actor is the person, the row is theirs, and the three are kept.
+
+// Organisational is the fields of a profile that are what an organisation
+// says of somebody: by the name a refusal gives each, and how each is read.
+var Organisational = []struct {
+	Field string
+	Of    func(*app.Profile) string
+}{
+	{"department", (*app.Profile).GetDepartment},
+	{"employee_no", (*app.Profile).GetEmployeeNo},
+	{"title", (*app.Profile).GetTitle},
+}
+
+// keepsWhatTheOrganisationSays refuses the caller changing, on their own
+// row `whose`, what their organisation says of them: `was` is the profile
+// stored, and `now` the one the write replaces it with.
+func (s Core) keepsWhatTheOrganisationSays(ctx context.Context, whose pdid.Id, was, now *app.Profile) error {
+	f, ok := frame.From(ctx)
+	if !ok || s.deployment(ctx) || f.Actor != whose {
+		return nil
+	}
+
+	changed := ""
+	for _, o := range Organisational {
+		if o.Of(was) != o.Of(now) {
+			changed = o.Field
+
+			break
+		}
+	}
+	if changed == "" {
+		return nil
+	}
+
+	if s.rules.Held == nil {
+		return status.Errorf(codes.PermissionDenied,
+			"profile.%s: this server cannot say what you hold, so it will not let you change what your organisation says of you", changed)
+	}
+	held, _, _, _, err := s.rules.Held(ctx, f.Actor, pdid.Nil)
+	if err != nil {
+		return err
+	}
+	if slices.ContainsFunc(held, func(m string) bool { return frame.Covers(m, app.HolderService_Update_FullMethodName) }) {
+		return nil
+	}
+
+	return status.Errorf(codes.PermissionDenied,
+		"profile.%s: it is what your organisation says of you, and is written by an administrator of the tenant's people or by its directory; send it as it is stored",
+		changed)
 }

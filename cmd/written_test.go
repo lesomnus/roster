@@ -74,10 +74,23 @@ func TestWhatSomebodyWritesOfThemselvesHasALength(t *testing.T) {
 
 	holders := app.NewHolderServiceClient(served(t, b.Server))
 	wire := asOverTheWire(ctx, who)
+
+	// What their organisation says of them is not theirs to write
+	// (`TestSomebodyChangingTheirOwnProfileKeepsWhatTheirOrganisationSaysOfThem`),
+	// so a profile that changes one of those three is written by whoever
+	// administers the tenant's people, and held to the same bounds.
+	b.mayAnything(b.ContosoUser, b.Contoso)
+	admin := asOverTheWire(ctx, b.ContosoUser)
 	update := func(t *testing.T, p *app.Profile, data *anypb.Any) error {
 		t.Helper()
-		got, err := holders.Get(wire, app.HolderGetRequest_builder{Ref: ref}.Build())
+		got, err := holders.Get(admin, app.HolderGetRequest_builder{Ref: ref}.Build())
 		require.NoError(t, err)
+		wire := wire
+		for _, o := range core.Organisational {
+			if p != nil && o.Of(p) != o.Of(got.GetProfile()) {
+				wire = admin
+			}
+		}
 		_, err = holders.Update(wire, app.HolderUpdateRequest_builder{
 			Ref: ref, DateUpdated: got.GetDateUpdated(), Profile: p, Data: data,
 		}.Build())

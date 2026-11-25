@@ -380,10 +380,11 @@ profile unless it says otherwise -- the role `self-service` names
 `HolderService/Update`, and a tenant turns that off by taking it out
 ([usage/permissions.md](usage/permissions.md)). Where they may, these are what
 the person says of themselves, checked by nobody: `displayName` and so `cn`
-and `sn`, `departmentNumber`, `title`, `employeeNumber`, `preferredLanguage` and
-`labeledURI`; and their numbers, which they add the same way
-(`PhoneService/Add`). A filter on a department, or a rule a client keeps
-about an employee number, reads a value its subject can write. `mail` is the
+and `sn`, `preferredLanguage` and `labeledURI`; and their numbers, which they
+add the same way (`PhoneService/Add`). `departmentNumber`, `title` and
+`employeeNumber` are what their organisation says of them, which they do not
+change on their own row: they are written by the tenant's administrators of
+its people and by the directory that provisions them. `mail` is the
 other kind: an address is published once somebody proved it, and not before.
 `uid`, `manager` and `memberOf` are written by verbs that role may not name,
 and `entryUUID` by nobody.

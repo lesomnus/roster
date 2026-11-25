@@ -740,14 +740,25 @@ narrowed to where its caller holds the method ([A site](#a-site)), so one held
 in no site and not across the tenant reaches the caller's own rows. Somebody
 else's address is `NotFound` to them.
 
-**`HolderService/Update` is the whole profile.** Somebody who may write their
-own name may write their own department, their employee number and whatever an
-app keeps in `data` beside them: it is one verb, and it replaces all of it. A
-directory that provisions people writes those again the next time it sends
-them, and until then they say what the person said. Nothing roster decides
-reads any of them, and a product that grants on one is trusting whoever may
-write it. A tenant whose people's profiles are an organisation's to say takes
-the verb out, as below.
+**`HolderService/Update` is the whole profile, and what an organisation says
+of somebody is not theirs to change.** It is one verb and it replaces all of
+it: a person writes their own name, picture, locale and whatever an app keeps
+in `data` beside them. Three fields are what their organisation says of them
+-- `department`, `employee_no` and `title` -- fixed in roster and no tenant's
+setting: on their own row, a profile that differs from what is stored in one
+of them is refused, `PermissionDenied`, naming the field (`profile.department:
+it is what your organisation says of you, …`), and the row is as it was. One
+that carries all three as they are stored is written, so a page that reads the
+profile, changes the name and sends the whole of it back is not refused; one
+that leaves one out where one is stored would clear it, and is refused.
+Whoever holds the verb otherwise than over their own row -- bound a role
+naming it, across the tenant, in a site or on a team; a directory's
+provisioner -- writes the three for anybody they reach, their own among them,
+and so does the box. An app acting for somebody through a delegation is that
+person, and the three are kept from it too. What is asked is whether the
+caller holds the verb by any binding, place on a team or group at all, not
+whether that one reaches their own row: the two differ only for somebody who
+administers a site they are not of.
 
 **It is the tenant's to narrow.** Take a method out and nobody of the tenant
 does that to their own account any more:
