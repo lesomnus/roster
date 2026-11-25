@@ -258,7 +258,7 @@ reaches, and one that can write any record of the zone: the environment is of
 | `userName`, `emails` | an `Email` row, written **unverified** when they are made, and what the directory last said after that (`Holder.directory_address`); a lookup by `userName` finds a person by any address of theirs, or by the one it last said. Answered, one address is their `work` one and the primary -- the one a directory said, which is what it reads back by `emails[type eq "work"]` -- and any they have here beside it are `other` |
 | `externalId` | their `Identity` at the provisioning connection when they are made; written onto somebody already here, kept as said and believed by nothing (`Holder.directory_subject`) |
 | `userName` | what the directory looks them up by, kept where it is not their address (`Holder.directory_name`) |
-| `displayName` | `Holder.name` when made, `profile.display_name` after; `name.formatted` is read as it where a directory says no `displayName` |
+| `displayName` | `Holder.name` and `profile.display_name` when made, `profile.display_name` after; `name.formatted` is read as it where a directory says no `displayName` |
 | enterprise `department`, `employeeNumber` | `profile.department`, `profile.employee_no` |
 | `title` | `profile.title`: the core User's (RFC 7643 §4.1.1), not the enterprise extension's |
 | enterprise `manager` | a `Relation` from them to their manager, labelled `manager` |
@@ -460,6 +460,16 @@ in the directory before erasing them here, and the people a directory provisions
 do not delete their own account, whatever their tenant offers
 (`MeService.Leave`).
 
+**A filter is one attribute, `eq`, and one value**, which is what a directory
+asks before it writes. Of a person: `userName`, whoever the directory last
+called that (`Holder.directory_name`), else whose address it is, else whoever
+it last said the address of (`Holder.directory_address`); `emails.value`, or
+`emails[type eq "work"].value` or `emails[primary eq true].value`, the same
+without the first; `externalId`, whoever has that account at the connection,
+else whoever the directory said it of (`Holder.directory_subject`); and `id`.
+Of a group, among the ones it made: `displayName`, without regard to case,
+`externalId` and `id`. Any other is `400 invalidFilter`.
+
 **A list with no filter is the people who sign in through its connection.**
 A holder whose row says it is no person is not among them: one that carries
 `roster.declared`, a front door's, or `roster.app`, which `roster app install`
@@ -641,6 +651,9 @@ scim: roster did not answer - method=GET path=/scim/v2/Users err=… tls: first 
 The directory is answered `503` and tries again on its next cycle, so this is
 the only place the reason is. That one is `scim.insecure` left out in front of
 a listener with no TLS ([operating.md](operating.md) § *One process, or five*).
+Where roster answered with a failure that says no more -- `Internal`,
+`Unknown` -- the directory is answered `500` and the line is `scim:
+unexpected`, at `ERROR`, with the error.
 
 Three answers leave no line: `404`, which a directory is told as a matter of
 course -- it looks before every create, and after every delete -- `405`, a path
