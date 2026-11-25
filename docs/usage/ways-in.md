@@ -24,7 +24,7 @@ them*, and what an app does with the answer is the app's.
 | a **password** | an argon2id verifier on a `Credential` row | a person, to your front door | `VouchService.Verify`, here |
 | **`rk_`** deployment key | a control-plane row; presents **as itself**, or -- naming a tenant with `roster-at` -- as the holder that tenant nominated for it | an app you run across tenants | the auth interceptor, every request |
 | **`rt_`** tenant key | a data-plane row; **resolves to its holder**, and is for roster or for one app | a customer's script, or their app | the same interceptor, for one of roster's; `Introspect`, by the app it is for and nobody else, for an app's |
-| **`rd_`** delegation | short-lived, bound to the key it was issued to: minutes at a sign-in, a day at most when somebody hands one to an app | an app, *beside* its own key | the same interceptor |
+| **`rd_`** delegation | short-lived, bound to the key it was issued to: minutes at a sign-in, `delegation.life` at most, a day unless said, when somebody hands one to an app | an app, *beside* its own key | the same interceptor |
 | an **identity** | `(tenant, provider, subject)` — an account somewhere else | nobody; it is a fact, not a secret | whoever verified the provider |
 | a **second factor** | TOTP seed, or a WebAuthn credential | a person, after the first factor | `VouchService.Verify` |
 | a **badge** and a PIN | a `Badge` row: what the card says, and the PIN's hash sealed under `vouch.keys` | a person, at an app's station; no way into roster | `BadgeService.Verify`, asked by the station's holder |
@@ -180,7 +180,8 @@ when you grant one:
 ```
 NOTE: `/roster.AuditService/List` reaches the audit trail, which holds the contents of every
 write in this deployment, in every tenant, for as long as the retention policy
-keeps them.
+keeps them. A deployment's key is not walled by tenant. Grant it only to
+something that has to read other customers' history.
 ```
 
 `--expires 720h` bounds one. Empty is forever, which is what an unattended app wants.
@@ -232,7 +233,8 @@ whoever it is for is allowed the read across the tenant.
 ```
 NOTE: `/roster.AuditService/List` reaches the audit trail of its tenant, which holds the
 contents of every write there, of rows long since erased too, for as long as
-the retention policy keeps them.
+the retention policy keeps them. It reads it where whoever it is for is allowed
+to across the tenant. Grant it only to something that has to read that history.
 ```
 
 Three other ways to get one, all the same row:
@@ -336,8 +338,8 @@ rather than anything cleverer, because a machine in that position has nothing th
 can be called back. A poll is posted, with the terminal's own code in its body
 and in no address; a wrong code typed costs whoever typed it, ten of them stop
 any code of theirs being answered for a quarter of an hour; one code is one key,
-whoever says yes how many times; and a front door holds a thousand terminals
-waiting and tells the next to come back.
+whoever says yes how many times; and a front door holds a thousand and
+twenty-four terminals waiting and tells the next to come back.
 
 What it says to you is on standard error; without `--out`, the key is the one
 line on standard output, so `roster sign-in … > key` keeps the key and the

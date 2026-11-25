@@ -472,12 +472,17 @@ roster --as admin role hands-over '{"methods":["/roster.ApiKeyService/Issue","/r
 ```
 
 ```
-grants (1)
+grants (2)
   grant      a-persons-verb-across-the-tenant
   methods    (1)
     /roster.ApiKeyService/Issue
   reads_as   may manage somebody's keys, password or addresses
   hands_over a way into the account of anybody of the tenant who holds no more than whoever is given it -- which, given to two people, is each other
+  grant      a-key-that-mints-keys
+  methods    (1)
+    /roster.ApiKeyService/Issue
+  reads_as   on a key, one method
+  hands_over listed on a key or a delegation, everything whoever it is for holds across the tenant: the key or the delegation it mints lists anything they are bound, and the list it was itself minted with is not asked
 ```
 
 `grant` is the heading here, as its link is written. `methods` is which of the
@@ -497,9 +502,11 @@ Asked of the control plane -- `roster control role hands-over` -- the answer is
 a deployment's: every tenant, since that is where an operator's role and a
 deployment key are exercised.
 
-Three entries above are not about a method and are not answered: a role bound
-to a group, a deployment key, and a directory's key. Whoever is making one of
-those knows it is one.
+One entry above is not about a method and is not answered: a deployment key.
+Whoever is making one knows it is one. A role bound to a group is answered of
+`GroupMembershipService/Add`, the verb it is handed out by, and a directory's
+key of the directory's verbs, `HolderService/Provision`, `/Deactivate` and
+`/Tell`.
 
 **A key is told at the terminal.** `roster key add` and `roster control key
 add` print a note when a key's methods reach the trail, `VouchService/Accept`,
