@@ -202,6 +202,24 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 		x.Contains(got["holderservicedisable"].GetHandsOver(), "wider than whoever is given it included")
 	})
 
+	t.Run("a credential that hands out delegations hands out what its holder holds", func(t *testing.T) {
+		x := require.New(t)
+
+		// `DelegationService/Issue` is held to what the person may call and
+		// not to the list of the credential that asks, as `ApiKeyService/Issue`
+		// is (`delegation.go`, `Issue`): a key of erin's that lists it alone
+		// hands Foo a delegation carrying a verb the key does not list
+		// (`TestSomebodyHandsAnAppADelegationOfTheirOwn`). It was on the page
+		// as a person's verb, and not as the key that mints.
+		got := handedOver(t, ctx, b.Ungated, tenant, app.DelegationService_Issue_FullMethodName)
+		g := got["a-key-that-mints-keys"]
+		x.NotNil(g, "a key that lists `DelegationService/Issue` is not told it mints")
+		x.Equal([]string{app.DelegationService_Issue_FullMethodName}, g.GetMethods())
+		x.Contains(g.GetHandsOver(), "a delegation")
+		x.Contains(g.GetHandsOver(), "the list it was itself minted with is not asked")
+		x.Contains(got, "a-persons-verb-across-the-tenant", "and still a way into whoever it is of")
+	})
+
 	t.Run("what is somebody's own reaches nobody else", func(t *testing.T) {
 		x := require.New(t)
 
