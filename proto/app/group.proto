@@ -104,7 +104,14 @@ message Group {
   // its roles.
   //
   // Its alias is still one within the tenant, whichever app's it is.
-  Holder app = 8 [(orm.edge) = {immutable: true, nullable: true}];
+  //
+  // The holder's row is not deleted while a group names it here: the store
+  // refuses it, since a group that named no app would be one of roster's.
+  Holder app = 8 [(orm.edge) = {
+    immutable: true
+    nullable: true
+    on_delete: ON_DELETE_RESTRICT
+  }];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];

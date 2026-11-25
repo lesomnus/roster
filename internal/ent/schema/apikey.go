@@ -61,7 +61,8 @@ func (ApiKey) Edges() []ent.Edge {
 		edge.To("app", Holder.Type).
 			Unique().
 			Field("app_id").
-			Immutable(),
+			Immutable().
+			Annotations(entsql.OnDelete(entsql.Restrict)),
 	}
 }
 

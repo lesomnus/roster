@@ -85,7 +85,7 @@ var (
 				Symbol:     "apikey_holder_app",
 				Columns:    []*schema.Column{ApikeyColumns[12]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Restrict,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -312,7 +312,7 @@ var (
 				Symbol:     "binding_holder_app",
 				Columns:    []*schema.Column{BindingColumns[9]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Restrict,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -646,7 +646,7 @@ var (
 				Symbol:     "group_holder_app",
 				Columns:    []*schema.Column{GroupColumns[10]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Restrict,
 			},
 		},
 		Indexes: []*schema.Index{
@@ -1262,7 +1262,7 @@ var (
 				Symbol:     "role_holder_app",
 				Columns:    []*schema.Column{RoleColumns[11]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
-				OnDelete:   schema.SetNull,
+				OnDelete:   schema.Restrict,
 			},
 		},
 		Indexes: []*schema.Index{

@@ -373,6 +373,9 @@ type Role_builder struct {
 	//
 	// Its alias is still one within the tenant, whichever app's it is:
 	// `@acme/viewer` names one role.
+	//
+	// The holder's row is not deleted while a role names it here: the store
+	// refuses it, since a role that named no app would be one of roster's.
 	App         *Holder
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
@@ -701,6 +704,9 @@ type Binding_builder struct {
 	//
 	// One of the tenant's and not erased, set when the binding is made and never
 	// after.
+	//
+	// The holder's row is not deleted while a binding names it here: the store
+	// refuses it, since a binding that named no app would be held for roster.
 	App *Holder
 	// Whatever the deployment keeps about this row that the schema does not name.
 	//
@@ -742,7 +748,7 @@ var File_app_role_proto protoreflect.FileDescriptor
 
 const file_app_role_proto_rawDesc = "" +
 	"\n" +
-	"\x0eapp/role.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1aroster/payday/holder.proto\x1a\x0eapp/site.proto\x1a\x0fapp/group.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x9a\x06\n" +
+	"\x0eapp/role.proto\x12\x06roster\x1a\x1aroster/payday/tenant.proto\x1a\x1aroster/payday/holder.proto\x1a\x0eapp/site.proto\x1a\x0fapp/group.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\x9c\x06\n" +
 	"\x04Role\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06tenant\x18\x02 \x01(\v2\x0e.roster.TenantB\x06\xf2\x82\x16\x02@\x01R\x06tenant\x12*\n" +
@@ -751,8 +757,9 @@ const file_app_role_proto_rawDesc = "" +
 	"\x04name\x18\x05 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04name\x12\x1a\n" +
 	"\x04desc\x18\x06 \x01(\tB\x06\xaa\xc1\x16\x02\x18\x00R\x04desc\x128\n" +
 	"\x06labels\x18\a \x03(\v2\x18.roster.Role.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x00R\x06labels\x12 \n" +
-	"\amethods\x18\b \x03(\tB\x06\xaa\xc1\x16\x02\x18\x00R\amethods\x12*\n" +
-	"\x03app\x18\t \x01(\v2\x0e.roster.HolderB\b\xf2\x82\x16\x048\x01@\x01R\x03app\x12F\n" +
+	"\amethods\x18\b \x03(\tB\x06\xaa\xc1\x16\x02\x18\x00R\amethods\x12,\n" +
+	"\x03app\x18\t \x01(\v2\x0e.roster.HolderB\n" +
+	"\xf2\x82\x16\x068\x01@\x01H\x01R\x03app\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +
@@ -775,15 +782,16 @@ const file_app_role_proto_rawDesc = "" +
 	"\x02id\x10\x01\x1a\x05\n" +
 	"\x03ref\x1a\b\n" +
 	"\x06tenant\x1a\x06\n" +
-	"\x04site \x14(d\"\xa3\x06\n" +
+	"\x04site \x14(d\"\xa5\x06\n" +
 	"\aBinding\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12(\n" +
 	"\x04role\x18\x02 \x01(\v2\f.roster.RoleB\x06\xf2\x82\x16\x02@\x01R\x04role\x12*\n" +
 	"\x04site\x18\x03 \x01(\v2\f.roster.SiteB\b\xf2\x82\x16\x048\x01@\x01R\x04site\x120\n" +
 	"\x06holder\x18\b \x01(\v2\x0e.roster.HolderB\b\xf2\x82\x16\x048\x01@\x01R\x06holder\x12-\n" +
-	"\x05group\x18\t \x01(\v2\r.roster.GroupB\b\xf2\x82\x16\x048\x01@\x01R\x05group\x12*\n" +
+	"\x05group\x18\t \x01(\v2\r.roster.GroupB\b\xf2\x82\x16\x048\x01@\x01R\x05group\x12,\n" +
 	"\x03app\x18\n" +
-	" \x01(\v2\x0e.roster.HolderB\b\xf2\x82\x16\x048\x01@\x01R\x03app\x12;\n" +
+	" \x01(\v2\x0e.roster.HolderB\n" +
+	"\xf2\x82\x16\x068\x01@\x01H\x01R\x03app\x12;\n" +
 	"\x06labels\x18\a \x03(\v2\x1b.roster.Binding.LabelsEntryB\x06\xaa\xc1\x16\x02\x18\x01R\x06labels\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +

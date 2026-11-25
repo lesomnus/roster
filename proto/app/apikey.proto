@@ -169,7 +169,14 @@ message ApiKey {
   // One of the key's holder's tenant and not erased, and nothing more is
   // asked of it. Set when the key is minted and never after. A key of the
   // control plane's (`rk_`) is the deployment's own and is for no app.
-  Holder app = 16 [(orm.edge) = {immutable: true, nullable: true}];
+  //
+  // The holder's row is not deleted while a key names it here: the store
+  // refuses it, since a key that named no app would be one of roster's.
+  Holder app = 16 [(orm.edge) = {
+    immutable: true
+    nullable: true
+    on_delete: ON_DELETE_RESTRICT
+  }];
 
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
