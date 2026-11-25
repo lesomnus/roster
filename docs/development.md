@@ -177,16 +177,17 @@ dependency.
 is the generator's to decide.
 
 React is a **peer** dependency of payday and an optional one. `payday/store` and
-`payday/query` know nothing about it; `payday/react` is thirty lines of
-`useSyncExternalStore` over them.
+`payday/query` know nothing about it; `payday/react` is a few hooks (`useQuery`,
+`useCall`, `useRow`, `useWrites`) of `useSyncExternalStore` over them.
 
 ### The sandbox
 
 `npm run dev:sandbox` compiles the server into the page -- `GOOS=js GOARCH=wasm`,
 SQLite in a Worker, a message port instead of HTTP/2. A reload is a fresh
-deployment. One instance serves **two** servers, because the admin console reaches
-`control.http` and `admin.http`, and the page dials the second by name on the
-same socket. The cookie cannot work over a message port, so `wasm/sandbox`
+deployment. One instance serves a server per listener a deployment would open
+-- the control plane, the data plane with no wall that the admin console's
+tenants screen reaches at `admin.http`, and the walled one the user console
+reaches -- and a page dials each by name on the same socket. The cookie cannot work over a message port, so `wasm/sandbox`
 remembers who signed in -- a sandbox being a sandbox, and `wasm/main.go` says how
 far that goes.
 

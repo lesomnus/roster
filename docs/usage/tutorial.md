@@ -26,13 +26,20 @@ roster init
 ```
 control plane
   holder admin is 01a0332f-d4d6-8334-a802-98a7402c0dd8
-  bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
-  password  EQwFb5X74bcKhtm9LbQ1erW23bOXNxxmP672FfKGvkY
+  bound to role "everything" = /roster.*/* -- every Rpc roster serves, now and after an upgrade
+  password  on standard output, alone
 
-sign in to the admin console as admin. that password is shown once and is not stored -- write it down now.
+…
+EQwFb5X74bcKhtm9LbQ1erW23bOXNxxmP672FfKGvkY
 
 there are no customers yet, which is the right state to start in.
+…
 ```
+
+The password is the one line on standard output, and the rest is on standard
+error. The lines shown as `…` say to sign in to the admin console as admin, that
+the password is shown once and is not stored, and that the admin console makes
+the first customer, with a pointer to `docs/operating.md`.
 
 Two files appeared beside you: `roster.db` and `roster-control.db`. A key must
 not live in the tables it protects, so who may call this deployment is a
@@ -70,8 +77,8 @@ ALIAS   NAME        AGE
 newco   Newco Ltd   4s
 ```
 
-Ada exists and holds everything **inside newco**. She still has no way to prove
-she is Ada — that is step 4.
+`@newco/admin` exists and holds everything **inside newco**. Nobody there has
+a way to prove who they are yet — that is step 4.
 
 ## 3. Somebody who works there
 
@@ -98,8 +105,7 @@ roster --as admin vouch reset @newco/alice
 ```
 ```
 TJCWlQLYd7NmXk1sHmfwUn0LZ0Bo7qUJmRTLwPvZgHo
-Shown once. Everything they had signed in with stopped working: a reset that left
-the old sessions alive would not be a reset.
+Shown once. Everything they had signed in with stopped working: a reset that left the old sessions alive would not be a reset.
 ```
 
 The secret is on **stdout** and the sentence on stderr, so
@@ -180,7 +186,7 @@ curl -sS -X POST http://127.0.0.1:8080/roster.MeService/Get \
  "alias":"alice", "name":"Alice Nguyen",
  "methods":["/roster.MeService/Get"],
  "credentials":[{"kind":"password", …}],
- "keys":[{"alias":"laptop", "methods":["/roster.MeService/Get"], "dateUsed":"2026-08-24T09:53:19Z"}]}
+ "keys":[{"alias":"laptop", "methods":["/roster.MeService/Get"], "dateUsed":"2026-08-24T09:53:19Z", …}], …}
 ```
 
 Two things to notice.
@@ -254,7 +260,7 @@ control plane          data plane
 ```
 
 Nothing here needed a browser. The admin console does the same acts for an operator
-who has no shell, over `admin.addr`, through the rules rather than around them —
+who has no shell, over `admin.http`, through the rules rather than around them —
 see [`../operating.md`](../operating.md) § the admin console.
 
 ## Where to go next
@@ -263,5 +269,5 @@ see [`../operating.md`](../operating.md) § the admin console.
 | --- | --- |
 | more about roles, sites, groups, teams | [permissions.md](permissions.md) |
 | SSO instead of passwords | [ways-in.md](ways-in.md) § an account somewhere else, then [`../login.md`](../login.md) |
-| what all twenty-six entities are | [`../entity.md`](../entity.md) |
+| what all thirty-four entities are | [`../entity.md`](../entity.md) |
 | running this for real | [`../operating.md`](../operating.md) |
