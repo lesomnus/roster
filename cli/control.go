@@ -254,7 +254,7 @@ func newCmdControlEntities(c *cmd.Config) xli.Commands {
 	erase.Handler = xli.Chain(xli.OnRun(notBroughtBack), erase.Handler)
 
 	cs := t.Commands()
-	formatsFirst(cs)
+	templatesFirst(cs)
 
 	return cs
 }

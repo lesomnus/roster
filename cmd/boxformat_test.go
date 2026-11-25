@@ -5,19 +5,20 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/lesomnus/roster/cli"
 	"github.com/lesomnus/roster/cmd"
 )
 
 // TestAWrongFormatIsRefusedBeforeTheWrite: an entity command given an `-o` or
-// an `--in` that is none of theirs is refused before anything is opened, so a
-// write is not made and then reported as a failure.
+// an `--in` that is none of theirs is refused before anything is opened, as a
+// wrong flag, so a write is not made and then reported as a failure.
 //
 // Every generated verb made the call and only then resolved the printer:
 // `roster --as admin holder add -o yaml @acme/f1` answered `-o yaml: not a
 // format` with status 1, and the person was added; `erase` the same, and the
 // person was erased. Answered: a failure, after the write; right is the
-// refusal, before it. The order is payday's to mend; this holds roster's tree
-// to it until then.
+// refusal, before it, with status 2. payday refuses each before its connector
+// is asked now (#531), and this holds roster's tree to it.
 func TestAWrongFormatIsRefusedBeforeTheWrite(t *testing.T) {
 	x := require.New(t)
 	ctx := t.Context()
@@ -40,6 +41,7 @@ func TestAWrongFormatIsRefusedBeforeTheWrite(t *testing.T) {
 	} {
 		out, said, err := boxRun(t, at(b.c, "admin"), "", v.args...)
 		x.ErrorContains(err, v.says, "%v", v.args)
+		x.Equal(2, cli.Status(err), "%v: the status a wrong flag has", v.args)
 		x.Empty(out, "%v", v.args)
 		x.NotContains(said, "directly", "%v opened the database before it refused", v.args)
 	}
