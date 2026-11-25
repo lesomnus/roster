@@ -2993,8 +2993,9 @@ RPC, `kind` `read`, `write` or `download`, `subjects` whose rows, and `value` an
 `AccessDetail` holding where the call came from and how a read was asked.
 There is **no filter by whom was read**: `subjects` is a list with no index, so
 *who read alice* is every row of her tenant read and searched, in SQL or in
-what `access list -o json` prints -- where `subjects` are base64 and not the
-UUIDs the other columns are. Both are left for later.
+what `access list -o json` prints -- where `subjects` are base64, as JSON
+writes bytes, and not the UUIDs the other columns are; the default output prints
+each as the identifier it is. Both are left for later.
 
 ```sh
 roster --as admin access list -o json '{"filters":[{"actor_id":"019ff2ab-..."}]}'   # what one operator did

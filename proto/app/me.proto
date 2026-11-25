@@ -3,6 +3,7 @@ edition = "2023";
 package roster;
 
 import "google/protobuf/timestamp.proto";
+import "orm.proto";
 
 option features.field_presence = IMPLICIT;
 option go_package = "github.com/lesomnus/roster/rstr";
@@ -211,7 +212,7 @@ message MeGetResponse {
   // The sites what they hold reaches, each said once, in the order of their
   // identifiers, which is the order they were made in. It is `frame.Sets` as
   // an answer; see `cmd.Sets`.
-  repeated bytes sites = 11;
+  repeated bytes sites = 11 [(orm.field) = {type: TYPE_UUID}];
 
   // Whether something they hold reaches the whole tenant: a binding with no
   // site. Empty `sites` is not every site; it is every site only beside this,
@@ -223,7 +224,7 @@ message MeGetResponse {
   // `methods` is held for one app is held over that app's rows alone. Each is
   // said once, in the order of their identifiers, as `sites` is; what
   // `HolderService.Reaches` answers at roster as `apps`.
-  repeated bytes apps = 19;
+  repeated bytes apps = 19 [(orm.field) = {type: TYPE_UUID}];
 
   // What they may call about **their own account**, and nobody else's: the
   // methods of their tenant's `self-service` role, which everybody of the

@@ -7,6 +7,7 @@
 package rstr
 
 import (
+	_ "github.com/protobuf-orm/protobuf-orm/ormpb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
@@ -1515,7 +1516,7 @@ var File_app_me_proto protoreflect.FileDescriptor
 
 const file_app_me_proto_rawDesc = "" +
 	"\n" +
-	"\fapp/me.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\"\x0e\n" +
+	"\fapp/me.proto\x12\x06roster\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\"\x0e\n" +
 	"\fMeGetRequest\"\x1c\n" +
 	"\x1aMeSignOutEverywhereRequest\"d\n" +
 	"\x1bMeSignOutEverywhereResponse\x12E\n" +
@@ -1525,7 +1526,7 @@ const file_app_me_proto_rawDesc = "" +
 	"\x0fMeLeaveResponse\x12;\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"dateErased\x12A\n" +
-	"\x0edate_forgotten\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\rdateForgotten\"\x9a\x04\n" +
+	"\x0edate_forgotten\x18\x0f \x01(\v2\x1a.google.protobuf.TimestampR\rdateForgotten\"\xaa\x04\n" +
 	"\rMeGetResponse\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x16\n" +
 	"\x06tenant\x18\x02 \x01(\fR\x06tenant\x12\x14\n" +
@@ -1534,11 +1535,11 @@ const file_app_me_proto_rawDesc = "" +
 	"\x06emails\x18\b \x03(\v2\x0f.roster.MeEmailR\x06emails\x12$\n" +
 	"\x05teams\x18\t \x03(\v2\x0e.roster.MeTeamR\x05teams\x12\x18\n" +
 	"\amethods\x18\n" +
-	" \x03(\tR\amethods\x12\x14\n" +
-	"\x05sites\x18\v \x03(\fR\x05sites\x12\x1d\n" +
+	" \x03(\tR\amethods\x12\x1c\n" +
+	"\x05sites\x18\v \x03(\fB\x06\xea\x82\x16\x02\x10@R\x05sites\x12\x1d\n" +
 	"\n" +
-	"every_site\x18\f \x01(\bR\teverySite\x12\x12\n" +
-	"\x04apps\x18\x13 \x03(\fR\x04apps\x12\x10\n" +
+	"every_site\x18\f \x01(\bR\teverySite\x12\x1a\n" +
+	"\x04apps\x18\x13 \x03(\fB\x06\xea\x82\x16\x02\x10@R\x04apps\x12\x10\n" +
 	"\x03own\x18\x12 \x03(\tR\x03own\x126\n" +
 	"\n" +
 	"identities\x18\r \x03(\v2\x16.roster.SignInIdentityR\n" +
