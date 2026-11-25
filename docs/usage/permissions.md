@@ -484,7 +484,7 @@ joining a group is refused unless you hold what the group's bindings hand out.
 nothing roster knows of.
 
 So an app must not grant on membership. It asks `HolderService/Reaches` and
-checks the method it is about to serve ([apps.md](../apps.md)); anything finer
+checks the method it is about to serve ([apps.md](../apps.md#how-a-call-is-decided)); anything finer
 than one RPC is a method of a permission service the app declares. A product that
 checked *is she on the ops team* would be granting something any holder of
 `TeamMembership.Add` could hand out, past the rule above.

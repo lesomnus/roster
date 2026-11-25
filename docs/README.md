@@ -59,12 +59,15 @@ your own is written against.
 [relying-party.md](relying-party.md) -- the two shapes an app in front takes, with
 a runnable example of each, and which gate can see what.
 
-[apps.md](apps.md) -- the three shapes a product takes **beside** roster
-(roster-hosted for many tenants, roster-hosted for one, self-hosted): which key
-it holds, how a request says which tenant it is about, whose name lands in the
-trail, and what one client library can and cannot hide about the difference.
-And what a person calling it may do: `reach`, the package that asks, and the
-roles an app ships into a tenant and widens at an upgrade.
+[apps.md](apps.md) -- what an app's author arrives asking, as **[four
+questions](apps.md#four-questions-and-where-each-is-answered)** at the top of the
+page: what an app is here, how a call is decided, how an app gives its people
+API tokens, and how it reads its people and what each may do -- each answered
+in a paragraph, with a link to the section that says the rest. Then the three
+shapes a product takes **beside** roster (roster-hosted for many tenants,
+roster-hosted for one, self-hosted): which key it holds, how a request says
+which tenant it is about, whose name lands in the trail, and what one client
+library can and cannot hide about the difference.
 
 [relying-app.md](relying-app.md) -- what an app keeps asking roster about the
 people it signed in, and `standing`, the package that does it: an account's
