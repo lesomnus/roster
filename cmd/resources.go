@@ -28,6 +28,7 @@ import (
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/core"
+	"github.com/lesomnus/roster/server/pd"
 )
 
 // Declaring a deployment's rows in a file, and applying them at start.
@@ -117,6 +118,11 @@ type Resource struct {
 	Alias string `yaml:"alias"`
 	Name  string `yaml:"name"`
 	Desc  string `yaml:"desc"`
+
+	// Id is a `Tenant`'s identifier as roster prints one, which it is made
+	// under where it is not there; empty is one roster mints. See
+	// [ApplyResources].
+	Id string `yaml:"id"`
 
 	// Connection.
 	Issuer    string   `yaml:"issuer"`
@@ -272,7 +278,7 @@ func ReadResources(paths []string) ([]Resource, error) {
 // dropped.
 var kindsRead = map[string]keysRead{
 	"Tenant": {
-		"kind": nil, "alias": nil, "name": nil, "desc": nil,
+		"kind": nil, "alias": nil, "id": nil, "name": nil, "desc": nil,
 		"config": {
 			"password": nil, "front_door": nil, "leave": nil,
 			"profile": {"fill": nil, "slack": nil},
@@ -393,12 +399,29 @@ func readResourceFile(p string) ([]Resource, error) {
 				}
 			}
 		}
+		// A tenant's identifier, where the file says one, as roster prints a
+		// tenant's: one of another form is no row the run could make, and the
+		// store would say so only at the write, which a dry run stops short of.
+		for _, kv := range kvs {
+			if keyOf(kv) == "id" && !tenantIdentifier(r.Id) {
+				return nil, at(kv.Key, entry+".id", "%q is not a tenant's identifier; "+
+					"write one as roster prints a tenant's, or leave id out for roster to make one", r.Id)
+			}
+		}
 		pos := posOf(n)
 		r.From, r.line, r.col = p, pos.Line, pos.Column
 		out = append(out, r)
 	}
 
 	return out, nil
+}
+
+// tenantIdentifier is whether `v` is a tenant's identifier written as roster
+// writes one: an identifier roster makes, of a tenant, and not the nil one.
+func tenantIdentifier(v string) bool {
+	id, err := pdid.Parse(v)
+
+	return err == nil && !id.IsZero() && id.Domain() == pd.TenantDomain && id.String() == v
 }
 
 // readOnly refuses a key `read` does not hold, under `key`, and looks into each
@@ -481,6 +504,17 @@ func checkResources(rs []Resource) error {
 				r.where(), r.Kind, strings.Join(kindsApplied, ", "))
 		}
 
+		// Two tenants of one identifier: the run would make the first and
+		// refuse the second, and a dry run, which makes neither, would promise
+		// both. Refused here, before either is written.
+		if r.Kind == "Tenant" && r.Id != "" {
+			if was, ok := seen["id "+r.Id]; ok {
+				return fmt.Errorf("resources: %s: %s %s: %s declares %s for %s, and one identifier is one tenant's; "+
+					"take it out of one of them", r.where(), r.Kind, named(r), was.where(), r.Id, named(was))
+			}
+			seen["id "+r.Id] = r
+		}
+
 		id := r.Kind + " " + rowOf(r)
 		if rowOf(r) == "" {
 			// No row to be the same as: the kind's own refusal says what
@@ -561,6 +595,20 @@ func (r Resource) where() string {
 // asked about, and of a connection that provisions where an earlier row moves
 // which of the tenant's does, since one of a tenant's does and which is asked
 // of the rows as written ([AppliedRow.Unasked]).
+//
+// # A tenant may say its identifier
+//
+// A deployment made again -- a new instance, or after the compatibility epoch
+// moved -- declared its tenant here and had it made under an identifier minted
+// then, and whatever keeps roster's tenant by its identifier had to be
+// anchored again. `roster tenant add` takes one, but the file is applied
+// before anybody can run a command, and what it declares in the tenant needs
+// the tenant first. So a `Tenant` may say `id`: where nobody of its alias is
+// there it is made under it, and where it is there under it the row is
+// applied as any other. A tenant's identifier is not changed, so a file that
+// says another one than the tenant of the alias has, or one another tenant
+// has, is refused at that row, naming the alias and both; a dry run asks the
+// same reads and says the same.
 //
 // # A tenant that is leaving is left as it is
 //
@@ -945,6 +993,18 @@ func applyTenant(ctx context.Context, s app.Server, r Resource) (string, []strin
 		return "", nil, errors.New("alias")
 	}
 
+	// The identifier the file says, which a tenant is made under and is never
+	// moved to: whatever keeps the tenant keeps it by its identifier. A file
+	// has been held to its form as it was read; this is for a caller that
+	// hands rows in too.
+	var said pdid.Id
+	if r.Id != "" {
+		if !tenantIdentifier(r.Id) {
+			return "", nil, fmt.Errorf("id: %q is not a tenant's identifier", r.Id)
+		}
+		said = pdid.MustParse(r.Id)
+	}
+
 	got, err := s.Tenant().Get(ctx, app.TenantGetRequest_builder{
 		Ref:    app.TenantRef_builder{Alias: proto.String(r.Alias)}.Build(),
 		Select: app.TenantSelect_builder{All: proto.Bool(true)}.Build(),
@@ -952,6 +1012,22 @@ func applyTenant(ctx context.Context, s app.Server, r Resource) (string, []strin
 	if status.Code(err) == codes.NotFound {
 		add := app.TenantAddRequest_builder{
 			Alias: r.Alias, Name: r.Name, Desc: r.Desc, Labels: labelsOf(r),
+		}
+		if !said.IsZero() {
+			// Nobody of the alias, and the identifier may be somebody else's:
+			// the tenant it names is not this one under another alias.
+			theirs, err := s.Tenant().Get(ctx, app.TenantGetRequest_builder{
+				Ref:    app.TenantRef_builder{Id: said.Bytes()}.Build(),
+				Select: app.TenantSelect_builder{Alias: proto.Bool(true)}.Build(),
+			}.Build())
+			switch {
+			case err == nil:
+				return "", nil, fmt.Errorf("%s is @%s's and the file says it of @%s; %s: "+
+					"say one no other tenant has, or take id out", said, theirs.GetAlias(), r.Alias, tenantIdKept)
+			case status.Code(err) != codes.NotFound:
+				return "", nil, err
+			}
+			add.Id = said.Bytes()
 		}
 		if r.Config != nil {
 			add.Config = settle(nil, r.Config)
@@ -962,6 +1038,10 @@ func applyTenant(ctx context.Context, s app.Server, r Resource) (string, []strin
 	}
 	if err != nil {
 		return "", nil, err
+	}
+	if !said.IsZero() && !bytes.Equal(got.GetId(), said.Bytes()) {
+		return "", nil, fmt.Errorf("@%s is %s and the file says %s; %s: "+
+			"say the one it has, or take id out", r.Alias, pdid.Id(got.GetId()), said, tenantIdKept)
 	}
 
 	// The settings as they will be: what the row says, with the fields the
@@ -993,6 +1073,10 @@ func applyTenant(ctx context.Context, s app.Server, r Resource) (string, []strin
 
 	return "changed", fields, made(err)
 }
+
+// tenantIdKept is what a file is told that says, for a tenant, an identifier
+// another one has, or another than its own: a tenant's is not changed.
+const tenantIdKept = "a tenant's identifier is not changed"
 
 // settle is a tenant's settings with what a file said written over them,
 // field by field, as a message of its own -- `Update` replaces the settings
