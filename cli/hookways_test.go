@@ -12,7 +12,8 @@ import (
 // TestEveryWayInIsOneNoHookIsAskedAbout holds `cmd`'s list of ways in to what
 // the apps that let somebody in call: every write the Login App and the
 // account app make is either a way in -- which no hook a deployment names is
-// asked about, so that one that is down shuts nobody out -- or is named here
+// asked about unless its file says `hook.ways_in`, so that one that is down
+// shuts nobody out -- or is named here
 // as a write a hook may refuse, with why. A write either app comes to call
 // tomorrow is neither until somebody says, and the one shape that would be
 // wrong silently is a sign-in a hook can stop.
