@@ -929,7 +929,9 @@ const appPasswordMethods = ['/roster.MeService/Get']
  * and the app the key is for -- roster, where it named none -- because that is
  * the whole of the decision: `account/device.go` refuses to mint
  * anything wider than the person approving it, and somebody who cannot see the
- * list cannot be said to have approved it.
+ * list cannot be said to have approved it. So is what the app says of the key,
+ * its scope, as it will be kept -- said to be the app's own word, which roster
+ * does not read -- and when the key ends, or that it does not.
  *
  * An app may ask the same way to **act as them** at roster (`delegate`), and
  * then it is no key at all: what is drawn says the app will act as them, in
@@ -937,7 +939,7 @@ const appPasswordMethods = ['/roster.MeService/Get']
  */
 function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 	const [code, setCode] = useState(waiting ?? '')
-	const [asked, setAsked] = useState<{ name: string; app: string; methods: string[]; delegate?: boolean; life?: number } | null>(null)
+	const [asked, setAsked] = useState<{ name: string; app: string; methods: string[]; scope?: string; date_expired?: string; delegate?: boolean; life?: number } | null>(null)
 	const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
 
 	const look = (v: string): void => {
@@ -946,7 +948,7 @@ function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 		void fetch(`/device/pending?user_code=${encodeURIComponent(v)}`)
 			.then(async (res) =>
 				res.ok
-					? setAsked((await res.json()) as { name: string; app: string; methods: string[]; delegate?: boolean; life?: number })
+					? setAsked((await res.json()) as { name: string; app: string; methods: string[]; scope?: string; date_expired?: string; delegate?: boolean; life?: number })
 					: setNote({ ok: false, text: await why(res) }),
 			)
 			.catch(() => setNote({ ok: false, text: 'that could not be looked up' }))
@@ -1039,6 +1041,31 @@ function Terminal(props: { may: (m: string) => boolean }): React.ReactNode {
 								<td>it may call</td>
 								<td className="mono">{asked.methods.join(', ')}</td>
 							</tr>
+							{asked.app !== '' && (
+								<tr>
+									<td>its scope at the app</td>
+									<td>
+										{(asked.scope ?? '') === '' ? (
+											<span className="none">none</span>
+										) : (
+											<span className="mono">{asked.scope}</span>
+										)}
+										<span className="hint">
+											{' '}
+											— {asked.app}&apos;s own word about the key, kept as it is written here; roster does not read
+											it, and the key is as wide as what it may call unless {asked.app} narrows it
+										</span>
+									</td>
+								</tr>
+							)}
+							<tr>
+								<td>it ends</td>
+								<td className={asked.date_expired === undefined ? 'none' : ''}>
+									{asked.date_expired === undefined
+										? 'never: it works until you revoke it'
+										: new Date(asked.date_expired).toLocaleString()}
+								</td>
+							</tr>
 						</tbody>
 					</table>
 					<p className="acts">
@@ -1072,6 +1099,7 @@ function Keys(props: {
 		alias: string
 		appAlias: string
 		methods: string[]
+		scope: string
 		dateExpired?: { seconds: bigint } | undefined
 		dateUsed?: { seconds: bigint } | undefined
 	}[]
@@ -1081,7 +1109,7 @@ function Keys(props: {
 	const revoke = useCall(ApiKeyService.method.erase)
 	const [gone, setGone] = useState<string[]>([])
 	const [made, setMade] = useState<
-		{ id: Uint8Array; alias: string; appAlias: string; methods: string[]; dateExpired?: { seconds: bigint } | undefined }[]
+		{ id: Uint8Array; alias: string; appAlias: string; methods: string[]; scope: string; dateExpired?: { seconds: bigint } | undefined }[]
 	>([])
 	const [token, setToken] = useState<string | null>(null)
 	const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null)
@@ -1105,7 +1133,7 @@ function Keys(props: {
 				if (r.key !== undefined) {
 					setMade((was) => [
 						...was,
-						{ id: r.key!.id, alias: r.key!.alias, appAlias: of, methods: r.key!.methods, dateExpired: r.key!.dateExpired },
+						{ id: r.key!.id, alias: r.key!.alias, appAlias: of, methods: r.key!.methods, scope: r.key!.scope, dateExpired: r.key!.dateExpired },
 					])
 				}
 			})
@@ -1123,7 +1151,11 @@ function Keys(props: {
 							<tr key={uuid(k.id)}>
 								<td>{k.alias}</td>
 								<td>{k.appAlias === '' ? '' : '@' + k.appAlias}</td>
-								<td className="mono">{k.methods.join(', ')}</td>
+								<td className="mono">
+									{k.methods.join(', ')}
+									{/* The app's own word about it, which roster keeps and does not read. */}
+									{k.scope !== '' && <span className="none"> · scope at the app: {k.scope}</span>}
+								</td>
 								<td className={k.dateExpired === undefined ? 'none' : ''}>{until(k.dateExpired)}</td>
 								<td>
 									<button

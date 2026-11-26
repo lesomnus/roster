@@ -26,6 +26,8 @@ const (
 	FieldDateExpired = "date_expired"
 	// FieldDateAuthenticated holds the string denoting the date_authenticated field in the database.
 	FieldDateAuthenticated = "date_authenticated"
+	// FieldScope holds the string denoting the scope field in the database.
+	FieldScope = "scope"
 	// FieldDateUpdated holds the string denoting the date_updated field in the database.
 	FieldDateUpdated = "date_updated"
 	// FieldDateErased holds the string denoting the date_erased field in the database.
@@ -68,6 +70,7 @@ var Columns = []string{
 	FieldDateUsed,
 	FieldDateExpired,
 	FieldDateAuthenticated,
+	FieldScope,
 	FieldDateUpdated,
 	FieldDateErased,
 	FieldDateCreated,
@@ -84,6 +87,11 @@ func ValidColumn(column string) bool {
 	}
 	return false
 }
+
+var (
+	// DefaultScope holds the default value on creation for the "scope" field.
+	DefaultScope string
+)
 
 // OrderOption defines the ordering options for the ApiKey queries.
 type OrderOption func(*sql.Selector)
@@ -116,6 +124,11 @@ func ByDateExpired(opts ...sql.OrderTermOption) OrderOption {
 // ByDateAuthenticated orders the results by the date_authenticated field.
 func ByDateAuthenticated(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDateAuthenticated, opts...).ToFunc()
+}
+
+// ByScope orders the results by the scope field.
+func ByScope(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldScope, opts...).ToFunc()
 }
 
 // ByDateUpdated orders the results by the date_updated field.

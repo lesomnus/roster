@@ -39,6 +39,7 @@ func (e *ApiKey) Proto() *rstr.ApiKey {
 		r.SetId(v[:])
 		x.SetApp(r)
 	}
+	x.SetScope(e.Scope)
 	x.SetDateUpdated(timestamppb.New(e.DateUpdated))
 	if e.DateErased != nil {
 		x.SetDateErased(timestamppb.New(*e.DateErased))

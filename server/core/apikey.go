@@ -140,6 +140,12 @@ func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*ap
 		// not work.
 		return nil, status.Error(codes.InvalidArgument, "methods: a key that allows nothing opens no door")
 	}
+	// The app's word about the key, refused before anything is asked or made:
+	// on the control plane naming a holder makes them, and a key refused for
+	// its scope left nobody behind for it (#274's reason, below).
+	if err := keyScoped(req.GetScope(), req.GetApp() != nil); err != nil {
+		return nil, err
+	}
 	if v := req.GetDateExpired(); v != nil && !v.AsTime().After(time.Now()) {
 		// As a delegation is refused one (`keys.Delegate`): a caller that
 		// computed an expiry and got the sign wrong would otherwise be
@@ -199,6 +205,9 @@ func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*ap
 	}
 	if of != pdid.Nil {
 		add.App = app.HolderRef_builder{Id: of.Bytes()}.Build()
+
+		// As it was given, and read by nothing here (`ApiKey.scope`).
+		add.Scope = z.Ptr(req.GetScope())
 	}
 
 	// A key somebody issues themselves carries the sign-in they issued it

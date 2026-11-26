@@ -305,13 +305,30 @@ the account page draws it `@loft`, and `roster me get` and `roster key list`
 print `app=@…`, each saying nothing of a key of roster's. What ends the app's
 holder ends the keys that are for it, whoever's they are.
 
+**It may carry the app's own word about it, its scope** (`ApiKey.scope`): an
+identifier of a row of the app's that lists what the key reaches there -- one
+collection of Loft's assets, say. It is given when the key is minted, by
+`ApiKeyService.Issue`'s `scope` or a terminal's (§ *For an app*), and never
+changed; `Introspect` answers it to the app as it was given, and the app
+narrows by it. **roster does not read it**: no rule compares it, and the key
+is exactly as wide here and at the app as its methods say, so an app that
+does not narrow by its scope has a key as wide as its methods. At most 256
+bytes, and only on a key for an app: one of roster's that says one is
+refused, `InvalidArgument` on `scope`, since no app is there to read it. It is
+not a note about somebody; an app puts an identifier there. Wherever a key is
+listed its scope is said with it -- `MeService.Get` and `HolderService.SignsIn`
+(`SignInKey.scope`), `ApiKeyService`'s `Get` and `List`, the account page and
+the user console beside the methods, and `roster me get` and `roster key list`
+as `scope="…"` after `app=@…` -- and nothing of a key that carries none.
+
 **It is the app's row.** The app itself and its administrators, who hold
 roster's verbs for it, list the keys that are for it -- of one person, or of
 everybody -- read one and end one, whoever's it is; none of roster's and none
 of another app's ([../apps.md](../apps.md) § *Giving an app's users API
 tokens*). Minting one stays the person's: at a terminal's sign-in that names
 the app (§ *For an app*), or by the app as them, through a delegation naming
-`ApiKeyService/Issue` that they handed it (§ *One somebody hands an app*).
+`ApiKeyService/Issue` that they handed it (§ *One somebody hands an app*). Each
+road takes the app's scope.
 
 ### A terminal, signed in from a browser
 
@@ -388,6 +405,16 @@ for that app: held to what they hold **at that app**, or refused as a terminal
 asking more than its approver holds is; answered to that app at `Introspect`,
 and no credential at roster.
 
+**It may carry the app's scope, and it may end.** A terminal asks for both as
+`ApiKeyService/Issue` takes them, `scope` and `date_expired`, and the person
+approving is shown both beside the rest: the scope as it will be kept, said to
+be the app's own word that roster does not read, and when the key ends or that
+it does not (`/device/pending` answers `scope`, empty for none, and
+`date_expired`, absent for a key that does not end). A key asked for with no
+end never ends, as before; nothing in a deployment's file bounds how long a
+key lives, so any end after now is taken, and an end that passed while the
+code waited is refused at the yes, `400`, in `Issue`'s words.
+
 **Anybody may begin one**, as before -- and so an app's own server begins one for
 the person in front of its page, and an app's own command line may, against the
 same request `roster sign-in` sends. Nothing is minted without the person's approval
@@ -400,6 +427,8 @@ at the front door. The request is what such a client writes against:
 | `name` | what the key will be called, in the spelling a key's name is kept in; empty is `terminal` |
 | `allow` | the methods it may call, in full: of the app's where `app` names one, of roster's where it does not |
 | `app` | the app the key is for, by its alias in the tenant the request arrived at; absent or empty is a key of roster's |
+| `scope` | the app's own word about the key, kept as it is sent and answered to the app by `Introspect` (§ *A key for an app*); only with `app`, at most 256 bytes; absent or empty is a key that carries none |
+| `date_expired` | when the key stops working, as RFC 3339 writes a time, and after now; absent is a key that does not end |
 | `delegate` | `true`: what is asked for is a delegation issued to `app`, for that app to act as the person at roster, and not a key; `allow` is then roster's methods, and `app` is required |
 
 and answered RFC 8628 §3.2's `device_code`, `user_code`, `verification_uri`,
@@ -411,10 +440,17 @@ and answered RFC 8628 §3.2's `device_code`, `user_code`, `verification_uri`,
 | --- | --- | --- |
 | `501` | `this deployment does not sign terminals in` | `account.terminal` is off |
 | `404` | `no operator here serves this name` | no tenant answers at the name the request arrived at |
+| `400` | `…: this request has no such field` | the body names a field that is none of the above, which is named |
 | `400` | `a name and what to allow` | the body is not that JSON |
 | `400` | `allow: which methods this terminal may call` | `allow` is empty |
 | `400` | `app: a delegation is issued to an app; name the one that is to act for you` | `delegate` is said, and `app` is not |
 | `501` | `this deployment does not let an app act for somebody here: delegation.life is not set for this front door` | `delegate` is said, and the front door was handed no `delegation.life` |
+| `400` | `scope: a delegation carries none; a scope is the word of the app a key is for` | `delegate` is said, with a `scope` |
+| `400` | `date_expired: a delegation lasts delegation.life, which is what the person approving is told` | `delegate` is said, with a `date_expired` |
+| `400` | `scope: this key is roster's own and for no app, so no app is there to read a scope; a scope is the word of the app a key is for, and nothing here reads it` | a `scope`, and no `app` |
+| `400` | `scope: at most … bytes, and this is …` | a `scope` of more than 256 bytes, and how many |
+| `400` | `date_expired: when the key stops working, as RFC 3339 writes a time` | a `date_expired` that is not a time |
+| `400` | `date_expired: a key cannot have already expired` | a `date_expired` that is not after now |
 | `503` | `too many terminals are waiting to be approved here; try again in a minute` | a thousand and twenty-four are waiting, with `retry-after: 60` |
 | `500` | `cannot begin` | the front door could not make a code |
 
@@ -425,7 +461,14 @@ a person's. The person approving is shown the name that was asked for, and one
 that is nobody of the tenant is refused there, `404` in the words a name nobody
 serves is. `TestTheTerminalsBeginningIsWhatTheManualSays`
 holds both tables to `account/device.go`, as `login/contract_test.go` holds
-the Login App's routes to theirs.
+the Login App's routes to theirs; a `…` in the words is a value the refusal
+fills in.
+
+**A field it does not know is refused, naming it**, where it was dropped: a
+body that wrote `scopes` for `scope` began a terminal whose key would carry no
+scope, which at the app that narrows by one is a key wider than its client
+meant. The approval is held to the same rule (`deny` misspelled was a yes); a
+poll is not, since nothing it carries changes what is minted.
 
 **An app may ask to act for the person instead** (`delegate`): what its page
 writes for them -- putting somebody into its group because they pressed the
@@ -493,7 +536,8 @@ DelegationService/Issue { holder: erin, app: @contoso/foo, methods: [...] }
 
 Foo then presents its own key and the token beside it, as above, and is answered
 **as erin**: within the methods, held to what erin holds, and the trail names
-her. Another app presenting the token is refused, and so is the token alone;
+her. A key Foo mints for her that way carries whatever `scope` Foo's request
+gives it, as one she minted herself would (§ *A key for an app*). Another app presenting the token is refused, and so is the token alone;
 `Introspect` answers it to Foo and nobody else.
 
 - **It is the person's own act.** Everybody of a tenant may hand an app a
@@ -539,8 +583,10 @@ delegation is answered only to the app it was issued to. Asked by anybody else
 is none is answered, `NotFound: no such token`, and nothing says it is a key
 or whose. **A key of roster's own is answered to no app**: it is spent by
 presenting it to roster. So a script that calls Loft holds a key minted for
-Loft, and one that calls roster a key of roster's. What is answered is as it
-was: whose it is, the tenant, the key's methods, its dates.
+Loft, and one that calls roster a key of roster's. What is answered is whose
+it is, the tenant, the key's methods, its dates, and its `scope` as it was
+given, empty for a key that carries none; two keys of one person for one app
+are answered each its own.
 
 The app asks with **its own** key, which is the whole of the trust decision and is
 per app. Two things about the answer: it is about the **holder** rather than the

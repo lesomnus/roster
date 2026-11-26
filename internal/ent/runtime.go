@@ -4,6 +4,7 @@ package ent
 
 import (
 	"github.com/lesomnus/roster/internal/ent/access"
+	"github.com/lesomnus/roster/internal/ent/apikey"
 	"github.com/lesomnus/roster/internal/ent/audit"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/link"
@@ -25,6 +26,12 @@ func init() {
 	accessDescDomain := accessFields[10].Descriptor()
 	// access.DefaultDomain holds the default value on creation for the domain field.
 	access.DefaultDomain = accessDescDomain.Default.(uint32)
+	apikeyFields := schema.ApiKey{}.Fields()
+	_ = apikeyFields
+	// apikeyDescScope is the schema descriptor for scope field.
+	apikeyDescScope := apikeyFields[8].Descriptor()
+	// apikey.DefaultScope holds the default value on creation for the scope field.
+	apikey.DefaultScope = apikeyDescScope.Default.(string)
 	auditFields := schema.Audit{}.Fields()
 	_ = auditFields
 	// auditDescDomain is the schema descriptor for domain field.

@@ -88,11 +88,14 @@ func TestTheTerminalsBeginningIsWhatTheManualSays(t *testing.T) {
 		"StatusNotImplemented":      http.StatusNotImplemented,
 		"StatusServiceUnavailable":  http.StatusServiceUnavailable,
 	}
+	// Words written out, or a format whose values the manual writes as `…`:
+	// a refusal that names the field it refuses, or a length.
 	answered := map[string]bool{}
-	for _, m := range regexp.MustCompile(`http\.Error\(w, "([^"]+)", http\.(Status\w+)\)`).FindAllStringSubmatch(begin+offered, -1) {
+	verb := regexp.MustCompile(`%[dqsv]`)
+	for _, m := range regexp.MustCompile(`http\.Error\(w, (?:fmt\.Sprintf\()?"([^"]+)"(?:, [^)]+\))?, http\.(Status\w+)\)`).FindAllStringSubmatch(begin+offered, -1) {
 		code, ok := statuses[m[2]]
 		x.True(ok, "a refusal answered %s, which this test does not know the number of", m[2])
-		answered[strconv.Itoa(code)+" "+m[1]] = true
+		answered[strconv.Itoa(code)+" "+verb.ReplaceAllString(m[1], "…")] = true
 	}
 	x.Equal(refusals, answered, "the refusals the manual names are not the ones the beginning answers")
 }

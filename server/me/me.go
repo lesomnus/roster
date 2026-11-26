@@ -561,6 +561,9 @@ func (s *Server) keys(ctx context.Context, who pdid.Id) ([]*app.SignInKey, error
 			if a := v.Edges.App; a != nil {
 				k.AppAlias = a.Alias
 			}
+
+			// And the app's word about it, as it was given (`ApiKey.scope`).
+			k.Scope = v.Scope
 		}
 
 		out = append(out, k.Build())

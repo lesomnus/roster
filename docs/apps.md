@@ -439,7 +439,7 @@ Whatever the shape, a request from a person arrives with one of:
 | --- | --- |
 | a session of the app's own, made when they signed in (a password through `VouchService/Verify`, or the issuer's tokens) | the app's own store; and held to roster on every call (`standing`, [relying-app.md](relying-app.md)) |
 | an access token from the issuer, `aud` = this app | the issuer's keys (`/.well-known/jwks.json`, JWT access tokens); `aud` must name **this** API; `sub` is a `Holder.id`. See *People's tokens* below |
-| an `rt_` of the person's **for this app** (`ApiKey.app`; a script) | `payday.TokenService/Introspect`, which answers a key to the app it is for and to no other: the holder, tenant and the key's methods. A key of roster's, or another app's, is answered as a token that is none (§ *Giving an app's users API tokens*) |
+| an `rt_` of the person's **for this app** (`ApiKey.app`; a script) | `payday.TokenService/Introspect`, which answers a key to the app it is for and to no other: the holder, tenant, the key's methods and its scope. A key of roster's, or another app's, is answered as a token that is none (§ *Giving an app's users API tokens*) |
 | an `rd_` this app was given | `Introspect`, which answers only the app it was issued to |
 
 and then asks roster what that person may call **at the app**, with
@@ -482,7 +482,9 @@ A key's own `methods` -- this app's, since the key is for it -- are not part
 of that: `Reaches` answers for the person,
 so a call that came with a key whose list is narrower than its holder's is the
 app's to hold to that list, as `Introspect` answers it, and `reach` says yes
-wherever the holder may. A delegation adds nothing either: an `rd_` the app was
+wherever the holder may. So is a key's scope, which is the app's own word and
+which nothing of roster's or payday's narrows by (§ *Giving an app's users API
+tokens*). A delegation adds nothing either: an `rd_` the app was
 given names who it is about, and what that holder may call at the app is
 `Reaches` of them again.
 
@@ -669,7 +671,9 @@ key for Loft, and one that calls roster a key of roster's
 `ApiKeyService/Issue`, called as the person, with their own reference and the
 app, and held to what they hold **at that app** -- each method one they hold
 there, or it is refused. What it may be narrowed to is some of those methods,
-with a name and, if it is to stop, an end (`date_expired`). An app's server is
+with a name and, if it is to stop, an end (`date_expired`) -- and, finer than
+any method, whatever the app narrows it to itself, by the key's **scope**
+(below). An app's server is
 not the person, and is given two roads to the call:
 
 - **Through a delegation the person approved.** The app's page begins a
@@ -685,8 +689,9 @@ not the person, and is given two roads to the call:
   delegation's own list.
 - **One key at a time, approved at a terminal's sign-in.** The app's server, or
   its command line, begins one naming the app, the key's name and what it may
-  call, the person approves that key at the front door, and the poll answers it
-  once to whoever holds the code ([usage/ways-in.md](usage/ways-in.md) § *For an app*).
+  call -- and its scope and its end, if it has them -- the person approves that
+  key at the front door, shown each of them, and the poll answers it once to
+  whoever holds the code ([usage/ways-in.md](usage/ways-in.md) § *For an app*).
 
 Nothing is minted without the person's yes at the front door, and the switch
 that opens both is the deployment's `account.terminal`.
@@ -707,10 +712,10 @@ naming fewer, which is used as it stands until somebody widens it.
 
 **Checking one it is handed** is two questions: whose key it is, and what they
 may call. `TokenService/Introspect`, asked as the app, answers a key for the
-app with its holder, its tenant and its methods, and anybody else -- another
-app, the tenant's administrator -- with `NotFound: no such token`; then
-`Reaches` says what the holder may call at the app, and the call is served
-where both cover it: the key's methods are the app's to hold it to. A key
+app with its holder, its tenant, its methods and its scope, and anybody else
+-- another app, the tenant's administrator -- with `NotFound: no such token`;
+then `Reaches` says what the holder may call at the app, and the call is
+served where both cover it: the key's methods are the app's to hold it to. A key
 ended is none at the next ask. `/payday.TokenService/Introspect` is payday's
 and not under `/roster.*/*`, so an app that checks keys names it in `--allow`.
 
@@ -723,15 +728,16 @@ loft   ─ POST /device/poll {device_code} ─▶ account app
        ◀─ {token: rd_…}                                         # kept on Loft's server, beside erin's session
 
 loft   ─ Bearer <Loft's key> + roster-as: rd_… ─▶ ApiKeyService/Issue
-           {holder: {id: <erin>}, app: {id: <Loft's holder>}, alias: ci, methods: [/loft.AssetService/Get]}
+           {holder: {id: <erin>}, app: {id: <Loft's holder>}, alias: ci, methods: [/loft.AssetService/Get],
+            scope: "share:0193…"}                                # Loft's own row, which roster does not read
        ◀─ {token: rt_…, key}                                    # shown to erin once
 loft   ─ as itself ─▶ ApiKeyService/List {filters: [{holder: {id: <erin>}}]}    # her keys for Loft
 loft   ─ as itself ─▶ ApiKeyService/Erase {id: <the key>}                       # and ending one
 
 ci     ─ Bearer rt_… ─▶ loft, at /loft.AssetService/Get
 loft   ─ as itself ─▶ TokenService/Introspect {token: rt_…}
-       ◀─ {id: <erin>, tenant_id: <acme>, grant: {actions: [/loft.AssetService/Get]}}
-loft   ─ Reaches(erin) covers it, and so does the key → served
+       ◀─ {id: <erin>, tenant_id: <acme>, grant: {actions: [/loft.AssetService/Get]}, scope: "share:0193…"}
+loft   ─ Reaches(erin) covers it, and so does the key; the share lists the asset → served
 ```
 
 **A command line of the app's** signs in one of two ways. A terminal's sign-in
@@ -742,6 +748,52 @@ the app's audience (§ *People's tokens*); a loopback redirect says nothing of
 the tenant, so the client registers its loopback address beside a redirect at
 the tenant's own host ([login.md](login.md) § *What changes when Hydra is in
 front*).
+
+### A key that reaches some of the app's rows
+
+A method says *which calls*; what a hosting service's access token also says
+is *which of its rows* -- this token reaches these two repositories. That is
+the key's **scope** (`ApiKey.scope`): the app's own word about the key, given
+when it is minted (`ApiKeyService/Issue`'s `scope`, through either road above)
+and answered back by `Introspect` as it was given (payday's
+`TokenIntrospectResponse.scope`). Put an **identifier** there, of a row the app
+keeps that lists what the key reaches, and not a description of anybody: it
+is said on the trail, and wherever the key is listed.
+
+**What roster does with it** is keep it, bound it (256 bytes at most, and only
+on a key for an app: one of roster's that says one is refused, since no app is
+there to read it), never change it after the mint, answer it to the app the
+key is for and to no other, and show it beside the key's methods wherever the
+key is listed -- to the person, at the account page and in `MeService.Get`; to
+the app and its administrators, in `ApiKeyService`'s `Get` and `List`; to
+whoever reads how somebody signs in. **What it does not do** is read it: no
+rule compares it, `mayGrant` holds the methods as it did, nothing of roster's
+or payday's narrows a call by it, and the key is exactly as wide at roster and
+at the app as its methods say. **An app that does not narrow by its scope has
+a key as wide as its methods.**
+
+As Loft: erin keeps her drawings in collections, and wants a key for a
+printer that reaches one of them.
+
+1. **Loft keeps the row.** erin's page writes a share of Loft's own, a row in
+   Loft's database that lists the collection, `share 0193…`, and asks roster
+   for a key whose scope is `share:0193…` (through the delegation she handed
+   Loft, or a terminal's sign-in naming Loft).
+2. **The key carries its identifier.** roster keeps `share:0193…` on the key
+   and reads none of it.
+3. **Loft's handler narrows by it.** payday puts what `Introspect` answered on
+   the frame each call is served with, so `frame.Must(ctx).TokenScope()` is
+   `share:0193…` for a call made with that key, and empty for any other
+   credential. Loft's scope beside its wall -- or the handler of
+   `/loft.AssetService/Get` -- reads the share and serves only what it lists;
+   a path that does not go through Loft's walled reads checks it too, since
+   nothing payday generates will (payday's guide, *A token that reaches some
+   of your rows*).
+
+It is the key's and not erin's: two keys of hers for Loft carry two, so
+whatever Loft keeps by actor -- what erin may see, worked out once -- keeps
+nothing of it. And it narrows only: what the key may call is still its
+methods, held to what erin holds at Loft, and `Reaches` of erin.
 
 ## Reading an app's users and what each may do
 

@@ -90,6 +90,20 @@ func (_c *ApiKeyCreate) SetNillableDateAuthenticated(v *time.Time) *ApiKeyCreate
 	return _c
 }
 
+// SetScope sets the "scope" field.
+func (_c *ApiKeyCreate) SetScope(v string) *ApiKeyCreate {
+	_c.mutation.SetScope(v)
+	return _c
+}
+
+// SetNillableScope sets the "scope" field if the given value is not nil.
+func (_c *ApiKeyCreate) SetNillableScope(v *string) *ApiKeyCreate {
+	if v != nil {
+		_c.SetScope(*v)
+	}
+	return _c
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (_c *ApiKeyCreate) SetDateUpdated(v time.Time) *ApiKeyCreate {
 	_c.mutation.SetDateUpdated(v)
@@ -167,6 +181,7 @@ func (_c *ApiKeyCreate) Mutation() *ApiKeyMutation {
 
 // Save creates the ApiKey in the database.
 func (_c *ApiKeyCreate) Save(ctx context.Context) (*ApiKey, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -189,6 +204,14 @@ func (_c *ApiKeyCreate) Exec(ctx context.Context) error {
 func (_c *ApiKeyCreate) ExecX(ctx context.Context) {
 	if err := _c.Exec(ctx); err != nil {
 		panic(err)
+	}
+}
+
+// defaults sets the default values of the builder before save.
+func (_c *ApiKeyCreate) defaults() {
+	if _, ok := _c.mutation.Scope(); !ok {
+		v := apikey.DefaultScope
+		_c.mutation.SetScope(v)
 	}
 }
 
@@ -294,6 +317,10 @@ func (_c *ApiKeyCreate) createSpec() (*ApiKey, *sqlgraph.CreateSpec) {
 		_spec.SetField(apikey.FieldDateAuthenticated, field.TypeTime, value)
 		_node.DateAuthenticated = &value
 	}
+	if value, ok := _c.mutation.Scope(); ok {
+		_spec.SetField(apikey.FieldScope, field.TypeString, value)
+		_node.Scope = value
+	}
 	if value, ok := _c.mutation.DateUpdated(); ok {
 		_spec.SetField(apikey.FieldDateUpdated, field.TypeTime, value)
 		_node.DateUpdated = value
@@ -387,6 +414,7 @@ func (_c *ApiKeyCreateBulk) Save(ctx context.Context) ([]*ApiKey, error) {
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*ApiKeyMutation)
 				if !ok {

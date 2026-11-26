@@ -741,6 +741,7 @@ type SignInKey struct {
 	xxx_hidden_DateUsed    *timestamppb.Timestamp `protobuf:"bytes,10,opt,name=date_used,json=dateUsed"`
 	xxx_hidden_App         []byte                 `protobuf:"bytes,16,opt,name=app"`
 	xxx_hidden_AppAlias    string                 `protobuf:"bytes,17,opt,name=app_alias,json=appAlias"`
+	xxx_hidden_Scope       string                 `protobuf:"bytes,18,opt,name=scope"`
 	unknownFields          protoimpl.UnknownFields
 	sizeCache              protoimpl.SizeCache
 }
@@ -819,6 +820,13 @@ func (x *SignInKey) GetAppAlias() string {
 	return ""
 }
 
+func (x *SignInKey) GetScope() string {
+	if x != nil {
+		return x.xxx_hidden_Scope
+	}
+	return ""
+}
+
 func (x *SignInKey) SetId(v []byte) {
 	if v == nil {
 		v = []byte{}
@@ -851,6 +859,10 @@ func (x *SignInKey) SetApp(v []byte) {
 
 func (x *SignInKey) SetAppAlias(v string) {
 	x.xxx_hidden_AppAlias = v
+}
+
+func (x *SignInKey) SetScope(v string) {
+	x.xxx_hidden_Scope = v
 }
 
 func (x *SignInKey) HasDateExpired() bool {
@@ -899,6 +911,11 @@ type SignInKey_builder struct {
 	// The app's alias in the tenant, beside `app` as `MeTeam` says `site_alias`
 	// beside `site`: what a screen draws, `@loft`. Empty for a key of roster's.
 	AppAlias string
+	// The app's own word about the key, as it was given when the key was
+	// minted, and empty for one that carries none (`ApiKey.scope`). roster does
+	// not read it; it is said here so that whoever lists the key sees what it
+	// was said to be narrowed to at the app.
+	Scope string
 }
 
 func (b0 SignInKey_builder) Build() *SignInKey {
@@ -912,6 +929,7 @@ func (b0 SignInKey_builder) Build() *SignInKey {
 	x.xxx_hidden_DateUsed = b.DateUsed
 	x.xxx_hidden_App = b.App
 	x.xxx_hidden_AppAlias = b.AppAlias
+	x.xxx_hidden_Scope = b.Scope
 	return m0
 }
 
@@ -1547,7 +1565,7 @@ const file_app_me_proto_rawDesc = "" +
 	"\vcredentials\x18\x0e \x03(\v2\x18.roster.SignInCredentialR\vcredentials\x12%\n" +
 	"\x04keys\x18\x0f \x03(\v2\x11.roster.SignInKeyR\x04keys\x12/\n" +
 	"\x13provisioned_through\x18\x10 \x01(\tR\x12provisionedThrough\x12'\n" +
-	"\x06groups\x18\x11 \x03(\v2\x0f.roster.MeGroupR\x06groups\"\xf2\x01\n" +
+	"\x06groups\x18\x11 \x03(\v2\x0f.roster.MeGroupR\x06groups\"\x88\x02\n" +
 	"\tSignInKey\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x14\n" +
 	"\x05alias\x18\x04 \x01(\tR\x05alias\x12\x18\n" +
@@ -1556,7 +1574,8 @@ const file_app_me_proto_rawDesc = "" +
 	"\tdate_used\x18\n" +
 	" \x01(\v2\x1a.google.protobuf.TimestampR\bdateUsed\x12\x10\n" +
 	"\x03app\x18\x10 \x01(\fR\x03app\x12\x1b\n" +
-	"\tapp_alias\x18\x11 \x01(\tR\bappAlias\"\x95\x01\n" +
+	"\tapp_alias\x18\x11 \x01(\tR\bappAlias\x12\x14\n" +
+	"\x05scope\x18\x12 \x01(\tR\x05scope\"\x95\x01\n" +
 	"\x0eSignInIdentity\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\fR\x02id\x12\x1a\n" +
 	"\bprovider\x18\b \x01(\tR\bprovider\x12\x18\n" +

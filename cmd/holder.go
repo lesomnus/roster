@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -534,6 +535,11 @@ func ListKeys(ctx context.Context, w io.Writer, at *Server, by Operator) error {
 				if e := a.Edges.Tenant; e != nil {
 					of = "\tapp=@" + e.Alias + "/" + a.Alias
 				}
+			}
+			// And the app's word about it (`ApiKey.scope`), quoted, since it
+			// is the app's and may hold anything; nothing for none.
+			if v.Scope != "" {
+				of += "\tscope=" + strconv.Quote(v.Scope)
 			}
 
 			fmt.Fprintf(&out, "%s\t@%s/%s\tused=%s%s\t%s\n",

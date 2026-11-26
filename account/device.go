@@ -5,9 +5,11 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -107,6 +109,12 @@ type device struct {
 	name    string   // what the terminal calls itself, for the key's own name
 	app     string   // the app the key is for, by alias in the tenant; empty is roster's
 	methods []string // what it asked to be allowed
+
+	// scope is the app's own word about the key, as it will be stored
+	// (`ApiKey.scope`), and ends is when the key stops working, zero for a
+	// key that does not. Each is what the person approving is shown.
+	scope string
+	ends  time.Time
 
 	// delegate is that what is asked for is a delegation issued to `app`,
 	// for it to act as the person at roster, and not a key.
@@ -214,6 +222,8 @@ type asking struct {
 	name     string
 	app      string
 	methods  []string
+	scope    string
+	ends     time.Time
 	delegate bool
 	expires  time.Time
 }
@@ -229,7 +239,7 @@ func (d *devices) waiting(user, tenant string) (asking, bool) {
 		return asking{}, false
 	}
 
-	return asking{name: v.name, app: v.app, methods: v.methods, delegate: v.delegate, expires: v.expires}, true
+	return asking{name: v.name, app: v.app, methods: v.methods, scope: v.scope, ends: v.ends, delegate: v.delegate, expires: v.expires}, true
 }
 
 // claim takes the row a `user_code` names for one answer, so that a second
@@ -403,6 +413,24 @@ func (a *App) offered(w http.ResponseWriter) bool {
 // `allow` is roster's methods: an app's page that writes for its
 // administrator asks this way, and presents what it is handed beside its own
 // key in `roster-as`. So `app` is required, and refused at once without one.
+//
+// # A key's scope and its end
+//
+// A key for an app may carry the app's own word about it, `scope` -- an
+// identifier of a row of the app's that lists what the key reaches there
+// (`ApiKey.scope`) -- and an end, `date_expired`, as `ApiKeyService/Issue`
+// takes them. Both are refused here as `Issue` refuses them, before anybody is
+// asked to approve what roster would refuse, and both are shown to the person
+// approving. A key asked for without an end never ends, as before.
+//
+// # A field it does not know is refused
+//
+// It was dropped: a body naming `scopes` was a key with no scope, minted as
+// though it were what was asked for, which is a key wider than its client
+// meant at the app that reads it. So a field that is none of these is refused,
+// naming it. A delegation takes neither a scope nor an end: what it is narrowed
+// to is roster's methods, and it lasts `delegation.life`, which is what the
+// person approving is told.
 func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 	if !a.offered(w) {
 		return
@@ -415,12 +443,18 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var in struct {
-		Name     string   `json:"name"`
-		App      string   `json:"app"`
-		Allow    []string `json:"allow"`
-		Delegate bool     `json:"delegate"`
+		Name        string   `json:"name"`
+		App         string   `json:"app"`
+		Allow       []string `json:"allow"`
+		Scope       string   `json:"scope"`
+		DateExpired string   `json:"date_expired"`
+		Delegate    bool     `json:"delegate"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 8<<10)).Decode(&in); err != nil {
+	if err := strictly(http.MaxBytesReader(w, r.Body, 8<<10), &in); err != nil {
+		if name, ok := unknownField(err); ok {
+			http.Error(w, fmt.Sprintf("%s: this request has no such field", name), http.StatusBadRequest)
+			return
+		}
 		http.Error(w, "a name and what to allow", http.StatusBadRequest)
 		return
 	}
@@ -443,6 +477,43 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 	if in.Delegate && strings.TrimSpace(in.App) == "" {
 		http.Error(w, "app: a delegation is issued to an app; name the one that is to act for you", http.StatusBadRequest)
 		return
+	}
+	if in.Delegate && in.Scope != "" {
+		http.Error(w, "scope: a delegation carries none; a scope is the word of the app a key is for", http.StatusBadRequest)
+		return
+	}
+	if in.Delegate && in.DateExpired != "" {
+		http.Error(w, "date_expired: a delegation lasts delegation.life, which is what the person approving is told", http.StatusBadRequest)
+		return
+	}
+
+	// The scope as `Issue` holds it, said again here because this is a
+	// consumer and reaches roster over the wire (`server/core`, `keyScoped`):
+	// so a terminal is refused before somebody approves what would be.
+	if in.Scope != "" && strings.TrimSpace(in.App) == "" {
+		http.Error(w, "scope: this key is roster's own and for no app, so no app is there to read a scope; a scope is the word of the app a key is for, and nothing here reads it", http.StatusBadRequest)
+		return
+	}
+	if n := len(in.Scope); n > maxKeyScope {
+		http.Error(w, fmt.Sprintf("scope: at most %d bytes, and this is %d", maxKeyScope, n), http.StatusBadRequest)
+		return
+	}
+
+	// And the end as `Issue` holds it. Nothing in a deployment's file bounds
+	// how long a key lives, so a key may end whenever it is asked to after
+	// now; roster asks it again when the key is minted.
+	var ends time.Time
+	if in.DateExpired != "" {
+		v, err := time.Parse(time.RFC3339, in.DateExpired)
+		if err != nil {
+			http.Error(w, "date_expired: when the key stops working, as RFC 3339 writes a time", http.StatusBadRequest)
+			return
+		}
+		if !v.After(time.Now()) {
+			http.Error(w, "date_expired: a key cannot have already expired", http.StatusBadRequest)
+			return
+		}
+		ends = v
 	}
 
 	code, err := arrives.Nonce()
@@ -476,8 +547,13 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 			// and roster does not tell an app's holder from a person's. The
 			// person approving is shown the name that was asked for, and one
 			// that is nobody is refused there ([App.deviceApprove]).
-			app:      strings.TrimSpace(in.App),
-			methods:  in.Allow,
+			app:     strings.TrimSpace(in.App),
+			methods: in.Allow,
+
+			// As it will be stored, and read by nothing here: the app's own
+			// word, shown to whoever approves it as it was sent.
+			scope:    in.Scope,
+			ends:     ends,
 			delegate: in.Delegate,
 			expires:  time.Now().Add(deviceFor),
 		})
@@ -618,6 +694,15 @@ func (a *App) devicePending(w http.ResponseWriter, r *http.Request) {
 		"delegate": v.delegate,
 		"expires":  v.expires.UTC().Format(time.RFC3339),
 	}
+	if !v.delegate {
+		// The app's word about the key as it will be stored, empty for none,
+		// and when the key ends, absent for one that does not: each is part
+		// of what they approve.
+		out["scope"] = v.scope
+		if !v.ends.IsZero() {
+			out["date_expired"] = v.ends.UTC().Format(time.RFC3339)
+		}
+	}
 	if v.delegate {
 		// How long it would last, in seconds, which is how long the yes
 		// mints it for: the page says for how long, and until when from the
@@ -674,11 +759,17 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A field it does not know is refused, as at the beginning: `denied`
+	// for `deny` was a yes, and minted a key somebody meant to refuse.
 	var in struct {
 		UserCode string `json:"user_code"`
 		Deny     bool   `json:"deny"`
 	}
-	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 4<<10)).Decode(&in); err != nil {
+	if err := strictly(http.MaxBytesReader(w, r.Body, 4<<10), &in); err != nil {
+		if name, ok := unknownField(err); ok {
+			http.Error(w, fmt.Sprintf("%s: this request has no such field", name), http.StatusBadRequest)
+			return
+		}
 		http.Error(w, "user_code", http.StatusBadRequest)
 		return
 	}
@@ -726,6 +817,10 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 		Holder:  rstr.HolderRef_builder{Id: who.Bytes()}.Build(),
 		Alias:   name,
 		Methods: v.methods,
+		Scope:   v.scope,
+	}
+	if !v.ends.IsZero() {
+		req.DateExpired = timestamppb.New(v.ends)
 	}
 	if v.app != "" {
 		// For the app the terminal named, by its alias in this tenant: the
@@ -754,6 +849,11 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 			// The app the terminal named is nobody here: the words a name
 			// nobody serves is refused in.
 			http.Error(w, "no operator here serves this name", http.StatusNotFound)
+		case codes.InvalidArgument:
+			// What the terminal asked for, refused as `Issue` refuses it: an
+			// end that has passed while the code waited, say. In roster's
+			// words, which name the field.
+			http.Error(w, status.Convert(err).Message(), http.StatusBadRequest)
 		default:
 			http.Error(w, "the key could not be made", http.StatusInternalServerError)
 		}
@@ -767,6 +867,37 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	w.Header().Set("cache-control", "no-store")
 	_ = json.NewEncoder(w).Encode(map[string]any{"name": name})
+}
+
+// maxKeyScope is the most bytes a key's scope is, roster's bound
+// (`server/core`, `MaxKeyScope`) said again by a consumer that cannot import
+// it, so that a terminal is refused before anybody approves it. roster holds
+// it to its own when the key is minted, so the two disagreeing is a refusal
+// after the yes and never a key past the bound.
+const maxKeyScope = 256
+
+// strictly reads a JSON body into `v` and refuses a field `v` does not have,
+// which the decoder would otherwise drop ([App.deviceBegin]).
+func strictly(r io.Reader, v any) error {
+	d := json.NewDecoder(r)
+	d.DisallowUnknownFields()
+
+	return d.Decode(v)
+}
+
+// unknownField is the name of the field a [strictly] read refused, as the
+// body wrote it. The decoder says it in a sentence and in no type of its own.
+func unknownField(err error) (string, bool) {
+	rest, ok := strings.CutPrefix(err.Error(), "json: unknown field ")
+	if !ok {
+		return "", false
+	}
+	name, uerr := strconv.Unquote(rest)
+	if uerr != nil {
+		return "", false
+	}
+
+	return name, true
 }
 
 // delegationLife is how long a delegation this app asks for lives, and

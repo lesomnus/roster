@@ -55,6 +55,7 @@ Three notes about the list itself:
 | **a continuation** (378) | what a half-finished sign-in is: roster's, short-lived, single-use. The app holds no half-signed-in state; `POST /session/continue` hands the continuation back |
 | **a session** | a cookie an **app** holds for a browser, never roster's to mint for somebody else's app. `payday/auth/authsession`; roster mints one only for its own consoles (`AuthService`) |
 | **`sub`** | the `Holder.id` in a token. Globally unique, so a relying party keys on it **alone** -- `authoidc.Subject` is the whole of that decision |
+| **a key's scope** | `ApiKey.scope`: the word of the app a key is for, given at the mint and answered to that app by `Introspect` -- an identifier of a row of the app's that lists what the key reaches there. roster keeps it and reads none of it ([apps.md](apps.md) § *A key that reaches some of the app's rows*). Not a connection's `scopes`, which are what an identity provider is asked for at a sign-in, and not payday's `Frame.Scope`, which is the rows the wall lets a call reach |
 
 ## The apps
 

@@ -162,6 +162,11 @@ type bearer struct {
 	// The app a key is spent at, as the holder that app is answered as, and
 	// empty for one of roster's own and for a delegation (`ApiKey.app`).
 	App []byte
+
+	// The app's own word about a key, as it was given when the key was
+	// minted, and empty for one that carries none and for a delegation
+	// (`ApiKey.scope`). Carried to the answer and read by nothing here.
+	Scope string
 }
 
 // ForRoster is whether this is a credential roster itself takes: a key of
@@ -204,6 +209,7 @@ func findKey(ctx context.Context, s app.Server, token string) (*bearer, error) {
 		Methods: v.GetMethods(),
 		Expires: expiryOf(v),
 		App:     v.GetApp().GetId(),
+		Scope:   v.GetScope(),
 	}, nil
 }
 

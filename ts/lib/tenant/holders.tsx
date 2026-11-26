@@ -629,7 +629,13 @@ function Keys(props: {
 								    than the person it hangs off, so this is how
 								    much narrower it was made -- which is the only
 								    thing worth reading before revoking one. */}
-								<td className="mono">{v.methods.join(', ')}</td>
+								{/* And the app's own word about it, its scope, where
+								    it has one: what the app narrows it to, which
+								    roster keeps and does not read. */}
+								<td className="mono">
+									{v.methods.join(', ')}
+									{v.scope !== '' && <span className="none"> · scope at the app: {v.scope}</span>}
+								</td>
 								<td className={v.dateExpired === undefined ? 'none' : ''}>{until(v.dateExpired)}</td>
 								<td>
 									{v.dateUsed === undefined ? (

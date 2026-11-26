@@ -357,6 +357,11 @@ func lookup(ctx context.Context, s app.Server, token string) (*app.ApiKey, error
 			// And the app it is spent at, which decides where it is a
 			// credential at all (`ApiKey.app`): see [Store].
 			App: app.HolderSelect_builder{}.Build(),
+
+			// And the app's word about it, which [Service] answers that app
+			// and [Store] does not use: a key presented to roster is one of
+			// roster's, which carries none.
+			Scope: z.Ptr(true),
 		}.Build(),
 	}.Build())
 	if err != nil {

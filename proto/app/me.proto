@@ -335,6 +335,12 @@ message SignInKey {
   // The app's alias in the tenant, beside `app` as `MeTeam` says `site_alias`
   // beside `site`: what a screen draws, `@loft`. Empty for a key of roster's.
   string app_alias = 17;
+
+  // The app's own word about the key, as it was given when the key was
+  // minted, and empty for one that carries none (`ApiKey.scope`). roster does
+  // not read it; it is said here so that whoever lists the key sees what it
+  // was said to be narrowed to at the app.
+  string scope = 18;
 }
 
 // SignInIdentity is one way somebody arrives from outside.

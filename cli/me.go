@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/lesomnus/roster/cmd"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -142,6 +143,12 @@ func newCmdMeGet(c *cmd.Config) *xli.Command {
 				of := ""
 				if w.GetAppAlias() != "" {
 					of = "\tapp=@" + w.GetAppAlias()
+				}
+				// And the app's word about it, quoted, since it is the app's
+				// and may hold anything (`SignInKey.scope`); nothing for a key
+				// that carries none.
+				if w.GetScope() != "" {
+					of += "\tscope=" + strconv.Quote(w.GetScope())
 				}
 				cl.Printf("%s\t%s\t%s%s\t%s\n", "key", w.GetAlias(), j, of, strings.Join(w.GetMethods(), ","))
 			}
