@@ -6,6 +6,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"testing"
 
 	"github.com/lesomnus/roster/login"
@@ -298,6 +299,13 @@ type issuer struct {
 	methods    []string
 	afterOut   string // where an end-session with no session lands
 	toForm     string // where an authorize lands
+
+	// What Hydra refuses before it decides where to send a browser, which it
+	// answers at the client's own redirect: a flow with no PKCE challenge
+	// where it enforces PKCE, and a code flow for a client in `refuses` -- one
+	// registered for the device grant alone.
+	pkce    bool
+	refuses []string
 }
 
 func serving(t *testing.T, v issuer) string {
@@ -319,6 +327,13 @@ func serving(t *testing.T, v issuer) string {
 		http.Redirect(w, r, v.afterOut, http.StatusFound)
 	})
 	m.HandleFunc("GET /oauth2/auth", func(w http.ResponseWriter, r *http.Request) {
+		q := r.URL.Query()
+		if slices.Contains(v.refuses, q.Get("client_id")) ||
+			(v.pkce && (q.Get("code_challenge") == "" || q.Get("code_challenge_method") != "S256")) {
+			http.Redirect(w, r, q.Get("redirect_uri")+"?error=invalid_request", http.StatusFound)
+
+			return
+		}
 		http.Redirect(w, r, v.toForm, http.StatusFound)
 	})
 
@@ -551,5 +566,83 @@ func TestDoctorCountsNoLoopbackAddressAsATenant(t *testing.T) {
 		x.Equal("app", found[0].About)
 		x.Contains(found[0].What, "no tenant answers at any of its redirect_uris")
 		x.Contains(found[0].What, "a loopback address names none")
+	})
+}
+
+// TestDoctorProbesUrlsLoginWithAClientHydraWillAnswer: where Hydra sends a
+// browser to sign in is asked by starting a flow, and the flow was started
+// for the first client by id that had a redirect, with no PKCE challenge. A
+// public client under enforced PKCE, or one of the device grant alone, is
+// refused by Hydra before it decides where to send anybody, at the client's
+// own redirect -- so with such a client first a `urls.login` that pointed
+// nowhere passed: answered nothing; right is Broken.
+//
+// The client is one with the `authorization_code` grant and a redirect, the
+// flow carries an S256 challenge so that a public client and a deployment
+// that enforces PKCE for every client are answered as a confidential one is,
+// and where no client can start such a flow the check is said not to have
+// been made rather than passed.
+func TestDoctorProbesUrlsLoginWithAClientHydraWillAnswer(t *testing.T) {
+	nowhere := func() issuer {
+		v := well()
+		v.toForm = "https://issuer.test/oauth2/fallbacks/error?error=x"
+		v.refuses = []string{"a-device"}
+
+		return v
+	}
+	public := func() map[string]any {
+		v := good()
+		v["client_id"] = "a-cli"
+		v["token_endpoint_auth_method"] = login.PublicAuthMethod
+
+		return v
+	}
+	aDevice := func() map[string]any {
+		v := device()
+		v["client_id"] = "a-device"
+
+		return v
+	}
+
+	for _, tc := range []struct {
+		name string
+		have map[string]map[string]any
+		pkce bool
+	}{
+		{"the first client is public, and PKCE is enforced", map[string]map[string]any{"a-cli": public()}, true},
+		{"the first client is a device's", map[string]map[string]any{"a-device": aDevice(), "app": good()}, false},
+		{"PKCE is enforced for every client", map[string]map[string]any{"app": good()}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			x := require.New(t)
+
+			v := nowhere()
+			v.pkce = tc.pkce
+			found, err := login.Doctor(context.Background(), clients(t, tc.have), serving(t, v), nil, at_(t, "app.test", "contoso"))
+			x.NoError(err)
+
+			var said []string
+			for _, f := range found {
+				if f.About == "" {
+					said = append(said, f.Severity.String()+" "+f.What)
+				}
+			}
+			x.Equal([]string{"broken urls.login does not point at this app"}, said)
+		})
+	}
+
+	t.Run("only a device client", func(t *testing.T) {
+		x := require.New(t)
+
+		v := well()
+		v.refuses = []string{"a-device"}
+		found, err := login.Doctor(context.Background(), clients(t, map[string]map[string]any{"a-device": aDevice()}),
+			serving(t, v), nil, at_(t, "app.test", "contoso"))
+		x.NoError(err)
+		x.Len(found, 1, "%+v", found)
+		x.Equal(login.Fragile, found[0].Severity)
+		x.Empty(found[0].About)
+		x.Contains(found[0].What, "urls.login")
+		x.Contains(found[0].What, "not checked")
 	})
 }
