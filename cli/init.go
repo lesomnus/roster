@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/payday/trail"
 
 	"github.com/lesomnus/roster/cmd"
+	app "github.com/lesomnus/roster/rstr"
 )
 
 // NewCmdInit is `roster init`: the person who runs this deployment, and the
@@ -104,7 +105,9 @@ import (
 // Not a second run. A deployment that declares resources has `serve` write
 // rows on the control plane before anybody ran this -- the provisioner, and
 // the role it holds -- and `deploy/` is that deployment. The operator is bound
-// to the role that is there (#268).
+// to the role that is there (#268). Such a file may declare tenants as well,
+// so what this says last is the customers that are there, not that there are
+// none.
 func NewCmdInit(c *cmd.Config) *xli.Command {
 	return &xli.Command{
 		Name:  "init",
@@ -245,20 +248,74 @@ func NewCmdInit(c *cmd.Config) *xli.Command {
 				cl.Printf("%s\n", v.Password)
 			}
 
-			// And the next thing to do, because there is one and it is no
-			// longer this command's.
+			// And the customers, as they are.
 			//
 			// A deployment with no customers is the correct state to be left
 			// in: a tenant is a customer, and one written by `init` was a
 			// customer nobody asked for. What replaces it is the admin console, where
 			// the first one is made the same way the hundredth is.
-			say("\nthere are no customers yet, which is the right state to start in.\n")
-			say("the admin console makes the first one -- a tenant, somebody in it, and the\n")
-			say("role that lets them administer it. see docs/operating.md.\n")
+			//
+			// It is not the only state `init` meets. A deployment whose file
+			// declares a tenant has it from `serve`'s first start, before
+			// anybody ran this, and `deploy/` is that deployment: this said
+			// there were none, and that the admin console makes the first, to an
+			// operator who had one. So it looks, and says what is there.
+			declared, made, err := customers(ctx, s)
+			if err != nil {
+				return err
+			}
+			switch n := declared + made; {
+			case n == 0:
+				say("\nthere are no customers yet, which is the right state to start in.\n")
+				say("the admin console makes the first one -- a tenant, somebody in it, and the\n")
+				say("role that lets them administer it. see docs/operating.md.\n")
+			case made == 0:
+				say("\n%s already, declared by the resources serve applies.\n", thereAre(n))
+			case declared == 0:
+				say("\n%s already, made before init.\n", thereAre(n))
+			default:
+				say("\n%s already: %d declared by the resources serve applies, and %d made before init.\n", thereAre(n), declared, made)
+			}
 
 			return nil
 		}),
 	}
+}
+
+// customers is how many tenants the data plane holds: those a file declared,
+// which carry [cmd.Declared], and the rest, made before `init` ran.
+func customers(ctx context.Context, s *cmd.Server) (declared, made int, err error) {
+	after := ""
+	for {
+		vs, err := s.Ungated.Tenant().List(ctx, app.TenantListRequest_builder{
+			Size:  100,
+			After: after,
+		}.Build())
+		if err != nil {
+			return 0, 0, fmt.Errorf("the customers there are: %w", err)
+		}
+
+		for _, v := range vs.GetItems() {
+			if _, ok := v.GetLabels()[cmd.Declared]; ok {
+				declared++
+			} else {
+				made++
+			}
+		}
+
+		if after = vs.GetNext(); after == "" {
+			return declared, made, nil
+		}
+	}
+}
+
+// thereAre is `there is 1 customer` or `there are n customers`.
+func thereAre(n int) string {
+	if n == 1 {
+		return "there is 1 customer"
+	}
+
+	return fmt.Sprintf("there are %d customers", n)
 }
 
 // needsControl is the refusal of a command that would leave a deployment with

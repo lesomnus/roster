@@ -612,6 +612,7 @@ writes anybody would use.
 | | written in | held to it by |
 | --- | --- | --- |
 | A deployment's first operator is bound every method, on the control plane | `cmd/init.go` | `TestInitSeedsAnOperator` |
+| `roster init` says the customers there are: none, and that the admin console makes the first; or how many, which a file declared and which were made before it | `cli/init.go` | `TestInitSaysTheCustomersThatAreThere` |
 | A tenant is made with `admin` in it, a role `everything` that holds every method and is bound to them, and a role `self-service` that nobody is bound | `server/core/tenant.go` | `TestATenantIsMadeWithSomebodyWhoCanAdministerIt` · `TestWhatSomebodyDoesToTheirOwnAccountNeedsNoRole` |
 | **Whoever makes a group manages it**: somebody of the tenant who makes a group is put in it, holding the tenant's `group-manager` role there. A group the deployment makes has no manager | `server/core/group.go` | `TestWhoeverMakesAGroupManagesIt` |
 | The tenant's `group-manager` role is made the first time a group needs it, and one that is there already is used as it stands -- or refused, where it names what a manager may not hold | `server/core/group.go` | `TestATenantsOwnManagersRoleIsTheOneAMakerHolds` |
