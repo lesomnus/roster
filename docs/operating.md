@@ -950,6 +950,33 @@ with `recover: false`: that is the tenant's configuration and says nothing about
 anybody. The confirmation and deletion links are asked for by somebody signed
 in, and a failure is said to them as *cannot send*.
 
+**Somebody who holds a role of roster's is not given a password by mail.** A
+front door writes no credential of somebody who holds more than its own role
+does ([usage/rules.md](usage/rules.md)), and a mailbox is not to become an
+administrator's password. Their link is mailed as anybody's is, so the form
+still says nothing about who is here, and the page it opens answers `403`:
+*A new password could not be given through this page*, nothing has changed and
+the link is used up, and an administrator of their organisation gives them a
+new one -- at the admin console, on their panel, or with `roster vouch reset`
+([usage/ways-in.md](usage/ways-in.md) § *A password*) -- or the operator does.
+The link is spent by then: roster cannot tell what a link is spent for before
+it is.
+
+The same page answers two faults of the deployment, since roster refuses all
+three with one code and the page says nothing it could not say of each. The
+account app's log says which, in roster's own sentence, on the line
+`account: no password after redeem at <tenant>: …`:
+
+- `holder: they hold <a method> and you do not, so you may not write their
+  credential` is the rule above, and is meant: the person is given a password
+  by an administrator.
+- `this server cannot say what anybody holds, so it will not let you write
+  their credential` is a roster wired without what the rule reads, which the
+  shipped build is not.
+- Anything else is the app's own key refused `CredentialService/Issue`: its
+  role is not the one `roster account provision` writes, and is to be made
+  again.
+
 **A recovery followed ends the links before it.** Somebody who asked three
 times has three links, and each works until one is followed: that one hands
 over a password, a password issued signs them out everywhere, and a link roster

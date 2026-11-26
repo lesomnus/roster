@@ -1593,6 +1593,23 @@ func (a *App) redeem(w http.ResponseWriter, r *http.Request) {
 		reset, err := a.roster.Credential().Issue(as, rstr.CredentialIssueRequest_builder{
 			Holder: rstr.HolderRef_builder{Id: res.GetVerified().GetHolder()}.Build(),
 		}.Build())
+		if status.Code(err) == codes.PermissionDenied {
+			// Refused, and not failed. Most often it is the rule about a way
+			// in: they hold a role of roster's this front door does not, and
+			// a front door writes no credential of somebody who holds more
+			// than it (`server/core/escalate.go`, `mayReach`), so a mailbox
+			// does not become such an account's password. But roster says no
+			// more than the code, and the same code is this app's own key not
+			// allowed `CredentialService/Issue`, or a roster that cannot say
+			// what anybody holds; so the page says what is true of all three,
+			// and why is the log's, in the server's sentence
+			// (`docs/operating.md`). The link is spent by now: `Vouch.Redeem`
+			// cannot know a password is what it is spent for, and this app
+			// cannot ask before it is.
+			fmt.Fprintf(os.Stderr, "account: no password after redeem at %s: %v\n", t.alias, err)
+			page(w, http.StatusForbidden, notByMail)
+			return
+		}
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "account: reset after redeem at %s: %v\n", t.alias, err)
 			http.Error(w, "the link is good and the password could not be made; ask an operator", http.StatusInternalServerError)
@@ -2164,6 +2181,16 @@ const noSecond = `<!doctype html><meta charset="utf-8"><title>not recovered</tit
 <h1>This account is not recovered by mail</h1>
 <p>It asks for a second proof when somebody signs in, and a link in a message is not one. Nothing has changed: your password is the one you had.</p>
 <p>Whoever administers your organisation can give you a new password.</p></main>`
+
+// What a recovery link ends at where roster refused this app the password:
+// for somebody who holds a role of roster's that this front door does not,
+// and for the two faults of a deployment that answer the same code. True of
+// all three, and so it says what happened and who mends it, and not why.
+const notByMail = `<!doctype html><meta charset="utf-8"><title>not recovered</title>
+<main style="font-family:system-ui;max-width:32rem;margin:3rem auto;padding:0 1rem">
+<h1>A new password could not be given through this page</h1>
+<p>Nothing has changed: your password is the one you had, and this link is used up.</p>
+<p>An administrator of your organisation gives you a new password -- at the admin console, on your panel, or with <code>roster vouch reset</code> -- and so can the operator of this service.</p></main>`
 
 // The two pages those end at. Plain HTML, because a person arriving from a
 // mail client has no session and the page has one thing to say.
