@@ -124,6 +124,12 @@ type device struct {
 	token  string
 	denied bool
 
+	// refused is roster's sentence where somebody said yes and roster would
+	// not make what was asked for, as the approval page was shown it; empty
+	// is not refused. The code is finished then, and the next poll is told
+	// this and nothing more ([devices.polled]).
+	refused string
+
 	// answering is that somebody's answer is being acted on: the row is taken
 	// for it under the lock and given back, answered or not, under it.
 	answering bool
@@ -210,7 +216,7 @@ func (d *devices) put(code, user string, v *device) (ok, full bool) {
 // nothing. Called with the lock held.
 func (d *devices) row(user, tenant string) (*device, bool) {
 	v, ok := d.byUser[strings.ToUpper(strings.TrimSpace(user))]
-	if !ok || v.tenant != tenant || time.Now().After(v.expires) || v.token != "" || v.denied || v.answering {
+	if !ok || v.tenant != tenant || time.Now().After(v.expires) || v.token != "" || v.denied || v.refused != "" || v.answering {
 		return nil, false
 	}
 
@@ -257,8 +263,9 @@ func (d *devices) claim(user, tenant string) (*device, bool) {
 }
 
 // settle gives a claimed row back: with the key somebody's yes minted, with
-// their no, or with neither, as it was -- an answer that failed leaves the
-// code to be answered again.
+// their no, or with neither, as it was -- an answer that failed for want of
+// this app or of roster, and not because roster refused it, leaves the code
+// to be answered again ([devices.refuse] is the other).
 func (d *devices) settle(v *device, token string, denied bool) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -267,15 +274,27 @@ func (d *devices) settle(v *device, token string, denied bool) {
 	v.token, v.denied = token, denied
 }
 
+// refuse gives a claimed row back finished: somebody said yes and roster
+// would not make it, in the sentence they were shown. No second yes is
+// taken ([devices.row]), and the next poll is told.
+func (d *devices) refuse(v *device, said string) {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	v.answering = false
+	v.refused = said
+}
+
 // polled answers a poll for the row a `device_code` names: the key, once, and
-// the row gone with it; or the RFC's word for why not.
-func (d *devices) polled(code string) (token, why string) {
+// the row gone with it; or the word for why not, and for a refusal roster's
+// sentence.
+func (d *devices) polled(code string) (token, why, said string) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 
 	v, ok := d.byDevice[code]
 	if !ok || time.Now().After(v.expires) {
-		return "", "expired_token"
+		return "", "expired_token", ""
 	}
 
 	soon := time.Since(v.last) < deviceInterval
@@ -285,13 +304,18 @@ func (d *devices) polled(code string) (token, why string) {
 	case v.denied:
 		d.gone(code, v)
 
-		return "", "access_denied"
+		return "", "access_denied", ""
+	case v.refused != "":
+		// Told once, as a key is, and the row goes with it.
+		d.gone(code, v)
+
+		return "", "refused", v.refused
 	case v.token == "":
 		if soon {
-			return "", "slow_down"
+			return "", "slow_down", ""
 		}
 
-		return "", "authorization_pending"
+		return "", "authorization_pending", ""
 	}
 
 	// Once. The row goes with the answer, so a second poll with the same
@@ -299,7 +323,7 @@ func (d *devices) polled(code string) (token, why string) {
 	// somebody else stops being held the moment it is delivered.
 	d.gone(code, v)
 
-	return v.token, ""
+	return v.token, "", ""
 }
 
 // gone takes a row away. Called with the lock held.
@@ -594,7 +618,19 @@ func (a *App) deviceBegin(w http.ResponseWriter, r *http.Request) {
 //
 // The errors are RFC 8628 §3.5's, by name, because that is what a client is
 // written to read: `authorization_pending` means keep going, `slow_down` means
-// keep going more slowly, and the other two are over.
+// keep going more slowly, and `access_denied` and `expired_token` are over.
+//
+// # And one of its own: roster would not make it
+//
+// `refused` is somebody's yes that roster then refused -- a method they do
+// not hold, a name they already use, an app that is nobody, an end that
+// passed while the code waited -- with the sentence the approval page showed
+// as `error_description` (RFC 6749 §5.2's field, which §3.5 inherits), and it
+// is over too. It was `authorization_pending` until the code lapsed, a quarter
+// of an hour after the person had read the refusal. Told apart from
+// `access_denied`, which is the person's own no and carries no sentence; and
+// told whoever holds the device code, as the key would have been, the
+// sentence and nothing more of who approved it or what they hold.
 //
 // # A `POST`, with the code in its body
 //
@@ -622,9 +658,9 @@ func (a *App) devicePoll(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, why := a.devices.polled(in.DeviceCode)
+	token, why, said := a.devices.polled(in.DeviceCode)
 	if why != "" {
-		deviceErr(w, why)
+		deviceErr(w, why, said)
 		return
 	}
 
@@ -633,11 +669,16 @@ func (a *App) devicePoll(w http.ResponseWriter, r *http.Request) {
 	_ = json.NewEncoder(w).Encode(map[string]any{"token": token})
 }
 
-func deviceErr(w http.ResponseWriter, why string) {
+func deviceErr(w http.ResponseWriter, why, said string) {
+	out := map[string]any{"error": why}
+	if said != "" {
+		out["error_description"] = said
+	}
+
 	w.Header().Set("content-type", "application/json")
 	w.Header().Set("cache-control", "no-store")
 	w.WriteHeader(http.StatusBadRequest)
-	_ = json.NewEncoder(w).Encode(map[string]any{"error": why})
+	_ = json.NewEncoder(w).Encode(out)
 }
 
 // devicePending is the page asking what a code it has been given is for, so that
@@ -833,28 +874,32 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 
 	res, err := a.roster.ApiKey().Issue(t.on(as), req.Build())
 	if err != nil {
-		// Not answered: the code waits for another try, or for its clock.
-		a.devices.settle(v, "", false)
 		fmt.Fprintf(os.Stderr, "account: device approve at %s: %v\n", t.alias, err)
 
-		// The two refusals worth telling apart are the rules a person can do
+		// The refusals worth telling apart are the rules a person can do
 		// something about: a method they do not hold themselves, and a name they
-		// have already used. Everything else is this app's problem and says so.
+		// have already used. Each is roster's no to what the terminal asked
+		// for, which a second yes would be answered too, and so it finishes
+		// the code and the terminal is told it ([App.devicePoll]).
 		switch status.Code(err) {
 		case codes.PermissionDenied:
-			http.Error(w, "a terminal cannot be allowed more than you hold", http.StatusForbidden)
+			a.refused(w, v, "a terminal cannot be allowed more than you hold", http.StatusForbidden)
 		case codes.AlreadyExists:
-			http.Error(w, "you already have a key called that", http.StatusConflict)
+			a.refused(w, v, "you already have a key called that", http.StatusConflict)
 		case codes.NotFound:
 			// The app the terminal named is nobody here: the words a name
 			// nobody serves is refused in.
-			http.Error(w, "no operator here serves this name", http.StatusNotFound)
+			a.refused(w, v, "no operator here serves this name", http.StatusNotFound)
 		case codes.InvalidArgument:
 			// What the terminal asked for, refused as `Issue` refuses it: an
 			// end that has passed while the code waited, say. In roster's
 			// words, which name the field.
-			http.Error(w, status.Convert(err).Message(), http.StatusBadRequest)
+			a.refused(w, v, status.Convert(err).Message(), http.StatusBadRequest)
 		default:
+			// Everything else is this app's problem, or roster's for a
+			// moment, and says so; it is no answer to what was asked, so the
+			// code waits for another try, or for its clock.
+			a.devices.settle(v, "", false)
 			http.Error(w, "the key could not be made", http.StatusInternalServerError)
 		}
 
@@ -867,6 +912,14 @@ func (a *App) deviceApprove(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("content-type", "application/json")
 	w.Header().Set("cache-control", "no-store")
 	_ = json.NewEncoder(w).Encode(map[string]any{"name": name})
+}
+
+// refused is roster's no to a yes: the page is answered it in `words`, and
+// the code is finished with the same words, which the terminal's next poll
+// is told ([devices.refuse]).
+func (a *App) refused(w http.ResponseWriter, v *device, words string, code int) {
+	a.devices.refuse(v, words)
+	http.Error(w, words, code)
 }
 
 // maxKeyScope is the most bytes a key's scope is, roster's bound
@@ -928,25 +981,27 @@ func (a *App) deviceDelegate(w http.ResponseWriter, t *tenant, as context.Contex
 		DateExpired: timestamppb.New(time.Now().Add(a.delegationLife())),
 	}.Build())
 	if err != nil {
-		a.devices.settle(v, "", false)
 		fmt.Fprintf(os.Stderr, "account: device approve (a delegation) at %s: %v\n", t.alias, err)
 
+		// Each refusal is roster's no, which a second yes would be answered
+		// too, and finishes the code as a key's does ([App.deviceApprove]).
 		switch status.Code(err) {
 		case codes.InvalidArgument:
 			if strings.HasPrefix(status.Convert(err).Message(), "date_expired") {
-				http.Error(w, "this front door would let the app act as you for longer than roster allows, so nothing was made; tell whoever runs it", http.StatusConflict)
+				a.refused(w, v, "this front door would let the app act as you for longer than roster allows, so nothing was made; tell whoever runs it", http.StatusConflict)
 				return
 			}
 			if strings.Contains(status.Convert(err).Message()+fmt.Sprint(status.Convert(err).Details()), "came through") {
-				http.Error(w, "the app named is this front door, which does not hand itself a delegation", http.StatusBadRequest)
+				a.refused(w, v, "the app named is this front door, which does not hand itself a delegation", http.StatusBadRequest)
 				return
 			}
-			http.Error(w, "the app named is you; an app acts for you, and you are not one", http.StatusBadRequest)
+			a.refused(w, v, "the app named is you; an app acts for you, and you are not one", http.StatusBadRequest)
 		case codes.PermissionDenied:
-			http.Error(w, "an app cannot be allowed to act as you for more than you may call", http.StatusForbidden)
+			a.refused(w, v, "an app cannot be allowed to act as you for more than you may call", http.StatusForbidden)
 		case codes.NotFound:
-			http.Error(w, "no operator here serves this name", http.StatusNotFound)
+			a.refused(w, v, "no operator here serves this name", http.StatusNotFound)
 		default:
+			a.devices.settle(v, "", false)
 			http.Error(w, "the delegation could not be made", http.StatusInternalServerError)
 		}
 

@@ -150,11 +150,18 @@ func TestAnAppAsksToActForSomebodyAndTheyApproveIt(t *testing.T) {
 	t.Run("asking more than she may call is refused, in a delegation's words", func(t *testing.T) {
 		x := require.New(t)
 
-		code, body, _, user := begin(`{"name":"loft","app":"loft","delegate":true,"allow":["/roster.HolderService/Erase"]}`)
+		code, body, device, user := begin(`{"name":"loft","app":"loft","delegate":true,"allow":["/roster.HolderService/Erase"]}`)
 		x.Equal(http.StatusOK, code, body)
 		code, body = her.do(t, http.MethodPost, "/device/approve", `{"user_code":"`+user+`"}`, nil)
 		x.Equal(http.StatusForbidden, code, body)
 		x.Contains(body, "act as you")
+
+		// The app's poll is told the same sentence, and the code is over.
+		code, body = asked(t, app, device)
+		x.Equal(http.StatusBadRequest, code, body)
+		x.JSONEq(`{"error":"refused","error_description":"an app cannot be allowed to act as you for more than you may call"}`, body)
+		code, body = her.do(t, http.MethodPost, "/device/approve", `{"user_code":"`+user+`"}`, nil)
+		x.Equal(http.StatusNotFound, code, body)
 	})
 
 	t.Run("a front door told a longer life than roster's is refused at the yes, and nothing is minted", func(t *testing.T) {
@@ -190,9 +197,16 @@ func TestAnAppAsksToActForSomebodyAndTheyApproveIt(t *testing.T) {
 		for _, d := range ds.GetItems() {
 			x.NotEqual(lft.GetId(), d.GetIssuedTo(), "a delegation was minted for Loft")
 		}
+		// And the app's poll is told, in the sentence she was shown, and
+		// handed nothing.
 		code, body = asked(t, term, v.DeviceCode)
 		x.Equal(http.StatusBadRequest, code, body)
-		x.Contains(body, "authorization_pending", "a delegation was handed over")
+		var told map[string]any
+		x.NoError(json.Unmarshal([]byte(body), &told), body)
+		x.Equal(map[string]any{
+			"error":             "refused",
+			"error_description": "this front door would let the app act as you for longer than roster allows, so nothing was made; tell whoever runs it",
+		}, told, "a delegation was handed over, or the refusal was not told")
 	})
 
 	t.Run("a front door told no life offers no delegation, and says so at once", func(t *testing.T) {

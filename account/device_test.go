@@ -155,7 +155,8 @@ func TestATerminalNobodyApprovesGetsNothing(t *testing.T) {
 // Nothing about the flow re-implements it: the key is minted **as** the person by
 // `ApiKey.Issue`, so *nobody hands out a method they do not hold* is enforced
 // where it always was. What this pins is that the refusal reaches the screen as a
-// refusal rather than as a terminal that waits for ever.
+// refusal, and the terminal as one, rather than as a terminal that waits for
+// ever.
 func TestATerminalIsNeverAllowedMoreThanWhoeverApprovesIt(t *testing.T) {
 	x := require.New(t)
 
@@ -183,10 +184,12 @@ func TestATerminalIsNeverAllowedMoreThanWhoeverApprovesIt(t *testing.T) {
 	x.Equal(http.StatusForbidden, code, body)
 	x.Contains(body, "more than you hold")
 
-	// And the terminal is still waiting rather than holding half a flow: an
-	// approval that was refused did not spend the code, so she can be given the
-	// method and try again.
-	x.Equal("authorization_pending", polls(t, term, began.DeviceCode))
+	// And the terminal is told, rather than left waiting: roster's no finishes
+	// the code. It was left waiting, so that she could be given the method and
+	// say yes again -- and the terminal, or an app's page, drew *waiting* for a
+	// quarter of an hour to somebody who had read the refusal. Given the
+	// method, she approves a code begun again.
+	x.Equal("refused", polls(t, term, began.DeviceCode))
 }
 
 // TestTheCommandWalksTheFlowItPrints runs `cli`'s half of this against the app's
