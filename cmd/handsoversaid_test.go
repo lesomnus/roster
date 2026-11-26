@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -13,6 +14,7 @@ import (
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/keys"
 )
 
 // handsOverSaidRun is one invocation at alice's shell over the wire, and the
@@ -169,6 +171,125 @@ func TestATerminalSaysWhatARoleOrABindingHandsOver(t *testing.T) {
 		v := map[string]any{}
 		x.NoError(json.Unmarshal([]byte(out), &v), "%q", out)
 		x.Equal("stopper", v["alias"])
+	})
+}
+
+// TestAGrantOfAllOfRosterIsToldOnce: a role naming `/roster.*/*` is one note
+// at the terminal, of what that pattern is, and a narrower one is a note of
+// each grant it covers, naming the methods of the grant.
+//
+// # What it was
+//
+// `/roster.*/*` covers every entry of `docs/usage/wide-grants.md`, and was
+// answered every one: twenty notes on 61 lines of standard error for binding
+// the tenant's administrator, every time, each saying `/roster.*/*` *reads
+// as "may manage somebody's keys…"*, which is not what it reads as. The page
+// says what it is -- the tenant -- and the other nineteen spell out parts of
+// what whoever bound it already knows they gave. And a service's pattern was
+// said to read as each grant it covers: `/roster.CredentialService/*` *reads
+// as "may manage somebody's keys, password or addresses"*, where the grant is
+// three of its methods.
+//
+// The flood was what was wrong, not the notes, so nothing silences them: a
+// grant of everything says so once, with how many grants it holds, and every
+// other grant says each one as before.
+func TestAGrantOfAllOfRosterIsToldOnce(t *testing.T) {
+	b := cliUp(t, "/roster.*/*")
+
+	// The page shows what is printed, and is held to it here.
+	page, err := os.ReadFile(filepath.Join("..", "docs", "usage", "wide-grants.md"))
+	require.NoError(t, err)
+
+	notes := func(said string) []string {
+		var out []string
+		for _, p := range strings.Split(said, "\nNOTE: ")[1:] {
+			out = append(out, "NOTE: "+p)
+		}
+		return out
+	}
+
+	t.Run("all of roster is one note, of what it is", func(t *testing.T) {
+		x := require.New(t)
+
+		_, said, err := handsOverSaidRun(t, &b.Hers, "role", "add", "@newco/admins2", `{"methods":["/roster.*/*"]}`)
+		x.NoError(err)
+		x.Equal("\nNOTE: `/roster.*/*` reads as \"every method roster serves\", and is every one a later release adds too, "+
+			"the day it is added: all 19 other grants on the page, across the tenant, which is the tenant itself, "+
+			"as `everything` holds it.\n  docs/usage/wide-grants.md#a-pattern\n", said)
+		x.Contains(string(page), strings.TrimPrefix(said, "\n"), "docs/usage/wide-grants.md shows another note")
+
+		// And bound, where the tenant's administrator is made.
+		_, said, err = handsOverSaidRun(t, &b.Hers, "binding", "add",
+			`{"role":{"slug":{"alias":"admins2","tenant":{"alias":"newco"}}},`+
+				`"holder":{"slug":{"alias":"bob","tenant":{"alias":"newco"}}}}`)
+		x.NoError(err)
+		x.Len(notes(said), 1, "%s", said)
+		x.Contains(said, "docs/usage/wide-grants.md#a-pattern")
+	})
+
+	t.Run("a service's pattern names the methods of each grant it covers", func(t *testing.T) {
+		x := require.New(t)
+
+		_, said, err := handsOverSaidRun(t, &b.Hers, "role", "add", "@newco/passwords", `{"methods":["/roster.CredentialService/*"]}`)
+		x.NoError(err)
+		x.Equal([]string{
+			"NOTE: `/roster.CredentialService/Issue`, `/roster.CredentialService/Enrol`, `/roster.CredentialService/Unlock` " +
+				"(named by `/roster.CredentialService/*`) reads as \"may manage somebody's keys, password or addresses\", " +
+				"and is a way into the account of anybody of the tenant who holds no more than whoever is given it -- " +
+				"which, given to two people, is each other.\n  docs/usage/wide-grants.md#a-persons-verb-across-the-tenant\n",
+			"NOTE: `/roster.CredentialService/*` reads as \"the methods a service has today\", and is every method it " +
+				"covers, and every one a later release adds, the day it is added.\n  docs/usage/wide-grants.md#a-pattern\n",
+		}, notes(said))
+		x.NotContains(said, "`/roster.CredentialService/*` reads as \"may manage")
+		for _, n := range notes(said) {
+			x.Contains(string(page), strings.TrimPrefix(n, "NOTE: "), "docs/usage/wide-grants.md shows another note")
+		}
+	})
+
+	t.Run("one method is the grant it is", func(t *testing.T) {
+		x := require.New(t)
+
+		_, said, err := handsOverSaidRun(t, &b.Hers, "role", "add", "@newco/stopper", `{"methods":["/roster.HolderService/Disable"]}`)
+		x.NoError(err)
+		x.Equal([]string{
+			"NOTE: `/roster.HolderService/Disable` reads as \"may suspend an account, sign somebody out everywhere, or " +
+				"erase them\", and is anybody's of the tenant, wider than whoever is given it included: an " +
+				"administrator's keys and sessions stop at once.\n  docs/usage/wide-grants.md#holderservicedisable\n",
+		}, notes(said))
+	})
+
+	t.Run("a list naming two grants is the two", func(t *testing.T) {
+		x := require.New(t)
+
+		_, said, err := handsOverSaidRun(t, &b.Hers, "role", "add", "@newco/front",
+			`{"methods":["/roster.VouchService/Link","/roster.AuditService/List","/roster.HolderService/Get"]}`)
+		x.NoError(err)
+		got := notes(said)
+		x.Len(got, 2, "%s", said)
+		x.True(strings.HasPrefix(got[0], "NOTE: `/roster.VouchService/Link` reads as \"may send recovery links\""), got[0])
+		x.True(strings.HasPrefix(got[1], "NOTE: `/roster.AuditService/List` reads as \"may read the audit log\""), got[1])
+	})
+
+	t.Run("and a key is told the same way", func(t *testing.T) {
+		x := require.New(t)
+
+		// `roster key add` says one note of a key, the first that applies; of
+		// `/roster.*/*` it said the trail's, of the pattern, as if the pattern
+		// were `AuditService/List`.
+		v := cmd.Widest(keys.PrefixTenant, []string{"/roster.*/*"})
+		x.True(strings.HasPrefix(v, "NOTE: `/roster.*/*` is every method roster serves"), v)
+		x.Contains(v, "19 grants")
+		x.NotContains(v, "audit trail")
+
+		v = cmd.Widest(keys.PrefixDeployment, []string{"/roster.*/*"})
+		x.True(strings.HasPrefix(v, "NOTE: `/roster.*/*` is every method roster serves"), v)
+		x.Contains(v, "in every tenant")
+
+		v = cmd.Widest(keys.PrefixTenant, []string{"/roster.DelegationService/*"})
+		x.True(strings.HasPrefix(v, "NOTE: `/roster.DelegationService/Issue` (named by `/roster.DelegationService/*`) hands"), v)
+
+		v = cmd.Widest(keys.PrefixTenant, []string{"/roster.DelegationService/Issue"})
+		x.True(strings.HasPrefix(v, "NOTE: `/roster.DelegationService/Issue` hands"), v)
 	})
 }
 

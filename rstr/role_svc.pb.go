@@ -2180,8 +2180,9 @@ func (x *RoleHandsOverResponse) SetGrants(v []*RoleHandedOver) {
 type RoleHandsOverResponse_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	// One for each grant the methods reach, in the order of the page. Empty is
-	// a list that means what it says.
+	// One for each grant the methods reach, in the order of the page, or one
+	// alone where a method is all of roster. Empty is a list that means what it
+	// says.
 	Grants []*RoleHandedOver
 }
 
@@ -2280,8 +2281,13 @@ type RoleHandedOver_builder struct {
 	// does not change when its sentences do. What a page links to, and what it
 	// keys a sentence of its own by.
 	Grant string
-	// Which of the methods asked about reach it, as they were written -- so
-	// `/roster.*/*` is answered here for every grant it covers.
+	// Its own methods that those asked about cover, by their whole names: a
+	// pattern is not what the grant reads as, so `/roster.CredentialService/*`
+	// is answered `CredentialService/Issue`, `/Enrol` and `/Unlock` here. For
+	// the grant that is a pattern (`a-pattern`), the patterns asked about, as
+	// they were written. A method that covers every grant of the page --
+	// `/roster.*/*` -- is answered that one grant alone, which says how many
+	// others it holds.
 	Methods []string
 	// What it reads as: *may send recovery links*.
 	ReadsAs string

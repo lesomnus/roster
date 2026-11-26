@@ -2,12 +2,15 @@ package cmd_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/reflect/protoregistry"
 
 	app "github.com/lesomnus/roster/rstr"
 )
@@ -124,10 +127,38 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 		}
 	})
 
-	t.Run("a pattern is answered for everything it covers, as it was written", func(t *testing.T) {
+	t.Run("all of roster is one grant, of what it is", func(t *testing.T) {
 		x := require.New(t)
 
-		got := handedOver(t, ctx, b.Ungated, tenant, "/roster.*/*")
+		// Answered every grant it covers, it was twenty notes for the
+		// commonest binding there is, each saying `/roster.*/*` reads as
+		// something it does not (`TestAGrantOfAllOfRosterIsToldOnce`).
+		for held, others := range map[app.RoleHeld]string{tenant: "all 19 other grants", site: "all 10 other grants"} {
+			got := handedOver(t, ctx, b.Ungated, held, "/roster.*/*", app.CredentialService_Issue_FullMethodName)
+			x.Len(got, 1, held)
+			x.Equal([]string{"/roster.*/*"}, got["a-pattern"].GetMethods(), held)
+			x.Equal("every method roster serves", got["a-pattern"].GetReadsAs(), held)
+			x.Contains(got["a-pattern"].GetHandsOver(), "a later release adds", held)
+			x.Contains(got["a-pattern"].GetHandsOver(), others, held)
+		}
+
+		// What is somebody's own is not a pattern's to hold, and is the one
+		// grant there is there, of the method it is.
+		got := handedOver(t, ctx, b.Ungated, own, "/roster.*/*")
+		x.Len(got, 1)
+		x.Equal([]string{app.IdentityService_Attest_FullMethodName}, got["the-self-service-role"].GetMethods())
+	})
+
+	t.Run("a narrower pattern is answered each grant it covers, by the grant's methods", func(t *testing.T) {
+		x := require.New(t)
+
+		var every []string
+		for svc, info := range b.grpc(t).GetServiceInfo() {
+			for _, m := range info.Methods {
+				every = append(every, "/"+svc+"/"+m.Name)
+			}
+		}
+		got := handedOver(t, ctx, b.Ungated, tenant, append(every, "/roster.HolderService/*")...)
 		for _, grant := range []string{
 			"a-persons-verb-across-the-tenant",
 			"vouchservicelink-with-redeem",
@@ -150,13 +181,27 @@ func TestAPageIsToldWhatAGrantHandsOver(t *testing.T) {
 			"a-directorys-key",
 		} {
 			x.Contains(got, grant)
-			x.Equal([]string{"/roster.*/*"}, got[grant].GetMethods(), grant)
 		}
 		x.Len(got, 20, "and nothing that is another plane's, or somebody's own")
+		x.Equal([]string{"/roster.HolderService/*"}, got["a-pattern"].GetMethods())
 
-		// A service's, for what is that service's and no more.
+		// A service's, for what is that service's and no more, each by the
+		// methods of the grant: the pattern is not what *may send recovery
+		// links* reads as, `VouchService/Link` is.
 		got = handedOver(t, ctx, b.Ungated, tenant, "/roster.VouchService/*")
 		x.Len(got, 4)
+		x.Equal([]string{app.VouchService_Link_FullMethodName}, got["vouchservicelink-with-redeem"].GetMethods())
+		x.Equal([]string{"/roster.VouchService/*"}, got["a-pattern"].GetMethods())
+
+		got = handedOver(t, ctx, b.Ungated, tenant, "/roster.CredentialService/*")
+		x.Len(got, 2)
+		x.Equal([]string{
+			app.CredentialService_Issue_FullMethodName,
+			app.CredentialService_Enrol_FullMethodName,
+			app.CredentialService_Unlock_FullMethodName,
+		}, got["a-persons-verb-across-the-tenant"].GetMethods())
+
+		got = handedOver(t, ctx, b.Ungated, tenant, "/roster.VouchService/*")
 		x.Contains(got, "vouchservicelink-with-redeem")
 		x.Contains(got, "vouchserviceaccept")
 		x.Contains(got, "vouchserviceleavelink-with-leave")
@@ -274,8 +319,9 @@ func TestARoleOfTheDeploymentsOwnIsToldOfEveryTenant(t *testing.T) {
 	b := keyFor(t)
 	ctx := t.Context()
 
-	ours := handedOver(t, ctx, b.Server.Control.Ungated, app.RoleHeld_ROLE_HELD_ACROSS_THE_TENANT, "/roster.*/*")
-	theirs := handedOver(t, ctx, b.Server.Ungated, app.RoleHeld_ROLE_HELD_ACROSS_THE_TENANT, "/roster.*/*")
+	every := everyServiceOfRoster(t)
+	ours := handedOver(t, ctx, b.Server.Control.Ungated, app.RoleHeld_ROLE_HELD_ACROSS_THE_TENANT, every...)
+	theirs := handedOver(t, ctx, b.Server.Ungated, app.RoleHeld_ROLE_HELD_ACROSS_THE_TENANT, every...)
 
 	// A person's verb is what `admin.addr` waives the rule about, and is said
 	// as that.
@@ -295,8 +341,32 @@ func TestARoleOfTheDeploymentsOwnIsToldOfEveryTenant(t *testing.T) {
 	}
 
 	// Where it would be held is a customer's question, and is not read here.
-	in := handedOver(t, ctx, b.Server.Control.Ungated, app.RoleHeld_ROLE_HELD_IN_A_SITE, "/roster.*/*")
+	in := handedOver(t, ctx, b.Server.Control.Ungated, app.RoleHeld_ROLE_HELD_IN_A_SITE, every...)
 	x.Len(in, len(ours))
+
+	// And all of roster is one grant there too, of every tenant.
+	whole := handedOver(t, ctx, b.Server.Control.Ungated, app.RoleHeld_ROLE_HELD_ACROSS_THE_TENANT, "/roster.*/*")
+	x.Len(whole, 1)
+	x.Contains(whole["a-pattern"].GetHandsOver(), fmt.Sprintf("all %d other grants on the page, in every tenant", len(ours)-1))
+}
+
+// everyServiceOfRoster is a pattern of each of roster's services: every grant
+// of the page, asked of a list narrower than all of roster, which is answered
+// one.
+func everyServiceOfRoster(t *testing.T) []string {
+	var out []string
+	protoregistry.GlobalFiles.RangeFiles(func(f protoreflect.FileDescriptor) bool {
+		if f.Package() != "roster" {
+			return true
+		}
+		for i := range f.Services().Len() {
+			out = append(out, "/"+string(f.Services().Get(i).FullName())+"/*")
+		}
+		return true
+	})
+	require.NotEmpty(t, out)
+
+	return out
 }
 
 // TestWhatAGrantHandsOverIsARolesToAsk: it is a method like another, and a

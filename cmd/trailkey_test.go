@@ -126,8 +126,12 @@ func TestMintingAKeyThatReachesTheTrailSaysSo(t *testing.T) {
 		name    string
 		methods []string
 		said    bool
+
+		// What it says, where it is not the trail by name: all of roster is
+		// said as that (`TestAGrantOfAllOfRosterIsToldOnce`).
+		says string
 	}{
-		{name: "everything", methods: []string{"/roster.*/*"}, said: true},
+		{name: "everything", methods: []string{"/roster.*/*"}, said: true, says: "every method roster serves"},
 		{name: "the service", methods: []string{"/roster.AuditService/*"}, said: true},
 		{name: "the method itself", methods: []string{"/roster.AuditService/List"}, said: true},
 		{name: "one Get", methods: []string{"/roster.AuditService/Get"}, said: true},
@@ -146,7 +150,10 @@ func TestMintingAKeyThatReachesTheTrailSaysSo(t *testing.T) {
 			}
 
 			x.NotEmpty(v, "a key that reads every tenant's history was minted quietly")
-			x.Contains(v, "audit trail")
+			if tc.says == "" {
+				tc.says = "audit trail"
+			}
+			x.Contains(v, tc.says)
 		})
 	}
 }
@@ -169,7 +176,7 @@ func TestMintingAKeyThatReachesTheTrailSaysSo(t *testing.T) {
 // A deployment's key that links was told the opposite way: *every account of
 // the tenant*, of a key that has no tenant.
 func TestAKeyIsToldWhatItsOwnKindReads(t *testing.T) {
-	trail := []string{"/roster.*/*"}
+	trail := []string{"/roster.AuditService/*"}
 
 	t.Run("a deployment's is told of every tenant", func(t *testing.T) {
 		x := require.New(t)
@@ -232,13 +239,22 @@ func TestAKeyIsToldWhatItsOwnKindReads(t *testing.T) {
 		x.NoError(s.Close())
 
 		said := saidOf(t, cli.NewCmdKey(&c), "add",
-			"--tenant", "newco", "--holder", "admin", "--allow", "/roster.*/*")
+			"--tenant", "newco", "--holder", "admin", "--allow", "/roster.AuditService/*")
 		x.Contains(said, "the audit trail of its tenant")
 		x.NotContains(said, "every tenant")
 
-		said = saidOf(t, cli.NewCmdControl(&c), "key", "add", "--allow", "/roster.*/*", "exporter")
+		said = saidOf(t, cli.NewCmdControl(&c), "key", "add", "--allow", "/roster.AuditService/*", "exporter")
 		x.Contains(said, "in every tenant")
 		x.Contains(said, "A deployment's key is not walled by tenant")
+
+		// And all of roster, as what it is, of either kind.
+		said = saidOf(t, cli.NewCmdKey(&c), "add", "--tenant", "newco", "--holder", "admin", "--name", "everything", "--allow", "/roster.*/*")
+		x.Contains(said, "`/roster.*/*` is every method roster serves")
+		x.NotContains(said, "every tenant")
+
+		said = saidOf(t, cli.NewCmdControl(&c), "key", "add", "--allow", "/roster.*/*", "everything")
+		x.Contains(said, "`/roster.*/*` is every method roster serves")
+		x.Contains(said, "in every tenant")
 	})
 
 	// Each sentence is held to what a served deployment does. The deployment's

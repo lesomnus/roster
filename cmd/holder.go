@@ -25,6 +25,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent"
 	entapikey "github.com/lesomnus/roster/internal/ent/apikey"
 	app "github.com/lesomnus/roster/rstr"
+	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/keys"
 )
 
@@ -287,7 +288,8 @@ func wholePart(v string) bool {
 
 // Widest says so when what was just minted reaches further than its methods
 // read: the trail, a credential for anybody, a link to anybody's account, a
-// delegation of anything its person may call.
+// delegation of anything its person may call -- or, of a key that lists all
+// of roster, that it is all of roster.
 //
 // # By the kind of key it is
 //
@@ -337,6 +339,22 @@ func Widest(kind string, methods []string) string {
 
 	deployments := strings.HasPrefix(kind, keys.PrefixDeployment)
 
+	// All of roster is said as what it is, as `RoleService/HandsOver` answers
+	// it: of `/roster.*/*` this said the trail's note, of the pattern, as if
+	// it were `AuditService/List`.
+	for _, held := range methods {
+		if !core.CoversThePage(held) {
+			continue
+		}
+
+		why := ListsEverything
+		if deployments {
+			why = ListsEverythingAnywhere
+		}
+
+		return "NOTE: `" + held + "` " + fmt.Sprintf(why, core.GrantsOfThePage(kind, app.RoleHeld_ROLE_HELD_ACROSS_THE_TENANT))
+	}
+
 	for _, held := range methods {
 		for _, v := range wide {
 			if !frame.Covers(held, v.method) {
@@ -348,12 +366,31 @@ func Widest(kind string, methods []string) string {
 				why = v.ours
 			}
 
-			return "NOTE: `" + held + "` " + why
+			// The method the note is about, and the pattern that named it:
+			// `/roster.AuditService/*` does not read the trail by its name.
+			named := "`" + v.method + "`"
+			if held != v.method {
+				named += " (named by `" + held + "`)"
+			}
+
+			return "NOTE: " + named + " " + why
 		}
 	}
 
 	return ""
 }
+
+// ListsEverything is said of a customer's key that lists every method roster
+// serves, with how many grants of `docs/usage/wide-grants.md` that is.
+const ListsEverything = "is every method roster serves, and every one a later release adds, the day it is\n" +
+	"added: whatever whoever it is for holds, and with it the %d grants\n" +
+	"docs/usage/wide-grants.md lists. Grant it only to something that is to act as them\n" +
+	"in everything."
+
+// ListsEverythingAnywhere is that of a deployment's key, which is every tenant.
+const ListsEverythingAnywhere = "is every method roster serves, and every one a later release adds, the day it is\n" +
+	"added, in every tenant: the %d grants docs/usage/wide-grants.md lists, of every\n" +
+	"customer. Grant it only to something that is to run this deployment."
 
 // ReadsTheTrail is said of a deployment's key.
 const ReadsTheTrail = "reaches the audit trail, which holds the contents of every\n" +
