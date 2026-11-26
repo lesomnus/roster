@@ -994,6 +994,26 @@ func formed(c Config) error {
 //
 // A consumer's block said with no address is not among them: `roster ldap
 // serve` and the others read the same block.
+//
+// Nor a listener's `http.allow_web` and `http.origins` beside an empty
+// `http.addr`, which were (#474): they say nothing and do nothing then. The
+// shipped `roster.yaml` gives every listener both, and an overlay says its own
+// values through the environment, so switching one listener off took three
+// variables; and nothing was kept by it -- with no listener a connection is
+// refused, which is loud already, and a misspelled address key is an unknown
+// key. What stays is each a setting that looks in effect and is not:
+//
+//   - `admin.console.dir` with no control plane: the page is served, and
+//     nobody can sign in at it.
+//   - `admin.console.dir` with no `admin.http.addr`, and `server.console.dir`
+//     with sign-in on and no `server.http.addr`: a page somebody is told is
+//     there, and no port serves it.
+//   - `limit.burst` with no `limit.rate`: a bound that reads as a limit, and
+//     nothing is limited.
+//   - `policy.refresh` with no `policy.file`: a file read again that is never
+//     read.
+//   - `watch.dsn` under a broker that reads none: replicas that seem to hear
+//     each other, and do not.
 func noEffect(c Config) error {
 	if c.Admin.Console.Dir != "" && !c.Control.Serves() {
 		return errors.New("admin.console.dir: the admin console signs an operator in against the control plane, and " +
@@ -1008,16 +1028,6 @@ func noEffect(c Config) error {
 			"nothing serves it. name server.http.addr, or take the page out")
 	}
 	for _, b := range c.listeners() {
-		if b.Http.Addr == "" {
-			if b.Http.AllowWeb {
-				return fmt.Errorf("%[1]s.http.allow_web: says what %[1]s.http.addr answers, and it names no listener. "+
-					"name %[1]s.http.addr, or take allow_web out", b.key)
-			}
-			if len(b.Http.Origins) > 0 {
-				return fmt.Errorf("%[1]s.http.origins: says which pages may call %[1]s.http.addr, and it names no listener. "+
-					"name %[1]s.http.addr, or take origins out", b.key)
-			}
-		}
 		if b.Limit.Burst != 0 && !b.Limit.Limits() {
 			return fmt.Errorf("%[1]s.limit.burst: says how many calls may arrive at once before %[1]s.limit.rate holds them, "+
 				"and no rate is said, so nothing is limited. write %[1]s.limit.rate, or take burst out", b.key)

@@ -618,6 +618,11 @@ Six of roster's own at most, and which open is what the configuration named.
 | `control.http.addr` | the same, over HTTP | the same RPCs, transcoded where `control.http.allow_web` says so. **No page**, and no sign-in: with neither `allow_web` nor `allow_pprof` it would answer nothing, and is refused at start |
 | `admin.addr` / `.http.addr` | a roster operator's browser | **customers**: the data plane with no wall, behind an operator's session. Serves the **admin console** and the sign-in behind it, the second transcoded where `admin.http.allow_web` says so; a console with no `allow_web` is refused at start |
 
+An `http` listener whose `addr` is empty is not opened, and its `allow_web`
+and `origins` then say nothing and do nothing: one is switched off by its
+address alone, `ROSTER_CONTROL_HTTP_ADDR=""` over the shipped `roster.yaml`
+among them.
+
 And one for each consumer `roster serve` is told to run beside them --
 `account.addr`, `ldap.addr` (and `ldap.addr_tls`), `login.addr`, `scim.addr` --
 which are those apps' and not roster's: [One process, or five](#one-process-or-five).
