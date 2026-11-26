@@ -166,6 +166,11 @@ type Resource struct {
 // applied field by field over what the row already says, and `config:` left
 // out altogether touches nothing.
 //
+// And what it leaves is not the file's. The keys an entry says are recorded on
+// the row ([DeclaredConfig]) and refused from a port as the rest of a declared
+// row is; the keys it does not say are the tenant's own to write, since no
+// start puts them back.
+//
 // The two together are how a tenant signs in, and they are configuration by
 // every test the kinds above pass: the front door is an origin the deployment
 // runs and routes, and whether a password is a way in is one bool that
@@ -956,7 +961,7 @@ func asProvisioner(ctx context.Context, s *Server, dry bool) (context.Context, e
 	// is what would otherwise narrow it. The server is `Ungated` either way;
 	// what the frame buys is the **trail**, which now names which rows a file
 	// wrote rather than saying they appeared -- and, since the tenant's settings
-	// go through `Update`, the scope is also what `mayWriteDeclared` reads to
+	// go through `Update`, the scope is also what `mayUpdateDeclared` reads to
 	// tell the file's own writer from a caller at a port. This said
 	// `frame.Everything` for as long as it existed and passed no scope at all,
 	// which nothing noticed while every kind was written with `Patch`.
@@ -965,13 +970,60 @@ func asProvisioner(ctx context.Context, s *Server, dry bool) (context.Context, e
 
 // labelsOf is what a declared row carries: the file it came from, so that a
 // refusal from a port can say where the row is written. A row made by a Go
-// call rather than a file -- a test, the sandbox -- carries its kind.
+// call rather than a file -- a test, the sandbox -- carries its kind. A
+// tenant carries one more ([tenantLabelsOf]).
+//
+// The labels are the file's as the rest of the row is: written whole, this
+// alone, whenever the row is, so that a label written beside it anywhere else
+// goes at the next start that writes the row.
 func labelsOf(r Resource) map[string]string {
 	if r.From == "" {
 		return map[string]string{Declared: r.Kind}
 	}
 
 	return map[string]string{Declared: r.From}
+}
+
+// DeclaredConfig is the label a declared tenant carries beside [Declared]:
+// the keys of its `config` the entry says, which are the file's, where the
+// keys it leaves out are left as they are and are the tenant's own to write
+// (`server/core/tenant.go`, `Update`).
+const DeclaredConfig = app.LabelDeclaredConfig
+
+// tenantLabelsOf is what a declared tenant carries: [labelsOf], and which keys
+// of `config` the entry says ([DeclaredConfig]). Written every time the row
+// is, and the row is written whenever what it records differs from the file,
+// so that a key taken out of the file is the tenant's from the next start.
+func tenantLabelsOf(r Resource) map[string]string {
+	out := labelsOf(r)
+	out[DeclaredConfig] = strings.Join(r.Config.said(), ",")
+
+	return out
+}
+
+// said is the keys a file's `config:` says, as the file writes them, in the
+// order [configDiffers] lists them; none for a `config:` left out.
+func (c *Settings) said() []string {
+	if c == nil {
+		return nil
+	}
+	out := []string{}
+	for _, v := range []struct {
+		key  string
+		said bool
+	}{
+		{"password", c.Password != nil},
+		{"front_door", c.FrontDoor != nil},
+		{"profile.fill", c.Profile != nil && c.Profile.Fill != nil},
+		{"profile.slack", c.Profile != nil && c.Profile.Slack != nil},
+		{"leave", c.Leave != nil},
+	} {
+		if v.said {
+			out = append(out, v.key)
+		}
+	}
+
+	return out
 }
 
 // The four kinds. Each is the same shape and the shape is the point: a read,
@@ -1011,7 +1063,7 @@ func applyTenant(ctx context.Context, s app.Server, r Resource) (string, []strin
 	}.Build())
 	if status.Code(err) == codes.NotFound {
 		add := app.TenantAddRequest_builder{
-			Alias: r.Alias, Name: r.Name, Desc: r.Desc, Labels: labelsOf(r),
+			Alias: r.Alias, Name: r.Name, Desc: r.Desc, Labels: tenantLabelsOf(r),
 		}
 		if !said.IsZero() {
 			// Nobody of the alias, and the identifier may be somebody else's:
@@ -1053,7 +1105,13 @@ func applyTenant(ctx context.Context, s app.Server, r Resource) (string, []strin
 		"desc", got.GetDesc() != r.Desc,
 	)
 	fields = append(fields, configDiffers(settle(got.GetConfig(), nil), next)...)
-	if len(fields) == 0 && declared(got.GetLabels()) {
+	labels := tenantLabelsOf(r)
+	// Which keys of `config` the file says is on the row as well, and a row
+	// that records other ones than the file says is written, with no key of
+	// its own changed: a key taken out of the file, or a row written by a
+	// build before the label, which then held every key the file's.
+	keys, ok := got.GetLabels()[DeclaredConfig]
+	if len(fields) == 0 && declared(got.GetLabels()) && ok && keys == labels[DeclaredConfig] {
 		return "same", nil, nil
 	}
 	// `Update` and not `Patch`, which the three below use: it is the verb the
@@ -1063,7 +1121,7 @@ func applyTenant(ctx context.Context, s app.Server, r Resource) (string, []strin
 		Ref:         app.TenantRef_builder{Id: got.GetId()}.Build(),
 		Name:        proto.String(r.Name),
 		Desc:        proto.String(r.Desc),
-		Labels:      labelsOf(r),
+		Labels:      labels,
 		DateUpdated: got.GetDateUpdated(),
 	}
 	if r.Config != nil {

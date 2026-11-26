@@ -2,6 +2,9 @@ package core
 
 import (
 	"context"
+	"fmt"
+	"maps"
+	"strconv"
 	"strings"
 	"time"
 
@@ -196,10 +199,8 @@ func (s Core) Tenant() app.TenantServiceServer { return coreTenant{s, s.Next().T
 // Update is the narrow write over a tenant: name, note, labels and the
 // settings, and never the alias or the identifier. See `tenant_svc.ext.proto`.
 //
-// Refused outright on a row a file declared, which `declared.go` argues for --
-// and argues hardest here, since the settings are the security-relevant half:
-// a password switch flipped in a console that the next start flips back is the
-// "right on Tuesday, wrong on Wednesday" that file is about.
+// On a row a file declared, what the file says is refused from a port and the
+// rest is not ([coreTenant.mayUpdateDeclared]).
 func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*app.Tenant, error) {
 	// The settings are how everybody in the tenant signs in, so they are
 	// written by somebody who holds this across it ([Core.acrossTheTenant]).
@@ -208,8 +209,10 @@ func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*
 	}
 
 	got, err := s.TenantServiceServer.Get(ctx, app.TenantGetRequest_builder{
-		Ref:    req.GetRef(),
-		Select: app.TenantSelect_builder{Labels: z.Ptr(true), Config: z.Ptr(true), DateDestroyed: z.Ptr(true)}.Build(),
+		Ref: req.GetRef(),
+		Select: app.TenantSelect_builder{
+			Name: z.Ptr(true), Desc: z.Ptr(true), Labels: z.Ptr(true), Config: z.Ptr(true), DateDestroyed: z.Ptr(true),
+		}.Build(),
 	}.Build())
 	if err != nil {
 		return nil, err
@@ -219,7 +222,17 @@ func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*
 	if at := got.GetDateDestroyed(); at != nil {
 		return nil, gone("ref", at.AsTime())
 	}
-	if err := s.mayWriteDeclared(ctx, "ref", got.GetLabels()); err != nil {
+
+	// The settings as they would be written, so that a front door is compared
+	// as it is stored.
+	var cfg *app.TenantConfig
+	if req.HasConfig() {
+		cfg, err = configOf(req.GetConfig())
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err := s.mayUpdateDeclared(ctx, got, req, cfg); err != nil {
 		return nil, err
 	}
 
@@ -241,10 +254,6 @@ func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*
 	// one is *nothing is set* -- which for `password` means back to the default,
 	// and is a thing a caller may want to say.
 	if req.HasConfig() {
-		cfg, err := configOf(req.GetConfig())
-		if err != nil {
-			return nil, err
-		}
 		if err := s.maySlack(ctx, got.GetConfig(), cfg); err != nil {
 			return nil, err
 		}
@@ -253,6 +262,97 @@ func (s coreTenant) Update(ctx context.Context, req *app.TenantUpdateRequest) (*
 
 	return versioned(s.TenantServiceServer.Patch(ctx, patch.Build()))
 }
+
+// mayUpdateDeclared refuses, on a tenant a file declares, a change from a port
+// of what the file says, and lets the rest through.
+//
+// # What the file says
+//
+// Every other declared kind is the file's whole, because applying the file
+// writes the whole row -- *a key left out is empty* -- and a change made
+// anywhere else is put back at the next start (`declared.go`). A tenant's row
+// is that too, but for its `config`, whose keys the entry leaves out are left
+// as they are (#480): nothing puts those back, so they are not the file's, and
+// refusing them left a declared tenant's own administrator unable to change a
+// setting the file never mentions -- which, since a file that declares a
+// tenant's connection or host declares the tenant too (#622), was most
+// tenants a file touches.
+//
+// So the file's are its `name` and `desc` (said or empty, and written either
+// way), its `labels` (written whole, the file's label alone, whenever the row
+// is), and each key of `config` the entry says, which the row records in
+// [app.LabelDeclaredConfig] for any process to read. Its `alias` is the
+// file's too, and is no field of this verb ([coreTenant.Patch]). A declared
+// tenant without that label was written by a build before it, and every key
+// of its `config` is the file's until its next start writes the label.
+//
+// # An unchanged copy is no change
+//
+// A page sends the whole object back, so a field sent with the value it has is
+// not refused for being sent: a person's organisational fields are held the
+// same way (#368). One that changes is refused naming the field and the file,
+// as the whole row was.
+//
+// Not of the deployment in its own process -- the box, and what applies the
+// file -- whose every write passes, as [Core.mayWriteDeclared] says.
+func (s coreTenant) mayUpdateDeclared(ctx context.Context, got *app.Tenant, req *app.TenantUpdateRequest, cfg *app.TenantConfig) error {
+	labels := got.GetLabels()
+	from, ok := labels[declaredBy]
+	if !ok || inProcess(ctx) {
+		return nil
+	}
+	said := func(field string) error {
+		return status.Error(codes.FailedPrecondition, fmt.Sprintf(
+			"%s: this is declared in %s and is changed there, not here", field, from))
+	}
+
+	switch {
+	case req.HasName() && req.GetName() != got.GetName():
+		return said("name")
+	case req.HasDesc() && req.GetDesc() != got.GetDesc():
+		return said("desc")
+	// Empty is *left as it is*, as the write below reads it.
+	case len(req.GetLabels()) > 0 && !maps.Equal(req.GetLabels(), labels):
+		return said("labels")
+	}
+	if cfg == nil {
+		return nil
+	}
+
+	keys := configKeys
+	if v, ok := labels[app.LabelDeclaredConfig]; ok {
+		keys = strings.Split(v, ",")
+	}
+	was := got.GetConfig()
+	for _, k := range keys {
+		of, ok := configKey[k]
+		if ok && of(was) != of(cfg) {
+			return said("config." + k)
+		}
+	}
+
+	return nil
+}
+
+// configKeys is every key of a tenant's `config` as a file writes it, and
+// configKey each one's value as one comparable string: what
+// [app.LabelDeclaredConfig] lists, and how a change of one is told.
+// `password` has presence, so unset is not `true` (`tenant.ext.proto`).
+var (
+	configKeys = []string{"password", "front_door", "profile.fill", "profile.slack", "leave"}
+	configKey  = map[string]func(*app.TenantConfig) string{
+		"password": func(c *app.TenantConfig) string {
+			if !c.HasPassword() {
+				return ""
+			}
+			return strconv.FormatBool(c.GetPassword())
+		},
+		"front_door":    func(c *app.TenantConfig) string { return c.GetFrontDoor() },
+		"profile.fill":  func(c *app.TenantConfig) string { return strconv.FormatBool(c.GetProfile().GetFill()) },
+		"profile.slack": func(c *app.TenantConfig) string { return c.GetProfile().GetSlackSecretRef() },
+		"leave":         func(c *app.TenantConfig) string { return strconv.FormatBool(c.GetLeave()) },
+	}
+)
 
 // Patch is the general write, which no port serves and a command at the box
 // reaches (`roster tenant patch`), with the two things about a tenant's row

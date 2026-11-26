@@ -1316,8 +1316,8 @@ Four properties, each deliberate:
   exception: a tenant's `config`, whose keys left out leave the setting as it is
   (below). So a row made by hand and then declared becomes the file's: its name,
   description and labels are what the file says, which for a tenant declared by
-  its alias alone is no name, no description, and the one label that says it is
-  declared. Two entries that declare one row, in one file or two, are refused,
+  its alias alone is no name, no description, and the labels that say it is
+  declared and which keys of its `config` the file says. Two entries that declare one row, in one file or two, are refused,
   naming both, before anything is written; and a file applied twice writes
   nothing the second time.
 - **It writes as somebody.** A `provisioner` holder in the control plane, framed
@@ -1327,7 +1327,8 @@ Four properties, each deliberate:
   **read-only** at a port: an edit is refused, and so is an erase, which used to
   pass and came back at the next start. The cost is real -- fixing a declared row
   during an outage becomes a git round trip -- so a deployment that would rather
-  have the text field declares fewer things.
+  have the text field declares fewer things. A tenant is the one kind the file
+  owns only in part (below).
 
 **And it leaves a tenant that is leaving alone.** What a file declares of a tenant
 that is closed or destroyed -- the tenant, and every row declared under it -- is
@@ -1346,6 +1347,31 @@ nothing more, from a file exactly as from a form. `config.leave` is whether the
 tenant's people may delete their own account (`MeService.Leave`), off unless a
 file or the admin console says so, and like the others a file that does not mention it
 leaves it as it is.
+
+**So a declared tenant is the file's in part.** What the file says is the
+file's: its `alias`, its `name` and `desc` (said or empty, and written either
+way), its labels (written whole, the file's own alone, whenever the row is), and
+each key of `config` the entry says. A change of one of those at a port is
+refused, naming the field and the file:
+
+```
+config.password: this is declared in /etc/roster/resources.yaml and is changed there, not here
+```
+
+The keys of `config` the entry leaves out are the tenant's own, written by
+whoever may call `TenantService/Update` -- the tenant's own administrator
+among them -- since no start puts them back. A
+field sent with the value it has is no change, so a form that sends the whole
+tenant back is refused only for what it changes. Which keys the entry says is on
+the row, in the label `roster.declared.config` (`password,front_door`, or empty
+where the entry says none), written each time the file is applied; so a key
+taken out of the file is the tenant's from the next start, with the value it had.
+A declared tenant written by a build before that label is the file's whole, every
+key of its `config` included, until the first start on a build that writes it,
+which prints the tenant as `~` once. At the box, `roster tenant update` writes
+every field of a declared tenant, as it does of any declared row: whoever is at
+the shell has the file too, and what it changes of what the file says, the next
+start puts back.
 
 **A tenant may say its identifier**, `id`, as roster prints one: it is for a
 deployment made again -- a new instance, or after the compatibility epoch moved
@@ -1762,7 +1788,9 @@ into one that is gone. Either
 way the row is read-only to everybody who reaches it through a port: a tenant
 administrator, the user console, the admin console, a deployment key. Not
 edited, not suspended, not erased, and not renamed: what applies the file finds
-a row by the name the file says, and would make a second.
+a row by the name the file says, and would make a second. A tenant is read-only
+in what the file says of it, and the keys of its `config` the file leaves out
+are its own (§ *Declaring the rows that are configuration*).
 
 And the label is theirs alone to write. A request that carries
 `roster.declared` is refused at every port, whoever sent it, so a row is

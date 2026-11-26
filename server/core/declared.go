@@ -47,6 +47,11 @@ import (
 // everybody's sign-in there stopped, and came back at the next deploy. So a
 // declared row is **read-only** to everybody who reaches it through a port.
 //
+// But for what no start puts back. A tenant's `config` is the one field a
+// file leaves as it is where it leaves a key out (#480), so the keys it does
+// not say are the tenant's own, and only what the file says of a tenant is
+// refused (`tenant.go`, [coreTenant.mayUpdateDeclared]).
+//
 // Turning one off is two steps, both outside any console: take it out of
 // where it is declared -- `resources.yaml`, or the deployment's configuration
 // and manifests for a front door -- and then erase what is left from a shell
