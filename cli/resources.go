@@ -65,6 +65,19 @@ func newCmdResourcesApply(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command
 			}
 			defer s.Close()
 
+			// A database nothing has made is said so, before anything else is
+			// asked of it, run or dry run. The run answered the driver's
+			// words, `no such table: tenant`, having made the data plane's
+			// tables where `db.migrate` was on and then failed on the control
+			// plane's; the dry run answered the whole migration it was not
+			// going to run, which is how `serve` refuses a database not the
+			// schema's shape (`ready`) and is no sentence about this one. Not
+			// made here either: this command writes rows, and making a new
+			// deployment's schema is `init`'s and `serve`'s.
+			if err := madeYet(ctx, s); err != nil {
+				return err
+			}
+
 			// A dry run alters no table: it asks of both planes what `serve`
 			// asks before it serves, without migrating either, and is refused
 			// in those words where a table is missing. It migrated the data
@@ -109,6 +122,36 @@ func newCmdResourcesApply(l *cfg.Loader[cmd.Config], c *cmd.Config) *xli.Command
 			return nil
 		}),
 	}
+}
+
+// madeYet refuses a deployment whose planes have no tables yet, naming the
+// key of each that has none.
+func madeYet(ctx context.Context, s *cmd.Server) error {
+	unmade := []string{}
+	planes := []struct {
+		key string
+		s   *cmd.Server
+	}{{"db", s}, {"control.db", s.Control}}
+	for _, p := range planes {
+		if p.s == nil {
+			continue
+		}
+		made, err := cmd.HasTables(ctx, p.s)
+		if err != nil {
+			return fmt.Errorf("%s: %w", p.key, err)
+		}
+		if !made {
+			unmade = append(unmade, p.key)
+		}
+	}
+	if len(unmade) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("%s: this deployment's database has not been made yet, and resources apply writes rows "+
+		"into it rather than making it. `roster init` makes both planes' tables; `roster serve` makes them "+
+		"where db.migrate and control.db.migrate are on, and then applies these files itself",
+		strings.Join(unmade, ", "))
 }
 
 // printApplied is one line a row, `<sign> <Kind> <name>`, and after a `~` the
