@@ -797,6 +797,37 @@ s = open(p).read().replace(
 open(p, "w").write(s)
 PY
 
+# A **public** client beside the base's, registered the way a command line's
+# is (`docs/login.md`, *A command line*): no secret, no mount, the browser's
+# flow back to a loopback port beside a redirect at the tenant's own host, and
+# the device grant. The clients Job asked every client for a secret, so a
+# deployment that registered one restated the Job's whole loop; this is the
+# rig holding the base to taking it as it is. Its line in the Job's log is
+# asked for below. The tenant's host is first because it is the redirect
+# `roster login doctor` probes the issuer with, for the client it samples, and
+# that probe is about where Hydra sends a browser, not about loopback ports.
+cat > "${work}/deploy/clients/cli.json" <<'EOF'
+{
+  "client_id": "cli",
+  "client_name": "a command line, which keeps no secret",
+  "grant_types": ["authorization_code", "refresh_token", "urn:ietf:params:oauth:grant-type:device_code"],
+  "response_types": ["code"],
+  "scope": "openid offline profile email",
+
+  "token_endpoint_auth_method": "none",
+
+  "redirect_uris": ["https://roster-product.roster.svc.cluster.local/cli/callback", "http://127.0.0.1/callback"]
+}
+EOF
+python3 - "${work}/deploy/kustomization.yaml" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+old = "      - clients/product.json"
+assert old in s
+open(p, "w").write(s.replace(old, old + "\n      - clients/cli.json", 1))
+PY
+
 # The issuer's certificate, made here rather than checked in: one in git works
 # until a date nobody wrote down. Hydra terminates TLS itself in this rig --
 # `deploy/hydra.yaml` says what that gives up -- and everything that talks to it
@@ -1005,6 +1036,10 @@ case "${ran}" in
 *) echo; echo "cluster: the check refused this deployment:"; kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"; exit 1 ;;
 esac
 kube "kubectl -n ${NS} logs job/roster-hydra-clients-check"
+# The public client, written with no secret: `cli: 201` the first time Hydra
+# hears of it, `cli: 200` on a sync after.
+said "cli: 20" "the clients Job did not register the public client cli; it said:" \
+	"kubectl -n ${NS} logs job/roster-hydra-clients" || exit 1
 
 # **Somebody to sign in as**, which `deploy/` deliberately does not declare:
 # `Holder`, `Credential`, `Identity` and `Email` are the ways into an account,
