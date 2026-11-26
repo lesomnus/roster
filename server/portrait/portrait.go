@@ -74,8 +74,10 @@ const (
 	// progressive JPEG (#279). At 2048 those are 30, 46 and 74 MiB, and
 	// `TestTheLargestPictureIsRenderedWithinABound` holds what the wire takes
 	// to under 96. A camera's photograph is larger than this on a side, and is
-	// made smaller by whoever hands it over: a page draws it to a canvas, and
-	// a directory's photograph is a few hundred pixels to begin with.
+	// made smaller by whoever hands it over: a page draws it to a canvas
+	// (`ts/lib/picture.tsx`, which says this number again in
+	// `ts/lib/portrait.ts`), and a directory's photograph is a few hundred
+	// pixels to begin with.
 	MaxSide = 2048
 
 	// AtOnce is how many images a process renders at once. The rest wait

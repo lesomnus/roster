@@ -18,9 +18,18 @@
  *
  * # What is sent
  *
- * The file a person picked, as it is. `Portray` renders it -- the crop, the
- * sizes, the format -- so a page never draws an image to send, and what is on
- * the row is roster's whichever page wrote it.
+ * The file a person picked, as it is, when it is no larger than `Portray`
+ * takes on a side (`MAX_SIDE`). `Portray` renders it -- the crop, the sizes,
+ * the format -- so what is on the row is roster's whichever page wrote it.
+ *
+ * One that is larger, which a phone's photograph and a screenshot of a dense
+ * display are, is drawn to a canvas first, as large as roster takes on its
+ * longer side and in the same proportions, and the drawing is sent: roster
+ * refuses it otherwise, from its header, because what one image costs to
+ * render is what its sides say (`server/portrait/portrait.go`, `MaxSide`). It
+ * is drawn the way up the person sees it, its orientation tag honoured, over
+ * white and as JPEG, as roster renders it. Either is weighed before it is sent,
+ * so a drawing still over `MAX_BYTES` is refused here as a file is.
  *
  * @module
  */
@@ -29,9 +38,7 @@ import { useState } from 'react'
 
 import type { Holder } from '#gen/roster/payday/holder_pb.js'
 import { HolderService } from '#gen/roster/payday/holder_svc_pb.js'
-
-/** The most `Portray` takes, which is roster's limit and said before sending. */
-const MAX_BYTES = 2 << 20
+import { MAX_BYTES, smaller } from '#lib/portrait.js'
 
 /**
  * pick is the smallest rendition sharp at `px` CSS pixels, at two device pixels
@@ -41,6 +48,50 @@ export function pick(h: Holder, px: number): string | undefined {
 	const vs = h.portrait?.renditions ?? []
 
 	return (vs.find((v) => v.size >= 2 * px) ?? vs.at(-1))?.uri
+}
+
+/**
+ * sending is what is sent for the file `f` somebody picked: the file, or a
+ * drawing of it no larger than roster takes (see *What is sent*).
+ *
+ * A file this browser cannot draw is sent as it is, and roster's refusal says
+ * what it is not.
+ */
+async function sending(f: File): Promise<Blob> {
+	let image: ImageBitmap
+	try {
+		image = await createImageBitmap(f, { imageOrientation: 'from-image' })
+	} catch {
+		return f
+	}
+
+	try {
+		const to = smaller(image.width, image.height)
+		if (to === undefined) {
+			return f
+		}
+
+		const canvas = document.createElement('canvas')
+		canvas.width = to.width
+		canvas.height = to.height
+		const g = canvas.getContext('2d')
+		if (g === null) {
+			return f
+		}
+		// White under it, because JPEG has no transparency, as roster puts it
+		// under what it renders.
+		g.fillStyle = '#fff'
+		g.fillRect(0, 0, to.width, to.height)
+		g.imageSmoothingQuality = 'high'
+		g.drawImage(image, 0, 0, to.width, to.height)
+
+		// High, because roster draws it once more before anybody sees it.
+		const drawn = await new Promise<Blob | null>((done) => canvas.toBlob(done, 'image/jpeg', 0.92))
+
+		return drawn ?? f
+	} finally {
+		image.close()
+	}
 }
 
 /** Picture draws somebody's picture `px` CSS pixels square; 64 unless said. */
@@ -76,12 +127,16 @@ export function Picture(props: { holder: Holder; may: (method: string) => boolea
 								if (f === undefined) {
 									return
 								}
-								if (f.size > MAX_BYTES) {
-									setBad(`${f.name} is larger than 2 MiB`)
+								void sending(f)
+									.then(async (b) => {
+										if (b.size > MAX_BYTES) {
+											setBad(`${f.name} is larger than 2 MiB`)
 
-									return
-								}
-								void f.arrayBuffer().then((b) => keep(new Uint8Array(b)))
+											return
+										}
+										keep(new Uint8Array(await b.arrayBuffer()))
+									})
+									.catch((e: unknown) => setBad(e instanceof Error ? e.message : 'no'))
 							}}
 						/>
 					</label>

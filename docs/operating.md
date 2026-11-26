@@ -1749,7 +1749,9 @@ needs no role) -- is JPEG, PNG, GIF or WebP, at most 2 MiB and at most 2048 pixe
 a side. Its size is read from its header, and one larger is refused before any of
 it is decoded: a front door then keeps the URL alone, where the directory gave one
 a browser can fetch, and a page that takes a camera's photograph makes it smaller
-before it sends it. Rendering is the serving process's memory for as long as it
+before it sends it. roster's own do -- the admin console, the user console and the
+account app draw a larger image to 2048 pixels on its longer side, the way up the
+person sees it, and send that. Rendering is the serving process's memory for as long as it
 takes -- the image decoded whole -- and what a file weighs says little of that:
 the largest image there is costs up to 74 MiB for a second or two, as twenty-five
 kibibytes of progressive JPEG. So a process renders **two at once**, and a call

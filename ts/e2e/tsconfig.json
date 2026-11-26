@@ -12,7 +12,12 @@
 		"noUncheckedIndexedAccess": true,
 		"noEmit": true,
 		"skipLibCheck": true,
-		"verbatimModuleSyntax": true
+		"verbatimModuleSyntax": true,
+		// What `package.json`'s `imports` says, said again for Playwright: it
+		// follows `#lib/*` to `lib/x.js` and finds no such file, where it
+		// follows a path of this file's to `lib/x.ts`. `tsc` reads either. A
+		// spec imports from `lib/` only what names no DOM (`lib/portrait.ts`).
+		"paths": { "#lib/*": ["../lib/*"] }
 	},
 	"include": ["."]
 }
