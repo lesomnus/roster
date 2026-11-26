@@ -1357,6 +1357,26 @@ naming the alias and both identifiers, and nothing of the row is written; so
 is one that is not a tenant's identifier, where the file is read, and two
 entries that say one. A dry run says each of these as the run would.
 
+**A declared tenant is there before `init` is.** `serve` makes it at its first
+start, and `init` comes after (§ *The first operator*), so what `init` says last
+is the customers there are -- how many, and which a file declared and which were
+made before it -- rather than that there are none:
+
+```sh
+roster init
+```
+
+```
+control plane
+  holder admin is 019ff2...
+  bound to role "everything" = /roster.*/* -- every RPC roster serves, now and after an upgrade
+  password  on standard output, alone
+
+sign in to the admin console as admin. that password is shown once and is not stored -- write it down now.
+
+there is 1 customer already, declared by the resources serve applies.
+```
+
 What is **not** declarable is `Holder`, `Credential`, `Identity` and `Email`:
 people and the ways into their accounts. A file that made those is a file that
 grants access to whoever can write it. `Role` and `Binding` are the same argument
