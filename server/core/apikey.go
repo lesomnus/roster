@@ -379,7 +379,8 @@ func (s Core) holderNamed(ctx context.Context, alias string) (*app.HolderRef, er
 // Get, List and Erase are served on every port now, not only the one that
 // manages the deployment's own keys. What closed them on the others was the
 // verifier in `secret`, and the answer to that is the layer roster has for
-// every secret -- the sink strips it on the way out -- so a person lists their
+// every secret -- the Secret layer (`pd.Secret`) clears it on the way out --
+// so a person lists their
 // own keys and ends one by reference, and `Holder.RevokeKey`, which existed
 // because there was no served road to a key row, is gone: a second name for
 // the same rows (CLAUDE.md, *Overlay before service*). A write of one -- ending
