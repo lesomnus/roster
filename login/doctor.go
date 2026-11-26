@@ -2,6 +2,8 @@ package login
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -171,6 +173,13 @@ func Doctor(ctx context.Context, hydra, public string, header http.Header, whose
 	// One registered client, for the probes below: what Hydra was **told** can
 	// only be found out by asking it to do something, and asking it to start a
 	// flow needs a client and one of its own redirect URIs.
+	//
+	// A client that can start the flow, too: the `authorization_code` grant
+	// and a redirect. This took the first client that had a redirect, and
+	// one of the device grant alone is refused by Hydra before it decides
+	// where to send anybody -- at the client's own redirect, which is no
+	// fallback -- so with such a client first, a `urls.login` that pointed
+	// nowhere passed.
 	var sample *hydraClient
 
 	// Every client Hydra holds, and no list to compare against.
@@ -194,7 +203,7 @@ func Doctor(ctx context.Context, hydra, public string, header http.Header, whose
 			return nil, err
 		}
 
-		if sample == nil && v != nil && len(v.Redirects) > 0 {
+		if sample == nil && v != nil && len(v.Redirects) > 0 && slices.Contains(v.Grants, "authorization_code") {
 			sample = v
 		}
 
@@ -500,17 +509,33 @@ func told(ctx context.Context, public string, sample *hydraClient) []Finding {
 	// And where a browser is sent to sign in. It needs a client and one of its
 	// own redirect URIs, because Hydra refuses the request before it decides
 	// where to send anybody.
-	if sample != nil {
-		u := fmt.Sprintf("%s/oauth2/auth?client_id=%s&response_type=code&scope=openid&state=%s&redirect_uri=%s",
-			public, url.QueryEscape(sample.Id), "roster-login-doctor-probe", url.QueryEscape(sample.Redirects[0]))
-		if to, err := at(u); err == nil && isFallback(to) {
-			add(Broken, "urls.login does not point at this app",
-				"a browser sent here to sign in lands on hydra's fallback page instead of a form")
-		}
+	//
+	// With a PKCE challenge, which a confidential client may send and a
+	// public one must where Hydra enforces it -- as it may for every client.
+	// Without one, either of those was refused at the client's redirect, and
+	// that read as `urls.login` being fine. Nothing redeems the code, so the
+	// verifier is a constant.
+	if sample == nil {
+		add(Fragile, "where urls.login sends a browser was not checked: no client has the authorization_code grant and a redirect to start a flow with",
+			"a urls.login that does not point at this app is not found here; a deployment of device clients alone is told it by the first sign-in instead")
+
+		return out
+	}
+	sum := sha256.Sum256([]byte(probeVerifier))
+	u := fmt.Sprintf("%s/oauth2/auth?client_id=%s&response_type=code&scope=openid&state=%s&redirect_uri=%s&code_challenge=%s&code_challenge_method=S256",
+		public, url.QueryEscape(sample.Id), "roster-login-doctor-probe", url.QueryEscape(sample.Redirects[0]),
+		base64.RawURLEncoding.EncodeToString(sum[:]))
+	if to, err := at(u); err == nil && isFallback(to) {
+		add(Broken, "urls.login does not point at this app",
+			"a browser sent here to sign in lands on hydra's fallback page instead of a form")
 	}
 
 	return out
 }
+
+// probeVerifier is the PKCE verifier of the flow [told] starts and nobody
+// finishes: RFC 7636's length, and no secret, since no code is redeemed.
+const probeVerifier = "roster-login-doctor-probe-verifier-of-a-flow-nobody-finishes"
 
 // isFallback is Hydra answering with a page of its own because it was told
 // nowhere to send the browser.
