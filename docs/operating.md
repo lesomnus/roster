@@ -131,7 +131,9 @@ it makes both planes' tables whatever the switches say, since no other command
 is. The others that make tables ask them first -- `serve`, `login provision`,
 `resources apply` and `control key add` make a plane's only where its switch
 is on, and otherwise refuse a database without them -- and every other command
-alters none.
+alters none. `resources apply` makes no plane's first tables, whatever the
+switch: on a deployment neither `init` nor `serve` has made, it says so and
+writes nothing.
 
 **An upgrade with the switch off** has no command of its own. Its migration is
 one start, or one `roster init`, of the new build with `ROSTER_DB_MIGRATE=true`

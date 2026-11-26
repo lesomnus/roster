@@ -125,7 +125,7 @@ func OperatorNamed(ctx context.Context, s *Server, as string) (Operator, error) 
 	// apply`, `login provision`, `control key add`) is told who is at the shell
 	// before it makes them (#284). Said in roster's words, and nothing is made
 	// earlier than it was.
-	if made, err := hasTables(ctx, s.Control); err != nil {
+	if made, err := HasTables(ctx, s.Control); err != nil {
 		return Operator{}, fmt.Errorf("--as %s: %w", as, err)
 	} else if !made {
 		return Operator{}, fmt.Errorf("--as %s: nobody can be named at this shell before `roster init` has made the first operator, "+
@@ -176,9 +176,9 @@ func OperatorNamed(ctx context.Context, s *Server, as string) (Operator, error) 
 	return Operator{Id: who, Tenant: tenant, Alias: v.GetAlias()}, nil
 }
 
-// hasTables is whether the plane's database has its tables made: the tenant's,
+// HasTables is whether the plane's database has its tables made: the tenant's,
 // which is the first an operator is looked up in.
-func hasTables(ctx context.Context, s *Server) (bool, error) {
+func HasTables(ctx context.Context, s *Server) (bool, error) {
 	q := `SELECT count(*) FROM sqlite_master WHERE type = 'table' AND name = 'tenant'`
 	if s.Dialect == config.DialectPostgres {
 		q = `SELECT count(*) FROM information_schema.tables WHERE table_schema = current_schema() AND table_name = 'tenant'`
