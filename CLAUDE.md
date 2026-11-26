@@ -54,31 +54,51 @@ existed, said "no providers, no MFA", and was already false: `VouchService`
 checks a password. `docs/position.md`, § "The line, in one sentence" and
 § "Second factors".
 
-## Until the first launch, nothing is kept for an earlier roster
+## Until `v0.2.0`, anything may change but what is stored
 
-> **Until the first app launches (Loft), roster keeps nothing for an earlier
-> roster.** The owner's decision, 2026-11-09.
+> **Until `v0.2.0` is tagged, anything may change, with no compatibility path
+> -- but stored data, which is carried forward.** The owner's word,
+> 2026-11-26. Their decision of 2026-11-09 kept nothing for an earlier roster
+> until the first app launched (Loft); the boundary is `v0.2.0` since
+> 2026-11-26, and stored data the one exception to it.
 
-A change that breaks what an earlier build stored, exported, issued or was
-configured with carries no compatibility path: no column kept for the rows
-before it, no rename list of roster's own, no second spelling of a key, a
-token or a command, no paragraph telling an operator how to bring a deployment
-forward. It bumps `.github/compat-epoch` instead. So does a required field an
-entity gains, which the rows written before it lack: the epoch moves rather than
-a default being declared for them. An entity added is a table of its own and
-moves nothing. The `upgrade` job builds no BEFORE or OLDEST of another epoch
-(`.github/workflows/ci.yml`); staging is made again from nothing, and OLDEST
-moves to the first build of the new epoch once staging runs it. The pull
-request says, once, which roster a deployment with data must migrate on first
--- in its description, not in `docs/`.
+**What is not stored data may change.** The wire: a field or an RPC goes,
+whether or not something still uses it, and `buf breaking` is told so for that
+one change -- an `ignore_only` in `buf.yaml`, naming the rule and the file, out
+again with the first change after it reaches `main` (#196 and #197 are the
+shape). A command, a flag, a key of the file: the old one is refused by name at
+start or at the command line, as an unknown one is, with no second spelling, no
+alias and no paragraph telling an operator how to move, and the pull request
+says it. Two applications built on roster are deployed now, and each compiles
+a roster client at a pin, so a pull request that breaks the wire says which of
+them must move with it; Loft and levyan take the change when they move their
+pin. Nothing is refused, rehearsed or required for the wire before `v0.2.0`.
 
-An older caller is no different. Until the launch, a field or an RPC that
-nothing here needs goes, and `buf breaking` is told so for that one change: an
-`ignore_only` in `buf.yaml`, naming the rule and the file, out again with the
-first change after it reaches `main` (#196 and #197 are the shape). Loft and
-levyan take the change when they move their pin.
+**Stored data is the exception: a change to it carries the data.** A deployment
+with real people on it exists since 2026-11-26. From 2026-11-09 a change that
+broke what an earlier build stored carried nothing forward and bumped
+`.github/compat-epoch` instead: twenty-one bumps in two weeks, about ten of them
+for a flag or a key of the file renamed, which touched no row. Then a company's
+deployment at epoch 1 could not be brought to epoch 22 in place, and was moved
+to a second instance by hand; that instance holds real people, and two
+applications run on it, so a bump is that deployment moved by hand again. A
+table or a column renamed goes through payday's rename lists (`formerly`, and
+the `rename` calls `migrate` hands the lists to), so the rows move with the
+name. A required column that comes to a table with rows gets a default
+(`(orm.field).default`), or the migration fills it. A value whose shape changes
+is mapped. An entity added is a table of its own and needs nothing. The
+`upgrade` job rehearses it (`scripts/upgrade.sh`, from the build a change comes
+after and from OLDEST, the oldest build a deployment runs, which
+`.github/workflows/ci.yml` names).
 
-**From that launch on**, the rules that keep earlier builds and older callers
+**The epoch moves only where what an earlier build stored cannot be read by the
+next one**, and not without the owner's word: a change that needs it stops and
+asks first, saying what cannot be carried and why. It is 22. Where the owner
+moves it, the `upgrade` job builds no BEFORE or OLDEST of the other epoch, and
+the pull request says, once, which roster a deployment with data must migrate
+on first -- in its description, not in `docs/`.
+
+**From `v0.2.0` on**, the rules that keep earlier builds and older callers
 working apply again -- the rehearsed upgrade, a break of the wire as a
 migration argued for in a review, a default for a column that comes to a table
 with rows, the `buf.yaml` rules that wait for it -- and the epoch does not move

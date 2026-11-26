@@ -217,13 +217,11 @@ is `Recreate`, so it does not have two.
 **A column that comes to a table which already has rows** needs something for
 the rows already there. A field with no default is a NOT NULL column with none,
 and adding one to a table with rows is refused by SQLite and by Postgres alike:
-that is a release that does not start. Until the first app launches, such a
-field moves the compatibility epoch (below) rather than declaring a default for
-the rows written before it; an entity added is a table of its own, and moves
-nothing. From the launch on, a field added to an existing entity says what the
-rows already there should hold -- `(orm.field).default`, which the generator
-gives the column as well as the server, so every row already there holds it
-rather than NULL. CI migrates empty databases and cannot see this, which is what
+that is a release that does not start. So a field added to an existing entity
+says what the rows already there should hold -- `(orm.field).default`, which the
+generator gives the column as well as the server, so every row already there
+holds it rather than NULL -- or the migration fills it; an entity added is a
+table of its own, and needs nothing. CI migrates empty databases and cannot see this, which is what
 `scripts/upgrade.sh` is for: one build makes a deployment's databases, a row
 goes into every table, and another starts on them twice. The `upgrade` job runs
 it from two builds: the one a change comes after -- a pull request's base, or
@@ -232,23 +230,38 @@ which `.github/workflows/ci.yml` names, with which deployment runs what, and
 moves forward when the one on the oldest build moves: to the oldest any of them
 then runs.
 
-**Nor from another compatibility epoch.** `.github/compat-epoch` is a number,
-and a build whose number is not the commit's is one the commit keeps nothing
-of: the `upgrade` job does not build it, migrates nothing it made, and says so.
-Until the first app launches, a change that breaks what an earlier build
-stored, exported, issued or was configured with moves the number rather than
-carrying a way forward ([CLAUDE.md](../CLAUDE.md)), and the pull request that
-moves it names the build a deployment with data migrates on first. From the
-launch on it moves only on the owner's word.
+**An upgrade within the compatibility epoch is in place.** The new build is
+started on the databases the old one made, and at start `serve` brings each
+plane to its shape where `db.migrate` is on -- a table, a column or an index an
+earlier build made under another name moved to this build's first, then an
+index PostgreSQL left invalid and a column this build does not declare that
+takes no row without a value refused, by name, with the statement to run, then
+what the schema declares made -- and where it is off, refuses a database that
+is not its shape, printing the SQL that is missing (above). A change to what
+roster stores carries what is stored ([CLAUDE.md](../CLAUDE.md)): a rename goes
+through payday's rename lists, so the rows move with the name; a required
+column that comes to a table with rows has a default, or the migration fills
+it; a value whose shape changes is mapped. A flag, a command or a key of the
+file that goes is refused by name at start or at the command line, and the
+release that took it out says it.
 
-What a migration here can carry is an addition: a table, a column that is
-nullable or has a default, an index over rows that do not repeat. A change to the
-schema that is anything else -- a column renamed, retyped or made NOT NULL over
-rows that hold none, a unique index over rows that may repeat -- has no step to
-run in, between the old shape and the new one, and the database keeps no record
-of which build's shape it holds. Until the first app launches such a change moves
-the epoch, as the paragraph above says; from the launch on it is the owner's to
-allow.
+**Not from another compatibility epoch.** `.github/compat-epoch` is a number,
+and it moves only where what an earlier build stored cannot be read by the
+next one, on the owner's word. A build whose number is not the commit's is one
+the commit keeps nothing of: the `upgrade` job does not build it, migrates
+nothing it made, and says so, and the pull request that moves it names the
+build a deployment with data migrates on first. A deployment of an earlier
+epoch is made again, as a new instance, rather than upgraded in place.
+
+What a migration here carries by itself is an addition: a table, a column that
+is nullable or has a default, an index over rows that do not repeat, and a
+table, column or index renamed through the rename lists. A change to the
+schema that is anything else -- a column retyped or made NOT NULL over rows
+that hold none, a unique index over rows that may repeat -- has no step of its
+own to run in, between the old shape and the new one, and the database keeps
+no record of which build's shape it holds: it is carried by a step written for
+it beside the migration, or it is a change whose rows cannot be carried, and
+then it is the epoch's, and the owner's to allow.
 
 ### Backing it up
 

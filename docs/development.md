@@ -89,10 +89,13 @@ Neither says anything when it cannot -- a `replace`, a workspace, a build with n
 version are all somebody developing. While developing, `db.migrate: true` swaps
 the second refusal for `ent.Schema.Create`; that is a decision about who may
 alter tables, so it should be made on purpose rather than left on. There is no
-migrations directory. From the first app's launch on, what a change means for a
-running deployment is written beside the change; until then, a change that breaks
-what one stored moves the compatibility epoch instead and says which roster to
-migrate on first ([CLAUDE.md](../CLAUDE.md)).
+migrations directory. What a change means for a running deployment is written
+beside the change, and a change to what roster stores carries what is stored: a
+rename through payday's rename lists, a default for a required column that comes
+to a table with rows, a mapping for a value whose shape changes. The
+compatibility epoch moves only where what an earlier build stored cannot be read
+by the next one, and only on the owner's word, asked before the change is
+written ([CLAUDE.md](../CLAUDE.md)).
 
 ## Adding an entity
 

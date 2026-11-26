@@ -42,11 +42,12 @@
 #     go build -o /tmp/bin-now/ ./cmd/roster
 #     ./scripts/upgrade.sh /tmp/bin-before /tmp/bin-now
 #
-# BEFORE and NOW are of one compatibility epoch (`.github/compat-epoch`). Until
-# the first app launches, a change that breaks what an earlier build stored,
-# exported, issued or was configured with moves the epoch rather than carrying a
-# way forward (CLAUDE.md), and the job builds no BEFORE of another epoch: it
-# says why and passes, since what this would find there is what was meant.
+# BEFORE and NOW are of one compatibility epoch (`.github/compat-epoch`). A
+# change to what roster stores carries what is stored, and this is where that is
+# rehearsed; the epoch moves only where what an earlier build stored cannot be
+# read by the next one, on the owner's word (CLAUDE.md), and the job builds no
+# BEFORE of another epoch: it says why and passes, since what this would find
+# there is what the owner allowed.
 #
 # SQLite, because that is what the deployment it was written for runs, and what
 # fills the empty tables is SQLite's own catalogue.

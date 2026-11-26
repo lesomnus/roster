@@ -74,8 +74,8 @@ breaking:
     # caller that sends it as JSON is this repository's own console.
     #
     # Loft and levyan read these now, and a rename is a change each of them
-    # makes when it moves its pin -- which, until the first app launches, is
-    # what roster asks of an older caller (CLAUDE.md). From the launch on, put
+    # makes when it moves its pin -- which, until `v0.2.0` is tagged, is
+    # what roster asks of an older caller (CLAUDE.md). From `v0.2.0` on, put
     # them back: then a rename is a migration somebody else has to make.
     - FIELD_SAME_NAME
     - FIELD_SAME_JSON_NAME
@@ -86,9 +86,9 @@ breaking:
     # `connection.subject_claim`, `connection.provisions` and `holder.directory`
     # declared theirs, so that a row that predates the column holds it (#124).
     #
-    # Loft and levyan build these requests now, and until the first app
-    # launches a field that became a pointer is theirs to follow when they move
-    # their pin (CLAUDE.md). From the launch on, put it back: then it is a
+    # Loft and levyan build these requests now, and until `v0.2.0` is tagged
+    # a field that became a pointer is theirs to follow when they move
+    # their pin (CLAUDE.md). From `v0.2.0` on, put it back: then it is a
     # compile error somebody else has to fix.
     - FIELD_SAME_CARDINALITY
   # One change, on purpose and before the first app's launch (CLAUDE.md), in

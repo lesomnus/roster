@@ -164,11 +164,12 @@ jobs:
       # One baseline, and only one: roster's buf module has no name, so it is
       # published nowhere and there is no BSR ref to compare against. That does
       # not make the check pointless -- roster's protos are an API and there is
-      # already an app on the other side of it. From the first app's launch on,
-      # breaking the wire on purpose is a migration and should be argued for in
-      # a review rather than discovered downstream. Until then it needs no
-      # migration -- roster keeps nothing for an older caller before the launch
-      # (the owner's decision of 2026-11-09, CLAUDE.md) -- only an `ignore_only`
+      # already an app on the other side of it. From `v0.2.0` on, breaking the
+      # wire on purpose is a migration and should be argued for in a review
+      # rather than discovered downstream. Until then it needs no migration --
+      # before `v0.2.0` anything but stored data may change (the owner's word
+      # of 2026-11-26, CLAUDE.md), and the pull request says which app must
+      # move with it -- only an `ignore_only`
       # in `buf.yaml` for that one change, out again with the first change after
       # it reaches `main`.
       #
@@ -355,15 +356,14 @@ jobs:
   # (2026-11-11): nothing tagged what staging ran, so the job upgraded from
   # v0.1.1 and nothing else.
   #
-  # Except across a compatibility epoch, `.github/compat-epoch`. Until the
-  # first app launches, roster keeps nothing for an earlier roster (the
-  # owner's decision of 2026-11-09, CLAUDE.md): a change that breaks what an
-  # earlier build made moves the number instead, so a build of another epoch
-  # is not built and nothing it makes is migrated. The job says why as a notice
-  # and in the step summary, and passes -- it is required, and what it would
-  # find there is what was meant. A tree with no such file is epoch 0. OLDEST
-  # moves to the first build of the new epoch once staging runs it; from the
-  # launch on the epoch does not move without the owner's word.
+  # Except across a compatibility epoch, `.github/compat-epoch`. A change to
+  # what roster stores carries what is stored, and the number moves only where
+  # what an earlier build stored cannot be read by the next one, on the owner's
+  # word (their decision of 2026-11-26, CLAUDE.md). Where it has moved, a build
+  # of another epoch is not built and nothing it makes is migrated. The job
+  # says why as a notice and in the step summary, and passes -- it is
+  # required, and what it would find there is what the owner allowed. A tree
+  # with no such file is epoch 0.
   upgrade:
     runs-on: ubuntu-26.04
     steps:
@@ -378,16 +378,21 @@ jobs:
       - name: this build, the one it comes after, and the oldest a deployment runs
         env:
           BEFORE: ${{ github.event.pull_request.base.sha || github.event.before }}
-          # The oldest build a deployment runs. There are two deployments:
+          # The oldest build a deployment may still be on in this epoch. The
+          # company's instance, made again at epoch 22 on 2026-11-26, holds
+          # real people and two applications run on it:
           #
-          #   staging   36fafda   since 2026-11-13
-          #   another   59c0506   since 2026-11-14
+          #   brought up at   ad13c3b   2026-11-26
+          #   runs today      cddc675   2026-11-26
           #
-          # So it is staging's, and it moves when staging moves -- to the older
-          # of what the two then run. Moved to wherever staging went, it would
-          # pass the other by, which would then upgrade over steps nothing here
-          # had taken.
-          OLDEST: 36fafdadc11b7ab843eb0908b48b35da5efdd778
+          # So it is the first of the two: a deployment of this epoch may be on
+          # anything from it on, and an upgrade from it is the most steps one
+          # takes at once. It moves when that deployment moves -- to the oldest
+          # any deployment then runs, which is not always where that one went;
+          # moved past one, that one would upgrade over steps nothing here had
+          # taken. The deployments before it, of epoch 1, are not carried
+          # (CLAUDE.md).
+          OLDEST: ad13c3b142e416a4e9dd19aa11ddf05ebab281e3
         run: |
           go build -o "${RUNNER_TEMP}/bin-now/" ./cmd/roster
           # epoch TREE: the compatibility epoch TREE is of, and 0 for a tree
@@ -418,7 +423,7 @@ jobs:
             if [ "${was}" = "${now}" ]; then
               (cd "${RUNNER_TEMP}/$1" && go build -o "${RUNNER_TEMP}/bin-$1/" ./cmd/roster)
             else
-              why="$1 is $2, of compatibility epoch ${was}, and this build is of epoch ${now}: it is not built, and nothing it makes is migrated. The epoch moved on purpose: until the first app launches roster keeps nothing for an earlier roster (the owner's decision of 2026-11-09, CLAUDE.md), so staging is made again from nothing, and OLDEST moves to the first build of epoch ${now} once staging runs it."
+              why="$1 is $2, of compatibility epoch ${was}, and this build is of epoch ${now}: it is not built, and nothing it makes is migrated. The epoch moves only where what an earlier build stored cannot be read by the next one, on the owner's word (CLAUDE.md): a deployment of epoch ${was} is made again rather than upgraded, and OLDEST moves to the first build of epoch ${now} a deployment runs."
               echo "::notice title=upgrade::${why}"
               echo "${why}" >"${RUNNER_TEMP}/why-$1"
             fi
