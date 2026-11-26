@@ -430,8 +430,8 @@ func (s coreDelegation) Issue(ctx context.Context, req *app.DelegationIssueReque
 	}
 
 	// The hash never leaves, even here, for `ApiKey.Issue`'s reason: the
-	// layer that clears `secret` clears a top-level answer and not one
-	// nested in this response.
+	// layer that clears `secret` clears this response too, but this handler
+	// answers whoever calls it beneath the layer as well.
 	v.SetSecret(nil)
 
 	return app.DelegationIssueResponse_builder{Token: token, Delegation: v}.Build(), nil
