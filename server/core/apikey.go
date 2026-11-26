@@ -223,10 +223,11 @@ func (s coreApiKey) Issue(ctx context.Context, req *app.ApiKeyIssueRequest) (*ap
 	}
 
 	// The hash never leaves, even here. `Add` answered through `Next()`, which
-	// is below the layer that clears `secret` on the way out -- and that layer
-	// clears a top-level `ApiKey` answer, not one nested in this response -- so
-	// this clears it, the way the token is the one thing that is readable and
-	// exactly once. See `Credential.secret`.
+	// is below the layer that clears `secret` on the way out. That layer clears
+	// it from this response too, the key inside it included, but this handler
+	// answers whoever calls it beneath the layer as well, so it clears it
+	// itself, the way the token is the one thing that is readable and exactly
+	// once. See `Credential.secret`.
 	v.SetSecret(nil)
 
 	return app.ApiKeyIssueResponse_builder{Token: token, Key: v}.Build(), nil
