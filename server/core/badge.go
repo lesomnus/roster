@@ -152,8 +152,11 @@ func (b Badge) pin(pin string) error {
 }
 
 // badgeShown is what of a badge an answer carries: all of it but the
-// verifier, which no answer does. Selected rather than cleared, because the
-// stack at the box has no layer that clears it.
+// verifier, which no answer does. `pd.Secret` clears it from `Enrol`'s answer
+// on every stack a caller reaches, the box's included (its pipe is
+// `pd.NewSecret` over `Ungated`), so this is that layer's work done twice:
+// what it still keeps the verifier from is a caller beneath the layer, which
+// today is a test alone.
 func badgeShown() *app.BadgeSelect {
 	return app.BadgeSelect_builder{
 		Holder:      app.HolderSelect_builder{}.Build(),

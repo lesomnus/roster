@@ -26,8 +26,8 @@ import (
 // The service is served: `Revoke`, the delete a sign-out makes with a token in
 // hand, and `Get`, `List` and `Erase` beside it, so a person
 // sees where they are signed in and ends one by reference. The token in
-// `secret` never travels: the sink strips it on the way out like every other
-// secret, and this layer holds the rows to `mayReach`. `Add` stays closed,
+// `secret` never travels: the Secret layer (`pd.Secret`) clears it on the way
+// out like every other secret, and this layer holds the rows to `mayReach`. `Add` stays closed,
 // because it would take a verifier the caller chose. See
 // `delegation_svc.ext.proto`.
 type coreDelegation struct {
@@ -66,8 +66,9 @@ func (s coreDelegation) Revoke(ctx context.Context, req *app.DelegationRevokeReq
 
 // Get, List and Erase are served now, which the file comment above said they
 // were not: what closed them was the token in the `secret` column, and the
-// answer to that is the layer roster already has for every secret -- the sink
-// strips `(payday.field).secret` on the way out -- rather than a verb of
+// answer to that is the layer roster already has for every secret -- the
+// Secret layer (`pd.Secret`) clears `(payday.field).secret` on the way out --
+// rather than a verb of
 // `MeService`'s that curates the same rows. So a person lists their own
 // delegations to see where they are signed in, and erases one to end it; an
 // operator does the same for somebody they reach. `Revoke` stays for the caller
