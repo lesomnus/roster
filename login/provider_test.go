@@ -388,10 +388,10 @@ func TestATenantWithNoPasswordDrawsNoForm(t *testing.T) {
 // TestSomebodyTheOperatorEnteredIsTheSamePerson is the other half of what a
 // deployment asked for: people put in by hand, and people who arrive.
 //
-// An tenant entering somebody knows their **address** and cannot know the
-// subject a directory will assert -- that is issued at the directory. So the
-// first sign-in is matched by the one and linked to the other, and every sign-in
-// after it is the ordinary `Identity` lookup.
+// An tenant entering somebody knows their **address**, and not always the
+// subject a directory will assert -- one it mints for this app is known to
+// nobody before. So the first sign-in is matched by the one and linked to the
+// other, and every sign-in after it is the ordinary `Identity` lookup.
 func TestSomebodyTheOperatorEnteredIsTheSamePerson(t *testing.T) {
 	// `expected` is the whole policy: the people an tenant entered, and
 	// nobody else. Before this existed, `invited` was the only refusing policy

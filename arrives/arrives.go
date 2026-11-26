@@ -169,8 +169,11 @@ var ErrUninvited = errors.New("arrives: nobody here")
 // So it is told apart, as [ErrUninvited] is: a refusal about this person,
 // which an app answers them with, and which an administrator of their tenant
 // ends by linking the account. What to link is in the log [Providers.Known]
-// writes, since a subject is issued at the directory and nobody knows it
-// before the first sign-in.
+// writes: a subject the directory mints for this app (Entra's `sub`) is known
+// to nobody before the first sign-in. One that is the directory's own
+// identifier of the person (Entra's `oid`) is, and an administrator who links
+// them ahead of it (`roster identity add`, `roster scim adopt`) is never
+// answered this.
 var ErrUnlinked = errors.New("arrives: known here, and not this front door's to link")
 
 // ErrAnotherAccount is what [Providers.Known] answers for somebody whose
@@ -252,9 +255,10 @@ func Invited() Enrol {
 // address that person will arrive under; the first sign-in finds it and links
 // the identity, and every one after that finds the identity.
 //
-// The address is the only identifier an operator has before the first sign-in.
-// A directory's subject is issued at the directory and is not knowable in
-// advance, so a policy that matched on nothing else could never admit anybody.
+// The address is the identifier an operator always has before the first
+// sign-in. A subject the directory mints for this app is not knowable in
+// advance, so a policy that matched on nothing else could not admit anybody
+// through such a connection.
 //
 // And the row has to be the operator's word: written by somebody other than
 // the person, for somebody with no way in yet -- or proved since. An address a
