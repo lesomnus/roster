@@ -1142,7 +1142,8 @@ func authTime(v any) time.Time {
 // arrived -- an Entra app registration given `xms_edov` one day -- was then
 // believed about nobody who had signed in before, and their addresses stayed
 // unproved for good. `Email.Attest` is idempotent for exactly this, so the
-// returning half calls it too.
+// returning half calls it too -- where it would write anything, which it reads
+// first ([Providers.attestAgain]). The first sign-in calls it with no read.
 func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.Id, error) {
 	// One arrival at a time for one account ([turns]): what follows looks,
 	// and then may make somebody and link them, and two arrivals of one new
@@ -1232,7 +1233,8 @@ func (p *Providers) Known(ctx context.Context, enrol Enrol, who *Caller) (pdid.I
 // ordinary lookup, which every sign-in after the first is.
 //
 // Somebody erased is still named by the account they had, and is refused
-// ([ErrErased]). Anybody else is attested, at every sign-in ([Providers.Known]).
+// ([ErrErased]). Anybody else is attested, at every sign-in ([Providers.Known]),
+// where that would write anything ([Providers.attestAgain]).
 func (p *Providers) linked(ctx context.Context, who *Caller) (pdid.Id, bool, error) {
 	v, err := p.identity(ctx, who, who.Subject)
 	switch status.Code(err) {
@@ -1250,7 +1252,7 @@ func (p *Providers) linked(ctx context.Context, who *Caller) (pdid.Id, bool, err
 	if gone(v.GetHolder()) {
 		return pdid.Nil, false, erased(ctx, *who, id, "the account they had")
 	}
-	p.attest(ctx, id, v, *who)
+	p.attestAgain(ctx, id, v, *who)
 
 	return id, true, nil
 }
@@ -1430,6 +1432,88 @@ func (p *Providers) moved(ctx context.Context, who *Caller) (pdid.Id, bool, erro
 	}
 
 	return id, true, nil
+}
+
+// attestAgain is [Providers.attest] at a sign-in after the first, which reads
+// the address first and does not call when the call would write nothing.
+//
+// # Why it reads
+//
+// `EmailService/Attest` is held to the rule that a front door writes no way
+// into the account of somebody who holds more than it does
+// (`server/core/escalate.go`, `mayWriteAWayIn`). So an address written down at
+// somebody's first sign-in, before they held anything, was refused at every
+// sign-in after they were made an administrator: a `PermissionDenied` at roster
+// each time, for a write that would have written nothing. The rule is right and
+// is not what changed. Answered before it, `Attest` would tell a caller that
+// may call it, and may not read addresses, whose address it is.
+//
+// # What counts as nothing
+//
+// Which is the server's to say, read whole (`server/core/email.go`,
+// `coreEmail.Attest`), and held to it by a test that runs each case against
+// both (`account`, `TestTheFrontDoorSkipsAnAttestationOnlyWhereRosterWouldWriteNothing`):
+// the address is a row of this person's, and the directory does not newly say
+// it checked an address nobody proved -- it does not say so, or the row is
+// stamped already. Whose word the row was written on is not asked: `Attest`
+// leaves a row of the same person as it is, whichever account vouched for it.
+//
+// Anything else calls, as it did: no row, somebody else's row, a proof the row
+// does not have, or a read that failed. Reading decides nothing; it only saves
+// the call that would do nothing.
+//
+// # Why a `Get`, and only here
+//
+// By `(tenant, address)`, the key `Attest` reads by, and a read both front
+// doors already hold; neither holds a list of the tenant's addresses, and the
+// Login App is given none (`cli.LoginMethods`). A `Get` that finds nothing is
+// a `NotFound` in roster's log, which is why the first sign-in does not read
+// ([Providers.Known]): its address is new more often than not, and the
+// `Attest` that follows says the rest. Here a `NotFound` is a directory saying
+// an address roster has not seen for this person, once, and then the row is
+// there.
+//
+// What it costs is one read at every sign-in after the first, in place of a
+// call that wrote nothing -- which was a read and a comparison at roster
+// already.
+//
+// # The refusal that remains
+//
+// Somebody who holds more than the front door, whose address at the directory
+// is one roster does not have for them, is refused at every sign-in -- the
+// read's `NotFound` and the attestation's `PermissionDenied` -- until an
+// administrator adds the address. That is the rule working: their address
+// changed at the directory, and a person writes it onto them.
+func (p *Providers) attestAgain(ctx context.Context, who pdid.Id, link *rstr.Identity, from Caller) {
+	if from.Email == "" {
+		return
+	}
+
+	held, err := p.roster.Email().Get(ctx, rstr.EmailGetRequest_builder{
+		Ref: rstr.EmailRef_builder{At: rstr.EmailRefByAt_builder{
+			TenantId: from.Tenant.Bytes(),
+			Address:  proto.String(front.Address(from.Email)),
+		}.Build()}.Build(),
+		Select: rstr.EmailSelect_builder{
+			DateVerified: proto.Bool(true),
+			Holder:       rstr.HolderSelect_builder{}.Build(),
+		}.Build(),
+	}.Build())
+	if err == nil && attestsNothing(held, who, from.Verified) {
+		return
+	}
+
+	p.attest(ctx, who, link, from)
+}
+
+// attestsNothing is whether `Attest` would leave `held` as it is, for `who`
+// and a directory that said `verified` or not ([Providers.attestAgain]).
+func attestsNothing(held *rstr.Email, who pdid.Id, verified bool) bool {
+	if !bytes.Equal(held.GetHolder().GetId(), who.Bytes()) {
+		return false
+	}
+
+	return !verified || held.GetDateVerified() != nil
 }
 
 // attest writes down the address the directory just handed over, on the word of

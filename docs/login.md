@@ -1254,6 +1254,21 @@ to keep the evidence rather than guess. `Email.vouched_by` is *which identity
 vouched for it, if one did*, and `Email.Attest` is the second road to
 `date_verified`.
 
+It is written at every sign-in, not only the first, so a directory that starts
+saying an address is checked is believed about people who arrived before. A
+sign-in after the first reads the address first (`EmailService.Get`, which both
+front doors hold) and sends nothing when there is nothing to write: the address
+is already that person's, and the directory says no check that the row does not
+already have. A first sign-in writes with no read, since its address is new more
+often than not.
+
+So what roster's log shows of a sign-in is a write when there is one. The one
+refusal left is the rule that no front door writes a way into the account of
+somebody who holds more than it does ([usage/rules.md](usage/rules.md)): an
+administrator whose address at the directory is one roster does not have for
+them leaves a `NotFound` and a `PermissionDenied` at every sign-in, and signs in
+all the same, until an administrator adds the address to them.
+
 What a magic link is still for is the other thing entirely: an address **nobody**
 has vouched for, typed by a person, where the way to find out whether they hold
 that mailbox is to send a nonce there and see it come back.
