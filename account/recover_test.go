@@ -131,3 +131,74 @@ func TestATenantWithNoPasswordsRefusesTheRecoveryForm(t *testing.T) {
 		"a link went out where it hands over nothing")
 	x.Equal(before, d.links(t))
 }
+
+// TestARecoveryLinkThatCannotGiveAPasswordSaysSo: somebody who holds a role
+// of roster's that this front door does not is not given a password by mail
+// -- a front door does not write the credential of somebody who holds more
+// than it does -- and the page their link opens says so, and who gives them
+// one.
+//
+// # What it was
+//
+// The link was mailed and opening it spent it; then `Credential.Issue` was
+// refused by the rule about a way in, and the page answered 500, *the link is
+// good and the password could not be made; ask an operator*: a fault, where a
+// refusal about this account was owed. The link is still spent:
+// `Vouch.Redeem` cannot know a password is what it is spent for, and the
+// front door cannot ask before it is without a second copy of the rule.
+//
+// The page says nothing of why: roster refuses this with the code it refuses
+// the app's own key not allowed `CredentialService/Issue` with, and tells the
+// two apart by no detail, so the reason is the log's.
+func TestARecoveryLinkThatCannotGiveAPasswordSaysSo(t *testing.T) {
+	x := require.New(t)
+	d := serve(t, account.Invited())
+	ctx := t.Context()
+
+	// fay, at fabrikam, with a proved address and a role of roster's that
+	// the front door's role does not name.
+	fay, err := d.ungated.Holder().Add(ctx, rstr.HolderAddRequest_builder{
+		Tenant: rstr.TenantRef_builder{Id: d.fabrikam.Bytes()}.Build(), Alias: "fay",
+	}.Build())
+	x.NoError(err)
+	_, err = d.ungated.Credential().Set(ctx, rstr.CredentialSetRequest_builder{
+		Holder: rstr.HolderRef_builder{Id: fay.GetId()}.Build(), Secret: []byte("correct horse battery staple"),
+	}.Build())
+	x.NoError(err)
+	proved(t, d, fay.GetId(), "fay@fabrikam.com")
+	role, err := d.ungated.Role().Add(ctx, rstr.RoleAddRequest_builder{
+		Tenant:  rstr.TenantRef_builder{Id: d.fabrikam.Bytes()}.Build(),
+		Alias:   "auditors",
+		Methods: []string{rstr.AuditService_List_FullMethodName},
+	}.Build())
+	x.NoError(err)
+	_, err = d.ungated.Binding().Add(ctx, rstr.BindingAddRequest_builder{
+		Role:   rstr.RoleRef_builder{Id: role.GetId()}.Build(),
+		Holder: rstr.HolderRef_builder{Id: fay.GetId()}.Build(),
+	}.Build())
+	x.NoError(err)
+
+	// Asking answers as it does for every address, and the link goes out, as
+	// it did.
+	b := d.browser(t, "fabrikam.test")
+	code, _, body := b.asks(t, "/recover", `{"address":"fay@fabrikam.com"}`)
+	x.Equal(http.StatusAccepted, code, body)
+	var link string
+	x.Eventually(func() bool { link = d.sent("fay@fabrikam.com"); return link != "" }, 5*time.Second, 20*time.Millisecond)
+
+	code, page := b.spend(t, link)
+	x.Equal(http.StatusForbidden, code, page)
+	x.Contains(page, "A new password could not be given through this page")
+	x.Contains(page, "Nothing has changed")
+	x.Contains(page, "An administrator of your organisation gives you a new password")
+	x.Contains(page, "roster vouch reset")
+
+	// Spent, as every link is once its page is answered.
+	code, _ = b.spend(t, link)
+	x.Equal(http.StatusNotFound, code)
+
+	// And nothing changed: the password is the one she had.
+	code, _ = d.browser(t, "fabrikam.test").do(t, http.MethodPost, "/session", `{"alias":"fay","password":"correct horse battery staple"}`,
+		func(r *http.Request) { r.Header.Set("Content-Type", "application/json") })
+	x.Equal(http.StatusNoContent, code)
+}
