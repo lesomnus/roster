@@ -17,7 +17,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file app/apikey.proto.
  */
 export const file_app_apikey: GenFile = /*@__PURE__*/
-  fileDesc("ChBhcHAvYXBpa2V5LnByb3RvEgZyb3N0ZXIi/wUKBkFwaUtleRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEhUKBWFsaWFzGAQgASgJQgaqwRYCGAESFAoEZGVzYxgGIAEoCUIGqsEWAhgBEhcKB21ldGhvZHMYCCADKAlCBqrBFgIYABIcCgZzZWNyZXQYCSABKAxCDOqCFgIwAarBFgIIARI1CglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOAoMZGF0ZV9leHBpcmVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEkYKEmRhdGVfYXV0aGVudGljYXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDuqCFgQ4AUABqsEWAhABEicKA2FwcBgQIAEoCzIOLnJvc3Rlci5Ib2xkZXJCCvKCFgY4AUABSAESOQoMZGF0ZV91cGRhdGVkGA0gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA4oBABI4CgtkYXRlX2VyYXNlZBgOIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCB+qCFgOSAQASOwoMZGF0ZV9jcmVhdGVkGA8gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIJ6oIWBUABggEAOrsByvwVZBIMggEAigEAkgEAmgEAGiASBHBhZ2UaEAoMZGF0ZV9jcmVhdGVkEA8aBgoCaWQQARofEgRzbHVnGgkKBWFsaWFzEAQaCgoGaG9sZGVyEAIwARoREgZieV9hcHAaBwoDYXBwEBCKuxZPCA4yOgoSChAKDGRhdGVfY3JlYXRlZBAPCggKBgoCaWQQARoFCgNyZWYaCAoGaG9sZGVyGgUKA2FwcCAUKGQiDwoNaG9sZGVyLnRlbmFudEIqWh9naXRodWIuY29tL2xlc29tbnVzL3Jvc3Rlci9yc3RykgMCCALKxxYAYghlZGl0aW9uc3DoBw", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
+  fileDesc("ChBhcHAvYXBpa2V5LnByb3RvEgZyb3N0ZXIinwYKBkFwaUtleRIXCgJpZBgBIAEoDEIL6oIWBxBAKAGCAQASJgoGaG9sZGVyGAIgASgLMg4ucm9zdGVyLkhvbGRlckIG8oIWAkABEhUKBWFsaWFzGAQgASgJQgaqwRYCGAESFAoEZGVzYxgGIAEoCUIGqsEWAhgBEhcKB21ldGhvZHMYCCADKAlCBqrBFgIYABIcCgZzZWNyZXQYCSABKAxCDOqCFgIwAarBFgIIARI1CglkYXRlX3VzZWQYCiABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgbqghYCOAESOAoMZGF0ZV9leHBpcmVkGAsgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIG6oIWAjgBEkYKEmRhdGVfYXV0aGVudGljYXRlZBgMIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXBCDuqCFgQ4AUABqsEWAhABEicKA2FwcBgQIAEoCzIOLnJvc3Rlci5Ib2xkZXJCCvKCFgY4AUABSAESHgoFc2NvcGUYESABKAlCD+qCFgVAAYIBAKrBFgIYABI5CgxkYXRlX3VwZGF0ZWQYDSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgfqghYDigEAEjgKC2RhdGVfZXJhc2VkGA4gASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcEIH6oIWA5IBABI7CgxkYXRlX2NyZWF0ZWQYDyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wQgnqghYFQAGCAQA6uwHK/BVkEgyCAQCKAQCSAQCaAQAaIBIEcGFnZRoQCgxkYXRlX2NyZWF0ZWQQDxoGCgJpZBABGh8SBHNsdWcaCQoFYWxpYXMQBBoKCgZob2xkZXIQAjABGhESBmJ5X2FwcBoHCgNhcHAQEIq7Fk8IDjI6ChIKEAoMZGF0ZV9jcmVhdGVkEA8KCAoGCgJpZBABGgUKA3JlZhoICgZob2xkZXIaBQoDYXBwIBQoZCIPCg1ob2xkZXIudGVuYW50QipaH2dpdGh1Yi5jb20vbGVzb21udXMvcm9zdGVyL3JzdHKSAwIIAsrHFgBiCGVkaXRpb25zcOgH", [file_roster_payday_holder, file_google_protobuf_timestamp, file_orm, file_payday]);
 
 /**
  * ApiKey is what one service may call this deployment for.
@@ -211,6 +211,35 @@ export type ApiKey = Message<"roster.ApiKey"> & {
    * @generated from field: roster.Holder app = 16;
    */
   app?: Holder | undefined;
+
+  /**
+   * The app's own word about this key, given when it is minted and answered
+   * to the app by `TokenService.Introspect` as it was given
+   * (`payday.TokenIntrospectResponse.scope`): an identifier of a row of the
+   * app's that lists what the key reaches there -- a collection of assets, a
+   * list of cameras. Empty is a key that carries none, which every key minted
+   * before there was such a thing is.
+   *
+   * # roster keeps it and does not read it
+   *
+   * No rule here compares it and nothing narrows by it: what a key may call
+   * at roster and at the app is its `methods`, held to what its minter holds
+   * at the app, as it was. The app narrows by it, in its own scope or handler,
+   * or nobody does: an app that does not has a key as wide as its methods.
+   *
+   * So it is only on a key for an app, and a key of roster's own that says one
+   * is refused: nobody would read it, and a narrowing nobody applies is one
+   * its holder would believe in. At most 256 bytes. Set when the key is
+   * minted and never after: a key's reach is what it was minted with, as its
+   * app is.
+   *
+   * Not personal, as `methods` is not: it says what the key is narrowed to,
+   * and an app puts an identifier here rather than a description of
+   * somebody (docs/apps.md).
+   *
+   * @generated from field: string scope = 17;
+   */
+  scope: string;
 
   /**
    * @generated from field: google.protobuf.Timestamp date_updated = 13;

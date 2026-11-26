@@ -34,6 +34,8 @@ type ApiKey struct {
 	DateExpired *time.Time `json:"date_expired,omitempty"`
 	// DateAuthenticated holds the value of the "date_authenticated" field.
 	DateAuthenticated *time.Time `json:"date_authenticated,omitempty"`
+	// Scope holds the value of the "scope" field.
+	Scope string `json:"scope,omitempty"`
 	// DateUpdated holds the value of the "date_updated" field.
 	DateUpdated time.Time `json:"date_updated,omitempty"`
 	// DateErased holds the value of the "date_erased" field.
@@ -90,7 +92,7 @@ func (*ApiKey) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case apikey.FieldMethods, apikey.FieldSecret:
 			values[i] = new([]byte)
-		case apikey.FieldAlias, apikey.FieldDesc:
+		case apikey.FieldAlias, apikey.FieldDesc, apikey.FieldScope:
 			values[i] = new(sql.NullString)
 		case apikey.FieldDateUsed, apikey.FieldDateExpired, apikey.FieldDateAuthenticated, apikey.FieldDateUpdated, apikey.FieldDateErased, apikey.FieldDateCreated:
 			values[i] = new(sql.NullTime)
@@ -168,6 +170,12 @@ func (_m *ApiKey) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.DateAuthenticated = new(time.Time)
 				*_m.DateAuthenticated = value.Time
+			}
+		case apikey.FieldScope:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field scope", values[i])
+			} else if value.Valid {
+				_m.Scope = value.String
 			}
 		case apikey.FieldDateUpdated:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -272,6 +280,9 @@ func (_m *ApiKey) String() string {
 		builder.WriteString("date_authenticated=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("scope=")
+	builder.WriteString(_m.Scope)
 	builder.WriteString(", ")
 	builder.WriteString("date_updated=")
 	builder.WriteString(_m.DateUpdated.Format(time.ANSIC))

@@ -545,6 +545,7 @@ func (s coreHolder) SignsIn(ctx context.Context, req *app.HolderSignsInRequest) 
 				Alias:   k.GetAlias(),
 				Methods: k.GetMethods(),
 				App:     k.GetApp().GetId(),
+				Scope:   k.GetScope(),
 			}
 			alias, err := aliasOf(k.GetApp().GetId())
 			if err != nil {

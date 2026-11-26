@@ -164,6 +164,12 @@ func (v service) Introspect(ctx context.Context, req *pdpb.TokenIntrospectReques
 		TenantId: h.GetTenant().GetId(),
 
 		Grant: grantOf(k.Methods),
+
+		// The app's word about the key, as it was given (`ApiKey.scope`).
+		// Only the app the key is for gets this far ([spentAt]), so it is
+		// answered to that app and to nobody else, and nothing here has read
+		// it: what it names is the app's to apply.
+		Scope: k.Scope,
 	}
 	if !k.Expires.IsZero() {
 		res.DateExpired = timestamppb.New(k.Expires)

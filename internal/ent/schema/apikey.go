@@ -36,6 +36,10 @@ func (ApiKey) Fields() []ent.Field {
 			Nillable().
 			Immutable().
 			Optional(),
+		field.String("scope").
+			Immutable().
+			Optional().
+			Default(""),
 		field.Time("date_updated"),
 		field.Time("date_erased").
 			Nillable().

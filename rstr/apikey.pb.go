@@ -74,6 +74,7 @@ type ApiKey struct {
 	xxx_hidden_DateExpired       *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=date_expired,json=dateExpired"`
 	xxx_hidden_DateAuthenticated *timestamppb.Timestamp `protobuf:"bytes,12,opt,name=date_authenticated,json=dateAuthenticated"`
 	xxx_hidden_App               *Holder                `protobuf:"bytes,16,opt,name=app"`
+	xxx_hidden_Scope             string                 `protobuf:"bytes,17,opt,name=scope"`
 	xxx_hidden_DateUpdated       *timestamppb.Timestamp `protobuf:"bytes,13,opt,name=date_updated,json=dateUpdated"`
 	xxx_hidden_DateErased        *timestamppb.Timestamp `protobuf:"bytes,14,opt,name=date_erased,json=dateErased"`
 	xxx_hidden_DateCreated       *timestamppb.Timestamp `protobuf:"bytes,15,opt,name=date_created,json=dateCreated"`
@@ -176,6 +177,13 @@ func (x *ApiKey) GetApp() *Holder {
 	return nil
 }
 
+func (x *ApiKey) GetScope() string {
+	if x != nil {
+		return x.xxx_hidden_Scope
+	}
+	return ""
+}
+
 func (x *ApiKey) GetDateUpdated() *timestamppb.Timestamp {
 	if x != nil {
 		return x.xxx_hidden_DateUpdated
@@ -241,6 +249,10 @@ func (x *ApiKey) SetDateAuthenticated(v *timestamppb.Timestamp) {
 
 func (x *ApiKey) SetApp(v *Holder) {
 	x.xxx_hidden_App = v
+}
+
+func (x *ApiKey) SetScope(v string) {
+	x.xxx_hidden_Scope = v
 }
 
 func (x *ApiKey) SetDateUpdated(v *timestamppb.Timestamp) {
@@ -446,7 +458,31 @@ type ApiKey_builder struct {
 	//
 	// The holder's row is not deleted while a key names it here: the store
 	// refuses it, since a key that named no app would be one of roster's.
-	App         *Holder
+	App *Holder
+	// The app's own word about this key, given when it is minted and answered
+	// to the app by `TokenService.Introspect` as it was given
+	// (`payday.TokenIntrospectResponse.scope`): an identifier of a row of the
+	// app's that lists what the key reaches there -- a collection of assets, a
+	// list of cameras. Empty is a key that carries none, which every key minted
+	// before there was such a thing is.
+	//
+	// # roster keeps it and does not read it
+	//
+	// No rule here compares it and nothing narrows by it: what a key may call
+	// at roster and at the app is its `methods`, held to what its minter holds
+	// at the app, as it was. The app narrows by it, in its own scope or handler,
+	// or nobody does: an app that does not has a key as wide as its methods.
+	//
+	// So it is only on a key for an app, and a key of roster's own that says one
+	// is refused: nobody would read it, and a narrowing nobody applies is one
+	// its holder would believe in. At most 256 bytes. Set when the key is
+	// minted and never after: a key's reach is what it was minted with, as its
+	// app is.
+	//
+	// Not personal, as `methods` is not: it says what the key is narrowed to,
+	// and an app puts an identifier here rather than a description of
+	// somebody (docs/apps.md).
+	Scope       string
 	DateUpdated *timestamppb.Timestamp
 	DateErased  *timestamppb.Timestamp
 	DateCreated *timestamppb.Timestamp
@@ -466,6 +502,7 @@ func (b0 ApiKey_builder) Build() *ApiKey {
 	x.xxx_hidden_DateExpired = b.DateExpired
 	x.xxx_hidden_DateAuthenticated = b.DateAuthenticated
 	x.xxx_hidden_App = b.App
+	x.xxx_hidden_Scope = b.Scope
 	x.xxx_hidden_DateUpdated = b.DateUpdated
 	x.xxx_hidden_DateErased = b.DateErased
 	x.xxx_hidden_DateCreated = b.DateCreated
@@ -476,7 +513,7 @@ var File_app_apikey_proto protoreflect.FileDescriptor
 
 const file_app_apikey_proto_rawDesc = "" +
 	"\n" +
-	"\x10app/apikey.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xfe\x06\n" +
+	"\x10app/apikey.proto\x12\x06roster\x1a\x1aroster/payday/holder.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\torm.proto\x1a\fpayday.proto\"\xa5\a\n" +
 	"\x06ApiKey\x12\x1b\n" +
 	"\x02id\x18\x01 \x01(\fB\v\xea\x82\x16\a\x10@(\x01\x82\x01\x00R\x02id\x12.\n" +
 	"\x06holder\x18\x02 \x01(\v2\x0e.roster.HolderB\x06\xf2\x82\x16\x02@\x01R\x06holder\x12\x1c\n" +
@@ -489,7 +526,8 @@ const file_app_apikey_proto_rawDesc = "" +
 	"\fdate_expired\x18\v \x01(\v2\x1a.google.protobuf.TimestampB\x06\xea\x82\x16\x028\x01R\vdateExpired\x12Y\n" +
 	"\x12date_authenticated\x18\f \x01(\v2\x1a.google.protobuf.TimestampB\x0e\xea\x82\x16\x048\x01@\x01\xaa\xc1\x16\x02\x10\x01R\x11dateAuthenticated\x12,\n" +
 	"\x03app\x18\x10 \x01(\v2\x0e.roster.HolderB\n" +
-	"\xf2\x82\x16\x068\x01@\x01H\x01R\x03app\x12F\n" +
+	"\xf2\x82\x16\x068\x01@\x01H\x01R\x03app\x12%\n" +
+	"\x05scope\x18\x11 \x01(\tB\x0f\xea\x82\x16\x05@\x01\x82\x01\x00\xaa\xc1\x16\x02\x18\x00R\x05scope\x12F\n" +
 	"\fdate_updated\x18\r \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x8a\x01\x00R\vdateUpdated\x12D\n" +
 	"\vdate_erased\x18\x0e \x01(\v2\x1a.google.protobuf.TimestampB\a\xea\x82\x16\x03\x92\x01\x00R\n" +
 	"dateErased\x12H\n" +

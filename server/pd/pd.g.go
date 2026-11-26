@@ -23930,6 +23930,7 @@ func ResourceProjector(db *ent.Client, scope bare.Scope, guard resource.Guard) r
 				{Number: 11, Name: entApiKey.FieldDateExpired, Type: 65, Nullable: true, Key: 0},
 				{Number: 12, Name: entApiKey.FieldDateAuthenticated, Type: 65, Nullable: true, Key: 0},
 				{Number: 16, Name: entApiKey.AppColumn, Type: 64, Nullable: true, Key: 1},
+				{Number: 17, Name: entApiKey.FieldScope, Type: 9, Nullable: false, Key: 0},
 				{Number: 13, Name: entApiKey.FieldDateUpdated, Type: 65, Nullable: false, Key: 0},
 				{Number: 14, Name: entApiKey.FieldDateErased, Type: 65, Nullable: true, Key: 0},
 				{Number: 15, Name: entApiKey.FieldDateCreated, Type: 65, Nullable: false, Key: 0},

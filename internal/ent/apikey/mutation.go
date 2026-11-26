@@ -25,6 +25,7 @@ type Mutation struct {
 	date_used          *time.Time
 	date_expired       *time.Time
 	date_authenticated *time.Time
+	scope              *string
 	date_updated       *time.Time
 	date_erased        *time.Time
 	date_created       *time.Time
@@ -271,6 +272,39 @@ func (m *Mutation) ResetDateAuthenticated() {
 	delete(m.clearedFields, FieldDateAuthenticated)
 }
 
+// SetScope sets the "scope" field.
+func (m *Mutation) SetScope(s string) {
+	m.scope = &s
+	delete(m.clearedFields, FieldScope)
+}
+
+// Scope returns the value of the "scope" field in the mutation.
+func (m *Mutation) Scope() (r string, exists bool) {
+	v := m.scope
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearScope clears the value of the "scope" field.
+func (m *Mutation) ClearScope() {
+	m.scope = nil
+	m.clearedFields[FieldScope] = struct{}{}
+}
+
+// ScopeCleared returns if the "scope" field was cleared in this mutation.
+func (m *Mutation) ScopeCleared() bool {
+	_, ok := m.clearedFields[FieldScope]
+	return ok
+}
+
+// ResetScope resets all changes to the "scope" field.
+func (m *Mutation) ResetScope() {
+	m.scope = nil
+	delete(m.clearedFields, FieldScope)
+}
+
 // SetDateUpdated sets the "date_updated" field.
 func (m *Mutation) SetDateUpdated(t time.Time) {
 	m.date_updated = &t
@@ -501,7 +535,7 @@ func (m *Mutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *Mutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m.alias != nil || m.exprs[FieldAlias] != nil {
 		fields = append(fields, FieldAlias)
 	}
@@ -522,6 +556,9 @@ func (m *Mutation) Fields() []string {
 	}
 	if m.date_authenticated != nil {
 		fields = append(fields, FieldDateAuthenticated)
+	}
+	if m.scope != nil {
+		fields = append(fields, FieldScope)
 	}
 	if m.date_updated != nil || m.exprs[FieldDateUpdated] != nil {
 		fields = append(fields, FieldDateUpdated)
@@ -566,6 +603,8 @@ func (m *Mutation) Field(name string) (ent.Value, bool) {
 		return m.DateExpired()
 	case FieldDateAuthenticated:
 		return m.DateAuthenticated()
+	case FieldScope:
+		return m.Scope()
 	case FieldDateUpdated:
 		return m.DateUpdated()
 	case FieldDateErased:
@@ -665,6 +704,16 @@ func (m *Mutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDateAuthenticated(v)
 		return nil
+	case FieldScope:
+		v, ok := value.(string)
+		if !ok {
+			if e, ok := value.(sql.Querier); ok {
+				return m.SetFieldExpr(name, e)
+			}
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScope(v)
+		return nil
 	case FieldDateUpdated:
 		v, ok := value.(time.Time)
 		if !ok {
@@ -750,6 +799,8 @@ func (m *Mutation) SetFieldExpr(name string, expr sql.Querier) error {
 	case FieldDateExpired:
 		m.ResetDateExpired()
 	case FieldDateAuthenticated:
+		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
+	case FieldScope:
 		return fmt.Errorf("field %s cannot be assigned an expression: it is immutable, and an expression is written only by an update", name)
 	case FieldDateUpdated:
 		m.ResetDateUpdated()
@@ -847,6 +898,9 @@ func (m *Mutation) ClearedFields() []string {
 	if m.FieldCleared(FieldDateAuthenticated) {
 		fields = append(fields, FieldDateAuthenticated)
 	}
+	if m.FieldCleared(FieldScope) {
+		fields = append(fields, FieldScope)
+	}
 	if m.FieldCleared(FieldDateErased) {
 		fields = append(fields, FieldDateErased)
 	}
@@ -881,6 +935,9 @@ func (m *Mutation) ClearField(name string) error {
 		return nil
 	case FieldDateAuthenticated:
 		m.ClearDateAuthenticated()
+		return nil
+	case FieldScope:
+		m.ClearScope()
 		return nil
 	case FieldDateErased:
 		m.ClearDateErased()
@@ -919,6 +976,9 @@ func (m *Mutation) ResetField(name string) error {
 		return nil
 	case FieldDateAuthenticated:
 		m.ResetDateAuthenticated()
+		return nil
+	case FieldScope:
+		m.ResetScope()
 		return nil
 	case FieldDateUpdated:
 		m.ResetDateUpdated()

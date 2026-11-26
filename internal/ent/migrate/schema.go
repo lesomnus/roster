@@ -63,6 +63,7 @@ var (
 		{Name: "date_used", Type: field.TypeTime, Nullable: true},
 		{Name: "date_expired", Type: field.TypeTime, Nullable: true},
 		{Name: "date_authenticated", Type: field.TypeTime, Nullable: true},
+		{Name: "scope", Type: field.TypeString, Nullable: true, Default: ""},
 		{Name: "date_updated", Type: field.TypeTime},
 		{Name: "date_erased", Type: field.TypeTime, Nullable: true},
 		{Name: "date_created", Type: field.TypeTime, Nullable: true},
@@ -77,13 +78,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "apikey_holder_holder",
-				Columns:    []*schema.Column{ApikeyColumns[11]},
+				Columns:    []*schema.Column{ApikeyColumns[12]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "apikey_holder_app",
-				Columns:    []*schema.Column{ApikeyColumns[12]},
+				Columns:    []*schema.Column{ApikeyColumns[13]},
 				RefColumns: []*schema.Column{HolderColumns[0]},
 				OnDelete:   schema.Restrict,
 			},
@@ -92,12 +93,12 @@ var (
 			{
 				Name:    "apikey_page",
 				Unique:  false,
-				Columns: []*schema.Column{ApikeyColumns[10], ApikeyColumns[0]},
+				Columns: []*schema.Column{ApikeyColumns[11], ApikeyColumns[0]},
 			},
 			{
 				Name:    "apikey_slug",
 				Unique:  true,
-				Columns: []*schema.Column{ApikeyColumns[1], ApikeyColumns[11]},
+				Columns: []*schema.Column{ApikeyColumns[1], ApikeyColumns[12]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "date_erased IS NULL",
 				},
@@ -105,7 +106,7 @@ var (
 			{
 				Name:    "apikey_by_app",
 				Unique:  false,
-				Columns: []*schema.Column{ApikeyColumns[12]},
+				Columns: []*schema.Column{ApikeyColumns[13]},
 			},
 			{
 				Name:    "apikey_secret",

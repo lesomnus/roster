@@ -851,7 +851,10 @@ browser*). Off, those endpoints answer 501 to both and the page draws no form fo
 them. The second also needs the front door to know `delegation.life`, which
 `roster serve` and `roster account serve` always hand it from the file, the
 default a day; a front door handed none offers no delegation, `501` saying so,
-and still signs a terminal in. The blunt
+and still signs a terminal in. A key a terminal asks for may say when it ends
+(`date_expired`) and carry the app's scope, each shown to the person before
+they say yes; nothing in this file bounds how long such a key lives, so one
+asked for with no end never ends, as a key minted any other way. The blunt
 control is a different thing and turns off more: take `ApiKeyService/Issue` out
 of the tenant's `self-service` role and **no** self-service key can be minted,
 the page's own app passwords included

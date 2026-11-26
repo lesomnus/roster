@@ -106,6 +106,12 @@ const (
 
 	// MaxScopes is how many scopes a connection asks its provider for.
 	MaxScopes = 32
+
+	// MaxKeyScope is the most bytes a key's scope is (`ApiKey.scope`): an
+	// app's identifier of a row of its own, compared by the app and never
+	// read here. payday holds nothing of it and so bounds nothing; the store
+	// that keeps it does.
+	MaxKeyScope = 256
 )
 
 // form is the last thing in front of the store: what a write says of a row is
@@ -349,6 +355,23 @@ func connected(issuer, client, secret string, scopes []string) error {
 	)
 }
 
+// keyScoped refuses a key's scope (`ApiKey.scope`) past [MaxKeyScope], and
+// any on a key that is for no app.
+//
+// The second is not about the value. A scope is the word of the app a key is
+// for, and that app is the only thing that reads it: roster narrows nothing
+// by it. On a key of roster's own nobody would, and a key that says it is
+// narrowed where nothing narrows it is one its holder believes in. So it is
+// refused here, whichever verb wrote it, rather than kept and ignored.
+func keyScoped(scope string, forApp bool) error {
+	if scope != "" && !forApp {
+		return pderr.Invalidf("scope",
+			"this key is roster's own and for no app, so no app is there to read a scope; a scope is the word of the app a key is for, and nothing here reads it")
+	}
+
+	return sized("scope", scope, MaxKeyScope)
+}
+
 // held is a write made once what it says has passed [written], and not made
 // in a dry run ([Dry]), which it answers [ErrDry].
 func held[Q interface {
@@ -506,6 +529,9 @@ func (s form) Tenant() app.TenantServiceServer         { return formTenant{s.Nex
 
 func (s formApiKey) Add(ctx context.Context, req *app.ApiKeyAddRequest) (*app.ApiKey, error) {
 	if err := keys.Listed("methods", req.GetMethods()); err != nil {
+		return nil, err
+	}
+	if err := keyScoped(req.GetScope(), req.GetApp() != nil); err != nil {
 		return nil, err
 	}
 

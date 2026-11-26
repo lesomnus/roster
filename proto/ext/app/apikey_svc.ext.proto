@@ -89,6 +89,13 @@ message ApiKeyIssueRequest {
   // roster. **Data plane only**: a key of the control plane's is the
   // deployment's, and is for no app. See `ApiKey.app`.
   HolderRef app = 6;
+
+  // The app's own word about the key: an identifier of a row of the app's
+  // that lists what the key reaches there, answered to the app by
+  // `Introspect` as it is given here. roster keeps it and does not narrow by
+  // it; an app that does not narrow by it has a key as wide as its methods.
+  // Only with `app`, at most 256 bytes, and never changed. See `ApiKey.scope`.
+  string scope = 7 [features.field_presence = IMPLICIT];
 }
 
 message ApiKeyIssueResponse {

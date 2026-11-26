@@ -267,6 +267,9 @@ func (_u *ApiKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if _u.mutation.DateAuthenticatedCleared() {
 		_spec.ClearField(apikey.FieldDateAuthenticated, field.TypeTime)
 	}
+	if _u.mutation.ScopeCleared() {
+		_spec.ClearField(apikey.FieldScope, field.TypeString)
+	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(apikey.FieldDateUpdated, field.TypeTime, value)
 	}
@@ -573,6 +576,9 @@ func (_u *ApiKeyUpdateOne) sqlSave(ctx context.Context) (_node *ApiKey, err erro
 	}
 	if _u.mutation.DateAuthenticatedCleared() {
 		_spec.ClearField(apikey.FieldDateAuthenticated, field.TypeTime)
+	}
+	if _u.mutation.ScopeCleared() {
+		_spec.ClearField(apikey.FieldScope, field.TypeString)
 	}
 	if value, ok := _u.mutation.DateUpdated(); ok {
 		_spec.SetField(apikey.FieldDateUpdated, field.TypeTime, value)

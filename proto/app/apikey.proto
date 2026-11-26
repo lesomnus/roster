@@ -184,6 +184,37 @@ message ApiKey {
     on_delete: ON_DELETE_RESTRICT
   }];
 
+  // The app's own word about this key, given when it is minted and answered
+  // to the app by `TokenService.Introspect` as it was given
+  // (`payday.TokenIntrospectResponse.scope`): an identifier of a row of the
+  // app's that lists what the key reaches there -- a collection of assets, a
+  // list of cameras. Empty is a key that carries none, which every key minted
+  // before there was such a thing is.
+  //
+  // # roster keeps it and does not read it
+  //
+  // No rule here compares it and nothing narrows by it: what a key may call
+  // at roster and at the app is its `methods`, held to what its minter holds
+  // at the app, as it was. The app narrows by it, in its own scope or handler,
+  // or nobody does: an app that does not has a key as wide as its methods.
+  //
+  // So it is only on a key for an app, and a key of roster's own that says one
+  // is refused: nobody would read it, and a narrowing nobody applies is one
+  // its holder would believe in. At most 256 bytes. Set when the key is
+  // minted and never after: a key's reach is what it was minted with, as its
+  // app is.
+  //
+  // Not personal, as `methods` is not: it says what the key is narrowed to,
+  // and an app puts an identifier here rather than a description of
+  // somebody (docs/apps.md).
+  string scope = 17 [
+    (orm.field) = {
+      immutable: true
+      default: ""
+    },
+    (payday.field) = {personal: false}
+  ];
+
   google.protobuf.Timestamp date_updated = 13 [(orm.field) = {version: {}}];
   google.protobuf.Timestamp date_erased = 14 [(orm.field) = {erased: {}}];
   google.protobuf.Timestamp date_created = 15 [(orm.field) = {
