@@ -33,6 +33,18 @@
  * second person saving the same tenant from another tab is refused rather than
  * silently last-wins.
  *
+ * # A tenant a file declares
+ *
+ * Is the file's in what the file says of it: its name, its note, its labels and
+ * each key of its settings the file says, which the row lists in
+ * `roster.declared.config` (`server/core/tenant.go`, `mayUpdateDeclared`). Those
+ * are shown and not edited here, saying which file, and go back as they were
+ * read, which is no change; the labels do not go back at all, since they carry
+ * `roster.declared`, which no caller sends. The settings the file leaves out
+ * are the tenant's and are edited as any tenant's are. A declared tenant
+ * without that label was written by a build before it, and every setting of it
+ * is the file's.
+ *
  * @module
  */
 
@@ -42,6 +54,12 @@ import { useCall, useQuery } from '@lesomnus/payday/react'
 import { TenantService } from '#gen/roster/payday/tenant_svc_pb.js'
 
 import { ref, said, uuid, when, type May } from './parts.js'
+
+// The labels a tenant a file declares carries: which file, and which keys of
+// its settings the file says (`rstr/tenant.go`). Written by what applies the
+// file, and by no caller.
+const declared = 'roster.declared'
+const declaredConfig = 'roster.declared.config'
 
 export function Tenant(props: {
 	tenant: { id?: Uint8Array; alias?: string } | undefined
@@ -75,6 +93,14 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 
 	const mayWrite = props.may('/roster.TenantService/Update')
 
+	// What a file says of this tenant, and which file: see the top of this file.
+	const from = t.labels?.[declared]
+	const keys = t.labels?.[declaredConfig]
+	const files = (key: string): boolean =>
+		from !== undefined && (keys === undefined || keys.split(',').includes(key))
+	const fileSays = from === undefined ? undefined : `declared in ${from}, and changed there`
+	const ofFile = (key: string): string | undefined => (files(key) ? fileSays : undefined)
+
 	return (
 		<>
 			{/* The identity first, and read-only because none of it is a field: the
@@ -107,6 +133,12 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 
 			<h4>what it says about itself</h4>
 			{!mayWrite && <p className="none">this needs /roster.TenantService/Update</p>}
+			{from !== undefined && (
+				<p className="note">
+					declared in <code>{from}</code>: what it says is shown here and changed there, and the
+					rest is this tenant&apos;s
+				</p>
+			)}
 			<form
 				className="profile"
 				onSubmit={(e) => {
@@ -122,34 +154,52 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 						.call({
 							ref: ref(t.id),
 							dateUpdated: t.dateUpdated,
-							name: String(f.get('name') ?? '').trim(),
-							desc: String(f.get('desc') ?? '').trim(),
-							labels: parsed,
+							name: from !== undefined ? t.name : String(f.get('name') ?? '').trim(),
+							desc: from !== undefined ? t.desc : String(f.get('desc') ?? '').trim(),
+							// Empty is left as it is, which a declared
+							// tenant's are.
+							labels: from !== undefined ? {} : parsed,
 							// Replaced whole, so the checkbox sends the whole
 							// message. `password: true` and not "unset" once
 							// somebody has touched the box: unset means the
-							// default and this is now a decision.
+							// default and this is now a decision. What the
+							// file says goes back as it was read.
 							config: {
-								password: f.get('password') !== null,
-								frontDoor: String(f.get('front_door') ?? '').trim(),
+								// Unset where the file says it and the row has
+								// it unset: unset is a value of its own.
+								...(!files('password')
+									? { password: f.get('password') !== null }
+									: t.config?.password === undefined
+										? {}
+										: { password: t.config.password }),
+								frontDoor: files('front_door')
+									? (t.config?.frontDoor ?? '')
+									: String(f.get('front_door') ?? '').trim(),
 								// The Slack reference goes back as it was read:
 								// it names one of the deployment's secrets, and
 								// roster refuses a new one from anybody but the
 								// deployment (`tenant.ext.proto`).
 								profile: {
-									fill: f.get('fill') !== null,
+									fill: files('profile.fill') ? (t.config?.profile?.fill ?? false) : f.get('fill') !== null,
 									slackSecretRef: t.config?.profile?.slackSecretRef ?? '',
 								},
-								leave: f.get('leave') !== null,
+								leave: files('leave') ? (t.config?.leave ?? false) : f.get('leave') !== null,
 							},
 						})
 						.then(() => tell({ kind: 'done', text: 'saved' }))
 						.catch((e: unknown) => tell({ kind: 'bad', text: said(e) }))
 				}}
 			>
-				<input name="name" placeholder="name" defaultValue={t.name} />
-				<input name="desc" placeholder="note" defaultValue={t.desc} />
-				<textarea name="labels" placeholder={'labels, one per line: brand=Contoso'} defaultValue={labels} rows={3} />
+				<input name="name" placeholder="name" defaultValue={t.name} readOnly={from !== undefined} title={fileSays} />
+				<input name="desc" placeholder="note" defaultValue={t.desc} readOnly={from !== undefined} title={fileSays} />
+				<textarea
+					name="labels"
+					placeholder={'labels, one per line: brand=Contoso'}
+					defaultValue={labels}
+					rows={3}
+					readOnly={from !== undefined}
+					title={fileSays}
+				/>
 				{/*
 					A way in, and not a screen setting: roster refuses a password
 					for a tenant with this off, so what the sign-in pages draw is
@@ -157,8 +207,13 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					through a directory -- a form nobody uses is a form that says
 					somebody here has a password.
 				*/}
-				<label className="check">
-					<input type="checkbox" name="password" defaultChecked={t.config?.password ?? true} />
+				<label className="check" title={ofFile('password')}>
+					<input
+						type="checkbox"
+						name="password"
+						defaultChecked={t.config?.password ?? true}
+						disabled={files('password')}
+					/>
 					a password is a way in here
 				</label>
 				{/*
@@ -173,6 +228,8 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					name="front_door"
 					placeholder="front door: https://account.contoso.example"
 					defaultValue={t.config?.frontDoor ?? ''}
+					readOnly={files('front_door')}
+					title={ofFile('front_door')}
 				/>
 				{/*
 					What a sign-in through a directory fills a profile with, where
@@ -180,8 +237,13 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					tenant's Slack workspace's when the deployment named one. The
 					front doors read it at every sign-in.
 				*/}
-				<label className="check">
-					<input type="checkbox" name="fill" defaultChecked={t.config?.profile?.fill ?? false} />
+				<label className="check" title={ofFile('profile.fill')}>
+					<input
+						type="checkbox"
+						name="fill"
+						defaultChecked={t.config?.profile?.fill ?? false}
+						disabled={files('profile.fill')}
+					/>
 					a sign-in fills a blank name and picture
 					{(t.config?.profile?.slackSecretRef ?? '') !== '' ? ', from Slack' : ', from the directory'}
 				</label>
@@ -191,8 +253,8 @@ function Row(props: { tenant: Uint8Array; may: May }): React.ReactNode {
 					company provisions is the company's to empty, and roster
 					refuses the call while this is off.
 				*/}
-				<label className="check">
-					<input type="checkbox" name="leave" defaultChecked={t.config?.leave ?? false} />
+				<label className="check" title={ofFile('leave')}>
+					<input type="checkbox" name="leave" defaultChecked={t.config?.leave ?? false} disabled={files('leave')} />
 					people here may delete their own account
 				</label>
 				<button type="submit" disabled={update.state === 'pending' || !mayWrite}>
