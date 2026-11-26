@@ -27,7 +27,8 @@ configMapGenerator:
       - resources.yaml
   # One file per client, named for its id. `clients.yaml` reads the name from
   # the file rather than the document, so `x.json` is the client `x` and its
-  # secret is the one mounted at `/secrets/x`.
+  # secret is the one mounted at `/secrets/x` -- or none, for a public client,
+  # which says `token_endpoint_auth_method: none`.
   - name: roster-hydra-clients
     files:
       - clients/product.json

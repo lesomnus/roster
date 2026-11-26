@@ -24,7 +24,8 @@
 # # What is not here
 #
 # Anything an overlay adds. A deployment puts its own `clients/*.json` beside
-# these with the Secret each one names, and inherits the two Jobs -- which is
+# these with the Secret each one names -- none for a public client, which says
+# `token_endpoint_auth_method: none` -- and inherits the two Jobs -- which is
 # the point of them being here: what a client needs is decided once, upstream,
 # rather than restated per deployment. That restating is where two of this
 # week's four defects were.
@@ -100,39 +101,68 @@ spec:
               for f in /clients/*.json; do
                 id=${f##*/}
                 id=${id%.json}
+                tpl=$(cat "${f}")
 
-                s="/secrets/${id}/client-secret"
-                [ -f "${s}" ] || { echo "${id}: no secret mounted for it"; exit 1; }
+                # A **public** client -- a command line that signs in by the
+                # device grant or with PKCE -- has no secret, and says so with
+                # `token_endpoint_auth_method: none`. It is sent as it is
+                # written and no secret is asked for. This loop asked every
+                # client for one, so an overlay that registered a public
+                # client restated the whole loop to get past it: the overlay
+                # carrying what the base should do. Read with the blanks out,
+                # so that how the file is laid out does not decide it.
+                #
+                # One that still carries `@SECRET@` is refused: it has no
+                # secret to put there, and sending the placeholder to Hydra as
+                # a literal is never what its author meant.
+                case "$(printf '%s' "${tpl}" | tr -d ' \t\r\n')" in
+                *'"token_endpoint_auth_method":"none"'*)
+                  case "${tpl}" in
+                  *@SECRET@*)
+                    echo "${f}: a public client (token_endpoint_auth_method: none) has no secret to put at @SECRET@; take its client_secret out"
+                    exit 1
+                    ;;
+                  esac
+                  body=${tpl}
+                  ;;
+                *)
+                  s="/secrets/${id}/client-secret"
+                  [ -f "${s}" ] || {
+                    echo "${id}: no secret mounted for it at ${s}, and it is no public client (token_endpoint_auth_method: none)"
+                    exit 1
+                  }
 
-                # The secret is **not** in the ConfigMap: those files are
-                # readable by anybody who can read the namespace, and a client
-                # secret is a credential. It arrives as a mounted Secret and is
-                # put in here.
-                #
-                # Not by substituting it in, which is where the first cut of
-                # this was wrong. A secret is arbitrary bytes, and every tool
-                # that replaces text reads the replacement for something -- `&`
-                # means "what matched" to both `sed` and `awk` -- so getting
-                # the layers right through YAML, a shell and an `awk` string is
-                # a thing to be quietly wrong about. It was: a secret with a
-                # `"` in it produced a body Hydra answered with *invalid
-                # character 'q' after object key:value pair*.
-                #
-                # So the template is **split** rather than substituted. Shell
-                # parameter expansion has no replacement semantics at all, and
-                # what is left is the escaping JSON actually needs, which is a
-                # backslash and a quote. A byte JSON cannot carry raw is a
-                # Secret written wrong, and says so rather than being mangled.
-                raw=$(cat "${s}")
-                case "${raw}" in
-                *[!\ -~]*)
-                  echo "${id}: its secret has a byte JSON cannot carry raw"
-                  exit 1
+                  # The secret is **not** in the ConfigMap: those files are
+                  # readable by anybody who can read the namespace, and a
+                  # client secret is a credential. It arrives as a mounted
+                  # Secret and is put in here.
+                  #
+                  # Not by substituting it in, which is where the first cut of
+                  # this was wrong. A secret is arbitrary bytes, and every tool
+                  # that replaces text reads the replacement for something --
+                  # `&` means "what matched" to both `sed` and `awk` -- so
+                  # getting the layers right through YAML, a shell and an `awk`
+                  # string is a thing to be quietly wrong about. It was: a
+                  # secret with a `"` in it produced a body Hydra answered with
+                  # *invalid character 'q' after object key:value pair*.
+                  #
+                  # So the template is **split** rather than substituted. Shell
+                  # parameter expansion has no replacement semantics at all,
+                  # and what is left is the escaping JSON actually needs, which
+                  # is a backslash and a quote. A byte JSON cannot carry raw is
+                  # a Secret written wrong, and says so rather than being
+                  # mangled.
+                  raw=$(cat "${s}")
+                  case "${raw}" in
+                  *[!\ -~]*)
+                    echo "${id}: its secret has a byte JSON cannot carry raw"
+                    exit 1
+                    ;;
+                  esac
+                  esc=$(printf '%s' "${raw}" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
+                  body="${tpl%%@SECRET@*}${esc}${tpl#*@SECRET@}"
                   ;;
                 esac
-                esc=$(printf '%s' "${raw}" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g')
-                tpl=$(cat "${f}")
-                body="${tpl%%@SECRET@*}${esc}${tpl#*@SECRET@}"
 
                 code=$(printf '%s' "${body}" | curl -sS -o /tmp/out -w '%{http_code}' \
                   -X PUT -H 'content-type: application/json' --data-binary @- \

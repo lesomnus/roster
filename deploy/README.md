@@ -97,7 +97,7 @@ What an overlay is expected to bring, and what it should leave alone:
 
 | | |
 | --- | --- |
-| its own | hosts, secrets (`roster-checkpoints` among them, `key.pem`, with the `trail` component), storage class, image digests, the products it actually runs, whether it keeps the trail's archive (below), and `config.yaml` -- by a `configMapGenerator` for `roster` with `behavior: replace`; and everything § *Before this is safe* lists |
+| its own | hosts, secrets (`roster-checkpoints` among them, `key.pem`, with the `trail` component), storage class, image digests, the products it actually runs and a client for each (a file of `clients/*.json` named for its id, in the `roster-hydra-clients` generator, and its secret mounted at `/secrets/<id>` in the clients Job; a public client, which says `token_endpoint_auth_method: none` -- a command line signing in by the device grant or with PKCE -- needs no secret and no mount), whether it keeps the trail's archive (below), and `config.yaml` -- by a `configMapGenerator` for `roster` with `behavior: replace`; and everything § *Before this is safe* lists |
 | the base's | what a client has to be registered with, which `URLS_*` Hydra needs, that the clients are applied and then **checked** -- the four things that were wrong when they were written twice |
 
 **`config.yaml` is one file, and an overlay that replaces it restates all of
