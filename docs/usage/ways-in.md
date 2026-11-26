@@ -433,8 +433,19 @@ at the front door. The request is what such a client writes against:
 
 and answered RFC 8628 §3.2's `device_code`, `user_code`, `verification_uri`,
 `verification_uri_complete`, `expires_in` and `interval`; a poll is `POST
-/device/poll` with `{"device_code": …}`, answered `{"token": …}` once or one of
-§3.5's errors. What `begin` refuses, each in these words:
+/device/poll` with `{"device_code": …}`, answered `200` with the token once,
+or `400` with one of §3.5's errors or one of the front door's own:
+
+| answer | when |
+| --- | --- |
+| `{"token": …}` | somebody said yes and roster made it: the key, or with `delegate` the delegation; once, and the code is over |
+| `{"error": "authorization_pending"}` | nobody has answered yet, or a yes failed for want of the front door or of roster and not because roster refused it (`500`, *the key could not be made*); keep polling |
+| `{"error": "slow_down"}` | sooner than `interval` after the last poll; keep polling, five seconds slower |
+| `{"error": "access_denied"}` | the person said no; over |
+| `{"error": "refused", "error_description": …}` | the person said yes and roster would not make it -- a method they do not hold, a name they already use, an app that is nobody, an end that passed while the code waited, a delegation longer than roster allows -- in the sentence the approval page showed them, and nothing more; over, and no second yes is taken. `roster sign-in` prints *roster would not make the key:* and the sentence, and exits `1` |
+| `{"error": "expired_token"}` | the code ran out, was never one, or was answered and told already |
+
+What `begin` refuses, each in these words:
 
 | status | words | when |
 | --- | --- | --- |
@@ -460,7 +471,7 @@ name is somebody of the tenant -- and roster does not tell an app's holder from
 a person's. The person approving is shown the name that was asked for, and one
 that is nobody of the tenant is refused there, `404` in the words a name nobody
 serves is. `TestTheTerminalsBeginningIsWhatTheManualSays`
-holds both tables to `account/device.go`, as `login/contract_test.go` holds
+holds the three tables to `account/device.go`, as `login/contract_test.go` holds
 the Login App's routes to theirs; a `…` in the words is a value the refusal
 fills in.
 
@@ -481,7 +492,8 @@ from its own file). Their yes mints it with `DelegationService/Issue`, as them
 -- held to what they may call at roster, or refused in a delegation's words,
 `403` -- ending that long after the yes, which is what they were told; where
 roster's own `delegation.life` is shorter, roster refuses it and they are told so,
-`409`, and nothing is minted. The poll answers
+`409`, and nothing is minted; either way the poll is told `refused`, in the
+words they were shown. The poll answers
 `{"token": "rd_…"}` once, as it answers a key, and the app presents it beside
 its own key in `roster-as`. The same switch opens it, `account.terminal`, and
 off it is told so at once, `501`, as a terminal is; and a front door that was

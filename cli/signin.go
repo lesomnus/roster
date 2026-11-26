@@ -234,7 +234,7 @@ func SignIn(ctx context.Context, say func(string, ...any) (int, error), cl *http
 		case <-time.After(wait):
 		}
 
-		token, why, err := poll(ctx, cl, at, v.DeviceCode)
+		token, why, said, err := poll(ctx, cl, at, v.DeviceCode)
 		if err != nil {
 			return "", err
 		}
@@ -249,6 +249,12 @@ func SignIn(ctx context.Context, say func(string, ...any) (int, error), cl *http
 			wait += 5 * time.Second
 		case "access_denied":
 			return "", errors.New("somebody said no")
+		case "refused":
+			// Somebody said yes and roster would not make the key, in the
+			// sentence the page they said it at showed them: a method they
+			// do not hold, a name they already use. The code is finished, so
+			// waiting would be for its clock.
+			return "", fmt.Errorf("roster would not make the key: %s", said)
 		case "expired_token":
 			return "", errors.New("the code ran out before anybody approved it")
 		default:
@@ -257,18 +263,19 @@ func SignIn(ctx context.Context, say func(string, ...any) (int, error), cl *http
 	}
 }
 
-// poll asks once. It answers the key, or the reason to keep waiting.
-func poll(ctx context.Context, cl *http.Client, at, code string) (string, string, error) {
+// poll asks once. It answers the key, or the reason to keep waiting or to
+// stop, and the front door's sentence where it said one.
+func poll(ctx context.Context, cl *http.Client, at, code string) (string, string, string, error) {
 	// Posted, with the code in the body: it is the whole of what a poll is held
 	// to, and an address is what every log between here and there keeps
 	// (`account/device.go`, `devicePoll`).
 	body, err := json.Marshal(map[string]string{"device_code": code})
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, at+"/device/poll", bytes.NewReader(body))
 	if err != nil {
-		return "", "", err
+		return "", "", "", err
 	}
 	req.Header.Set("content-type", "application/json")
 
@@ -277,25 +284,26 @@ func poll(ctx context.Context, cl *http.Client, at, code string) (string, string
 		// A front door that is briefly unreachable is not a flow that is over:
 		// the code is good until it expires, so this is a reason to wait rather
 		// than to stop.
-		return "", "authorization_pending", nil
+		return "", "authorization_pending", "", nil
 	}
 	defer res.Body.Close()
 
 	var out struct {
-		Token string `json:"token"`
-		Error string `json:"error"`
+		Token       string `json:"token"`
+		Error       string `json:"error"`
+		Description string `json:"error_description"`
 	}
 	if err := json.NewDecoder(res.Body).Decode(&out); err != nil {
-		return "", "", fmt.Errorf("%s: %w", at, err)
+		return "", "", "", fmt.Errorf("%s: %w", at, err)
 	}
 	if out.Token != "" {
-		return out.Token, "", nil
+		return out.Token, "", "", nil
 	}
 	if out.Error == "" {
-		return "", "", fmt.Errorf("%s: an answer that is neither a key nor a reason", at)
+		return "", "", "", fmt.Errorf("%s: an answer that is neither a key nor a reason", at)
 	}
 
-	return "", out.Error, nil
+	return "", out.Error, out.Description, nil
 }
 
 // thisMachine is whether a host is this machine's own name for itself.

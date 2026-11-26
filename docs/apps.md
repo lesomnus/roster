@@ -692,6 +692,10 @@ not the person, and is given two roads to the call:
   call -- and its scope and its end, if it has them -- the person approves that
   key at the front door, shown each of them, and the poll answers it once to
   whoever holds the code ([usage/ways-in.md](usage/ways-in.md) § *For an app*).
+  Where they say yes and roster will not make the key -- a method they do not
+  hold at the app, a name they already use -- the next poll answers
+  `{"error": "refused", "error_description": …}`, in the sentence they were
+  shown, and the code is over, so the app's page can say so at once.
 
 Nothing is minted without the person's yes at the front door, and the switch
 that opens both is the deployment's `account.terminal`.

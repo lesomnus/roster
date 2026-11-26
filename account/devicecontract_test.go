@@ -26,12 +26,17 @@ import (
 // against nothing, and one the front door has that the table does not is a
 // shape nobody promised to keep.
 //
+// And what a poll answers, which is what such a client reads to know whether
+// to go on waiting: the errors the table names are the ones `polled` answers,
+// and the sentence a refusal carries is the field the table says.
+//
 // # Why it reads source
 //
 // For the reason the Login App's test does: the question is which fields the
 // request is read into and which refusals the function can answer, which is a
 // fact about two functions -- `deviceBegin` and `offered` -- and the refusals
-// themselves are driven by `device_test.go`.
+// themselves are driven by `device_test.go`; and which errors a poll is
+// answered is a fact about `polled`, driven by `devicerefused_test.go`.
 func TestTheTerminalsBeginningIsWhatTheManualSays(t *testing.T) {
 	x := require.New(t)
 
@@ -40,8 +45,10 @@ func TestTheTerminalsBeginningIsWhatTheManualSays(t *testing.T) {
 	section := sectionOf(string(doc), "#### For an app")
 	x.NotEmpty(section, "docs/usage/ways-in.md no longer has the section this test is about")
 
-	fields, refusals := map[string]bool{}, map[string]bool{}
+	fields, refusals, answers := map[string]bool{}, map[string]bool{}, map[string]bool{}
 	cell := regexp.MustCompile("^`([^`]+)`$")
+	answer := regexp.MustCompile("^`\\{\"(token|error)\"(?:: \"([a-z_]+)\")?")
+	table := ""
 	for _, line := range strings.Split(section, "\n") {
 		if !strings.HasPrefix(line, "| ") || strings.HasPrefix(line, "| ---") {
 			continue
@@ -51,7 +58,20 @@ func TestTheTerminalsBeginningIsWhatTheManualSays(t *testing.T) {
 			cells[i] = strings.TrimSpace(cells[i])
 		}
 		switch {
-		case cells[0] == "field" || cells[0] == "status":
+		case cells[0] == "field" || cells[0] == "status" || cells[0] == "answer":
+			table = cells[0]
+		case table == "answer":
+			m := answer.FindStringSubmatch(cells[0])
+			x.NotNil(m, "an answer that is not written as one: %q", line)
+			if m[1] == "token" {
+				answers["token"] = true
+				continue
+			}
+			x.NotEmpty(m[2], "an error that names none: %q", line)
+			answers[m[2]] = true
+			if strings.Contains(cells[0], `"error_description"`) {
+				answers[m[2]+" error_description"] = true
+			}
 		case len(cells) == 2:
 			m := cell.FindStringSubmatch(cells[0])
 			x.NotNil(m, "a field that is not written as one: %q", line)
@@ -65,6 +85,7 @@ func TestTheTerminalsBeginningIsWhatTheManualSays(t *testing.T) {
 	}
 	x.NotEmpty(fields, "the section has no table of fields")
 	x.NotEmpty(refusals, "the section has no table of refusals")
+	x.NotEmpty(answers, "the section has no table of what a poll answers")
 
 	src, err := os.ReadFile("device.go")
 	x.NoError(err)
@@ -98,6 +119,26 @@ func TestTheTerminalsBeginningIsWhatTheManualSays(t *testing.T) {
 		answered[strconv.Itoa(code)+" "+verb.ReplaceAllString(m[1], "…")] = true
 	}
 	x.Equal(refusals, answered, "the refusals the manual names are not the ones the beginning answers")
+
+	// What a poll answers: the token, the errors `polled` returns, and the
+	// sentence beside the one that carries one.
+	polled := funcOf(string(src), "func (d *devices) polled(")
+	poll := funcOf(string(src), "func (a *App) devicePoll(")
+	deviceErr := funcOf(string(src), "func deviceErr(")
+	x.NotEmpty(polled, "account/device.go has no polled")
+	x.NotEmpty(poll, "account/device.go has no devicePoll")
+	x.NotEmpty(deviceErr, "account/device.go has no deviceErr")
+	told := map[string]bool{}
+	if strings.Contains(poll, `"token": token`) {
+		told["token"] = true
+	}
+	for _, m := range regexp.MustCompile(`return "", "([a-z_]+)", ([^\n]+)`).FindAllStringSubmatch(polled, -1) {
+		told[m[1]] = true
+		if m[2] != `""` && strings.Contains(deviceErr, `out["error_description"]`) {
+			told[m[1]+" error_description"] = true
+		}
+	}
+	x.Equal(answers, told, "the answers the manual names are not the ones a poll is answered")
 }
 
 // sectionOf is a document from a heading to the next heading of any depth.
