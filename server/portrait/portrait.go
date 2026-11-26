@@ -115,7 +115,8 @@ var (
 var turns = make(chan struct{}, AtOnce)
 
 // Render is the portrait an image makes: the square in its middle, at each of
-// [Sizes] no larger than that square, as JPEG.
+// [Sizes] no larger than that square, as JPEG, the way up its orientation tag
+// says it is seen (`orient.go`).
 //
 // An image smaller than the largest size is not enlarged. Its own size is the
 // largest rendition instead, which is a smaller portrait and a truthful one.
@@ -167,6 +168,10 @@ func Render(ctx context.Context, b []byte) (_ *rstr.Portrait, err error) {
 		return nil, ErrNotAnImage
 	}
 
+	// Turned the way up it is seen once it is small (`orient.go`): the
+	// middle square is the same square either way up.
+	o := orientation(b)
+
 	r := src.Bounds()
 	side := min(r.Dx(), r.Dy())
 	from := image.Rect(0, 0, side, side).Add(r.Min).Add(image.Pt((r.Dx()-side)/2, (r.Dy()-side)/2))
@@ -181,7 +186,7 @@ func Render(ctx context.Context, b []byte) (_ *rstr.Portrait, err error) {
 		draw.CatmullRom.Scale(at, at.Bounds(), src, from, draw.Over, nil)
 
 		var w bytes.Buffer
-		if err := jpeg.Encode(&w, at, &jpeg.Options{Quality: quality}); err != nil {
+		if err := jpeg.Encode(&w, turned(at, o), &jpeg.Options{Quality: quality}); err != nil {
 			return nil, err
 		}
 

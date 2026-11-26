@@ -166,8 +166,8 @@ answered with what it said.
 And a picture, in two forms. `profile.picture` says where one is, and
 `portrait` is roster's own copy at the sizes a screen draws -- 32, 64 and 128
 pixels, JPEG, inline -- rendered by roster from whatever image `Portray` or
-`Fill` is handed, so what a row carries is bounded by roster and not by a
-caller. A page of people carries one size of it, and `Get` all of them.
+`Fill` is handed, the way up its orientation tag says a photograph is seen, so
+what a row carries is bounded by roster and not by a caller. A page of people carries one size of it, and `Get` all of them.
 
 What an image may be is bounded the same way, since rendering one is the serving
 process's memory: JPEG, PNG, GIF or WebP, at most 2 MiB and 2048 pixels a side,
