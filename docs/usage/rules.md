@@ -322,6 +322,7 @@ is roster's to say and not a caller's (`server/portrait/portrait.go`).
 | | written in | held to it by |
 | --- | --- | --- |
 | An image is at most 2 MiB and 2048 pixels a side, read from its header and refused before any of it is decoded, whoever sends it | `server/portrait/portrait.go` | `TestAPictureIsNoLargerThanTheWireSays` · `TestATooLargeImageIsRefusedBeforeItIsDecoded` |
+| roster's pages (the admin console, the user console, the account app) send an image larger than 2048 pixels a side drawn to 2048 on its longer side, in the same proportions and the way up the person sees it, as JPEG; one within the bound is sent as it was picked; what is sent is still at most 2 MiB, and one over is refused at the page | `ts/lib/picture.tsx`, `ts/lib/portrait.ts` | `scripts/e2e.sh` — `ts/e2e/picture.spec.ts`, which runs alone as well: the sizes drawn, and not the drawing |
 | The largest image there is costs a process under 96 MiB to render | `server/portrait/portrait.go` | `TestTheLargestPictureIsRenderedWithinABound` |
 | A process renders two images at once. A call beyond those waits its turn for as long as it lasts, and one that ends waiting is answered as out of time, not as an image refused | `server/portrait/portrait.go`, `server/core/portrait.go` | `TestAFewPicturesAreRenderedAtOnceAndTheRestWait` · `TestACallThatEndedWaitingToBeRenderedIsNotAnImageRefused` |
 
