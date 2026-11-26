@@ -295,10 +295,20 @@ func TestAHookThatDoesNotAnswerWritesNothing(t *testing.T) {
 	nobody := closed.Addr().String()
 	require.NoError(t, closed.Close())
 
-	_, slow := hookListening(t, func(ctx context.Context, _ *app.WriteReview) (*app.WriteVerdict, error) {
-		<-ctx.Done()
-		return &app.WriteVerdict{}, nil
+	// The slow hook answers nothing until the test is over, and then no
+	// verdict. It waited for its own context and answered an empty verdict,
+	// which is a yes: the deadline travels to it as gRPC's, both clocks ran out
+	// together, and where its yes won the race roster was told yes inside its
+	// deadline and wrote (`OK` where `Unavailable` was expected, once in CI).
+	// A hook that says yes in time is a yes; the only thing roster may meet
+	// here is its own deadline. The channel is closed before the listener
+	// stops (cleanups run last first), so the handler is not left behind.
+	over := make(chan struct{})
+	_, slow := hookListening(t, func(context.Context, *app.WriteReview) (*app.WriteVerdict, error) {
+		<-over
+		return nil, status.Error(codes.Unavailable, "the test is over")
 	})
+	t.Cleanup(func() { close(over) })
 	_, failing := hookListening(t, func(context.Context, *app.WriteReview) (*app.WriteVerdict, error) {
 		return nil, status.Error(codes.PermissionDenied, "this is an error and not a verdict")
 	})
