@@ -70,8 +70,12 @@ import (
 // sweeps, a sign-in counting a wrong answer and a key noting its use write
 // through, and nothing a caller reaches writes through it ([trustedUnary]).
 //
-// And never about a read, nor about a way in ([waysIn]), whatever a pattern
-// says: a hook that is down must not shut everybody out.
+// Never about a read. And not about a way in ([waysIn]) -- how somebody gets
+// in or stays in -- unless the file says so in a key of its own,
+// [HookConfig.WaysIn]: a hook that is down there shuts out everybody who signs
+// in that way, an administrator at a console among them. A write somebody
+// makes about another person's way in is not one of those, and is asked about
+// as any write is.
 
 // Admission is a policy an app that runs roster in its own process hands it,
 // and the writes it is asked about.
@@ -120,6 +124,13 @@ type HookConfig struct {
 	// `/roster.HolderService/Disable` -- where a `*` is a whole part. A write
 	// no pattern covers asks nobody.
 	Writes []string `yaml:"writes"`
+
+	// WaysIn says the hook is asked about ways in ([waysIn]) as about any
+	// other write: what `writes` covers of them is taken, where without it a
+	// pattern naming one is refused and a wider one leaves them out. Said, a
+	// hook that does not answer shuts out everybody who signs in that way,
+	// and the box, which asks no hook, is where that is put right.
+	WaysIn bool `yaml:"ways_in"`
 }
 
 // DefaultHookTimeout is [HookConfig.Timeout] where nothing says, which is
@@ -151,20 +162,37 @@ func (c Config) AtTheBox() Config {
 	return c
 }
 
-// waysIn is every verb somebody signs in, proves or recovers by, and the
-// writes a sign-in makes on a provider's word: what no hook is asked about,
-// whatever its patterns say, so that a hook that is down shuts nobody out.
+// waysIn is every verb by which somebody gets in or stays in: what a person or
+// a front door calls to sign in, to redeem a link, to accept a provider's word,
+// to mint or refresh a session, and what a person calls to set or recover
+// their own way in. A hook that is down there shuts everybody out, an
+// administrator at a console among them, so no hook is asked about these
+// unless the file says so ([HookConfig.WaysIn]): without it, a pattern that
+// names one is refused at start, and a wider one (`/roster.*/*`) is taken as
+// everything but these and the reads.
+//
+// A verb a person calls for themselves and an administrator for somebody else
+// is one of these: the same method is both, and a hook asked about it is asked
+// at the person's own door too.
+//
+// What is not here is a write somebody makes about another person's way in,
+// an administrator's or an operator's act, which no person makes for themselves
+// and no front door makes at a sign-in: `BadgeService/Enrol`, a badge and its
+// PIN given to somebody at a console or a shell. A hook that is down holds up
+// that write and lets everybody in, so it is taken in `hook.writes` as any
+// write is (it was refused here as a way in, #606, for a reason true only of
+// signing in).
 //
 // Read from what `docs/usage/ways-in.md` says a way in is and from what the
 // Login App (`cli.LoginMethods`), the account app (`account.Calls`) and the
-// front door call to let somebody in. A pattern that names one of these is
-// refused at start; a wider one (`/roster.*/*`) is taken as everything but
-// these and the reads. `TestEveryWayInIsOneNoHookIsAskedAbout` holds the list
-// to what those apps call.
+// front door call to let somebody in. `TestEveryWayInIsOneNoHookIsAskedAbout`
+// holds the list to what those apps call.
 var waysIn = []string{
 	// Signing in, proving a secret, spending a link, accepting an account at
-	// a provider, leaving by a mailed link: the whole of the service.
+	// a provider, leaving by a mailed link: the whole of the service, which
+	// is what a front door calls to let somebody in.
 	"/roster.VouchService/*",
+	// A station asking after a badge's PIN: the sign-in at a station.
 	app.BadgeService_Verify_FullMethodName,
 
 	// Signing in at roster's own door, and out of it: what either writes is
@@ -172,24 +200,31 @@ var waysIn = []string{
 	"/roster.AuthService/*",
 
 	// The exchange of a token or a delegation, and the delegation a person
-	// hands a terminal or an app at a sign-in.
+	// hands a terminal or an app at a sign-in: a session minted.
 	app.DelegationService_Exchange_FullMethodName,
 	app.DelegationService_Issue_FullMethodName,
 
-	// A person setting or recovering their own way in: a password, a second
-	// factor, a badge's PIN, a key that acts as them, an account at a
-	// provider, an address proved.
+	// A person setting their own password or second factor, and minting a key
+	// that acts as them (`self-service`, the account app's page): each is also
+	// what an administrator calls for somebody else, and so of this kind.
 	app.CredentialService_Set_FullMethodName,
 	app.CredentialService_Enrol_FullMethodName,
-	app.CredentialService_Issue_FullMethodName,
-	app.BadgeService_Enrol_FullMethodName,
 	app.ApiKeyService_Issue_FullMethodName,
+
+	// The password the account app gives somebody who spent a recovery link
+	// (`account`'s redeem): the link redeemed, and the way back in. It is also
+	// an administrator's reset of somebody else, and so of this kind.
+	app.CredentialService_Issue_FullMethodName,
+
+	// An account at a provider proved by a person's own round trip, and an
+	// address proved by a link they were mailed: each a person's own.
 	app.IdentityService_Attest_FullMethodName,
 	app.EmailService_Claim_FullMethodName,
 	app.EmailService_Confirm_FullMethodName,
 
 	// What a sign-in writes on a provider's or a directory's word: the
-	// account linked at a first sign-in, the claim moved to, the address
+	// account linked at a first sign-in (which an administrator also writes
+	// for somebody, and so of this kind), the claim moved to, the address
 	// handed over and the profile filled.
 	app.IdentityService_Add_FullMethodName,
 	app.IdentityService_Resubject_FullMethodName,
@@ -234,8 +269,9 @@ func isWayIn(method string) bool {
 // hookWrites is the methods `patterns` asks about, of the ones this build
 // serves, refused by name where a pattern cannot be meant: none at all, one
 // that covers nothing roster has, one that covers only reads, and one that
-// names a way in.
-func hookWrites(key string, patterns []string, served []string) (map[string]bool, error) {
+// names a way in where `waysKey` is not said -- the key that says it, or empty
+// where nothing can ([Config.Admission]).
+func hookWrites(key string, patterns []string, served []string, waysKey string, waysSaid bool) (map[string]bool, error) {
 	if len(patterns) == 0 {
 		return nil, fmt.Errorf("%s: names no write, so the hook would be asked about nothing. name the writes it "+
 			"is asked about, as a role's methods are written: /roster.GroupMembershipService/*", key)
@@ -250,10 +286,10 @@ func hookWrites(key string, patterns []string, served []string) (map[string]bool
 			}
 			covered = append(covered, m)
 			switch {
-			case isWayIn(m):
-				ways = append(ways, m)
 			case isHookRead(m):
 				reads = append(reads, m)
+			case isWayIn(m) && !waysSaid:
+				ways = append(ways, m)
 			default:
 				asks[m] = true
 			}
@@ -265,9 +301,13 @@ func hookWrites(key string, patterns []string, served []string) (map[string]bool
 			return nil, fmt.Errorf("%s: %s covers no method roster serves. write a method as gRPC names it, "+
 				"/roster.HolderService/Disable, or every one of a service's with /*", at, quote.Sent(p))
 		case len(covered) > len(ways)+len(reads):
+		case len(ways) > 0 && waysKey == "":
+			return nil, fmt.Errorf("%s: %s is a way in (%s): a policy in the process is not asked about signing "+
+				"in, proving or recovering, so that one that fails shuts nobody out. take it out", at, quote.Sent(p), strings.Join(ways, ", "))
 		case len(ways) > 0:
-			return nil, fmt.Errorf("%s: %s is a way in (%s): no hook is asked about signing in, proving or "+
-				"recovering, so that a hook that is down shuts nobody out. take it out", at, quote.Sent(p), strings.Join(ways, ", "))
+			return nil, fmt.Errorf("%s: %s is a way in (%s): a hook that does not answer then shuts out everybody "+
+				"who signs in that way, and the box is where it is put right. say %s: true to have it asked, "+
+				"or take it out", at, quote.Sent(p), strings.Join(ways, ", "), waysKey)
 		default:
 			return nil, fmt.Errorf("%s: %s covers only reads (%s), and a hook is asked about writes. name a write",
 				at, quote.Sent(p), strings.Join(reads, ", "))
@@ -290,6 +330,7 @@ func hookMeant(c Config) error {
 			{"hook.timeout", h.Timeout != 0},
 			{"hook.insecure", h.Insecure},
 			{"hook.ca", !h.Ca.IsZero()},
+			{"hook.ways_in", h.WaysIn},
 		} {
 			if v.said {
 				return fmt.Errorf("%s: says something of a hook, and hook.addr names no service to ask, so nothing "+
@@ -313,12 +354,12 @@ func hookMeant(c Config) error {
 
 	served := Served(pd.Sink{})
 	if h.Addr != "" {
-		if _, err := hookWrites("hook.writes", h.Writes, served); err != nil {
+		if _, err := hookWrites("hook.writes", h.Writes, served, "hook.ways_in", h.WaysIn); err != nil {
 			return err
 		}
 	}
 	if c.Admission.Policy != nil {
-		if _, err := hookWrites("Config.Admission.Writes", c.Admission.Writes, served); err != nil {
+		if _, err := hookWrites("Config.Admission.Writes", c.Admission.Writes, served, "", false); err != nil {
 			return err
 		}
 	} else if len(c.Admission.Writes) > 0 {
@@ -348,8 +389,8 @@ type hooked struct {
 
 // asked is whether any of the policies is asked about `method`: what payday
 // asks before anything else ([admissionOf]). Each policy's writes are a set
-// of the methods its patterns cover less the reads and the ways in
-// ([hookWrites]), so this is a lookup and never blocks.
+// of the methods its patterns cover less the reads, and the ways in where
+// the file does not say them ([hookWrites]), so this is a lookup and never blocks.
 func (h hooked) asked(method string) bool {
 	for _, p := range h.policies {
 		if p.asks[method] {
@@ -423,7 +464,7 @@ func (h hooked) unanswered(ctx context.Context, c admission.Call, err error) err
 // hookSecrets are the fields of hand-written requests that hold a secret,
 // cleared from what a hook is told as payday clears what the schema declares
 // (`admission.Options.Secrets`). Most are of ways in, which no hook is asked
-// about; they are declared anyway, since a request reaches a policy through
+// about unless the file says so; they are declared anyway, since a request reaches a policy through
 // whatever pattern a deployment writes tomorrow.
 // `TestNoSecretOfARequestReachesAHook` holds every served request to it.
 var hookSecrets = map[protoreflect.FullName][]protoreflect.FieldNumber{
@@ -453,7 +494,7 @@ func (c Config) admitting(log *slog.Logger, db *ent.Client) (*hooked, *grpc.Clie
 	served := Served(pd.Sink{})
 	h := hooked{timeout: c.Hook.timeout(), log: log}
 	if c.Admission.Policy != nil {
-		asks, err := hookWrites("Config.Admission.Writes", c.Admission.Writes, served)
+		asks, err := hookWrites("Config.Admission.Writes", c.Admission.Writes, served, "", false)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -462,7 +503,7 @@ func (c Config) admitting(log *slog.Logger, db *ent.Client) (*hooked, *grpc.Clie
 
 	var conn *grpc.ClientConn
 	if c.Hook.Addr != "" {
-		asks, err := hookWrites("hook.writes", c.Hook.Writes, served)
+		asks, err := hookWrites("hook.writes", c.Hook.Writes, served, "hook.ways_in", c.Hook.WaysIn)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -497,8 +538,8 @@ func (c Config) admitting(log *slog.Logger, db *ent.Client) (*hooked, *grpc.Clie
 // is what a caller is told about ([hooked.ask]).
 //
 // And payday is told which calls the policy is asked about at all
-// ([hooked.asked]): a write no pattern covers, a read and a way in are
-// admitted before payday copies anything or takes one of its slots, so a hook
+// ([hooked.asked]): a write no pattern covers, a read and a way in the file
+// does not say are admitted before payday copies anything or takes one of its slots, so a hook
 // that hangs and fills them holds up only the writes it is asked about -- a
 // sign-in, and every write nobody's pattern names, go on at once.
 func admissionOf(h *hooked, c Config, log *slog.Logger) bare.Option {
@@ -516,8 +557,9 @@ func admissionOf(h *hooked, c Config, log *slog.Logger) bare.Option {
 //
 // A frame is what admission asks a policy about, and a call through that stack
 // is either one with none -- `init`, a sweep, a sign-in that has not found
-// anybody yet, a key noting when it was used -- or a way in, which no hook is
-// asked about. The trust is in which server this is, which is wiring, and in
+// anybody yet, a key noting when it was used -- or what a way in writes for
+// itself there, which is roster's own write whatever the file says of ways
+// in. The trust is in which server this is, which is wiring, and in
 // nothing a caller sent.
 func trustedUnary(ctx context.Context, req any, _ *grpc.UnaryServerInfo, next grpc.UnaryHandler) (any, error) {
 	return next(bare.TrustAdmission(ctx), req)
@@ -865,7 +907,7 @@ func admittingEverything(served []string) (asking, bool) {
 	if !AdmittingEverything() {
 		return asking{}, false
 	}
-	asks, err := hookWrites(AdmitEverything, []string{"/roster.*/*"}, served)
+	asks, err := hookWrites(AdmitEverything, []string{"/roster.*/*"}, served, "", false)
 	if err != nil {
 		panic(err)
 	}
@@ -886,7 +928,7 @@ func (s *Server) admitted() []grpc.UnaryServerInterceptor {
 }
 
 // WayIn is whether `method` is a way in ([waysIn]), which no hook is asked
-// about whatever its patterns say.
+// about unless the file says so ([HookConfig.WaysIn]).
 func WayIn(method string) bool { return isWayIn(method) }
 
 // Reads is whether `method` is a read, which no hook is asked about: a pattern

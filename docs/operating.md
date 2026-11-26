@@ -2163,6 +2163,7 @@ hook:
   writes:                        # which writes it is asked about
     - /roster.GroupMembershipService/*
     - /roster.HolderService/Disable
+  ways_in: false                 # unless said; true asks it about ways in too
 ```
 
 `writes` are written as a role's methods are, where a `*` is a whole part, and a
@@ -2175,9 +2176,9 @@ roster. No client certificate is presented. With no `hook:` nothing of this is
 installed. Refused as the server starts, each by its key: an address with no
 `writes`; `writes`, a timeout, `ca` or `insecure` with no address; a timeout
 below none or past thirty seconds; `ca` beside `insecure`, a `ca` that cannot
-be read, and one that holds no certificate; and a pattern that covers no
-method roster serves, only reads, or a way in -- `/roster.*/*` is taken as
-every write but those. How many questions wait on it at once is payday's
+be read, and one that holds no certificate; `ways_in` with no address; and a
+pattern that covers no method roster serves, only reads, or a way in where
+`ways_in` is not said -- `/roster.*/*` is taken as every write but those. How many questions wait on it at once is payday's
 bound, thirty-two, and is not a setting.
 
 An app that runs roster in its own process hands `cmd` the same thing in Go
@@ -2214,11 +2215,16 @@ whichever is sooner; nothing listening; an answer that is an error -- the
 write is refused too, `Unavailable`, *this deployment's hook did not answer,
 and nothing was written*, and the log has an error naming the method and the
 entity and nothing of the request. A hook is never taken to have said *go on*
-by saying nothing, so a hook that is down stops every write it names.
+by saying nothing, so a hook that is down stops every write it names -- an
+administrator's write about somebody else's way in among them, such as a badge
+given to somebody (`BadgeService/Enrol`): a deployment that wants its hook
+asked before one is written names it in `writes`, and while the hook is down
+none is written and everybody still signs in.
 
 **And only those.** A deployment whose hook is down is still one its people
 get into: what the hook is not asked about -- a write no pattern covers, a
-read, a sign-in, a wrong password counted -- is let through before anything
+read, a sign-in where `ways_in` is not said, a wrong password counted -- is let
+through before anything
 waits on the hook, so it is not held up even while thirty-two writes the hook
 is asked about wait on it, each until its deadline. A further write it is
 asked about, with all thirty-two waiting, is refused at once,
@@ -2227,11 +2233,20 @@ time**, so there a write waiting on its hook holds every other write, of any
 kind, until the hook answers or the write's deadline passes: a deployment on
 SQLite with a hook that is down signs people in a `hook.timeout` late.
 
-**A way in never asks it**, whatever its patterns say, so that a hook that is
-down shuts nobody out: signing in, proving a secret, spending a link, a
-delegation, a person setting or recovering their own password, second factor,
-badge or key, an address being proved, and what a sign-in writes on a
-provider's word (`waysIn` in `cmd/hook.go` is the list). Making a person is not a way in: a
+**A way in asks it only where the file says so.** A way in is how somebody
+gets in or stays in: signing in, proving a secret, spending a link, a
+delegation or a session minted, a person setting or recovering their own
+password, second factor or key, an address being proved, and what a sign-in
+writes on a provider's word (`waysIn` in `cmd/hook.go` is the list, each with
+why). A method that a person or a front door calls to get somebody in and an
+administrator calls for somebody else is one: `CredentialService/Issue` is the
+password a recovery link gives, `ApiKeyService/Issue` a person's own key, and
+`IdentityService/Add` the account a first sign-in links. Without `ways_in`, a pattern naming one is refused at start, and a
+wider one leaves them out, so that a hook that is down shuts nobody out. With
+`ways_in: true` they are asked about as any write is: a hook that does not
+answer then shuts out everybody who signs in that way, an administrator at a
+console among them, and the box, which asks no hook, is where it is put right.
+Making a person is not a way in: a
 hook that covers `HolderService/Add` is asked about a person a first sign-in
 makes where a tenant enrols them (`login.enrol: enrolling`), so while such a
 hook is down nobody new is made, and everybody who exists still signs in. Nor

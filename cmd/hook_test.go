@@ -492,6 +492,107 @@ func TestAHookThatCannotBeMeantIsRefusedAtStart(t *testing.T) {
 	})
 }
 
+// hookAboutAnother is every write one person makes about another's way in,
+// and never about their own or at a sign-in: what `hook.writes` takes as it
+// takes any write.
+var hookAboutAnother = []string{
+	app.BadgeService_Enrol_FullMethodName,
+}
+
+// TestAWriteAboutSomebodyElsesWayInIsAskedAboutAsAnyWriteIs: a deployment
+// that wants its hook asked before a badge is given to somebody names it in
+// `hook.writes`, and the hook is asked. It was refused at start as a way in
+// (#606), whose reason -- a hook that is down shuts nobody out -- is true of
+// signing in and not of an administrator's write about somebody else: a hook
+// that is down then holds up that write, which is what the deployment asked
+// for. End to end: the hook refuses an administrator's badge for somebody,
+// and no badge is written.
+func TestAWriteAboutSomebodyElsesWayInIsAskedAboutAsAnyWriteIs(t *testing.T) {
+	for _, m := range hookAboutAnother {
+		require.False(t, cmd.WayIn(m), "%s is a way in", m)
+		require.NoError(t, cmd.Config{Hook: cmd.HookConfig{Addr: "hook.internal:9443", Writes: []string{m}}}.Meant(), m)
+	}
+
+	x := require.New(t)
+	h, addr := hookListening(t, func(context.Context, *app.WriteReview) (*app.WriteVerdict, error) {
+		return app.WriteVerdict_builder{Refused: true, Why: "badges are the front desk's"}.Build(), nil
+	})
+	b, ctx := build(t, hookAt(addr, app.BadgeService_Enrol_FullMethodName))
+	b.mayAnything(b.ContosoUser, b.Contoso)
+	park := b.holder(t, ctx, b.Contoso, "park")
+
+	_, err := app.NewBadgeServiceClient(served(t, b.Server)).Enrol(asOverTheWire(ctx, b.ContosoUser), app.BadgeEnrolRequest_builder{
+		Holder: app.HolderRef_builder{Id: park.Bytes()}.Build(),
+		Code:   "0042-7781",
+		Pin:    "2580",
+	}.Build())
+	x.Equal(codes.PermissionDenied, status.Code(err), "%v", err)
+	x.Equal(`refused by this deployment's hook: "badges are the front desk's"`, status.Convert(err).Message())
+
+	rs := h.asked()
+	x.NotEmpty(rs, "the hook was not asked")
+	x.Equal(app.BadgeService_Enrol_FullMethodName, rs[0].GetMethod())
+
+	n, err := b.Ent.Badge.Query().Count(ctx)
+	x.NoError(err)
+	x.Zero(n, "a badge the hook refused was written")
+}
+
+// TestAWayInIsAskedAboutWhereTheFileSaysSo: a pattern that names how somebody
+// gets in or stays in -- signing in, a link spent, a provider's word taken, a
+// session minted, a person's own password or key -- is refused at start,
+// naming `hook.ways_in` and what saying it means: a hook that does not answer
+// then shuts out everybody who signs in that way, and the box is where that is
+// put right. With `hook.ways_in: true` the same pattern is taken, and the hook
+// is asked about it.
+func TestAWayInIsAskedAboutWhereTheFileSaysSo(t *testing.T) {
+	patterns := []string{"/roster.VouchService/*", "/roster.AuthService/*"}
+	for _, m := range cmd.Served(pd.Sink{}) {
+		if cmd.WayIn(m) && !cmd.Reads(m) {
+			patterns = append(patterns, m)
+		}
+	}
+	require.Contains(t, patterns, app.CredentialService_Issue_FullMethodName)
+
+	for _, p := range patterns {
+		t.Run(p, func(t *testing.T) {
+			x := require.New(t)
+			hook := cmd.HookConfig{Addr: "hook.internal:9443", Writes: []string{p}}
+
+			err := cmd.Config{Hook: hook}.Meant()
+			x.Error(err)
+			x.True(strings.HasPrefix(err.Error(), fmt.Sprintf("hook.writes[0]: %q is a way in", p)), "named: %s", err)
+			x.Contains(err.Error(), "a hook that does not answer then shuts out everybody who signs in that way, "+
+				"and the box is where it is put right. say hook.ways_in: true")
+
+			hook.WaysIn = true
+			x.NoError(cmd.Config{Hook: hook}.Meant())
+		})
+	}
+
+	t.Run("and with it the hook is asked", func(t *testing.T) {
+		x := require.New(t)
+		h, addr := hookListening(t, nil)
+		b, ctx := build(t, hookAt(addr, app.CredentialService_Issue_FullMethodName), func(c *cmd.Config) {
+			c.Hook.WaysIn = true
+		})
+		b.mayAnything(b.ContosoUser, b.Contoso)
+		other := b.holder(t, ctx, b.Contoso, "other")
+
+		_, err := app.NewCredentialServiceClient(served(t, b.Server)).Issue(asOverTheWire(ctx, b.ContosoUser), app.CredentialIssueRequest_builder{
+			Holder: app.HolderRef_builder{Id: other.Bytes()}.Build(),
+		}.Build())
+		x.NoError(err)
+		x.NotEmpty(h.asked())
+		x.Equal(app.CredentialService_Issue_FullMethodName, h.asked()[0].GetMethod())
+	})
+
+	t.Run("and ways_in with no address says something of a hook", func(t *testing.T) {
+		err := cmd.Config{Hook: cmd.HookConfig{WaysIn: true}}.Meant()
+		require.ErrorContains(t, err, "hook.ways_in: says something of a hook")
+	})
+}
+
 // TestAPolicyInTheProcessIsAskedAsAServiceIs: an app that runs roster in its
 // own process hands `cmd` a policy, and its answers are told a caller in the
 // words a hook's service would be: a refusal is the deployment's hook
@@ -613,6 +714,7 @@ func TestACommandAtTheBoxAsksNoHook(t *testing.T) {
 // a write a hook can stop by nobody having thought of it.
 func TestEveryVerbIsAReadAWayInOrAWriteAHookIsAskedAbout(t *testing.T) {
 	asked := []string{
+		"/roster.BadgeService/Enrol",
 		"/roster.BadgeService/Unlock",
 		"/roster.ConnectionService/Update",
 		"/roster.ConsentService/Agree",
