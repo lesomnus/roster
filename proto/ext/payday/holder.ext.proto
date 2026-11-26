@@ -310,8 +310,8 @@ message Holder {
 //
 // Stored as the canonical protobuf JSON, so these **names** are the storage.
 // Renaming one does not break the build and does not break the wire; it stops
-// finding the old value. From the first app's launch on, renaming a field here
-// is a migration; until then it moves the compatibility epoch (CLAUDE.md).
+// finding the old value. So renaming a field here is a migration, which maps
+// the values already stored to the new name (CLAUDE.md).
 // DirectoryStanding is what the directory that provisions somebody said of
 // their standing, which `Holder.directory_standing` keeps: a closed set roster
 // writes itself, from what `HolderService.Deactivate` and `Activate` are told.
