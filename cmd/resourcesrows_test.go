@@ -132,8 +132,10 @@ resources:
 		tn := tenantOf(t, ctx, b, "byhand")
 		x.Empty(tn.GetName())
 		x.Empty(tn.GetDesc())
-		x.Len(tn.GetLabels(), 1)
+		x.NotContains(tn.GetLabels(), "billing")
+		x.Len(tn.GetLabels(), 2)
 		x.Contains(tn.GetLabels(), cmd.Declared)
+		x.Contains(tn.GetLabels(), cmd.DeclaredConfig)
 	})
 }
 

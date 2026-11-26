@@ -9,6 +9,19 @@ package rstr
 // `login/` and `account/` may not import a server package, so a predicate they
 // must agree on has nowhere else to live.
 
+// LabelDeclaredConfig is the label a tenant a file declares carries beside
+// [LabelDeclared], and its value is the keys of `config` the declaring entry
+// says, as the file writes them under `config:`, comma-separated: `password`,
+// `password,profile.slack`, or empty where it says none. Written by what
+// applies the file, every time, so that it follows the file.
+//
+// A tenant's `config` is the one declared field a file can leave out without
+// emptying it, so the keys it leaves out are not the file's and are the
+// tenant's own to write; this is how the server tells which are which without
+// reading a file. A declared tenant without it was written by a build before
+// it, and every key of its `config` is the file's until its next start.
+const LabelDeclaredConfig = LabelDeclared + ".config"
+
 // OffersPassword is whether a password is a way into this tenant.
 //
 // **Unset is yes.** `TenantConfig.password` has presence where everything
