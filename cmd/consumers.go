@@ -327,6 +327,18 @@ type LdapConfig struct {
 	// RequireTls refuses a bind in the clear: a client must StartTLS or arrive
 	// on LDAPS first.
 	RequireTls bool `yaml:"require_tls"`
+
+	// MaxConns is how many connections the directory holds at once, and
+	// MaxConnsPerAddr how many of them one address has (an IPv6 address
+	// counted with the /64 it is in); one more is closed with nothing said.
+	// Nought, in the file or in a `Config` made in Go, is the default:
+	// 1024 and 256, `ldap/wire`'s, which `roster`'s command line also puts
+	// here before the file is read so that `roster config` shows them. It is
+	// never *no bound*. Below nought is refused ([LdapConfig.Meant]). What a connection
+	// costs, and so what raising either spends, is said beside the defaults
+	// (`ldap/wire/listen.go`).
+	MaxConns        int `yaml:"max_conns"`
+	MaxConnsPerAddr int `yaml:"max_conns_per_addr"`
 }
 
 // Serves is whether this deployment answers LDAP.
@@ -340,6 +352,10 @@ func (c LdapConfig) Serves() bool { return c.Addr != "" || c.AddrTls != "" }
 // pairs at commas, so `acme=dc=acme,dc=example` is two tenants, the second
 // called `dc` under `example`. The flow form, `{acme: "dc=acme,dc=example"}`,
 // is read whole.
+//
+// And a bound on connections below nought, which cannot be meant: nought is
+// the default, as it is left unsaid, so that a program carrying roster in its
+// own process starts a directory without knowing either number.
 func (c LdapConfig) Meant() error {
 	for alias, suffix := range c.Bases {
 		if !strings.Contains(suffix, "=") {
@@ -347,6 +363,14 @@ func (c LdapConfig) Meant() error {
 				"dc=acme,dc=example. In ROSTER_LDAP_BASES a suffix with commas is written in the flow form, "+
 				"'{acme: \"dc=acme,dc=example\"}': written as pairs, the commas part it", alias, suffix)
 		}
+	}
+	if c.MaxConns < 0 {
+		return fmt.Errorf("ldap.max_conns: %d connections at once cannot be meant; write how many the directory "+
+			"holds, or leave it out (or 0) for 1024", c.MaxConns)
+	}
+	if c.MaxConnsPerAddr < 0 {
+		return fmt.Errorf("ldap.max_conns_per_addr: %d connections from one address cannot be meant; write how many "+
+			"one address has, or leave it out (or 0) for 256", c.MaxConnsPerAddr)
 	}
 
 	return nil

@@ -52,8 +52,8 @@
 //
 // # What a listener holds
 //
-// At most [MaxConns] connections, and [MaxConnsPerAddr] of them from one
-// address; one more is closed with nothing said. A connection that has not
+// At most [Server.MaxConns] connections, and [Server.MaxConnsPerAddr] of
+// them from one address; one more is closed with nothing said. A connection that has not
 // bound has [UnboundReadTimeout] for each thing it says, where one that has
 // may sit idle. And an accept that fails for a moment is waited out and
 // asked again, so that a process briefly out of descriptors is not a
@@ -244,6 +244,13 @@ type Server struct {
 	// is [DefaultReadTimeout]. One that has not bound has
 	// [UnboundReadTimeout], or this where this is less.
 	ReadTimeout time.Duration
+
+	// MaxConns is how many connections [Server.Serve] holds at once, and
+	// MaxConnsPerAddr how many of them from one address, an IPv6 address
+	// being counted with the /64 it is in. Zero is [DefaultMaxConns] and
+	// [DefaultMaxConnsPerAddr]. `listen.go` says what each protects.
+	MaxConns        int
+	MaxConnsPerAddr int
 
 	Log *slog.Logger
 
