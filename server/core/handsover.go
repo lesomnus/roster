@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -369,43 +370,116 @@ var handsOver = []handedOver{
 	},
 }
 
+// allOfRoster is what a method covering every grant of the page is answered
+// instead of them: `/roster.*/*`, which is the tenant. Answered each grant, it
+// was twenty notes for the commonest binding there is, each saying the pattern
+// reads as something nobody reads it as; what it is, the page's own entry for
+// a pattern says, and the rest are parts of what whoever binds it knows they
+// gave. `%d` is how many others the page has where it would be held.
+var allOfRoster = handedOver{
+	grant:   "a-pattern",
+	pattern: true,
+	readsAs: "every method roster serves",
+	tenant: "every one a later release adds too, the day it is added: all %d other grants on the page, across " +
+		"the tenant, which is the tenant itself, as `everything` holds it",
+	site: "every one a later release adds too, the day it is added: all %d other grants on the page that a " +
+		"site's binding hands over, of the people of that site",
+	deployment: "every one a later release adds too, the day it is added: all %d other grants on the page, in " +
+		"every tenant",
+}
+
+// CoversThePage is a method that covers every method of every grant of the
+// page, which is answered as [allOfRoster].
+func CoversThePage(m string) bool {
+	for _, g := range handsOver {
+		for _, v := range g.methods {
+			if !frame.Covers(m, v) {
+				return false
+			}
+		}
+	}
+
+	return true
+}
+
+// GrantsOfThePage is how many grants of the page are answered where they
+// would be `held`, on the plane `kind` is of, the one for a pattern aside.
+func GrantsOfThePage(kind string, held app.RoleHeld) int {
+	n := 0
+	for _, g := range handsOver {
+		if !g.pattern && g.at(kind, held) != "" {
+			n++
+		}
+	}
+
+	return n
+}
+
+// at is what g is where it would be held, on the plane `kind` is of.
+func (g handedOver) at(kind string, held app.RoleHeld) string {
+	switch {
+	case strings.HasPrefix(kind, keys.PrefixDeployment):
+		// Where it would be held is a customer's question. A role of this
+		// plane is exercised in every tenant, wherever it was bound.
+		return g.deployment
+	case held == app.RoleHeld_ROLE_HELD_IN_A_SITE:
+		return g.site
+	case held == app.RoleHeld_ROLE_HELD_NOWHERE:
+		return g.own
+	}
+
+	return g.tenant
+}
+
 // HandedOver is what `methods` hand over that they do not read as, where they
 // would be `held` -- by the plane `kind` is of, [keys.PrefixDeployment] or
 // [keys.PrefixTenant], as [Core] is told its own (`WithPrefix`).
 //
+// A grant is answered by its own methods that those asked about cover, and
+// not by a pattern that covers them: `/roster.CredentialService/*` does not
+// read as *may manage somebody's keys*, `CredentialService/Issue` does. A
+// method that covers every grant is answered one, [allOfRoster], wherever a
+// pattern is a grant at all.
+//
 // A function beside the method so that whatever else says it -- a note at a
 // terminal -- says it from this list.
 func HandedOver(kind string, held app.RoleHeld, methods []string) []*app.RoleHandedOver {
+	if is := allOfRoster.at(kind, held); is != "" {
+		var all []string
+		for _, m := range methods {
+			if CoversThePage(m) && !slices.Contains(all, m) {
+				all = append(all, m)
+			}
+		}
+		if len(all) > 0 {
+			return []*app.RoleHandedOver{app.RoleHandedOver_builder{
+				Grant:     allOfRoster.grant,
+				Methods:   all,
+				ReadsAs:   allOfRoster.readsAs,
+				HandsOver: fmt.Sprintf(is, GrantsOfThePage(kind, held)),
+			}.Build()}
+		}
+	}
+
 	var out []*app.RoleHandedOver
 
 	for _, g := range handsOver {
-		is := g.tenant
-		switch {
-		case strings.HasPrefix(kind, keys.PrefixDeployment):
-			// Where it would be held is a customer's question. A role of this
-			// plane is exercised in every tenant, wherever it was bound.
-			is = g.deployment
-		case held == app.RoleHeld_ROLE_HELD_IN_A_SITE:
-			is = g.site
-		case held == app.RoleHeld_ROLE_HELD_NOWHERE:
-			is = g.own
-		}
+		is := g.at(kind, held)
 		if is == "" {
 			continue
 		}
 
 		var by []string
-		for _, m := range methods {
-			if slices.Contains(by, m) {
-				continue
+		if g.pattern {
+			for _, m := range methods {
+				if strings.Contains(m, "*") && !slices.Contains(by, m) {
+					by = append(by, m)
+				}
 			}
-
-			reaches := slices.ContainsFunc(g.methods, func(v string) bool { return frame.Covers(m, v) })
-			if g.pattern {
-				reaches = strings.Contains(m, "*")
-			}
-			if reaches {
-				by = append(by, m)
+		}
+		for _, v := range g.methods {
+			if !slices.Contains(by, v) && slices.ContainsFunc(methods, func(m string) bool { return frame.Covers(m, v) }) {
+				by = append(by, v)
 			}
 		}
 		if len(by) == 0 {

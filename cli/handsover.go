@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
+	"github.com/lesomnus/payday/frame"
 	"github.com/lesomnus/payday/pdcmd"
 	"github.com/lesomnus/z"
 	"google.golang.org/grpc"
@@ -154,10 +156,31 @@ func sayHandedOver(ctx context.Context, conn grpc.ClientConnInterface, held app.
 
 	w := &strings.Builder{}
 	for _, g := range v.GetGrants() {
-		fmt.Fprintf(w, "\nNOTE: `%s` reads as %q, and is %s.\n  %s#%s\n",
-			strings.Join(g.GetMethods(), "`, `"), g.GetReadsAs(), g.GetHandsOver(), wideGrantsPage, g.GetGrant())
+		fmt.Fprintf(w, "\nNOTE: `%s`%s reads as %q, and is %s.\n  %s#%s\n",
+			strings.Join(g.GetMethods(), "`, `"), namedBy(methods, g.GetMethods()), g.GetReadsAs(), g.GetHandsOver(),
+			wideGrantsPage, g.GetGrant())
 	}
 	fmt.Fprint(os.Stderr, w.String())
+}
+
+// namedBy is which of the methods asked about name a grant's methods without
+// being them: a pattern, which is answered by the methods of the grant it
+// covers rather than said to read as that grant.
+func namedBy(asked, grant []string) string {
+	var by []string
+	for _, m := range asked {
+		if slices.Contains(grant, m) || slices.Contains(by, m) {
+			continue
+		}
+		if slices.ContainsFunc(grant, func(v string) bool { return frame.Covers(m, v) }) {
+			by = append(by, m)
+		}
+	}
+	if len(by) == 0 {
+		return ""
+	}
+
+	return " (named by `" + strings.Join(by, "`, `") + "`)"
 }
 
 // wideGrantsPage is where a grant answered is written at length.

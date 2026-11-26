@@ -14,8 +14,8 @@ named beside it holds.
 Read it before binding a role to somebody, before minting a key, and before
 writing a role whose methods end in `*`. A terminal says these when a role is
 written or bound: `roster role add`, `role widen` and `binding add` print each
-one the grant they made hands over, with its heading here
-([below](#what-says-so-when-one-is-granted)).
+one the grant they made hands over, with its heading here, and a grant of all
+of roster once, as what it is ([below](#what-says-so-when-one-is-granted)).
 
 | | reads as | is |
 | --- | --- | --- |
@@ -275,8 +275,10 @@ say who is in its own reach.
 and every one a later release adds to it, the day it is added.
 
 `/roster.*/*` is the tenant: that is what `everything` holds, and the role a
-tenant is made with. A pattern narrower than that is still a grant of methods
-nobody had read when it was written.
+tenant is made with. It holds every grant on this page, and is said as that,
+once: a role or a key that names it is not told each of them. A pattern
+narrower than that is still a grant of methods nobody had read when it was
+written, and is told each grant it covers, by the grant's own methods.
 
 ## Stopping somebody
 
@@ -485,9 +487,14 @@ grants (2)
   hands_over listed on a key or a delegation, everything whoever it is for holds across the tenant: the key or the delegation it mints lists anything they are bound, and the list it was itself minted with is not asked
 ```
 
-`grant` is the heading here, as its link is written. `methods` is which of the
-ones asked about reach it, as they were written, so a pattern is answered for
-everything it covers. A list that means what it says is answered nothing.
+`grant` is the heading here, as its link is written. `methods` is the grant's
+own methods that the ones asked about cover, by their whole names: asked of
+`/roster.CredentialService/*`, *a person's verb* is answered
+`CredentialService/Issue`, `/Enrol` and `/Unlock`, since the pattern is not
+what the grant reads as, and [a pattern](#a-pattern) is answered the pattern.
+A method that covers every grant here -- `/roster.*/*` -- is answered one,
+[a pattern](#a-pattern), saying how many others it holds where it would be
+held. A list that means what it says is answered nothing.
 
 Where it would be held is `held`, and it changes the answer, because a sentence
 said of the wrong place is one nobody reads the next time:
@@ -510,9 +517,11 @@ key of the directory's verbs, `HolderService/Provision`, `/Deactivate` and
 
 **A key is told at the terminal.** `roster key add` and `roster control key
 add` print a note when a key's methods reach the trail, `VouchService/Accept`,
-`VouchService/Link` or `DelegationService/Issue`, and the note is the one for
-that kind of key -- a tenant's, or every tenant's
-(`TestAKeyThatMintsDelegationsIsToldSo`).
+`VouchService/Link` or `DelegationService/Issue`, naming the method and the
+pattern that named it, and the note is the one for that kind of key -- a
+tenant's, or every tenant's (`TestAKeyThatMintsDelegationsIsToldSo`). A key
+that lists all of roster is told that, once, with how many grants of this page
+it holds.
 
 **A role is told at the terminal, where it is written or bound.** After
 `roster role add`, `role widen` and `binding add` have made their write and
@@ -523,6 +532,25 @@ line with its heading here:
 ```
 NOTE: `/roster.ApiKeyService/Issue` reads as "may manage somebody's keys, password or addresses", and is a way into the account of anybody of the tenant who holds no more than whoever is given it -- which, given to two people, is each other.
   docs/usage/wide-grants.md#a-persons-verb-across-the-tenant
+```
+
+A pattern is told each grant it covers by the grant's methods, and the pattern
+that named them:
+
+```
+NOTE: `/roster.CredentialService/Issue`, `/roster.CredentialService/Enrol`, `/roster.CredentialService/Unlock` (named by `/roster.CredentialService/*`) reads as "may manage somebody's keys, password or addresses", and is a way into the account of anybody of the tenant who holds no more than whoever is given it -- which, given to two people, is each other.
+  docs/usage/wide-grants.md#a-persons-verb-across-the-tenant
+
+NOTE: `/roster.CredentialService/*` reads as "the methods a service has today", and is every method it covers, and every one a later release adds, the day it is added.
+  docs/usage/wide-grants.md#a-pattern
+```
+
+And all of roster -- binding `everything`, which is how a second administrator
+is made -- is one note (`TestAGrantOfAllOfRosterIsToldOnce`):
+
+```
+NOTE: `/roster.*/*` reads as "every method roster serves", and is every one a later release adds too, the day it is added: all 19 other grants on the page, across the tenant, which is the tenant itself, as `everything` holds it.
+  docs/usage/wide-grants.md#a-pattern
 ```
 
 `role add` asks of the methods the role names, and `role widen` of the ones it

@@ -164,9 +164,10 @@ func TestTheWideGrantsPageIsWhatTheWireAnswers(t *testing.T) {
 	}
 	x.NotEmpty(headings)
 
-	// Everything asked of every plane and place: each method there is, and
-	// the pattern over all of them.
-	asked := []string{"/roster.*/*"}
+	// Everything asked of every plane and place: each method there is, and a
+	// pattern. Not the one over all of them, which is answered one grant
+	// (`TestAGrantOfAllOfRosterIsToldOnce`).
+	asked := []string{"/roster.HolderService/*"}
 	for svc, info := range b.grpc(t).GetServiceInfo() {
 		for _, m := range info.Methods {
 			asked = append(asked, "/"+svc+"/"+m.Name)

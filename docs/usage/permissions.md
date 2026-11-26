@@ -51,7 +51,7 @@ roster --as admin role hands-over '{"methods":["/roster.VouchService/Link"]}'
 And after: `role add`, `role widen` and `binding add` print on standard error
 each grant the write made that hands over more than it reads as -- what it
 reads as, what it is where it is held, and its heading on that page -- below the
-row they print as ever. Nothing is refused, stdout is the row alone, and the
+row they print as ever; of all of roster, `/roster.*/*`, one note saying so. Nothing is refused, stdout is the row alone, and the
 exit status is the write's.
 
 And fewer with `role narrow`, which takes out every entry a method you name
