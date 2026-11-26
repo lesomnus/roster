@@ -150,6 +150,20 @@ func certPair(v string) (cmd.TlsConfig, error) {
 	return c, nil
 }
 
+// directoryDefaults is what `ldap:` holds before the file is read, where `c`
+// does not hold it already: the bounds on connections, which are `ldap/wire`'s
+// and are the root's here so that `roster config` shows the number in effect.
+// Nought is the same number wherever it is read ([wire.Server]), so this is
+// what is shown and not what is served.
+func directoryDefaults(c *cmd.LdapConfig) {
+	if c.MaxConns == 0 {
+		c.MaxConns = wire.DefaultMaxConns
+	}
+	if c.MaxConnsPerAddr == 0 {
+		c.MaxConnsPerAddr = wire.DefaultMaxConnsPerAddr
+	}
+}
+
 // directoryCertificate is `ldap.tls` as the listener's certificate, read now.
 //
 // Each refusal names the keys as the file writes them, with the flag beside
@@ -239,7 +253,10 @@ func serveLdap(ctx context.Context, lc cmd.LdapConfig, f appKeys) error {
 	}
 	defer d.Close()
 
-	s := &wire.Server{Handler: d.Handler(), TLS: tlsConfig, RequireTLS: lc.RequireTls, Log: log.From(ctx)}
+	s := &wire.Server{
+		Handler: d.Handler(), TLS: tlsConfig, RequireTLS: lc.RequireTls, Log: log.From(ctx),
+		MaxConns: lc.MaxConns, MaxConnsPerAddr: lc.MaxConnsPerAddr,
+	}
 	defer s.Close()
 
 	errs := make(chan error, 2)

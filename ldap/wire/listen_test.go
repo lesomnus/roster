@@ -218,8 +218,8 @@ func TestAConnectionOverTheBoundIsClosedAtOnce(t *testing.T) {
 		x := require.New(t)
 		l := arriving(t, &wire.Server{Handler: &directory{}, Log: quiet}, nil)
 
-		held := make([]net.Conn, 0, wire.MaxConnsPerAddr)
-		for range wire.MaxConnsPerAddr {
+		held := make([]net.Conn, 0, wire.DefaultMaxConnsPerAddr)
+		for range wire.DefaultMaxConnsPerAddr {
 			held = append(held, l.from(t, "192.0.2.1"))
 		}
 		letIn(t, held[len(held)-1], "the last one under the bound was not answered")
@@ -232,13 +232,13 @@ func TestAConnectionOverTheBoundIsClosedAtOnce(t *testing.T) {
 			"an address that hung up one connection was not let another")
 
 		// And in all: the first address has its share, the second has one.
-		open := wire.MaxConnsPerAddr + 1
-		for i := 2; open < wire.MaxConns; i++ {
-			room := wire.MaxConnsPerAddr
+		open := wire.DefaultMaxConnsPerAddr + 1
+		for i := 2; open < wire.DefaultMaxConns; i++ {
+			room := wire.DefaultMaxConnsPerAddr
 			if i == 2 {
 				room--
 			}
-			for ; room > 0 && open < wire.MaxConns; room-- {
+			for ; room > 0 && open < wire.DefaultMaxConns; room-- {
 				l.from(t, fmt.Sprintf("192.0.2.%d", i))
 				open++
 			}
@@ -249,7 +249,7 @@ func TestAConnectionOverTheBoundIsClosedAtOnce(t *testing.T) {
 	t.Run("an IPv6 address is the /64 it is in", func(t *testing.T) {
 		l := arriving(t, &wire.Server{Handler: &directory{}, Log: quiet}, nil)
 
-		for i := range wire.MaxConnsPerAddr {
+		for i := range wire.DefaultMaxConnsPerAddr {
 			l.from(t, fmt.Sprintf("2001:db8:0:1::%x", i+1))
 		}
 		turnedAway(t, l.from(t, "2001:db8:0:1:ffff::1"), "one more from the same /64, at an address of its own")
@@ -260,11 +260,36 @@ func TestAConnectionOverTheBoundIsClosedAtOnce(t *testing.T) {
 		cfg := selfSigned(t)
 		l := arriving(t, &wire.Server{Handler: &directory{}, Log: quiet}, func(l net.Listener) net.Listener { return tls.NewListener(l, cfg) })
 
-		for range wire.MaxConnsPerAddr {
+		for range wire.DefaultMaxConnsPerAddr {
 			l.from(t, "192.0.2.1")
 		}
 		// It has sent no hello and is asked for none.
 		turnedAway(t, l.from(t, "192.0.2.1"), "one more than an address may have, over LDAPS")
+	})
+}
+
+// TestADeploymentSaysHowManyConnectionsAreHeld: the two bounds were constants,
+// and a deployment whose every host keeps a connection of its own open had no
+// way past the first but a second `roster ldap serve`. They are what the
+// server is told (`ldap.max_conns`, `ldap.max_conns_per_addr`), and what is
+// done at the bound is as it was: one over it is closed with nothing said.
+// Told nothing, they are the defaults above.
+func TestADeploymentSaysHowManyConnectionsAreHeld(t *testing.T) {
+	t.Run("in all", func(t *testing.T) {
+		l := arriving(t, &wire.Server{Handler: &directory{}, Log: quiet, MaxConns: 2}, nil)
+
+		letIn(t, l.from(t, "192.0.2.1"), "the first of two was not answered")
+		letIn(t, l.from(t, "192.0.2.2"), "the second of two was not answered")
+		turnedAway(t, l.from(t, "192.0.2.3"), "a third, where the deployment said two")
+	})
+
+	t.Run("from one address", func(t *testing.T) {
+		l := arriving(t, &wire.Server{Handler: &directory{}, Log: quiet, MaxConnsPerAddr: 2}, nil)
+
+		letIn(t, l.from(t, "192.0.2.1"), "the first of two was not answered")
+		letIn(t, l.from(t, "192.0.2.1"), "the second of two was not answered")
+		turnedAway(t, l.from(t, "192.0.2.1"), "a third from one address, where the deployment said two")
+		letIn(t, l.from(t, "192.0.2.2"), "another address was refused for what the first holds")
 	})
 }
 

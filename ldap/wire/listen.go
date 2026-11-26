@@ -1,6 +1,7 @@
 package wire
 
 import (
+	"cmp"
 	"errors"
 	"log/slog"
 	"net"
@@ -9,24 +10,28 @@ import (
 )
 
 // What a listener holds at once, and for how long before a bind. Constants,
-// as the bounds on a message are and for the reason given there (`read.go`).
+// as the bounds on a message are and for the reason given there (`read.go`),
+// but for the two a deployment says ([Server.MaxConns],
+// [Server.MaxConnsPerAddr]), whose defaults these are.
 const (
-	// MaxConns is how many connections one server has open. A connection is
-	// a descriptor, and where the directory is a block of `roster serve` it
-	// is one of roster's own: where they are scarce a process has 4096 (an
-	// older Linux's hard limit, which Go raises its own to), and a quarter
-	// of that leaves the rest to the database and the ports roster answers
-	// on. It is also what strangers cost all together at the most -- each
-	// connection a goroutine and one message of [MaxMessageUnbound] being
-	// read, so a hundred megabytes or so were every one of them full.
+	// DefaultMaxConns is how many connections one server has open unless it
+	// is told otherwise. A connection is a descriptor, and where the
+	// directory is a block of `roster serve` it is one of roster's own: where
+	// they are scarce a process has 4096 (an older Linux's hard limit, which
+	// Go raises its own to), and a quarter of that leaves the rest to the
+	// database and the ports roster answers on. It is also what strangers
+	// cost all together at the most -- each connection a goroutine and one
+	// message of [MaxMessageUnbound] being read, so a hundred megabytes or so
+	// were every one of them full.
 	//
-	// It is the one number here a deployment may come to want to say: one
-	// whose every host keeps a connection of its own open (SSSD does) has as
-	// many clients as it has hosts. Such a deployment runs a second
-	// `roster ldap serve` beside the first until this is a setting.
-	MaxConns = 1024
+	// It is a number a deployment may want to say, and does
+	// (`ldap.max_conns`): one whose every host keeps a connection of its own
+	// open (SSSD does) has as many clients as it has hosts. What it spends
+	// in raising it is those descriptors and that memory.
+	DefaultMaxConns = 1024
 
-	// MaxConnsPerAddr is how many of them one address has. It is for the
+	// DefaultMaxConnsPerAddr is how many of them one address has unless the
+	// server is told otherwise (`ldap.max_conns_per_addr`). It is for the
 	// client that leaks its connections, which is then refused its next one
 	// while everybody else is answered; it is not much of a guard against
 	// somebody who means it, who has more addresses than one.
@@ -37,7 +42,7 @@ const (
 	// deployment is one address, and this is then what they have between
 	// them. 256 at once is the pools of two dozen applications and every
 	// appliance of a site.
-	MaxConnsPerAddr = 256
+	DefaultMaxConnsPerAddr = 256
 
 	// UnboundReadTimeout is how long a connection that has not bound has to
 	// say each thing it says, the first included; [DefaultReadTimeout] is for
@@ -103,7 +108,7 @@ func (s *Server) admit(nc net.Conn) (from netip.Addr, ok bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	if s.open >= MaxConns || s.from[from] >= MaxConnsPerAddr {
+	if s.open >= cmp.Or(s.MaxConns, DefaultMaxConns) || s.from[from] >= cmp.Or(s.MaxConnsPerAddr, DefaultMaxConnsPerAddr) {
 		// Said once a minute and not once a connection: what turns one away
 		// turns away the thousand after it.
 		s.refused++

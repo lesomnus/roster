@@ -67,6 +67,7 @@ import (
 // already holds it, and `--help` prints the variable beside it. `Bind` takes a
 // field of this `c` and no other, which is why both are handed over.
 func Cmd(c *cmd.Config) *xli.Command {
+	directoryDefaults(&c.Ldap)
 	l := cfg.New(cmd.Name, c,
 		// `ROSTER_ACCOUNT_TENANT_KEY_<ALIAS>` and the one beside it are read by
 		// the consumers themselves (`keysOf`), not by the loader, and are not

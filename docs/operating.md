@@ -831,6 +831,8 @@ ldap:
   bind: key
   deployment_key: ${file:/run/roster/directory.key}  # `roster --as admin control key add --allow … directory`,
                                                      # and `roster app install … directory` per tenant
+  # max_conns: 1024                       # connections held at once; 0 or left out is 1024, never no bound
+  # max_conns_per_addr: 256               # of them from one address, an IPv6 one counted with its /64; 0 is 256
 
 login:                                    # only with Hydra in front; see login.md
   addr: :8091
@@ -859,6 +861,25 @@ where the app starts, so one written with anything between `://` and `@` is
 refused at start, by its key and without the address. A proxy in front of
 Hydra's admin API that wants a credential is given it in `login.hydra.header`,
 `Name: value`, whose values `roster config` never prints.
+
+**How many connections the directory holds is the deployment's to say.**
+`ldap.max_conns` is how many it holds at once, and `ldap.max_conns_per_addr`
+how many of them one address has, an IPv6 address counted with the /64 it is
+in. **0 or left out is the default**, 1024 and 256 -- never *no bound* -- and
+`roster config` shows the default where the key is left out. One more
+than either is closed with nothing said, and a line is logged once a minute
+while that goes on. A deployment whose every host keeps a connection of its own
+open, as SSSD does, has as many clients as it has hosts and raises the first;
+one whose clients arrive through one proxy or one NAT has the second between
+them and raises that. What the bound protects is the process's file
+descriptors: each connection is one, and inside `roster serve` they are roster's
+own, shared with the database and every port roster answers on, so a directory
+allowed more than the process has to spare takes roster down with it rather than
+itself. Each connection is also a goroutine and up to 64 KiB being read before a
+bind, so 1024 strangers cost about a hundred megabytes at the most. Raise it
+with the descriptor limit (`ulimit -n`, a container's `nofile`) raised beside
+it, or run the directory as a process of its own. A number below nought is
+refused at start, naming the key.
 
 `account.terminal` is **off unless a deployment says so**, and it is the one
 setting in that block that opens a door into an account: it lets a machine with no

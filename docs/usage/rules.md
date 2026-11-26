@@ -330,14 +330,15 @@ is roster's to say and not a caller's (`server/portrait/portrait.go`).
 
 Not a call's: what `roster ldap serve` holds a connection to, which is anybody's
 until it has bound ([ldap.md](../ldap.md)). Each number is a constant with its
-reason beside it, in `ldap/wire`, and none is a setting.
+reason beside it, in `ldap/wire`, and none is a setting but the two bounds on
+connections, which are keys of `ldap:` and default to the constants.
 
 | | written in | held to it by |
 | --- | --- | --- |
 | A message is at most 64 KiB from a connection that has not bound and 1 MiB from one that has, read off its header and refused there, before a byte of what it claims is read; so is a length of the indefinite form, which LDAP has not. The refusal is a notice of disconnection, `protocolError`, and the connection is ended | `ldap/wire/read.go` | `TestAMessageLongerThanARequestIsRefusedOnItsHeader` · `TestAMessageSaysItsLengthBeforeItsBytes` |
 | Reading a message costs what it is long: its bytes once, however deep it nests, and a node for each of its elements, of which it has at most 16 384 | `ldap/wire/read.go` | `TestAMessageNestedAThousandDeepCostsWhatItIsLong` · `TestAMessageOfMoreElementsThanARequestHasIsRefused` |
 | A filter nests at most a hundred deep. One deeper is answered `protocolError` as the search it is and reaches no directory, and the connection is ended | `ldap/wire/filter.go` | `TestAFilterNestsAsDeepAsOneIsWrittenAndNoDeeper` |
-| A directory has at most 1024 connections open, and 256 from one address, an IPv6 address being counted with the /64 it is in. One more is closed with nothing said, before a TLS handshake where there is one. Clients behind one proxy or one NAT are one address and have the 256 between them | `ldap/wire/listen.go` | `TestAConnectionOverTheBoundIsClosedAtOnce` |
+| A directory has at most 1024 connections open, and 256 from one address, an IPv6 address being counted with the /64 it is in, unless `ldap.max_conns` and `ldap.max_conns_per_addr` say otherwise; 0 or left out is the default, never no bound, `roster config` shows the default where a key is left out, and below nought is refused at start, naming the key. One more is closed with nothing said, before a TLS handshake where there is one. Clients behind one proxy or one NAT are one address and have the second bound between them | `ldap/wire/listen.go`, `cmd/consumers.go`, `cli/ldap.go` | `TestAConnectionOverTheBoundIsClosedAtOnce` · `TestADeploymentSaysHowManyConnectionsAreHeld` · `TestHowManyConnectionsTheDirectoryHoldsIsAKeyOfTheFile` |
 | A connection that has not bound has thirty seconds for each thing it says, the first included; one that has bound may sit idle five minutes | `ldap/wire/listen.go` | `TestAConnectionThatHasNotBoundHasLessTimeToSpeak` |
 | An accept that fails for a moment -- the process out of descriptors -- is waited out and asked again. A listener that is broken ends the directory, and under `roster serve` ends roster, as a consumer's broken listener does there | `ldap/wire/listen.go`, `cli/ldap.go` | `TestTheListenerGoesOnAfterAnAcceptThatFails` |
 | A connection that has bound has at most a hundred searches running at once; one more is answered `busy` (51) and reaches no directory. One that has not bound has one thing going at a time: its search is answered before its next message is read | `ldap/wire/flight.go` | `TestASearchOverWhatAConnectionHasInFlightIsAnsweredBusy` · `TestAConnectionThatHasNotBoundHasOneThingGoingAtOnce` |
