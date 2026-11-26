@@ -145,6 +145,16 @@ administrator can end the nomination from the user console's *apps* tab. The Log
 every tenant with a name that is not being destroyed -- so for them ending it
 lasts until the next start.
 
+**A program that carries roster inside itself** -- a `cmd.Server` it built
+with `cmd.Build` from a database and no `control` -- installs an app with
+`cli.InstallApp`, the command without the process: a `cli.AppInstall` holds
+the argument and the flags by their names, and it answers the same
+sentences. Such a deployment has no control plane, so the table's last row is
+not written -- no holder there, no nomination, no key listed -- and it says
+so: *this deployment has no control plane, so nothing nominates shale in acme
+and no key is answered as @acme/shale.* Everything else is written, read
+first and refused as above.
+
 **Roster's own front doors are declared.** The Login App and the account app
 write their rows in every tenant at start -- the holder, its role, the binding
 and the nomination -- because the deployment's configuration turned them on, so
