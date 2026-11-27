@@ -21,6 +21,9 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -63,6 +66,42 @@ type deployment struct {
 	// mail is what the app asked to have delivered: the mailbox, and the link.
 	mu   sync.Mutex
 	mail []struct{ to, link string }
+
+	// asked is every call roster answered on the wire, by method, with the
+	// code it answered: what a front door sent, counted where it arrived.
+	asked []askedOfRoster
+}
+
+type askedOfRoster struct {
+	method string
+	code   codes.Code
+}
+
+// askedOf is how many times roster was asked `method`, and with what answers.
+func (d *deployment) askedOf(method string) []codes.Code {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	out := []codes.Code{}
+	for _, v := range d.asked {
+		if v.method == method {
+			out = append(out, v.code)
+		}
+	}
+
+	return out
+}
+
+// counting is the interceptor that fills [deployment.asked], outermost, so a
+// call refused anywhere inside is counted with its refusal.
+func (d *deployment) counting(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
+	res, err := handler(ctx, req)
+
+	d.mu.Lock()
+	d.asked = append(d.asked, askedOfRoster{method: info.FullMethod, code: status.Code(err)})
+	d.mu.Unlock()
+
+	return res, err
 }
 
 func (d *deployment) sent(to string) string {
@@ -250,7 +289,7 @@ func serve(t *testing.T, enrol account.Enrol, with ...func(*account.Config)) *de
 	x.NoError(err)
 
 	// roster on the wire, twice off one server: gRPC and Connect.
-	g, err := s.Grpc(ctx, cmd.Config{})
+	g, err := s.Grpc(ctx, cmd.Config{}, grpc.ChainUnaryInterceptor(d.counting))
 	x.NoError(err)
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	x.NoError(err)
