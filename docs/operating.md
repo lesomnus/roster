@@ -3652,6 +3652,14 @@ otel:
       exporters: [otlp]
 ```
 
+A call its caller cancelled is the caller's doing, whatever the database said
+of the read it interrupted: it is answered `Canceled`, its one line is the
+call's own (`.CX`, a warning), and it is not among roster's faults. A call whose
+deadline passed is answered `DeadlineExceeded`, and what it was waiting on is
+still on the log at `ERROR` -- a slow store is found by that line -- as is a
+store roster could not ask for a caller who was still there (`keys: could not
+ask whether a credential is good`, answered `Unavailable`).
+
 The trail is not this: the trail is what
 was written and by whom, kept; this is what was asked, as it happens. One thing
 in it is the trail's to be watched for, with a deployment that keeps an archive:
