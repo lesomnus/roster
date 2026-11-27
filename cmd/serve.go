@@ -560,6 +560,25 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 
 	w := watch.New(b)
 
+	// A build that fails from here gives back the broker, and the control
+	// plane once there is one, and not this plane's pool alone. Each failure
+	// below closes `db`, which was everything there was to close until a
+	// broker could be closed (lesomnus/payday#323): on `postgres` it is two
+	// connections outside the pool, and they stayed; so did the whole of a
+	// control plane built before the failure. Said once here rather than
+	// beside each of those lines, as the hook's connection is below.
+	var s *Server
+	built := false
+	defer func() {
+		if built {
+			return
+		}
+		_ = w.Close()
+		if s != nil && s.Control != nil {
+			_ = s.Control.Close()
+		}
+	}()
+
 	// What a write made past the servers is queued through, where there is
 	// anything to publish it to; see [Server.Queue].
 	var queue bare.Recorder
@@ -622,7 +641,6 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 	}
 	// A build refused below gives the hook's connection back, as
 	// [Server.Close] does once there is a server.
-	built := false
 	defer func() {
 		if !built && hook != nil {
 			_ = hook.Close()
@@ -768,7 +786,7 @@ func build(ctx context.Context, c Config, prefix string, leaked vouch.Breached) 
 		return nil, err
 	}
 
-	s := &Server{
+	s = &Server{
 		PolicyFile: policyFile, policySources: policySources,
 		Db: db, Ent: client, Drv: drv, Dialect: dialect, Watch: w, broker: c.Watch.Broker, Queue: queue, sink: sink, narrow: narrow,
 		Walled: stacked, Ungated: ungated, Keyring: keyring, Breached: leaked, Lockout: lockout, Password: password, Badge: badge, DelegationLife: c.Delegation.Life,
@@ -1257,11 +1275,21 @@ func (o owned) Unwrap() spin.Spinner           { return o.Spinner }
 // connection was taken: a different set every run, which reads exactly like a
 // flaky suite and is not one.
 //
-// Both are attempted and the first error is answered, rather than returning on
+// The broker is the third thing held, and was found the same way, in another
+// app's suite (lesomnus/payday#323): on `watch.broker: postgres` it is a
+// listener and a publisher with a connection each, outside the pool, and
+// nothing ended them. So the Watch is closed, and before the pool, as payday's
+// own scaffold does; a stream still open is cut as when the broker loses its
+// database. Each plane has its own, and closes its own.
+//
+// All are attempted and the first error is answered, rather than returning on
 // the first: a data plane that would not close is not a reason to leave the
 // control plane's connections held as well.
 func (s *Server) Close() error {
-	err := s.Db.Close()
+	err := s.Watch.Close()
+	if e := s.Db.Close(); err == nil {
+		err = e
+	}
 	if s.hook != nil {
 		if e := s.hook.Close(); err == nil {
 			err = e

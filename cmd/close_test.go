@@ -2,11 +2,13 @@ package cmd_test
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/lesomnus/payday/config"
 	"github.com/lesomnus/payday/pdtest"
+	"github.com/lesomnus/payday/watch"
 
 	"github.com/lesomnus/roster/cmd"
 	entmigrate "github.com/lesomnus/roster/internal/ent/migrate"
@@ -54,4 +56,54 @@ func TestClosingADeploymentClosesBothOfIts(t *testing.T) {
 	x.Error(s.Db.PingContext(ctx), "the data plane is still open")
 	x.Error(s.Control.Db.PingContext(ctx),
 		"the control plane's connections were never given back")
+}
+
+// TestClosingADeploymentClosesBothOfItsBrokers.
+//
+// A broker is the third thing a plane holds, after its pool and the connection
+// to a hook, and `Close` did not close it. On `watch.broker: postgres` that is a
+// listener and a publisher with a connection each, outside the pool, which
+// nothing ended until the process did (lesomnus/payday#323, found by another
+// app's suite running out of PostgreSQL's connections as this one once did).
+//
+// Asserted on `memory`, which runs wherever this does and is closed by the same
+// call: a subscription that is open when the deployment closes has ended, on
+// each plane. That the `postgres` broker then lets go of its connections is
+// payday's own test.
+func TestClosingADeploymentClosesBothOfItsBrokers(t *testing.T) {
+	x := require.New(t)
+	ctx := t.Context()
+
+	drv, dsn := pdtest.DB(t)
+	cdrv, cdsn := pdtest.DB(t)
+
+	s, err := cmd.Build(ctx, cmd.Config{
+		Db:      config.DbConfig{Driver: drv, Dsn: dsn},
+		Watch:   config.WatchConfig{Broker: config.BrokerMemory},
+		Control: cmd.ControlConfig{Db: config.DbConfig{Driver: cdrv, Dsn: cdsn}},
+	})
+	x.NoError(err)
+	x.NotNil(s.Control, "no control plane was built, so this proves nothing")
+	x.NotSame(s.Watch.Broker(), s.Control.Watch.Broker(), "the planes share a broker, so one close would do for both")
+
+	data, stop := s.Watch.Subscribe()
+	defer stop()
+	control, cstop := s.Control.Watch.Subscribe()
+	defer cstop()
+
+	x.NoError(s.Close())
+
+	ended := func(c <-chan watch.Event) bool {
+		select {
+		case _, ok := <-c:
+			return !ok
+		case <-time.After(5 * time.Second):
+			return false
+		}
+	}
+	x.True(ended(data), "a stream of the data plane's outlived the deployment")
+	x.True(ended(control), "a stream of the control plane's outlived the deployment")
+
+	// Twice is nothing, as it was for the pools.
+	x.NoError(s.Close())
 }
