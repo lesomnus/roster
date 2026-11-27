@@ -46,6 +46,7 @@ import (
 	"crypto/sha256"
 	"crypto/subtle"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -307,8 +308,33 @@ func Store(deployment app.Server, tenant app.Server) auth.TokenStore {
 // One function for every road a credential is read by -- a key, a
 // delegation, a key narrowed by `roster-at` -- so that no road says it
 // differently.
+//
+// # A caller who left is not a store that failed
+//
+// A read fails too when the call it is made for has ended, and what the store
+// says of it is its driver's: SQLite says `interrupted`, PostgreSQL's driver
+// wraps the context's error. So with the call's own context ended this answers
+// the context's error, and payday answers that as the context's code,
+// `Canceled` or `DeadlineExceeded`, on every road (lesomnus/payday#322). The
+// line follows payday's rule: none for a caller who hung up, whose call the
+// call log already records; and for a deadline that passed, the line naming
+// the store's words, as it was, since a read that did not come back in time is
+// a slow store and this is the line that says which.
+//
+// The context, and not the store's words. A store that says `interrupted` to
+// a call that is still there was interrupted by something else -- an
+// operator, a database shutting down -- and that is a store that could not be
+// asked, which is what the line is for.
 func unasked(ctx context.Context, err error) error {
+	ended := ctx.Err()
+	if errors.Is(ended, context.Canceled) {
+		return ended
+	}
+
 	log.From(ctx).ErrorContext(ctx, "keys: could not ask whether a credential is good", slog.Any("err", err))
+	if ended != nil {
+		return ended
+	}
 
 	return auth.ErrUnavailable
 }
