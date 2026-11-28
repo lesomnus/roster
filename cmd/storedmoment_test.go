@@ -212,3 +212,37 @@ func TestSomebodyErasedBeforeIsDueAsTheyWere(t *testing.T) {
 	x.NoError(err)
 	x.NotContains(vs, who, "somebody was due in the instant they were erased")
 }
+
+// TestASignInAnswersTheSessionTheRowHolds.
+//
+// A sign-in's two deadlines are payday's to compute, from the clock, and it
+// handed them to roster's store with the clock's digits: the row held them
+// cut (the test above) and what the sign-in answered did not, so the session
+// a caller was handed was not the session a read then gave. payday cuts the
+// deadlines it computes before it stores them (lesomnus/payday#328), so the
+// two are one value: what `Mint` answers is what the store's `Get` gives, and
+// what the row holds.
+func TestASignInAnswersTheSessionTheRowHolds(t *testing.T) {
+	x := require.New(t)
+	b, ctx := build(t)
+	store := session.New(b.Ent, audit.Contents{})
+	s := authsession.New(store, authsession.Insecure(),
+		authsession.WithIdle(10*time.Minute), authsession.WithLifetime(time.Hour))
+
+	v, _, err := s.Mint(ctx, authsession.Session{Id: b.ContosoUser.String(), Grant: frame.Whole()})
+	x.NoError(err)
+	storedToTheMicrosecond(t, "the end a sign-in answered", v.Expires)
+	storedToTheMicrosecond(t, "the idle end a sign-in answered", v.Idle)
+
+	got, err := store.Get(ctx, v.Key)
+	x.NoError(err)
+	x.True(v.Expires.Equal(got.Expires), "a sign-in answered %s and the store gives %s",
+		v.Expires.Format(time.RFC3339Nano), got.Expires.Format(time.RFC3339Nano))
+	x.True(v.Idle.Equal(got.Idle), "a sign-in answered %s and the store gives %s",
+		v.Idle.Format(time.RFC3339Nano), got.Idle.Format(time.RFC3339Nano))
+
+	row, err := b.Ent.Session.Query().Where(entsession.SecretEQ(session.Sum(v.Key))).Only(ctx)
+	x.NoError(err)
+	x.NotNil(row.DateExpired)
+	x.True(v.Expires.Equal(*row.DateExpired), "the row")
+}
