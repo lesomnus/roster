@@ -3,7 +3,6 @@ package cmd
 import (
 	"bytes"
 	"context"
-	"time"
 
 	"github.com/protobuf-orm/ent/dialect"
 	entsql "github.com/protobuf-orm/ent/dialect/sql"
@@ -35,6 +34,7 @@ import (
 	entteam "github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	enttenant "github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/lesomnus/roster/internal/moment"
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/core"
 	"github.com/lesomnus/roster/server/me"
@@ -1279,7 +1279,9 @@ func Releasing(db *ent.Client, cs audit.Contents) core.Releasing {
 					"whoever runs this deployment takes it out of the file first", name, from)
 		}
 
-		if err := c.Host.UpdateOneId(held.Id).SetDateErased(time.Now()).Exec(ctx); err != nil {
+		// As the database keeps it (`internal/moment`), as the erase of the
+		// generated store writes one.
+		if err := c.Host.UpdateOneId(held.Id).SetDateErased(moment.Now()).Exec(ctx); err != nil {
 			return err
 		}
 

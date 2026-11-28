@@ -39,7 +39,6 @@ package session
 import (
 	"context"
 	"crypto/sha256"
-	"time"
 
 	"google.golang.org/protobuf/proto"
 	"uuid"
@@ -54,6 +53,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent"
 	"github.com/lesomnus/roster/internal/ent/holder"
 	"github.com/lesomnus/roster/internal/ent/session"
+	"github.com/lesomnus/roster/internal/moment"
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/pd"
 )
@@ -109,11 +109,11 @@ func (s *Store) Put(ctx context.Context, v authsession.Session) error {
 	switch {
 	case err == nil:
 		return s.written(ctx, Used, pdid.Id(was.Id), was.HolderId, func(ctx context.Context, db *ent.Client) (bool, error) {
-			u := db.Session.UpdateOneId(was.Id).SetDateUpdated(time.Now())
+			u := db.Session.UpdateOneId(was.Id).SetDateUpdated(moment.Now())
 			if v.Idle.IsZero() {
 				u = u.ClearDateIdle()
 			} else {
-				u = u.SetDateIdle(v.Idle)
+				u = u.SetDateIdle(moment.Of(v.Idle))
 			}
 
 			return true, u.Exec(ctx)
@@ -166,23 +166,28 @@ func (s *Store) Put(ctx context.Context, v authsession.Session) error {
 	id := pdid.New(pd.SessionDomain)
 
 	return s.written(ctx, Minted, id, who.Uuid(), func(ctx context.Context, db *ent.Client) (bool, error) {
+		// Every time of the row as the database keeps it, on every database
+		// (`internal/moment`): what `Get` answers of it is then what was
+		// written, on SQLite as on PostgreSQL, and not the sign-in's
+		// nanoseconds on one and its microseconds on the other.
+		now := moment.Now()
 		c := db.Session.Create().
 			SetId(id.Uuid()).
 			SetHolderId(who.Uuid()).
 			SetSecret(sum).
 			SetGrant(grant).
-			SetDateUpdated(time.Now()).
-			SetDateCreated(time.Now())
+			SetDateUpdated(now).
+			SetDateCreated(now)
 		if !v.DateAuthenticated.IsZero() {
 			// When its person proved who they are, as the sign-in said it, and
 			// never moved after: the update above writes the idle clock alone.
-			c = c.SetDateAuthenticated(v.DateAuthenticated)
+			c = c.SetDateAuthenticated(moment.Of(v.DateAuthenticated))
 		}
 		if !v.Expires.IsZero() {
-			c = c.SetDateExpired(v.Expires)
+			c = c.SetDateExpired(moment.Of(v.Expires))
 		}
 		if !v.Idle.IsZero() {
-			c = c.SetDateIdle(v.Idle)
+			c = c.SetDateIdle(moment.Of(v.Idle))
 		}
 
 		return true, c.Exec(ctx)
@@ -339,7 +344,7 @@ func (s *Store) Del(ctx context.Context, key string) error {
 		// Asked again whether it is live, in the transaction: of two
 		// sign-outs at once one ends it, and the other finds it ended and
 		// says nothing.
-		now := time.Now()
+		now := moment.Now()
 		n, err := db.Session.Update().
 			Where(session.IdEQ(was.Id), session.DateErasedIsNil()).
 			SetDateErased(now).

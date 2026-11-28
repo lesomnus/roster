@@ -38,6 +38,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/team"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/lesomnus/roster/internal/moment"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/expire"
@@ -154,6 +155,10 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 	}
 
 	if v.DateDestroyed == nil {
+		// As the database keeps it (`internal/moment`): the alias is freed by
+		// a comparison with this moment (`DueAliases`), which is made with
+		// the clock as it is.
+		now := moment.Now()
 		n, err := db.Tenant.Update().
 			Where(
 				tenant.IdEQ(t.Uuid()),
@@ -161,8 +166,8 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 				tenant.DateClosedNotNil(),
 				tenant.DateDestroyedIsNil(),
 			).
-			SetDateDestroyed(time.Now()).
-			SetDateUpdated(time.Now()).
+			SetDateDestroyed(now).
+			SetDateUpdated(now).
 			Save(ctx)
 		if err != nil {
 			return out, err
@@ -249,7 +254,7 @@ func DestroyTenant(ctx context.Context, db *ent.Client, t pdid.Id, p trail.Polic
 		SetDesc("").
 		SetLabels(map[string]string{}).
 		SetConfig(&app.TenantConfig{}).
-		SetDateUpdated(time.Now()).
+		SetDateUpdated(moment.Now()).
 		Exec(ctx); err != nil {
 		return out, err
 	}

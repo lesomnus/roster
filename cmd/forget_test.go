@@ -143,6 +143,8 @@ func TestForgettingSomebodyKeepsTheEventAndLosesTheContents(t *testing.T) {
 		x.Empty(v.Name)
 		x.Nil(v.Profile)
 		x.NotNil(v.DateErased)
+		storedToTheMicrosecond(t, "when they were forgotten", v.DateUpdated)
+		storedToTheMicrosecond(t, "when the forgetting erased them", *v.DateErased)
 
 		// The identifier stays, and that is the point of keeping the row: it is
 		// `Audit.actor_id`, and what makes it personal data is that it
@@ -235,6 +237,8 @@ func TestTheGraceCanBeUndoneUntilItIsNot(t *testing.T) {
 	x.NoError(err)
 	x.Nil(v.DateErased)
 	x.Equal("erin", v.Alias)
+	x.NotNil(v.DateInvalidated)
+	storedToTheMicrosecond(t, "when a restore voided their sign-ins", *v.DateInvalidated)
 
 	t.Run("and not after they are forgotten", func(t *testing.T) {
 		x := require.New(t)

@@ -41,10 +41,19 @@ func TestALinkIsAWayInThatSomebodyElseDelivers(t *testing.T) {
 	as := bearing(ctx, b.Token)
 
 	made, err := c.Link(as, app.VouchLinkRequest_builder{
-		Who: app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+		Who:         app.VouchWho_builder{Id: b.Who.Bytes()}.Build(),
+		DateExpired: timestamppb.New(nanosecondsOf(time.Now().Add(time.Minute))),
 	}.Build())
 	x.NoError(err)
 	x.NotEmpty(made.GetToken())
+
+	// And it ends when its row says, to the digit: the store keeps a time to
+	// the microsecond, and a caller told the nanoseconds it asked for is told
+	// a moment no read gives.
+	row, err := b.Ent.Link.Query().Only(ctx)
+	x.NoError(err)
+	x.True(row.DateExpired.Equal(made.GetDateExpired().AsTime()), "the link said it ends at %s, and its row says %s",
+		made.GetDateExpired().AsTime().Format(time.RFC3339Nano), row.DateExpired.Format(time.RFC3339Nano))
 
 	t.Run("it signs somebody in", func(t *testing.T) {
 		x := require.New(t)
@@ -161,6 +170,13 @@ func TestAskingForALinkSaysNothingAboutWhoIsHere(t *testing.T) {
 
 	x.NotEmpty(stranger.GetToken(), "a form answered 'nobody here' to whoever typed into it")
 	x.Len(stranger.GetToken(), len(real.GetToken()))
+
+	// And both end at a moment as the store keeps it: one for somebody said to
+	// the microsecond and one for nobody to the nanosecond would say which.
+	for _, v := range []*app.VouchLinkResponse{real, stranger} {
+		at := v.GetDateExpired().AsTime()
+		x.True(at.Equal(at.Truncate(time.Microsecond)), "a link said to end at %s", at.Format(time.RFC3339Nano))
+	}
 
 	// And the one for nobody resolves to nobody, which is where the difference
 	// is allowed to show.

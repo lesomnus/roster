@@ -101,6 +101,11 @@ func TestASessionKeepsWhenItsPersonSignedIn(t *testing.T) {
 		got, err := session.New(b.Ent, audit.Contents{}).Get(context.Background(), cookie[strings.IndexByte(cookie, '=')+1:])
 		x.NoError(err)
 		x.False(got.DateAuthenticated.IsZero(), "roster's own sign-in said nothing of when its person signed in")
+		// The bound cut to the microsecond, and not the moment: a session
+		// keeps it as every database does, so a sign-in finished in the
+		// microsecond `asked` was read in is kept as that microsecond's start.
+		// When the code was taken is the server's, so this is a bound and not
+		// an equality.
 		x.False(got.DateAuthenticated.Before(asked.Truncate(time.Microsecond)), "the session says the password's moment and not the code's")
 		x.False(got.DateAuthenticated.After(answered))
 	})

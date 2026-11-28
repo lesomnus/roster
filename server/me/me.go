@@ -820,11 +820,27 @@ func (s *Server) erase(ctx context.Context, me *ent.Holder) (*app.MeLeaveRespons
 		// Somebody else erased them between the read above and this.
 		return nil, status.Error(codes.NotFound, "there is no such person any more")
 	}
+
+	// When the erase stamped them, read in its transaction: an erase answers
+	// whether it erased and not when, and the moment this call came back to
+	// was a later one than the row keeps, by as long as the two writes took.
+	// What they are told is what a read of them gives, and what the forget
+	// clock is counted from (`forget.Due`).
+	erased, err := ent.NewClient(ent.Driver(drv)).Holder.Query().
+		Where(holder.IdEQ(me.Id)).
+		Select(holder.FieldDateErased).
+		Only(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if erased.DateErased == nil {
+		return nil, status.Error(codes.NotFound, "there is no such person any more")
+	}
 	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
-	at := time.Now()
+	at := *erased.DateErased
 	out := app.MeLeaveResponse_builder{DateErased: timestamppb.New(at)}.Build()
 	// A hold on the tenant stops the forget clock for its people (#105), so a
 	// date said now would be a promise the hold is there to break.

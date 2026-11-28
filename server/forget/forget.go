@@ -85,6 +85,7 @@ import (
 	"github.com/lesomnus/roster/internal/ent/sitemembership"
 	"github.com/lesomnus/roster/internal/ent/teammembership"
 	"github.com/lesomnus/roster/internal/ent/tenant"
+	"github.com/lesomnus/roster/internal/moment"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/bare"
 	"github.com/lesomnus/roster/server/expire"
@@ -326,7 +327,9 @@ func forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 	// directory called them, which came later and stayed on the row until
 	// somebody read one (#279). `TestSomebodyForgottenIsABlankRow` holds the
 	// list to the schema, so the next column declared personal is cleared here
-	// or fails there.
+	// or fails there. Its moments as the database keeps them
+	// (`internal/moment`), as the generated store writes its own.
+	now := moment.Now()
 	u := tx.Holder.UpdateOneId(who.Uuid()).
 		SetAlias("").
 		SetName("").
@@ -338,14 +341,14 @@ func forget(ctx context.Context, db *ent.Client, who pdid.Id, p trail.Policy, cs
 		ClearDirectorySubject().
 		ClearDirectoryAddress().
 		ClearDirectoryName().
-		SetDateUpdated(time.Now())
+		SetDateUpdated(now)
 	if v.DateErased == nil {
 		// Asked for by somebody who had not left first. Leaving is implied by
 		// the request, and it is the state everything else already assumes.
 		// Decided on the row as this transaction holds it, and not on a read
 		// before it: a restore in between is somebody live, who is erased here
 		// as anybody live is.
-		u = u.SetDateErased(time.Now())
+		u = u.SetDateErased(now)
 	}
 	if err := u.Exec(ctx); err != nil {
 		return out, err
@@ -493,7 +496,7 @@ func Restore(ctx context.Context, db *ent.Client, who pdid.Id, cs audit.Contents
 	}
 	defer tx.Rollback()
 
-	now := time.Now()
+	now := moment.Now()
 	n, err := tx.Holder.Update().
 		Where(
 			holder.IdEQ(who.Uuid()), holder.DateErasedNotNil(), holder.AliasNEQ(""),

@@ -15,6 +15,7 @@ import (
 	"github.com/lesomnus/payday/pdtest"
 
 	"github.com/lesomnus/roster/cmd"
+	entcredential "github.com/lesomnus/roster/internal/ent/credential"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/vouch"
 )
@@ -71,6 +72,10 @@ func TestTheLockoutIsTheDeploymentsNumbers(t *testing.T) {
 	res := wrong()
 	x.NotNil(res.GetDateUnlocked(), "two wrong answers did not lock, as the deployment said they should")
 	x.WithinDuration(time.Now().Add(time.Hour), res.GetDateUnlocked().AsTime(), time.Minute, "locked for the default rather than for what was said")
+	row, err := s.Ent.Credential.Query().Where(entcredential.DateUnlockedNotNil()).Only(ctx)
+	x.NoError(err)
+	x.True(row.DateUnlocked.Equal(res.GetDateUnlocked().AsTime()), "told it opens at %s, and its row says %s",
+		res.GetDateUnlocked().AsTime().Format(time.RFC3339Nano), row.DateUnlocked.Format(time.RFC3339Nano))
 
 	t.Run("and unset is the default", func(t *testing.T) {
 		x := require.New(t)

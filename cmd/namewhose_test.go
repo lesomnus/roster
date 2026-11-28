@@ -236,6 +236,9 @@ func TestANameTakenIsOnTheTrailOfWhoeverHeldIt(t *testing.T) {
 		x.Equal(theirs, pdid.Id(v.ActorId), "and does not say who took it")
 	}
 	x.Equal(1, released, "a name was taken and the tenant that held it has nothing saying so")
+	was, err := b.Ent.Host.Get(ctx, lost.Uuid())
+	x.NoError(err)
+	storedToTheMicrosecond(t, "when the name was released", *was.DateErased)
 
 	t.Run("and a name a file declares is not taken", func(t *testing.T) {
 		x := require.New(t)
