@@ -150,10 +150,10 @@ func (st CredentialServiceServer) create(ctx context.Context, req *rstr.Credenti
 	q.SetSecret(req.GetSecret())
 	q.SetFailures(req.GetFailures())
 	if req.HasDateUnlocked() {
-		q.SetDateUnlocked(req.GetDateUnlocked().AsTime())
+		q.SetDateUnlocked(written(req.GetDateUnlocked().AsTime()))
 	}
 	if req.HasDateRotated() {
-		q.SetDateRotated(req.GetDateRotated().AsTime())
+		q.SetDateRotated(written(req.GetDateRotated().AsTime()))
 	}
 	q.SetLastStep(req.GetLastStep())
 	if u := req.GetPrevious(); len(u) > 0 {
@@ -161,7 +161,7 @@ func (st CredentialServiceServer) create(ctx context.Context, req *rstr.Credenti
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -434,6 +434,14 @@ func (s CredentialServiceServer) apply(ctx context.Context, ref *rstr.Credential
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 11, 12, 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, credentialPatchColumns, s.Db.Dialect())

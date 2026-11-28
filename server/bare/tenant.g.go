@@ -125,7 +125,7 @@ func (st TenantServiceServer) create(ctx context.Context, req *rstr.TenantAddReq
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -133,13 +133,13 @@ func (st TenantServiceServer) create(ctx context.Context, req *rstr.TenantAddReq
 		q.SetConfig(req.GetConfig())
 	}
 	if req.HasDateClosed() {
-		q.SetDateClosed(req.GetDateClosed().AsTime())
+		q.SetDateClosed(written(req.GetDateClosed().AsTime()))
 	}
 	if req.HasDateDestroyed() {
-		q.SetDateDestroyed(req.GetDateDestroyed().AsTime())
+		q.SetDateDestroyed(written(req.GetDateDestroyed().AsTime()))
 	}
 	if req.HasDateHeld() {
-		q.SetDateHeld(req.GetDateHeld().AsTime())
+		q.SetDateHeld(written(req.GetDateHeld().AsTime()))
 	}
 	q.SetHold(req.GetHold())
 	return q, ds, nil
@@ -406,6 +406,14 @@ func (s TenantServiceServer) apply(ctx context.Context, ref *rstr.TenantRef, doc
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 15, 9, 10, 11:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, tenantPatchColumns, s.Db.Dialect())

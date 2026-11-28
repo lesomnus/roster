@@ -153,7 +153,7 @@ func (st HolderServiceServer) create(ctx context.Context, req *rstr.HolderAddReq
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -164,10 +164,10 @@ func (st HolderServiceServer) create(ctx context.Context, req *rstr.HolderAddReq
 		q.SetData(req.GetData())
 	}
 	if req.HasDateInvalidated() {
-		q.SetDateInvalidated(req.GetDateInvalidated().AsTime())
+		q.SetDateInvalidated(written(req.GetDateInvalidated().AsTime()))
 	}
 	if req.HasDateDisabled() {
-		q.SetDateDisabled(req.GetDateDisabled().AsTime())
+		q.SetDateDisabled(written(req.GetDateDisabled().AsTime()))
 	}
 	q.SetDirectoryStanding(int32(req.GetDirectoryStanding()))
 	if req.HasPortrait() {
@@ -466,6 +466,14 @@ func (s HolderServiceServer) apply(ctx context.Context, ref *rstr.HolderRef, doc
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15, 11, 12:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, holderPatchColumns, s.Db.Dialect())

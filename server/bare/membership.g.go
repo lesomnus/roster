@@ -172,7 +172,7 @@ func (st SiteMembershipServiceServer) create(ctx context.Context, req *rstr.Site
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -436,6 +436,14 @@ func (s SiteMembershipServiceServer) apply(ctx context.Context, ref *rstr.SiteMe
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, siteMembershipPatchColumns, s.Db.Dialect())
@@ -843,7 +851,7 @@ func (st TeamMembershipServiceServer) create(ctx context.Context, req *rstr.Team
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -1132,6 +1140,14 @@ func (s TeamMembershipServiceServer) apply(ctx context.Context, ref *rstr.TeamMe
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, teamMembershipPatchColumns, s.Db.Dialect())
@@ -1539,7 +1555,7 @@ func (st GroupMembershipServiceServer) create(ctx context.Context, req *rstr.Gro
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -1828,6 +1844,14 @@ func (s GroupMembershipServiceServer) apply(ctx context.Context, ref *rstr.Group
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, groupMembershipPatchColumns, s.Db.Dialect())
