@@ -224,6 +224,8 @@ func TestAPersonLeavesWhereTheirTenantOffersIt(t *testing.T) {
 
 		erased, invalidated := erasedAt(t, ctx, b.Server, b.Who)
 		x.NotNil(erased)
+		x.True(erased.Equal(v.GetDateErased().AsTime()), "told they left at %s, and the row says %s",
+			v.GetDateErased().AsTime().Format(time.RFC3339Nano), erased.Format(time.RFC3339Nano))
 		x.NotNil(invalidated, "signed out everywhere before the erase")
 
 		ev := about(t, heard, b.Who)

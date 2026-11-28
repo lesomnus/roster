@@ -16,6 +16,7 @@ import (
 
 	"github.com/lesomnus/payday/pdid"
 
+	"github.com/lesomnus/roster/internal/moment"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
 )
@@ -68,6 +69,11 @@ func (s *Server) Link(ctx context.Context, req *app.VouchLinkRequest) (*app.Vouc
 			expires = at
 		}
 	}
+	// As the store keeps it (`internal/moment`), and here rather than at the
+	// one answer that writes a row: the store cuts what it writes to the
+	// microsecond, and a link for somebody answered with that and one for
+	// nobody with the clock's nanoseconds would say which of the two it was.
+	expires = moment.Of(expires)
 
 	token, sum, err := MintLink()
 	if err != nil {

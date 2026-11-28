@@ -56,6 +56,7 @@ import (
 
 	"google.golang.org/protobuf/proto"
 
+	"github.com/lesomnus/roster/internal/moment"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/front"
 )
@@ -535,7 +536,9 @@ func (s *Server) count(ctx context.Context, v *app.Credential) (*app.VouchVerify
 
 	res := no()
 	if n >= s.lockout.Failures {
-		until := timestamppb.New(time.Now().Add(s.lockout.For))
+		// As the store keeps it (`internal/moment`), so that the moment a
+		// caller is told is the one a read of the row gives.
+		until := timestamppb.New(moment.Of(time.Now().Add(s.lockout.For)))
 		patch.DateUnlocked = until
 
 		// The count starts again, so that the lock expiring gives a full set of

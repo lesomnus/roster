@@ -292,7 +292,7 @@ func (s coreEmail) Claim(ctx context.Context, req *app.EmailClaimRequest) (*app.
 		return nil, err
 	}
 
-	if _, err := s.Next().Link().Add(ctx, app.LinkAddRequest_builder{
+	row, err := s.Next().Link().Add(ctx, app.LinkAddRequest_builder{
 		// The **claimant**, which for the ordinary shape is the row's own holder
 		// and so is what this always wrote. `Confirm` reads it to decide whether
 		// there is anything to move, and `Vouch.Redeem` cannot read it at all --
@@ -303,11 +303,14 @@ func (s coreEmail) Claim(ctx context.Context, req *app.EmailClaimRequest) (*app.
 		Secret:      sum,
 		IssuedTo:    f.Actor.Bytes(),
 		DateExpired: timestamppb.New(expires),
-	}.Build()); err != nil {
+	}.Build())
+	if err != nil {
 		return nil, err
 	}
 
-	return app.EmailClaimResponse_builder{Token: token, DateExpired: timestamppb.New(expires)}.Build(), nil
+	// The row's expiry and not the one computed above: the store keeps it to
+	// the microsecond, and the caller is told what a read of the row gives.
+	return app.EmailClaimResponse_builder{Token: token, DateExpired: row.GetDateExpired()}.Build(), nil
 }
 
 // provable refuses a link for somebody nothing is proved for: erased or

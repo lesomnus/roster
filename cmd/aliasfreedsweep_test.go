@@ -31,6 +31,9 @@ func TestAnAliasFreedByTheSweepIsCalledWhatTheCommandCallsIt(t *testing.T) {
 	closes(t, ctx, b.Ungated, b.Contoso)
 	_, err := forget.DestroyTenant(ctx, b.Ent, b.Contoso, trail.Policy{}, audit.Contents{}, nil)
 	x.NoError(err)
+	destroyed, err := b.Ent.Tenant.Get(ctx, b.Contoso.Uuid())
+	x.NoError(err)
+	storedToTheMicrosecond(t, "when the tenant was destroyed", *destroyed.DateDestroyed)
 	before, err := b.Ent.Audit.Query().All(ctx)
 	x.NoError(err)
 	seen := map[string]bool{}

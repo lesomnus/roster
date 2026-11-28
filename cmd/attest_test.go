@@ -3,6 +3,7 @@ package cmd_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/lesomnus/z"
 	"github.com/protobuf-orm/ent/dialect"
@@ -10,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/lesomnus/roster/cmd"
 	app "github.com/lesomnus/roster/rstr"
@@ -173,10 +175,15 @@ func TestAClaimIsSpentInsideATransaction(t *testing.T) {
 	ceo := b.holder(t, b.ctx, b.Contoso, "ceo")
 	door := b.as(b.ctx, b.holder(t, b.ctx, b.Contoso, "front-door"), b.Contoso)
 	v, err := b.Walled.Email().Claim(door, app.EmailClaimRequest_builder{
-		Ref:    app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(theirs)}.Build()}.Build(),
-		Holder: app.HolderRef_builder{Id: ceo.Bytes()}.Build(),
+		Ref:         app.EmailRef_builder{At: app.EmailRefByAt_builder{TenantId: b.Contoso.Bytes(), Address: z.Ptr(theirs)}.Build()}.Build(),
+		Holder:      app.HolderRef_builder{Id: ceo.Bytes()}.Build(),
+		DateExpired: timestamppb.New(nanosecondsOf(time.Now().Add(time.Minute))),
 	}.Build())
 	x.NoError(err)
+	link, err := b.Ent.Link.Query().Only(b.ctx)
+	x.NoError(err)
+	x.True(link.DateExpired.Equal(v.GetDateExpired().AsTime()), "the claim said it ends at %s, and its row says %s",
+		v.GetDateExpired().AsTime().Format(time.RFC3339Nano), link.DateExpired.Format(time.RFC3339Nano))
 
 	x.NoError(b.do(t, func(s app.Server) error {
 		_, err := s.Email().Confirm(b.door, app.EmailConfirmRequest_builder{Token: v.GetToken()}.Build())
