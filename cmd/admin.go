@@ -16,6 +16,7 @@ import (
 	"github.com/lesomnus/payday/pdid"
 
 	"github.com/lesomnus/roster/internal/ent"
+	"github.com/lesomnus/roster/internal/moment"
 	app "github.com/lesomnus/roster/rstr"
 	"github.com/lesomnus/roster/server/console"
 	"github.com/lesomnus/roster/server/core"
@@ -201,6 +202,16 @@ func Intent(control *ent.Client) grpc.UnaryServerInterceptor {
 				SetActorId(f.Actor.Uuid()).
 				SetTraceId(traceOf(ctx)).
 				SetAction(info.FullMethod).
+
+				// When, said here because nothing below says it. The column's
+				// default is the generated store's to fill, on an `Add`, and
+				// this write does not go through one; ent has none of its own.
+				// So a decision was recorded with no time at all -- NULL, read
+				// back as the year one -- on the one trail whose whole question
+				// is who decided what **before** it was attempted. As the
+				// databases keep it (`moment`), like every row roster writes
+				// itself.
+				SetDateCreated(moment.Now()).
 
 				// The zero identifier, because there is no object yet -- that
 				// is what "before the attempt" means. An `Add` has not chosen

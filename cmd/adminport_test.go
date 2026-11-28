@@ -23,6 +23,7 @@ import (
 	"github.com/lesomnus/roster/cmd"
 	"github.com/lesomnus/roster/internal/ent"
 	entaudit "github.com/lesomnus/roster/internal/ent/audit"
+	"github.com/lesomnus/roster/internal/moment"
 	app "github.com/lesomnus/roster/rstr"
 )
 
@@ -238,6 +239,7 @@ func TestEveryOperatorWriteLeavesBothTrails(t *testing.T) {
 
 			was := adminTrail(t, s.Ent)
 
+			asked := moment.Now()
 			x.NoError(w.call(as))
 
 			// What changed, in the plane the customer is in.
@@ -273,6 +275,20 @@ func TestEveryOperatorWriteLeavesBothTrails(t *testing.T) {
 			who, err := s.Control.Ent.Holder.Get(ctx, intent.ActorId)
 			x.NoError(err, "the operator does not resolve in the plane that recorded them")
 			x.Equal("admin", who.Alias)
+
+			// And when. The row is written straight through ent, where no
+			// default fills `date_created`, and it was written with none: a
+			// decision with no time, on the trail that exists to say it came
+			// first. It is the call's own moment, as the databases keep it,
+			// and no later than anything the write then recorded.
+			x.False(intent.DateCreated.IsZero(), "%s: the decision says no time", w.name)
+			x.False(intent.DateCreated.Before(asked), "%s: decided at %s, before it was asked at %s", w.name, intent.DateCreated, asked)
+			x.False(intent.DateCreated.After(moment.Now()), "%s: decided in the future", w.name)
+			x.Zero(intent.DateCreated.Nanosecond()%1000, "%s: not as a database keeps it", w.name)
+			for _, v := range data {
+				x.False(v.DateCreated.Before(intent.DateCreated),
+					"%s: %s was recorded at %s, before the decision at %s", w.name, v.Action, v.DateCreated, intent.DateCreated)
+			}
 		})
 	}
 
