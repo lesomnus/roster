@@ -151,14 +151,14 @@ func (st DelegationServiceServer) create(ctx context.Context, req *rstr.Delegati
 	q.SetSecret(req.GetSecret())
 	q.SetIssuedTo(req.GetIssuedTo())
 	if req.HasDateExpired() {
-		q.SetDateExpired(req.GetDateExpired().AsTime())
+		q.SetDateExpired(written(req.GetDateExpired().AsTime()))
 	}
 	if req.HasDateAuthenticated() {
-		q.SetDateAuthenticated(req.GetDateAuthenticated().AsTime())
+		q.SetDateAuthenticated(written(req.GetDateAuthenticated().AsTime()))
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -422,6 +422,14 @@ func (s DelegationServiceServer) apply(ctx context.Context, ref *rstr.Delegation
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 11, 12, 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, delegationPatchColumns, s.Db.Dialect())

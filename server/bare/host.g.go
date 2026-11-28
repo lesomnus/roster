@@ -153,11 +153,11 @@ func (st HostServiceServer) create(ctx context.Context, req *rstr.HostAddRequest
 		q.SetLabels(u)
 	}
 	if req.HasDateProved() {
-		q.SetDateProved(req.GetDateProved().AsTime())
+		q.SetDateProved(written(req.GetDateProved().AsTime()))
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -418,6 +418,14 @@ func (s HostServiceServer) apply(ctx context.Context, ref *rstr.HostRef, doc *pa
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 9, 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, hostPatchColumns, s.Db.Dialect())
@@ -773,7 +781,7 @@ func (st MailDomainServiceServer) create(ctx context.Context, req *rstr.MailDoma
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -1034,6 +1042,14 @@ func (s MailDomainServiceServer) apply(ctx context.Context, ref *rstr.MailDomain
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, mailDomainPatchColumns, s.Db.Dialect())
@@ -1392,12 +1408,12 @@ func (st HostProofServiceServer) create(ctx context.Context, req *rstr.HostProof
 	q.SetName(req.GetName())
 	q.SetToken(req.GetToken())
 	if req.HasDateExpired() {
-		q.SetDateExpired(req.GetDateExpired().AsTime())
+		q.SetDateExpired(written(req.GetDateExpired().AsTime()))
 	}
 	q.SetDesc(req.GetDesc())
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -1658,6 +1674,14 @@ func (s HostProofServiceServer) apply(ctx context.Context, ref *rstr.HostProofRe
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 10, 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, hostProofPatchColumns, s.Db.Dialect())

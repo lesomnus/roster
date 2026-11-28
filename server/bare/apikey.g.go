@@ -166,13 +166,13 @@ func (st ApiKeyServiceServer) create(ctx context.Context, req *rstr.ApiKeyAddReq
 	}
 	q.SetSecret(req.GetSecret())
 	if req.HasDateUsed() {
-		q.SetDateUsed(req.GetDateUsed().AsTime())
+		q.SetDateUsed(written(req.GetDateUsed().AsTime()))
 	}
 	if req.HasDateExpired() {
-		q.SetDateExpired(req.GetDateExpired().AsTime())
+		q.SetDateExpired(written(req.GetDateExpired().AsTime()))
 	}
 	if req.HasDateAuthenticated() {
-		q.SetDateAuthenticated(req.GetDateAuthenticated().AsTime())
+		q.SetDateAuthenticated(written(req.GetDateAuthenticated().AsTime()))
 	}
 	if req.HasApp() {
 		if k, err := HolderGetKey(ctx, st.Db, req.GetApp()); err != nil {
@@ -191,7 +191,7 @@ func (st ApiKeyServiceServer) create(ctx context.Context, req *rstr.ApiKeyAddReq
 	}
 	q.SetDateUpdated(st.now())
 	if req.HasDateCreated() {
-		q.SetDateCreated(req.GetDateCreated().AsTime())
+		q.SetDateCreated(written(req.GetDateCreated().AsTime()))
 	} else {
 		q.SetDateCreated(st.now())
 	}
@@ -479,6 +479,14 @@ func (s ApiKeyServiceServer) apply(ctx context.Context, ref *rstr.ApiKeyRef, doc
 			return nil, status.Errorf(codes.InvalidArgument, "%s", err)
 		}
 		plan = v
+		for i, u := range plan.Writes {
+			switch u.Prop.Number() {
+			case 10, 11, 12, 13, 14, 15:
+				if op, ok := u.Op.(ormpatch.SetColumn); ok {
+					plan.Writes[i].Op = ormpatch.SetColumn{Value: writtenTimestamp(op.Value)}
+				}
+			}
+		}
 	}
 
 	pred, mod, err := entpatch.Build(plan, apiKeyPatchColumns, s.Db.Dialect())
